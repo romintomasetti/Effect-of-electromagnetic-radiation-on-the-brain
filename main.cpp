@@ -22,6 +22,7 @@ using namespace std;
 int main(){
 	Materials allMat;
 	allMat.getPropertiesFromFile("MaterialProperties.csv");
+	allMat.printAllProperties();
 
 	Array_3D testArray;
 	
