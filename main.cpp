@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Array_3D.h"
+#include "Materials.h"
 
 using namespace std;
 
@@ -19,6 +20,9 @@ using namespace std;
 
 
 int main(){
+	Materials allMat;
+	allMat.getPropertiesFromFile("MaterialProperties.csv");
+
 	Array_3D testArray;
 	
 	testArray.set_sizes(2,2,2);

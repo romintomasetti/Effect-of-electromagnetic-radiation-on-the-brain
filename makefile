@@ -12,7 +12,7 @@ TARGET = main
 all: $(TARGET)
 
 $(TARGET): $(TARGET).cpp
-	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).cpp Array_3D.cpp
+	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).cpp Array_3D.cpp Materials.cpp
 
 clean:
 	$(RM) $(TARGET)
