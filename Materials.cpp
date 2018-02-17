@@ -52,7 +52,6 @@ void Materials::getPropertiesFromFile(string filename){
 		if(currentLine.empty()){
 			// Do nothing, the line is empty !
 		}else{
-			cout << "In counting : " << currentLine << endl;
 			// Get the position of the first comma:
 			for(unsigned int i = 0 ; i < currentLine.length() ; i++){
 					if(currentLine[i] == ','){
@@ -101,9 +100,11 @@ void Materials::getPropertiesFromFile(string filename){
 	
 	// Empty the previous material variable for later.
 	previousMaterial = string();
-	cout << "The highest number of specification is " << maxNumberOfTemp << "." << endl;
-	cout << "Number of different materials is " << numberOfMaterials << "." << endl;
-	cout << "Number of properties is " << this->numberOfProperties << endl;
+	#if DEBUG > 2
+		cout << "The highest number of specification is " << maxNumberOfTemp << "." << endl;
+		cout << "Number of different materials is " << numberOfMaterials << "." << endl;
+		cout << "Number of properties is " << this->numberOfProperties << endl;
+	#endif
 	// Rewind the position in the file for later:	
 	file.clear();
 	file.seekg(0);
@@ -117,8 +118,7 @@ void Materials::getPropertiesFromFile(string filename){
 	while(!file.eof())
         {
 		// Get line:
-        	getline(file,currentLine);
-		cout << currentLine << endl;
+        getline(file,currentLine);
 		bool MATERIAL = true;
 		// Go over the whole line:
 		for(unsigned int i = 0 ; i < currentLine.length() ; i++){
@@ -131,9 +131,11 @@ void Materials::getPropertiesFromFile(string filename){
 				}
 				MATERIAL = false;
 				if(currentMaterial.compare(previousMaterial) != 0){
-					counterMaterial++;
-					counterTemp       = 0;
+					counterMaterial ++;
+					counterTemp     = 0;
+					#if DEBUG > 2
 					cout << "On change de matériau.\n";
+					#endif
 				}
 				continue;
 			}else if(MATERIAL){
@@ -145,14 +147,14 @@ void Materials::getPropertiesFromFile(string filename){
 				double a = stod(valueStr,&offset);
 				// Push this double in the properties 3D table:
 				this->properties[counterMaterial][counterProperties][counterTemp] = a;
+				#if DEBUG > 2
 				cout << "Added prop. : " << a << "--" << valueStr << "--";
 				cout <<  "at (" << counterMaterial << "," << counterProperties << "," << counterTemp << ")" << endl;
+				#endif
 				valueStr = string();
 				counterProperties++;
 			}else{
-				//cout << valueStr << " || currentLine[i] = " << currentLine[i] << endl;
 				valueStr.push_back(currentLine[i]);
-				//cout << valueStr << " || currentLine[i] = " << currentLine[i] << endl;
 				if(i == currentLine.length()-1){
 					size_t offset = 0;
 					double a = stod(valueStr,&offset);
@@ -164,7 +166,6 @@ void Materials::getPropertiesFromFile(string filename){
 		counterTemp++;
 		counterProperties = 0;
 		valueStr = string();
-        	cout<< currentLine << " (prev.)" << previousMaterial << "\n"; 
 		previousMaterial = currentMaterial;
         }
 	/* Closing file */
@@ -180,18 +181,18 @@ double Materials::getProperty(double,unsigned char){
 	return 0.0;
 }
 
+/* Destructor */
 Materials::~Materials(void){
-	cout << "Destructor called.\n";
-	this->freeProperties();
-	cout << "Destructor success.\n";
+	if(this->properties != NULL)
+		this->freeProperties();
 }
 
+/* Constructor */
 Materials::Materials(void){
-	cout << "Hi ! I am the constructor.\n";
 }
 
 void Materials::printAllProperties(void){
-	cout << "---------------------PRINT PROPERTIES-------\n";
+	cout << "---------------------PRINT PROPERTIES-----------------------\n";
 	// Going through the materials:
 	for(unsigned int I = 0 ; I < this->numberOfMaterials ; I ++){
 		// Going through each temperature specification:
@@ -199,21 +200,22 @@ void Materials::printAllProperties(void){
 			// Going through each property:
 			for(unsigned int J = 0 ; J < this->numberOfProperties ; J ++){
 				cout << this->properties[I][J][K];
-				cout <<  "(" << I << "," << J << "," << K << ")";
+				cout <<  "(" << I << "," << J << "," << K << ") |";
 			}
 		cout << endl;
 		}
 	}
-	cout << "----------------------------\n";
+	cout << "---------------------------------------------\n";
 }
 
 void Materials::freeProperties(void){
 	for(unsigned int I = 0 ; I < this->numberOfMaterials ; I ++){
 		for(unsigned int J = 0 ; J < this->numberOfProperties ; J ++){
-			cout << "freeing (" << I << "," << J << ")\n";
 			delete[] this->properties[I][J];
 		}
 		delete[] this->properties[I];
 	}
 	delete[] this->properties;
+	if(this->properties != NULL)
+		this->properties = NULL;
 }

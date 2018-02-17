@@ -1,7 +1,5 @@
 #include "Array_3D.h"
 
-
-
 string Array_3D::set_sizes(unsigned long Nx, unsigned long Ny, unsigned long Nz){
 	if(this->SIZES[0] == 0 && this->SIZES[1] == 0 && this->SIZES[2] == 0){
 		// The sizes were not yet set, proceed.

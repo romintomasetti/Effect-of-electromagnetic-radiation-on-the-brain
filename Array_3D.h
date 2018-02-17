@@ -10,6 +10,7 @@ using namespace std;
 class Array_3D{
 	// Size along x,y,z 
 	vector<unsigned long> SIZES = {0,0,0};
+	// Vector containing all the values.
 	double *values = NULL;
 	public:
 		// Initialize the sizes:

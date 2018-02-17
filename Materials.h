@@ -4,10 +4,12 @@
 
 using namespace std;
 
+
+
 class Materials{
 	private:
 		// Contains all the properties of all materials:
-		double ***properties;
+		double ***properties = NULL;
 		// Number of properties:
 		unsigned int numberOfProperties = 0;
 		// Number of materials:
