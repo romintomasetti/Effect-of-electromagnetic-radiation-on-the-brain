@@ -64,7 +64,7 @@ void Materials::getPropertiesFromFile(string filename){
 					}
 			}
 			numberOfPropertiesIsKnown = true;
-			// Compare current and previous materials to see if it changed:
+			// Compare current and previous materials to see if it has changed:
 			if(currentMaterial.compare(previousMaterial) != 0){
 				// Increment the number of materials
 				numberOfMaterials++;
@@ -127,11 +127,14 @@ void Materials::getPropertiesFromFile(string filename){
 				currentMaterial.assign(currentLine,0,i);
 				if(firstTime){
 					firstTime = false;
+					this->materialNameForMaterialID[currentMaterial] = (unsigned char)counterMaterial;
 					previousMaterial = currentMaterial;
 				}
 				MATERIAL = false;
 				if(currentMaterial.compare(previousMaterial) != 0){
 					counterMaterial ++;
+					// Fill in the dictionnary of material and corresponding ID:
+					this->materialNameForMaterialID[currentMaterial] = (unsigned char)counterMaterial; 
 					counterTemp     = 0;
 					#if DEBUG > 2
 					cout << "On change de matériau.\n";
@@ -170,7 +173,12 @@ void Materials::getPropertiesFromFile(string filename){
         }
 	/* Closing file */
 	file.close();
-	// Lire le fichier et extraire les paramètres.
+	#if DEBUG > 0
+	for(auto& x : this->materialNameForMaterialID)
+	{
+		cout << x.first << "," << (int)x.second << endl;
+	}
+	#endif
 }
 
 
@@ -218,4 +226,9 @@ void Materials::freeProperties(void){
 	delete[] this->properties;
 	if(this->properties != NULL)
 		this->properties = NULL;
+}
+
+// Get Dictionnary with the materials and the chosen unsigned char assigned to it:
+map<string,unsigned char> Materials::get_dictionnary_MaterialToID(void){
+	return this->materialNameForMaterialID;	
 }

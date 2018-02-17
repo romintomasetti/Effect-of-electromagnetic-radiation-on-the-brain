@@ -1,5 +1,9 @@
+#ifndef ARRAY_3D_TEMPLATE_H
+#define ARRAY_3D_TEMPLATE_H
+
 #include <cstdio>
 #include <iostream>
+#include <vector>
 
 using namespace std;
 
@@ -13,12 +17,18 @@ class Array_3D_Template{
 	public:
 		// Constructor:
 		Array_3D_Template(const size_t &Nx, const size_t &Ny, const size_t &Nz);
+		// Copy constructor:
+		Array_3D_Template(const Array_3D_Template &obj);
 		// Destructor:
 		~Array_3D_Template(void);
 		// Accessor:
 		T& operator()(const size_t &i, const size_t &j, const size_t &k);
 		// Filler (fill the data field with a given value):
 		void fillIn(T val);
+		// Get the size of the array:
+		vector<size_t> get_size_data(void);
 };
 
 #include "Array_3D_Template.tpp"
+
+#endif

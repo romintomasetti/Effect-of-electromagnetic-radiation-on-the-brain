@@ -14,7 +14,7 @@ all: $(TARGET)
 # Use -DDEBUG=1, 2 or 3. The high DEBUG the more verbose the program.
 
 $(TARGET): $(TARGET).cpp
-	$(CC) $(CFLAGS) -DDEBUG=2 -o $(TARGET) $(TARGET).cpp Array_3D.cpp Materials.cpp
+	$(CC) $(CFLAGS) -DDEBUG=2 -o $(TARGET) $(TARGET).cpp Array_3D.cpp Materials.cpp GridCreator.cpp
 
 clean:
 	$(RM) $(TARGET)

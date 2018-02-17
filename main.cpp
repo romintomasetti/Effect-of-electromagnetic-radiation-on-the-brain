@@ -11,6 +11,7 @@
 #include "Materials.h"
 #include "Array_3D_Template.h"
 #include "Node.h"
+#include "GridCreator.h"
 
 #define PARALLELISM_OMP_ENABLED 1
 
@@ -57,7 +58,15 @@ int main(){
 		#pragma omp for
 		for(int i = 0 ; i < 10 ; i ++)
 			printf("%d, ",i);
+		#pragma omp barrier
 	}
+	cout << endl;
+	
+	
+	GridCreator mesher(allMat.get_dictionnary_MaterialToID());
+	mesher.nodesInitialization(nodes);
+	
+	return 0;
 }
 
 

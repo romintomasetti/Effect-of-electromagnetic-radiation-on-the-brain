@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <map>
 
 using namespace std;
 
@@ -16,6 +17,8 @@ class Materials{
 		unsigned int numberOfMaterials  = 0;
 		// Maximum number of temperature specifications:
 		unsigned int maxNumberOfTemp    = 0;
+		// Dictionnary with the materials and the chosen unsigned char assigned to it:
+		map<string,unsigned char> materialNameForMaterialID;
 		
 		// Free the properties array (called in the destructor):
 		void   freeProperties(void);
@@ -30,4 +33,6 @@ class Materials{
 		Materials();
 		// Destructor:
 		~Materials();
+		// Get Dictionnary with the materials and the chosen unsigned char assigned to it:
+		map<string,unsigned char> get_dictionnary_MaterialToID(void);
 };
