@@ -36,7 +36,7 @@
     
     \begin{minipage}[t]{\textwidth}
         \begin{flushright}
-            \includegraphics[scale = 1.2]{uLIEGE_Faculte_SciencesAppliquees_Logo_CMJN_pos}
+            \includegraphics[scale = 0.6]{uLIEGE_Faculte_SciencesAppliquees_Logo_CMJN_pos}
         \end{flushright}
     \end{minipage}
 
@@ -105,5 +105,37 @@
 \listoftables
 \newpage
 
+\section{Questions to ask on February, 20}
+
+\begin{itemize}
+	%
+	\item Do we have to take into account the frequency-dependency of the electromagnetic properties of the materials? (see \url{https://em.geosci.xyz/content/physical_properties/magnetic_permeability/magnetic_permeability_frequency_dependent.html})
+	%
+	\item Regarding the already-written code:
+		\begin{itemize}
+			\item Comments on the created classes?
+			\item Is speed affected? Or we don't care?
+			\item Especially, ask if Array\_3D\_Template<Node> nodes is a good way to start !
+		\end{itemize}
+	%
+	\item Regarding testing, what are the simplest tests? Could we compare our results with other simulations? Do we have to compare with something that can be hand-solved?
+	%
+	\item Check our reasoning on the nodes. They all have:
+		\begin{itemize}
+			\item 3 coordinates (3 doubles) - How are we going to mesh ??? (we think we are obliged to keep rectangular parallelepiped because of the numerical scheme)
+			%
+			\item 6 fields (3 for $\vec{E}$ and 3 for $\vec{H}$ so 6 doubles)
+			%
+			\item 1 temperature (1 double)
+			%
+			\item 1 unsigned char for the ID of the material
+			%
+			\item $\Rightarrow$ That would make 10 doubles and one unsigned char or 10*4+1 bytes per node.
+		\end{itemize}
+\end{itemize}
+
+\section{Database for human tissues}
+
+\url{https://www.itis.ethz.ch/virtual-population/tissue-properties/downloads/database-v3-1/}
 
 \end{document}

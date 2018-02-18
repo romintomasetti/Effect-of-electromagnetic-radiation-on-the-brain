@@ -3,10 +3,12 @@
 #define GRIDCREATOR_H
 
 #include <string>
-#include "Array_3D_Template.h"
-#include "Node.h"
 #include <vector>
 #include <map>
+
+#include "Array_3D_Template.h"
+#include "Node.h"
+
 
 class GridCreator{
 	private:
