@@ -6,12 +6,15 @@
 #include <vector>
 #include <climits>
 #include <omp.h>
+#include <mpi.h>
 
 #include "Array_3D.h"
 #include "Materials.h"
 #include "Array_3D_Template.h"
 #include "Node.h"
 #include "GridCreator.h"
+#include "MPI_Initializer.h"
+#include "SetOnceVariable_Template.h"
 
 #define PARALLELISM_OMP_ENABLED 1
 
@@ -25,7 +28,23 @@ using namespace std;
 
 
 
-int main(){
+
+
+int main(int argc, char *argv[]){
+	// This variable can be set only once:
+	SetOnceVariable_Template<int> setOnce;
+	cout << "setOnce is " << setOnce.get() << endl;
+	setOnce = 1;
+	setOnce = 2;
+	setOnce = 3;
+	cout << "setOnce is " << setOnce.get() << endl;
+	
+	/* First of all, initialize MPI because if it fails, the program must immediately be stopped. */
+	MPI_Initializer MPI_communicator(argc,argv,MPI_THREAD_MULTIPLE);
+	printf("\n---------\nMPI rank is %d and isRoot %d.\n--------\n",MPI_communicator.getRank(),
+		  MPI_communicator.isRootProcess());
+	
+	
 	// The variable allMat will store the materials' properties.
 	Materials allMat;
 	allMat.getPropertiesFromFile("MaterialProperties.csv");

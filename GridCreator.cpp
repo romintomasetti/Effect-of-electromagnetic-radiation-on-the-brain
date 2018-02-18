@@ -8,6 +8,8 @@ void GridCreator::nodesInitialization(Array_3D_Template<Node> &nodes){
 	// 1) Use this->materialNameForMaterialID to get the material ID from its name
 	printf("ID of the material AIR   is %d.\n",materialNameForMaterialID["AIR"]);
 	printf("ID of the material WATER is %d.\n",materialNameForMaterialID["WATER"]);
+	// 2) Assign to each node their coordinates and the material, as well as 
+	//    initial temperature or magn./elec. field if needed.
 }
 		
 /* Destructor */
