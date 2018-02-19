@@ -4,7 +4,7 @@ CC = mpiCC
 # compiler flags:
 #  -g    adds debugging information to the executable file
 #  -Wall turns on most, but not all, compiler warnings
-CFLAGS  = -g -Wall -std=c++11 -fopenmp
+CFLAGS  = -g -Wall -std=c++11 -fopenmp -ggdb
 
 # Complementary .cpp files:
 CPPFILES = Array_3D.cpp Materials.cpp GridCreator.cpp MPI_Initializer.cpp InputParser.cpp

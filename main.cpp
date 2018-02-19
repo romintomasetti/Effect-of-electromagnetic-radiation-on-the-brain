@@ -16,6 +16,7 @@
 #include "MPI_Initializer.h"
 #include "SetOnceVariable_Template.h"
 #include "InputParser.h"
+#include "ElectromagneticSource.h"
 
 #define PARALLELISM_OMP_ENABLED 1
 
@@ -77,8 +78,11 @@ int main(int argc, char *argv[]){
 	GridCreator mesher(allMat.get_dictionnary_MaterialToID());
 	mesher.meshInitialization();
 	
-	InputParser inputParser("TESTS/testSourceCenteredInCube.input");
-	inputParser.defaultParsingFromFile();
+	string filenameInput = "TESTS/testSourceCenteredInCube.input";
+	
+	cout << "Calling parser...\n";
+	InputParser input_parser;
+	input_parser.defaultParsingFromFile(filenameInput);
 	
 	cout << "Calling all the destructors.\n";
 	

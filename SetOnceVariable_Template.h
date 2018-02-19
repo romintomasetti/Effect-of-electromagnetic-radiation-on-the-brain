@@ -10,7 +10,7 @@ class SetOnceVariable_Template{
 		bool alreadySet = false;
 	public:
 		// Default constructor:
-		SetOnceVariable_Template()       : value(0)    {};
+		SetOnceVariable_Template(){};
 		// Constructor:
 		SetOnceVariable_Template(T init){
 			this->value = init;

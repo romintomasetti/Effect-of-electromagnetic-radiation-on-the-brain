@@ -44,7 +44,7 @@ MPI_Initializer::MPI_Initializer(int argc, char *argv[],int required){
 // Destructor:
 MPI_Initializer::~MPI_Initializer(void){
 	#if DEBUG > 1
-	cout << "MPI_Initializer::destructor::IN::rank=" + this->ID_MPI_Process.get() << endl;
+	cout << "MPI_Initializer::destructor::IN" << endl;
 	#endif
 	MPI_Finalize();
 	#if DEBUG > 1
