@@ -5,11 +5,11 @@
 
 class Node{
 	public:
-		vector<double> coordinates   = {0.0,0.0,0.0};
-		vector<double> electricField = {0.0,0.0,0.0};
-		vector<double> magneticField = {0.0,0.0,0.0};
-		double         temperature   = 0.0;
-		int            material      = -1;
+		double coordinates[]   = {0.0,0.0,0.0};
+		double electricField[] = {0.0,0.0,0.0};
+		double magneticField   = {0.0,0.0,0.0};
+		double temperature     = 0.0;
+		unsigned char material = 0;
 };
 
 #endif

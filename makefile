@@ -17,7 +17,7 @@ all: $(TARGET)
 # Use -DDEBUG=1, 2 or 3. The high DEBUG the more verbose the program.
 
 $(TARGET): $(TARGET).cpp
-	$(CC) $(CFLAGS) -DDEBUG=2 -o $(TARGET) $(TARGET).cpp $(CPPFILES)
+	$(CC) $(CFLAGS) -DDEBUG=3 -o $(TARGET) $(TARGET).cpp $(CPPFILES)
 
 clean:
 	$(RM) $(TARGET)

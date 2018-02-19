@@ -14,6 +14,12 @@ class GridCreator{
 	private:
 		// Dictionnary with the materials and the chosen unsigned char assigned to it:
 		map<string,unsigned char> materialNameForMaterialID;
+		// 3D array of nodes:
+		Array_3D_Template<Node> nodes;
+		// DeltaX, DeltaY, DeltaZ:
+		double deltaX = -1;
+		double deltaY = -1;
+		double deltaZ = -1;
 	public:
 		// Constructor:
 		GridCreator(map<string,unsigned char> materialNameForMaterialID){
