@@ -12,7 +12,12 @@ class SetOnceVariable_Template{
 		// Default constructor:
 		SetOnceVariable_Template()       : value(0)    {};
 		// Constructor:
-		SetOnceVariable_Template(T init) : value(init) {};
+		SetOnceVariable_Template(T init){
+			this->value = init;
+			std::cout << "\n\n\tCoucou ça plante !!!!!\n\n\n";
+			this->alreadySet = true;
+			std::cout << "ça n'a pas planté " << std::endl;
+		};
 		// Destructor:
 		~SetOnceVariable_Template(void){};
 		// Set the value / overloading of the '=' operator:

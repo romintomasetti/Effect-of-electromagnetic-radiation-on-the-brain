@@ -19,9 +19,9 @@ class MPI_Initializer{
 		// Level of required thread support:
 		SetOnceVariable_Template<int> required;
 		// ID of the MPI process:
-		SetOnceVariable_Template<int> ID_MPI_Process = INT_MIN;
+		SetOnceVariable_Template<int> ID_MPI_Process;
 		// Number of MPI processes:
-		SetOnceVariable_Template<int> number_of_MPI_Processes = INT_MIN;
+		SetOnceVariable_Template<int> number_of_MPI_Processes;
 	public:
 		// Constructor:
 		MPI_Initializer(int argc, char *argv[], int required);
@@ -31,7 +31,6 @@ class MPI_Initializer{
 		int isRootProcess(void);
 		// Get rank/ID of the MPI process:
 		int getRank(void);
-		
 };
 
 #endif

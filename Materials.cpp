@@ -193,6 +193,9 @@ double Materials::getProperty(double,unsigned char){
 Materials::~Materials(void){
 	if(this->properties != NULL)
 		this->freeProperties();
+	#if DEBUG > 2
+	cout << "Materials::destructor::out\n";
+	#endif
 }
 
 /* Constructor */

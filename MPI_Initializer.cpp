@@ -1,4 +1,5 @@
 #include "MPI_Initializer.h"
+#include <iostream>
 
 // Constructor:
 MPI_Initializer::MPI_Initializer(int argc, char *argv[],int required){
@@ -34,7 +35,7 @@ MPI_Initializer::MPI_Initializer(int argc, char *argv[],int required){
 	int number_of_MPI_Processes = INT_MIN;
 	MPI_Comm_size( MPI_COMM_WORLD, &number_of_MPI_Processes);
 	this->number_of_MPI_Processes = number_of_MPI_Processes;
-	
+	cout << "number of MPI processes is " << this->number_of_MPI_Processes.get() << endl;
 	#if DEBUG > 1
 	cout << "MPI_Initializer::constructor::OUT" << endl;
 	#endif

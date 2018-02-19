@@ -14,4 +14,5 @@ void GridCreator::nodesInitialization(Array_3D_Template<Node> &nodes){
 		
 /* Destructor */
 GridCreator::~GridCreator(void){
+	cout << "Destructor of Grid creator ok.\n";
 }
