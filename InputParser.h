@@ -6,21 +6,36 @@
 #include <iostream>
 #include <fstream>
 
+#include "SetOnceVariable_Template.h"
+#include "ElectromagneticSource.h"
+
 using namespace std;
 
 class InputParser{
 	private:
 		// File name of the input file. Should be a .input file.
-		string filename = string();
+		string filename;
 		// Check a file exists:
 		bool is_file_exist(const string filename);
 		// Parsing function:
-		void basicParsing(void);
+		void basicParsing(const string filename);
+		// Check that the line is not a comment:
+		bool checkLineISNotComment(ifstream &file, string currentLine);
+		// INFOS - NAME:
+		SetOnceVariable_Template<string> nameOfSimulation;
+		SetOnceVariable_Template<string> nameOfErrorLogFile;
+		SetOnceVariable_Template<string> nameOfProfileFile;
+		// Deltas:
+		double deltaX = 0.0, deltaY = 0.0, deltaZ = 0.0;
+		// Domain size:
+		double lengthX = 0.0, lengthY = 0.0, lengthZ = 0.0;
+		// Source:
+		ElectromagneticSource source;
 	public:
 		// Default constructor:
-		InputParser(void){};
+		InputParser(){};
 		// Constructor:
-		InputParser(string filename) : filename(filename) {};
+		InputParser(string file_name);
 		// Destructor:
 		~InputParser(void){};
 		// Default parser, using the field 'filename' of the class:
