@@ -5,9 +5,24 @@ Array_3D_Template<T>::Array_3D_Template(const size_t &Nx, const size_t &Ny, cons
 	this->Ny = Ny;
 	this->Nz = Nz;
 	this->data = new T [Nx*Ny*Nz];
+	this->dataAlreadySet = true;
 	#if DEBUG > 2
 	cout << "ARRAY_3D_TEMPLATE::constructor::Array successfully created.\n";
 	#endif
+}
+
+/* set_size_array */
+template<typename T>
+void Array_3D_Template<T>::set_size_data(const size_t &Nx, const size_t &Ny, const size_t &Nz){
+	if(this->dataAlreadySet == false){
+		this->Nx = Nx;
+		this->Ny = Ny;
+		this->Nz = Nz;
+		this->data = new T [Nx*Ny*Nz];
+		#if DEBUG > 2
+		cout << "ARRAY_3D_TEMPLATE::set_size_data::Array successfully created.\n";
+		#endif
+	}
 }
 
 /* Operator () */

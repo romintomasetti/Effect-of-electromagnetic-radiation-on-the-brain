@@ -182,11 +182,11 @@ void Materials::getPropertiesFromFile(string filename){
 }
 
 
-double Materials::getProperty(double,unsigned char){
+double Materials::getProperty(double temperature,unsigned char material, unsigned char property){
 	// Faire interpolation.
 	// Dire que sigma = 0 , mu = 1
 	// Accès au tableau: this->properties[material][sigma, mu, autre][Temperature]
-	return 0.0;
+	return this->properties[material][property][(int)temperature];
 }
 
 /* Destructor */

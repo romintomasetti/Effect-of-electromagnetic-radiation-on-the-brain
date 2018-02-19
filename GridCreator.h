@@ -7,7 +7,8 @@
 #include <map>
 
 #include "Array_3D_Template.h"
-#include "Node.h"
+#include "Node3DField.h"
+#include "Node1DField.h"
 
 
 class GridCreator{
@@ -15,11 +16,11 @@ class GridCreator{
 		// Dictionnary with the materials and the chosen unsigned char assigned to it:
 		map<string,unsigned char> materialNameForMaterialID;
 		// 3D array of nodes for electric field (those of the MPI process and of the neighboors):
-		Array_3D_Template<Node> nodesElec;
+		Array_3D_Template<Node3DField> nodesElec;
 		// 3D array of nodes for magnetic field (those of the MPI process and of the neighboors):
-		Array_3D_Template<Node> nodesMagn;
+		Array_3D_Template<Node3DField> nodesMagn;
 		// 3D array of nodes for temperature    (those of the MPI process and of the neighboors):
-		Array_3D_Template<Node> nodesTemp;
+		Array_3D_Template<Node1DField> nodesTemp;
 		// DeltaX, DeltaY, DeltaZ:
 		double deltaX = -1;
 		double deltaY = -1;
@@ -28,6 +29,8 @@ class GridCreator{
 		unsigned long nbrElts_X = 0;
 		unsigned long nbrElts_Y = 0;
 		unsigned long nbrElts_Z = 0;
+		// Time increment:
+		double deltaT = 0.0;
 	public:
 		// Constructor:
 		GridCreator(map<string,unsigned char> materialNameForMaterialID){
@@ -35,8 +38,9 @@ class GridCreator{
 		}
 		// Destructor:
 		~GridCreator(void);
-		// Assign to each node there coordinate and corresponding material:
-		void nodesInitialization(Array_3D_Template<Node> &nodes);
+	
+		// Grid initialization:
+		void meshInitialization(){};
 };
 
 #endif

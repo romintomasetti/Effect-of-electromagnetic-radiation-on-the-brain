@@ -7,14 +7,15 @@
 #include <climits>
 #include <omp.h>
 #include <mpi.h>
+#include <unistd.h>
 
-#include "Array_3D.h"
 #include "Materials.h"
 #include "Array_3D_Template.h"
-#include "Node.h"
+#include "Node3DField.h"
 #include "GridCreator.h"
 #include "MPI_Initializer.h"
 #include "SetOnceVariable_Template.h"
+#include "InputParser.h"
 
 #define PARALLELISM_OMP_ENABLED 1
 
@@ -33,17 +34,17 @@ using namespace std;
 int main(int argc, char *argv[]){
 	// This variable can be set only once:
 	SetOnceVariable_Template<int> setOnce;
+	//SetOnceVariable_Template<int> setOnceBis(5);
 	cout << "setOnce is " << setOnce.get() << endl;
 	setOnce = 1;
 	setOnce = 2;
 	setOnce = 3;
 	cout << "setOnce is " << setOnce.get() << endl;
-	
+	setOnce.~SetOnceVariable_Template<int>();
 	/* First of all, initialize MPI because if it fails, the program must immediately be stopped. */
 	MPI_Initializer MPI_communicator(argc,argv,MPI_THREAD_MULTIPLE);
 	printf("\n---------\nMPI rank is %d and isRoot %d.\n--------\n",MPI_communicator.getRank(),
 		  MPI_communicator.isRootProcess());
-	
 	
 	// The variable allMat will store the materials' properties.
 	Materials allMat;
@@ -58,16 +59,7 @@ int main(int argc, char *argv[]){
 		
 		We thus have 10*4 + 1 bytes per node.
 		*/
-	// nodes is a vector of the class Array_3D_Template (3D array emulated by
-	// a 1D array) containing all the nodes. Each node is an intance of the 
-	// class Node and has its own properties.
-	Array_3D_Template<Node> nodes(5,5,5);
-	// Changing the temperature of the node (5,5,5):
-	nodes(5,5,5).temperature = 5;
-	cout << "Node(5,5,5) : temperature : " << nodes(5,5,5).temperature << endl;
-	// Changing the field Ex of the node(5,5,5):
-	nodes(5,5,5).electricField[1] = 1.2;
-	cout << "Node(5,5,5) : Ex          : " << nodes(5,5,5).electricField[1] << endl;
+	
 	
 	if(PARALLELISM_OMP_ENABLED)
 		cout << "OMP enabled.\n";
@@ -83,7 +75,17 @@ int main(int argc, char *argv[]){
 	
 	
 	GridCreator mesher(allMat.get_dictionnary_MaterialToID());
-	mesher.nodesInitialization(nodes);
+	mesher.meshInitialization();
+	
+	InputParser inputParser("TESTS/testSourceCenteredInCube.input");
+	inputParser.defaultParsingFromFile();
+	
+	cout << "Calling all the destructors.\n";
+	
+	/* Phylosophy : */
+	// First create the MPI communicator
+	// Read the input file
+	// Then create the mesh on the mpi process
 	
 	return 0;
 }

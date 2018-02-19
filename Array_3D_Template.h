@@ -14,7 +14,11 @@ class Array_3D_Template{
 		T *data = NULL;
 		// Sizes along x, y and z:
 		size_t Nx, Ny, Nz;
+		// Boolean to check if data has already been allocated:
+		bool dataAlreadySet = false;
 	public:
+		// Default constructor:
+		Array_3D_Template(){};
 		// Constructor:
 		Array_3D_Template(const size_t &Nx, const size_t &Ny, const size_t &Nz);
 		// Copy constructor:
@@ -27,6 +31,8 @@ class Array_3D_Template{
 		void fillIn(T val);
 		// Get the size of the array:
 		vector<size_t> get_size_data(void);
+		// Set the size of the array:
+		void set_size_data(const size_t &Nx, const size_t &Ny, const size_t &Nz);
 };
 
 #include "Array_3D_Template.tpp"

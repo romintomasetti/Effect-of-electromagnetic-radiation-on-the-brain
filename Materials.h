@@ -26,7 +26,7 @@ class Materials{
 		// Get all the properties specified in a file, and put them in a 3D array:
 		void   getPropertiesFromFile(string);
 		// Get a property for a given material at a given temperature:
-		double getProperty(double,unsigned char);
+		double getProperty(double, unsigned char, unsigned char);
 		// Print all the properties:
 		void   printAllProperties(void);
 		// Constructor:

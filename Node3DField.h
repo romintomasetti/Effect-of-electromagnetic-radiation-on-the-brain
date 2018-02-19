@@ -3,7 +3,7 @@
 
 class Node3DField{
 	public:	
-		double        field[]  = {0.0,0.0,0.0};
+		double        field[3] = {0.0,0.0,0.0};
 		unsigned char material = 0;
 };
 

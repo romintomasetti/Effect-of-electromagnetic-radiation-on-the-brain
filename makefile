@@ -7,7 +7,7 @@ CC = mpiCC
 CFLAGS  = -g -Wall -std=c++11 -fopenmp
 
 # Complementary .cpp files:
-CPPFILES = Array_3D.cpp Materials.cpp GridCreator.cpp MPI_Initializer.cpp
+CPPFILES = Array_3D.cpp Materials.cpp GridCreator.cpp MPI_Initializer.cpp InputParser.cpp
 
 # the build target executable:
 TARGET = main
