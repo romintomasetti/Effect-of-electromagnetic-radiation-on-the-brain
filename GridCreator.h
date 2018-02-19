@@ -25,12 +25,19 @@ class GridCreator{
 		double deltaX = -1;
 		double deltaY = -1;
 		double deltaZ = -1;
+		// Length of the domain along each direction:
+		double lengthX = -1;
+		double lengthY = -1;
+		double lengthZ = -1;
 		// Number of nodes along each direction (excluding neighboors' nodes):
 		unsigned long nbrElts_X = 0;
 		unsigned long nbrElts_Y = 0;
 		unsigned long nbrElts_Z = 0;
 		// Time increment:
 		double deltaT = 0.0;
+		// Number of nodes:
+		size_t numberOfNodesInEachDir[3] = {0,0,0};
+		size_t totalNumberOfNodes        = 0;
 	public:
 		// Constructor:
 		GridCreator(map<string,unsigned char> materialNameForMaterialID){
@@ -40,7 +47,7 @@ class GridCreator{
 		~GridCreator(void);
 	
 		// Grid initialization:
-		void meshInitialization(){};
+		void meshInitialization();
 };
 
 #endif
