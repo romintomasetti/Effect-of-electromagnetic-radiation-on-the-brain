@@ -11,6 +11,12 @@
 
 using namespace std;
 
+enum stringDollar_Header1{
+    INFOS,
+	MESH,
+	RUN_INFOS
+};
+
 class InputParser{
 	private:
 		// File name of the input file. Should be a .input file.
@@ -44,6 +50,10 @@ class InputParser{
 		void defaultParsingFromFile(void);
 		// Parser:
 		void defaultParsingFromFile(string filename);
+		// Get lengths
+		double get_length(unsigned int);
+
+		stringDollar_Header1 hashit_Header1 (std::string const& inString);
 };
 
 #endif

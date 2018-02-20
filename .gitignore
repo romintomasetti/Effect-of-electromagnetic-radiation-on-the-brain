@@ -1,11 +1,17 @@
 #Ignore tilds:
 *~
-.aux
-.toc
-.lof
-.lot
-.out
-.gz
-.pdf
+*.aux
+*.toc
+*.lof
+*.lot
+*.out
+*.gz
+*.pdf
+*.log
+*.vti
+*.pvti
+*.vtk
 #
-build/
+build/*
+
+main

@@ -6,6 +6,7 @@
 #include <mpi.h>
 #include <limits.h>
 #include "SetOnceVariable_Template.h"
+#include "GridCreator.h"
 
 using namespace std;
 
@@ -32,7 +33,7 @@ class MPI_Initializer{
 		// Get rank/ID of the MPI process:
 		int getRank(void);
 
-		vector<double> MpiDivision(Array_3D, int, int);
+		vector<double> MpiDivision(GridCreator &, int, int);
 };
 
 #endif

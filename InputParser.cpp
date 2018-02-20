@@ -5,11 +5,7 @@
 
 
 // Small enums for the dollar strings (see InputParser::readHeader)
-enum stringDollar_Header1{
-    INFOS,
-	MESH,
-	RUN_INFOS
-};
+
 stringDollar_Header1 InputParser::hashit_Header1 (std::string const& inString) {
     if (inString == "INFOS") return INFOS;
     if (inString == "MESH") return MESH;
@@ -28,6 +24,22 @@ stringDollar_Header2 hashit_Header2 (std::string const& inString) {
     if (inString == "DOMAIN_SIZE") return DOMAIN_SIZE;
 	if (inString == "SOURCE") return SOURCE;
 	if (inString == "STOP_SIMUL_AFTER") return STOP_SIMUL_AFTER;
+}
+
+// Get lengths
+double InputParser::get_length(unsigned int direction){
+	// Direction = 0 gives along X, 1 along Y, 2 along Z:
+	if(direction == 0){
+		return this->lengthX;
+	}else if(direction == 1){
+		return this->lengthY;
+	}else if(direction == 2){
+		return this->lengthZ;
+	}else{
+		printf("InputParser::get_length::ERROR:\n\tDirection should be between 0 and 2.");
+		printf("Aborting (file %s at %d).\n",__FILE__,__LINE__);
+		abort();
+	}
 }
 
 InputParser::InputParser(string file_name){
