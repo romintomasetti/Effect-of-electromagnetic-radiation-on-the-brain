@@ -66,3 +66,57 @@ int MPI_Initializer::isRootProcess(void){
 int MPI_Initializer::getRank(void){
 	return this->ID_MPI_Process.get();
 }
+
+vector<double> MPI_Initializer::MpiDivision(Array_3D array, int nbProc, int myRank){
+	double Lx = mesh.InputParser.Lx;
+	double Ly = mesh.InputParser.Ly;
+	double Lz = mesh.InputParser.Lz;
+
+	int N = (int) pow(nbProc, 1.0/3.0);
+	vector<double> mpiExtremity;
+	// Cubic case
+	if(N*N*N == nbProc){
+		double LxLocal = Lx/N;
+		double LyLocal = Ly/N;
+		double LzLocal = Lz/N;
+		mpiExtremity.push_back((myRank%N)*LxLocal);
+		mpiExtremity.push_back(((myRank%N)+1)*LxLocal);
+		mpiExtremity.push_back( (((int)(myRank/N) - (int) (myRank/(N*N))*N )) *LyLocal);
+		mpiExtremity.push_back((((int)(myRank/N) - ((int) (myRank/(N*N) ))*N )+1)*LyLocal);
+		mpiExtremity.push_back( myRank/ (N*N) * LzLocal);
+		mpiExtremity.push_back(((myRank/(N*N))+1)*LzLocal);
+	}
+
+	//Impair case
+	else if(nbProc %2 != 0){
+		double LxLocal = Lx/nbProc;
+		double LyLocal = Ly;
+		double LzLocal = Lz;
+		mpiExtremity.push_back(myRank*LxLocal);
+		mpiExtremity.push_back((myRank+1)*LxLocal);
+		mpiExtremity.push_back( 0);
+		mpiExtremity.push_back(LyLocal);
+		mpiExtremity.push_back(0);
+		mpiExtremity.push_back(LzLocal);
+		 // Coordinates of all subdivisions in the order -> Lx, Ly, Lz
+	}
+
+
+	//Pair case
+	else{
+		double LxLocal = 2*Lx/nbProc;
+		double LyLocal = Ly/2;
+		double LzLocal = Lz;
+		mpiExtremity.push_back(myRank%(nbProc/2)*LxLocal);
+		mpiExtremity.push_back(((myRank%(nbProc/2))+1)*LxLocal);
+		mpiExtremity.push_back(((int)(2*myRank/nbProc))*LyLocal);
+		mpiExtremity.push_back(((int)((2*myRank/nbProc))+1)*LyLocal);
+		mpiExtremity.push_back(0);
+		mpiExtremity.push_back(LzLocal); // Coordinates of all subdivisions in the order -> Lx, Ly, Lz
+		cout << ((int)(2*myRank/nbProc)) << endl;
+
+	}
+
+	return mpiExtremity;
+}
+
