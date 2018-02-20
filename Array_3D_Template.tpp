@@ -19,6 +19,7 @@ void Array_3D_Template<T>::set_size_data(const size_t &Nx, const size_t &Ny, con
 		this->Ny = Ny;
 		this->Nz = Nz;
 		this->data = new T [Nx*Ny*Nz];
+		this->dataAlreadySet = true;
 		#if DEBUG > 2
 		cout << "ARRAY_3D_TEMPLATE::set_size_data::Array successfully created.\n";
 		#endif
@@ -27,9 +28,9 @@ void Array_3D_Template<T>::set_size_data(const size_t &Nx, const size_t &Ny, con
 
 /* Operator () */
 template<typename T>
-T& Array_3D_Template<T>::operator()(const size_t &i, const size_t &j, const size_t &k)
+T& Array_3D_Template<T>::operator()(const size_t i, const size_t j, const size_t k)
 {
-	return *(this->data + i * this->Nx + j*this->Ny + k);
+	return this->data[ k + this->Nz * ( j + i * this->Ny )];
 }
 
 /* Destructor */
@@ -47,8 +48,18 @@ Array_3D_Template<T>::~Array_3D_Template(void){
 /* Fill in the field data with a given value */
 template<typename T>
 void Array_3D_Template<T>::fillIn(T val){
-	for(unsigned long i = 0 ; i < this->Nx*this->Ny*this->Nz; i++)
+	#if DEBUG > 3
+	cout << "FILLIN:: total is " << this->Nx*this->Ny*this->Nz << endl;
+	#endif
+	for(unsigned long i = 0 ; i < this->Nx*this->Ny*this->Nz; i++){
 			this->data[i] = val;
+			#if DEBUG > 3
+			cout << this->data[i] << "(" << i << "),";
+			#endif
+	}
+	#if DEBUG > 3
+	cout << endl;
+	#endif
 }
 
 // Get the size of the array:
