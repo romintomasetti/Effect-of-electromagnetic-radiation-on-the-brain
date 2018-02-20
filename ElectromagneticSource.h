@@ -15,6 +15,13 @@ class ElectromagneticSource{
 		double centerY   = 0.0;
 		double centerZ   = 0.0;
 		double frequency = 0.0;
+		//
+		size_t nbrNodeCorner1_X;
+		size_t nbrNodeCorner1_Y;
+		size_t nbrNodeCorner1_Z;
+		size_t nodesInsideAlong_X;
+		size_t nodesInsideAlong_Y;
+		size_t nodesInsideAlong_Z;
 	public:
 		// Constructor:
 		ElectromagneticSource(){};
@@ -40,6 +47,12 @@ class ElectromagneticSource{
 		double getFrequency(void){
 			return this->frequency;
 		}
+		// From deltaX, deltaY and deltaX, from centerX, centerY, centerZ,
+		// determine the nodes inside the antenna:
+		void computeNodesInsideSource(const double,const double, const double,
+									 const double, const double, const double);
+		// Check that a node is inside the source:
+		bool isInsideSource(const size_t, const size_t, const size_t);
 };
 
 #endif
