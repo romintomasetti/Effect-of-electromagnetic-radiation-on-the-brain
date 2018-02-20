@@ -12,7 +12,7 @@
 
 
 class GridCreator{
-	private:
+	public:
 		// Dictionnary with the materials and the chosen unsigned char assigned to it:
 		map<string,unsigned char> materialNameForMaterialID;
 		// 3D array of nodes for electric field (those of the MPI process and of the neighboors):
@@ -38,7 +38,9 @@ class GridCreator{
 		// Number of nodes:
 		size_t numberOfNodesInEachDir[3] = {0,0,0};
 		size_t totalNumberOfNodes        = 0;
-	public:
+
+
+//	public:
 		// Constructor:
 		GridCreator(map<string,unsigned char> materialNameForMaterialID){
 			this->materialNameForMaterialID = materialNameForMaterialID;
@@ -48,6 +50,9 @@ class GridCreator{
 	
 		// Grid initialization:
 		void meshInitialization();
+
+		void test(double, double, double, double, double, double, double);
+
 };
 
 #endif
