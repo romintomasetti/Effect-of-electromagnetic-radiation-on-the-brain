@@ -31,6 +31,8 @@ class MPI_Initializer{
 		int isRootProcess(void);
 		// Get rank/ID of the MPI process:
 		int getRank(void);
+
+		vector<double> MpiDivision(Array_3D, int, int);
 };
 
 #endif
