@@ -4,7 +4,14 @@ Array_3D_Template<T>::Array_3D_Template(const size_t &Nx, const size_t &Ny, cons
 	this->Nx = Nx;
 	this->Ny = Ny;
 	this->Nz = Nz;
-	this->data = new T [Nx*Ny*Nz];
+	try{
+		this->data = new T [Nx*Ny*Nz];
+	}catch(std::bad_alloc& exc){
+		printf("File %s at %d:\n\t",__FILE__,__LINE__);
+		cout << "Array_3D_Template<T>::set_size_data::Failed to allocate. Aborting.\n";
+		std::cerr << "bad_alloc caught: " << exc.what() << '\n';
+		abort();
+	}
 	this->dataAlreadySet = true;
 	#if DEBUG > 2
 	cout << "ARRAY_3D_TEMPLATE::constructor::Array successfully created.\n";
@@ -18,7 +25,14 @@ void Array_3D_Template<T>::set_size_data(const size_t &Nx, const size_t &Ny, con
 		this->Nx = Nx;
 		this->Ny = Ny;
 		this->Nz = Nz;
-		this->data = new T [Nx*Ny*Nz];
+		try{
+			this->data = new T [Nx*Ny*Nz];
+		}catch(std::bad_alloc& exc){
+			printf("File %s at %d:\n\t",__FILE__,__LINE__);
+			cout << "Array_3D_Template<T>::set_size_data::Failed to allocate. Aborting.\n";
+			std::cerr << "bad_alloc caught: " << exc.what() << '\n';
+			abort();
+		}
 		this->dataAlreadySet = true;
 		#if DEBUG > 2
 		cout << "ARRAY_3D_TEMPLATE::set_size_data::Array successfully created.\n";
