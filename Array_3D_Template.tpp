@@ -44,7 +44,7 @@ void Array_3D_Template<T>::set_size_data(const size_t &Nx, const size_t &Ny, con
 template<typename T>
 T& Array_3D_Template<T>::operator()(const size_t i, const size_t j, const size_t k)
 {
-	return this->data[ k + this->Nz * ( j + i * this->Ny )];
+	return this->data[ i + this->Nx * ( j + k * this->Ny )];
 }
 
 /* Destructor */

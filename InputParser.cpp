@@ -1,5 +1,35 @@
 #include "InputParser.h"
 
+#include <algorithm>
+#include <cctype>
+
+
+// Small enums for the dollar strings (see InputParser::readHeader)
+enum stringDollar_Header1{
+    INFOS,
+	MESH,
+	RUN_INFOS
+};
+stringDollar_Header1 InputParser::hashit_Header1 (std::string const& inString) {
+    if (inString == "INFOS") return INFOS;
+    if (inString == "MESH") return MESH;
+    if (inString == "RUN_INFOS") return RUN_INFOS;
+}
+enum stringDollar_Header2{
+	NAME,
+	DELTAS,
+	DOMAIN_SIZE,
+	SOURCE,
+	STOP_SIMUL_AFTER
+}
+stringDollar_Header2 hashit_Header2 (std::string const& inString) {
+    if (inString == "NAME") return NAME;
+    if (inString == "DELTAS") return DELTAS;
+    if (inString == "DOMAIN_SIZE") return DOMAIN_SIZE;
+	if (inString == "SOURCE") return SOURCE;
+	if (inString == "STOP_SIMUL_AFTER") return STOP_SIMUL_AFTER;
+}
+
 InputParser::InputParser(string file_name){
 		#if DEBUG > 2
 		cout << "InputParser::constructor::IN\n";
@@ -51,11 +81,6 @@ bool InputParser::is_file_exist(const string fileName){
 }
 
 void InputParser::basicParsing(const string filename){
-	/*
-	 * Here is what an input file looks like:
-	 *	$INFOS <- this is of kind header 1
-	 *		$NAME <- this is of kind header 2
-	 */
 	// Check the extension of the file:
 	if(filename.substr(filename.find_last_of(".")+1) == "input"){
 		// The extension is correct, proceed.
@@ -70,8 +95,6 @@ void InputParser::basicParsing(const string filename){
 		}else if(inputFile.is_open()){
 			// Contains the current read line of the input file:
 			string currentLine;
-			// Tell if we are in header H1
-			bool isIn_H1 = false;
 			
 			while(!inputFile.eof()){
 				getline(inputFile,currentLine);
@@ -82,14 +105,7 @@ void InputParser::basicParsing(const string filename){
 				cout << "Current line is " + currentLine << endl;
 				if(currentLine.find("$") != std::string::npos){
 					cout << "There is a dollor in ::" + currentLine + "::\n";
-					if(!isIn_H1){
-						isIn_H1 = true;
-						this->readHeader(inputFile);
-					}else{
-						cout << "Should not end up here !\n";
-						printf("Aborting (File %s at %d)\n",__FILE__,__LINE__);
-						abort();
-					}
+					this->readHeader(inputFile,currentLine);
 				}
 			}
 		}else{
@@ -104,7 +120,29 @@ void InputParser::basicParsing(const string filename){
 	}
 }
 
-void InputParser::readHeader(ifstream &file){
+void InputParser::readHeader(ifstream &file,std::string currentLine){
+	// We are in a Dollar zone.
+	// First, detect which dollar zone it is.
+	// Get the string after the dollar:
+	std::string strHeader1 = currentLine.substr(currentLine.find("$")+1);
+	// Remove any space before the switch:
+	strHeader1.erase(std::remove_if(strHeader1.begin(),
+			 strHeader1.end(), [](unsigned char x){return std::isspace(x);}),
+			 strHeader1.end());
+	// Go with the switch:
+	switch(hashit_Header1(strHeader1)){
+		case INFOS    : 
+			readHeader_INFOS(file);
+		case MESH     : 
+			readHeader_MESH (file);
+		case RUN_INFOS: 
+			readHeader_RUN_INFOS(file);
+		default:
+			printf("Should not end up here. Complain to Romin. Abort.");
+			printf("(in file %s at %d)\n",__FILE__,__LINE__);
+			abort();
+	}
+	cout << "Current HEADER is ::" + strHeader1 + "::" << endl;
 	cout << "Not yet Implemented. Exit. Complain to Romin.\n";
 	printf("Aborting (File %s at %d)\n",__FILE__,__LINE__);
 	abort();

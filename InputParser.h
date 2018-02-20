@@ -22,7 +22,7 @@ class InputParser{
 		// Check that the line is not a comment:
 		bool checkLineISNotComment(ifstream &file, string currentLine);
 		// Read header 1:
-		void readHeader(ifstream &file);
+		void readHeader(ifstream &file,string currentLine);
 		// INFOS - NAME:
 		SetOnceVariable_Template<string> nameOfSimulation;
 		SetOnceVariable_Template<string> nameOfErrorLogFile;

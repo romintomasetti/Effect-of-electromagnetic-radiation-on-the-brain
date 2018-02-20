@@ -1,0 +1,11 @@
+#Ignore tilds:
+*~
+.aux
+.toc
+.lof
+.lot
+.out
+.gz
+.pdf
+#
+build/
