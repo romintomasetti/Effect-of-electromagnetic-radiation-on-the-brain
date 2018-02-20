@@ -26,7 +26,7 @@ class Array_3D_Template{
 		// Destructor:
 		~Array_3D_Template(void);
 		// Accessor:
-		T& operator()(const size_t &i, const size_t &j, const size_t &k);
+		T& operator()(const size_t i, const size_t j, const size_t k);
 		// Filler (fill the data field with a given value):
 		void fillIn(T val);
 		// Get the size of the array:

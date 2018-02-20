@@ -51,6 +51,9 @@ int main(int argc, char *argv[]){
 	Materials allMat;
 	allMat.getPropertiesFromFile("MaterialProperties.csv");
 	allMat.printAllProperties();
+	allMat.printNumberOfTempLinePerMat();
+	cout << "For material 0 at 25K, property 1 is ";
+	cout << allMat.getProperty(25.,0,1) << endl;
 
 	/* Each point (also called node hereinafter) in the grid has:
 		1) 3 coordinates                             (3 doubles)
@@ -60,6 +63,8 @@ int main(int argc, char *argv[]){
 		
 		We thus have 10*4 + 1 bytes per node.
 		*/
+	
+	
 	
 	
 	if(PARALLELISM_OMP_ENABLED)
@@ -74,8 +79,9 @@ int main(int argc, char *argv[]){
 	}
 	cout << endl;
 	
-	
+	cout << "Calling GridCreator constructor" << endl;
 	GridCreator mesher(allMat.get_dictionnary_MaterialToID());
+	mesher.test(1,1,1,10,10,10,1);
 	mesher.meshInitialization();
 	
 	string filenameInput = "TESTS/testSourceCenteredInCube.input";
@@ -83,6 +89,25 @@ int main(int argc, char *argv[]){
 	cout << "Calling parser...\n";
 	InputParser input_parser;
 	input_parser.defaultParsingFromFile(filenameInput);
+	
+	ElectromagneticSource source;
+	source.setLengths(2,2,2);
+	source.setCenter (5,5,5);
+	source.computeNodesInsideSource(10,10,10,1,1,1);
+	if(source.isInsideSource(5,5,5)){
+		cout << "Node(5,5,5) is inside the source.\n";
+	}
+	if(source.isInsideSource(4,4,4)){
+		cout << "Node(4,4,4) is inside the source.\n";
+	}
+	if(source.isInsideSource(3,3,3)){
+		cout << "Node(3,3,3) is inside the source.\n";
+	}else{
+		cout << "Node(3,3,3) is NOT inside the source.\n";
+	}
+	if(source.isInsideSource(6,6,6)){
+		cout << "Node(6,6,6) is inside the source.\n";
+	}
 	
 	cout << "Calling all the destructors.\n";
 	

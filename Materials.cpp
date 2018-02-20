@@ -87,7 +87,7 @@ void Materials::getPropertiesFromFile(string filename){
 	this->maxNumberOfTemp    = maxNumberOfTemp; 	
 
 	// Allocate the this->properties 3d array.
-	this->properties = new double**[numberOfMaterials];
+	/*this->properties = new double**[numberOfMaterials];
 	for(unsigned int I = 0 ; I < numberOfMaterials ; I ++){
 		this->properties[I] = new double*[numberOfProperties];
 		for(unsigned int J = 0 ; J < numberOfProperties ; J ++){
@@ -96,7 +96,13 @@ void Materials::getPropertiesFromFile(string filename){
 				this->properties[I][J][K] = -1.;
 			}
 		}
-	}
+	}*/
+	
+	this->properties.set_size_data(this->numberOfMaterials,
+								   this->numberOfProperties,
+								   this->maxNumberOfTemp);
+	this->properties.fillIn(-1.0);
+	this->printAllProperties();
 	
 	// Empty the previous material variable for later.
 	previousMaterial = string();
@@ -127,14 +133,18 @@ void Materials::getPropertiesFromFile(string filename){
 				currentMaterial.assign(currentLine,0,i);
 				if(firstTime){
 					firstTime = false;
-					this->materialNameForMaterialID[currentMaterial] = (unsigned char)counterMaterial;
+					this->materialID_FromMaterialName[currentMaterial] = (unsigned char)counterMaterial; 
+					this->materialName_FromMaterialID[(unsigned char)counterMaterial] = currentMaterial;
 					previousMaterial = currentMaterial;
 				}
 				MATERIAL = false;
 				if(currentMaterial.compare(previousMaterial) != 0){
 					counterMaterial ++;
 					// Fill in the dictionnary of material and corresponding ID:
-					this->materialNameForMaterialID[currentMaterial] = (unsigned char)counterMaterial; 
+					this->materialID_FromMaterialName[currentMaterial] = (unsigned char)counterMaterial; 
+					this->materialName_FromMaterialID[(unsigned char)counterMaterial] = currentMaterial;
+					this->numberOFTempForTheMaterial.push_back(counterTemp);
+					cout << "COUNTER TEMP : " << counterTemp << endl;
 					counterTemp     = 0;
 					#if DEBUG > 2
 					cout << "On change de matériau.\n";
@@ -149,7 +159,7 @@ void Materials::getPropertiesFromFile(string filename){
 				size_t offset = 0;			
 				double a = stod(valueStr,&offset);
 				// Push this double in the properties 3D table:
-				this->properties[counterMaterial][counterProperties][counterTemp] = a;
+				this->properties(counterMaterial,counterProperties,counterTemp) = a;
 				#if DEBUG > 2
 				cout << "Added prop. : " << a << "--" << valueStr << "--";
 				cout <<  "at (" << counterMaterial << "," << counterProperties << "," << counterTemp << ")" << endl;
@@ -161,7 +171,11 @@ void Materials::getPropertiesFromFile(string filename){
 				if(i == currentLine.length()-1){
 					size_t offset = 0;
 					double a = stod(valueStr,&offset);
-					this->properties[counterMaterial][counterProperties][counterTemp] = a;
+					this->properties(counterMaterial,counterProperties,counterTemp) = a;
+					#if DEBUG > 2
+					cout << "Added prop. : " << a << "--" << valueStr << "--";
+					cout <<  "at (" << counterMaterial << "," << counterProperties << "," << counterTemp << ")" << endl;
+					#endif
 					valueStr = string();
 				}
 			}
@@ -171,28 +185,60 @@ void Materials::getPropertiesFromFile(string filename){
 		valueStr = string();
 		previousMaterial = currentMaterial;
         }
+	this->numberOFTempForTheMaterial.push_back(counterTemp-1);
+	cout << "COUNTER TEMP : " << counterTemp << endl;
 	/* Closing file */
 	file.close();
 	#if DEBUG > 0
-	for(auto& x : this->materialNameForMaterialID)
+	for(auto& x : this->materialID_FromMaterialName)
 	{
 		cout << x.first << "," << (int)x.second << endl;
 	}
 	#endif
+	
 }
 
-
-double Materials::getProperty(double temperature,unsigned char material, unsigned char property){
-	// Faire interpolation.
-	// Dire que sigma = 0 , mu = 1
-	// Accès au tableau: this->properties[material][sigma, mu, autre][Temperature]
-	return this->properties[material][property][(int)temperature];
+/*
+ * Materials::getProperty
+ * 	Inputs:	1) temperature (we will take the nearest)
+ *			2) material
+ *			3) property
+ *			4) if interpolation=true, interpolate property
+ */
+double Materials::getProperty(double temperature,unsigned char material, unsigned char property,
+							 bool interpolation /*= false*/){
+	if(interpolation == true){
+		cout << "Sorry, not yet implemented!\n";
+		abort();
+	}else{
+		// First, we retrieve the number of temperature info for this material:
+		unsigned char numberOfTempLines = this->numberOFTempForTheMaterial[material];
+		unsigned int temperatureIndex = 0;
+		double tempDiff = 1E10;
+		double temp;
+		for(unsigned char I = 0 ; I < numberOfTempLines ; I ++){
+			cout << "I want temp " << temperature;
+			cout << " and I read " << this->properties(material,property,I) << endl;
+			temp = abs(this->properties(material,property,I)-temperature);
+			if( temp < tempDiff){
+				tempDiff = temp;
+				temperatureIndex = I;
+				cout << "For the moment I am the nearest.\n";
+			}
+		}
+		
+		// Find the temperature that is the nearest of the input temperature:
+		//for(unsigned int I = 0 ; I < 
+		// Accès au tableau: this->properties[material][sigma, mu, autre][Temperature]
+		return this->properties(material,property,temperatureIndex);
+	}
+	return 0.0;
 }
 
 /* Destructor */
 Materials::~Materials(void){
-	if(this->properties != NULL)
-		this->freeProperties();
+	/*if(this->properties != NULL)
+		this->freeProperties();*/
 	#if DEBUG > 2
 	cout << "Materials::destructor::out\n";
 	#endif
@@ -204,22 +250,26 @@ Materials::Materials(void){
 
 void Materials::printAllProperties(void){
 	cout << "---------------------PRINT PROPERTIES-----------------------\n";
+	cout << "nbrMat = " << this->numberOfMaterials << " - maxNbrTemp = ";
+	cout << this->maxNumberOfTemp << " - nbrProp = " << this->numberOfProperties;
+	cout << endl << "***---" << endl;
 	// Going through the materials:
-	for(unsigned int I = 0 ; I < this->numberOfMaterials ; I ++){
+	for(size_t I = 0 ; I < this->numberOfMaterials ; I ++){
 		// Going through each temperature specification:
-		for(unsigned int K = 0 ; K < this->maxNumberOfTemp ; K ++){
+		for(size_t K = 0 ; K < this->maxNumberOfTemp ; K ++){
 			// Going through each property:
-			for(unsigned int J = 0 ; J < this->numberOfProperties ; J ++){
-				cout << this->properties[I][J][K];
+			for(size_t J = 0 ; J < this->numberOfProperties ; J ++){
+				printf("%f", this->properties(I,J,K));
 				cout <<  "(" << I << "," << J << "," << K << ") |";
 			}
 		cout << endl;
 		}
+		cout << "----" << endl;
 	}
 	cout << "---------------------------------------------\n";
 }
 
-void Materials::freeProperties(void){
+/*void Materials::freeProperties(void){
 	for(unsigned int I = 0 ; I < this->numberOfMaterials ; I ++){
 		for(unsigned int J = 0 ; J < this->numberOfProperties ; J ++){
 			delete[] this->properties[I][J];
@@ -229,9 +279,22 @@ void Materials::freeProperties(void){
 	delete[] this->properties;
 	if(this->properties != NULL)
 		this->properties = NULL;
-}
+}*/
 
 // Get Dictionnary with the materials and the chosen unsigned char assigned to it:
 map<string,unsigned char> Materials::get_dictionnary_MaterialToID(void){
-	return this->materialNameForMaterialID;	
+	return this->materialID_FromMaterialName;	
+}
+
+map<unsigned char,string> Materials::get_dictionnary_IDToMaterial(void){
+	return this->materialName_FromMaterialID;
+}
+
+void Materials::printNumberOfTempLinePerMat(void){
+	// Print the field numberOFTempForTheMaterial
+	for(unsigned int I = 0 ; I < this->numberOFTempForTheMaterial.size() ; I++){
+		cout << "For material " + this->materialName_FromMaterialID[I];
+		cout << ", there are " << this->numberOFTempForTheMaterial[I];
+		cout << " number of temperature infos." << endl;
+	}
 }

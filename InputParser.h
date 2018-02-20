@@ -21,6 +21,8 @@ class InputParser{
 		void basicParsing(const string filename);
 		// Check that the line is not a comment:
 		bool checkLineISNotComment(ifstream &file, string currentLine);
+		// Read header 1:
+		void readHeader(ifstream &file);
 		// INFOS - NAME:
 		SetOnceVariable_Template<string> nameOfSimulation;
 		SetOnceVariable_Template<string> nameOfErrorLogFile;

@@ -51,6 +51,11 @@ bool InputParser::is_file_exist(const string fileName){
 }
 
 void InputParser::basicParsing(const string filename){
+	/*
+	 * Here is what an input file looks like:
+	 *	$INFOS <- this is of kind header 1
+	 *		$NAME <- this is of kind header 2
+	 */
 	// Check the extension of the file:
 	if(filename.substr(filename.find_last_of(".")+1) == "input"){
 		// The extension is correct, proceed.
@@ -63,14 +68,29 @@ void InputParser::basicParsing(const string filename){
 			inputFile.clear();
 			abort();
 		}else if(inputFile.is_open()){
+			// Contains the current read line of the input file:
 			string currentLine;
+			// Tell if we are in header H1
+			bool isIn_H1 = false;
+			
 			while(!inputFile.eof()){
 				getline(inputFile,currentLine);
 				// Check that the line is not a comment:
 				if(this->checkLineISNotComment(inputFile,currentLine)){
-
+					// The line was a comment, ignoring it.
 				}
 				cout << "Current line is " + currentLine << endl;
+				if(currentLine.find("$") != std::string::npos){
+					cout << "There is a dollor in ::" + currentLine + "::\n";
+					if(!isIn_H1){
+						isIn_H1 = true;
+						this->readHeader(inputFile);
+					}else{
+						cout << "Should not end up here !\n";
+						printf("Aborting (File %s at %d)\n",__FILE__,__LINE__);
+						abort();
+					}
+				}
 			}
 		}else{
 			cout << "InputParser::basicParsing::Should not end up here ! Complain to the developer.\n";
@@ -82,6 +102,12 @@ void InputParser::basicParsing(const string filename){
 		cout << "The input file is not under .input format. Please check your input file";
 		cout << " " + filename << endl;
 	}
+}
+
+void InputParser::readHeader(ifstream &file){
+	cout << "Not yet Implemented. Exit. Complain to Romin.\n";
+	printf("Aborting (File %s at %d)\n",__FILE__,__LINE__);
+	abort();
 }
 
 // Check that the line is not a comment:
