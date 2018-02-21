@@ -67,10 +67,12 @@ int MPI_Initializer::getRank(void){
 	return this->ID_MPI_Process.get();
 }
 
-vector<double> MPI_Initializer::MpiDivision(GridCreator &mesh, int nbProc, int myRank){
-	double Lx = mesh.input_parser.get_length(0);
-	double Ly = mesh.input_parser.get_length(1);
-	double Lz = mesh.input_parser.get_length(2);
+
+vector<double> MPI_Initializer::MpiDivision(Array_3D array, int nbProc, int myRank){  // Array not used !!!!!
+	double Lx = mesh.InputParser.Lx;
+	double Ly = mesh.InputParser.Ly;
+	double Lz = mesh.InputParser.Lz;
+
 
 	int N = (int) pow(nbProc, 1.0/3.0);
 	vector<double> mpiExtremity;
