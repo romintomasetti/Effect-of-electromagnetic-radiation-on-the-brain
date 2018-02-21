@@ -3,6 +3,9 @@
  * Yo !
  * Re-bonjour */
 //This is another comment
+/*
+ * You HAVE to live a white line when you change section !!!!!!!!!!!!!
+ */
 $INFOS
 	$NAME
 		// Output file for fields:
@@ -11,6 +14,8 @@ $INFOS
 		error="TON PERE"
 		// Profiling (cpu time, memory, etc):
 		profile="TA SOEUR"
+	$NAME
+$INFOS
 	
 $MESH
 	// Size of the elements of the mesh:
@@ -18,6 +23,7 @@ $MESH
 		deltaX=1.0
 		deltaY=1.0
 		deltaZ=1.0
+	$DELTAS
 		
 	// Boundaries of the domain
 	$DOMAIN_SIZE

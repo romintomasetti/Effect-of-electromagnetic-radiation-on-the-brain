@@ -69,9 +69,9 @@ int MPI_Initializer::getRank(void){
 
 
 vector<double> MPI_Initializer::MpiDivision(GridCreator &subGrid, int nbProc, int myRank){  // Array not used !!!!!
-	double Lx = subGrid.InputParser.Lx;
-	double Ly = subGrid.InputParser.Ly;
-	double Lz = subGrid.InputParser.Lz;
+	double Lx = subGrid.input_parser.lengthX;
+	double Ly = subGrid.input_parser.lengthY;
+	double Lz = subGrid.input_parser.lengthZ;
 
 	double deltaX = subGrid.deltaX;
 	double deltaY = subGrid.deltaY;

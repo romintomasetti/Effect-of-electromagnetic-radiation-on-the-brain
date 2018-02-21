@@ -3,6 +3,8 @@
 #ifndef SETONCEVARIABLE_TEMPLATE_H
 #define SETONCEVARIABLE_TEMPLATE_H
 
+#include <iostream>
+
 template<typename T>
 class SetOnceVariable_Template{
 	private:
@@ -30,6 +32,11 @@ class SetOnceVariable_Template{
 		}
 		// Get the value:
 		const T& get(void){return this->value;}
+
+		//
+		bool get_alreadySet(void){
+			return this->alreadySet;
+		}
 };
 
 #endif

@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 #include <map>
+#include <vector>
+#include <sstream>
 
 #include "SetOnceVariable_Template.h"
 #include "ElectromagneticSource.h"
@@ -22,7 +24,8 @@ enum stringDollar_Header2{
 	DELTAS,
 	DOMAIN_SIZE,
 	SOURCE,
-	STOP_SIMUL_AFTER
+	STOP_SIMUL_AFTER,
+	TEMP_INIT
 };
 
 class InputParser{
@@ -38,16 +41,20 @@ class InputParser{
 		// Read header 1:
 		void readHeader(ifstream &,std::string &);
 
+		std::vector<double> determineVectorFromStr(std::string);
+
 		void readHeader_INFOS(ifstream &file);
 		void readHeader_MESH (ifstream &file);
 		void readHeader_RUN_INFOS(ifstream &file);
 
 		void RemoveAnyBlankSpaceInStr(std::string &);
 
-		// Deltas:
-		double deltaX = 0.0, deltaY = 0.0, deltaZ = 0.0;
-		// Domain size:
-		double lengthX = 0.0, lengthY = 0.0, lengthZ = 0.0;
+		// Time (in sec) after which the simulation must be stopped):
+		double stopTime = -1.0;
+
+		// Map that contains, for each material, the initial temperature:
+		map<std::string,double> GetInitTemp_FromMaterialName;
+
 		// Source:
 		ElectromagneticSource source;
 
@@ -76,6 +83,11 @@ class InputParser{
 		map<std::string,std::string> get_outputNames(void){
 			return this->outputNames;
 		}
+
+		// Deltas:
+		double deltaX = 0.0, deltaY = 0.0, deltaZ = 0.0;
+		// Domain size:
+		double lengthX = 0.0, lengthY = 0.0, lengthZ = 0.0;
 };
 
 #endif
