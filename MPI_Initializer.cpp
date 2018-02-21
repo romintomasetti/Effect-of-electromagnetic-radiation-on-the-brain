@@ -68,14 +68,21 @@ int MPI_Initializer::getRank(void){
 }
 
 
-vector<double> MPI_Initializer::MpiDivision(Array_3D array, int nbProc, int myRank){  // Array not used !!!!!
-	double Lx = mesh.InputParser.Lx;
-	double Ly = mesh.InputParser.Ly;
-	double Lz = mesh.InputParser.Lz;
+vector<double> MPI_Initializer::MpiDivision(GridCreator &subGrid, int nbProc, int myRank){  // Array not used !!!!!
+	double Lx = subGrid.InputParser.Lx;
+	double Ly = subGrid.InputParser.Ly;
+	double Lz = subGrid.InputParser.Lz;
+
+	double deltaX = subGrid.deltaX;
+	double deltaY = subGrid.deltaY;
+	double deltaZ = subGrid.deltaZ;
 
 
 	int N = (int) pow(nbProc, 1.0/3.0);
-	vector<double> mpiExtremity;
+	std::vector<double> mpiExtremity;
+	std::vector<int> mpiIndices;
+
+
 	// Cubic case
 	if(N*N*N == nbProc){
 		double LxLocal = Lx/N;
@@ -94,6 +101,7 @@ vector<double> MPI_Initializer::MpiDivision(Array_3D array, int nbProc, int myRa
 		double LxLocal = Lx/nbProc;
 		double LyLocal = Ly;
 		double LzLocal = Lz;
+
 		mpiExtremity.push_back(myRank*LxLocal);
 		mpiExtremity.push_back((myRank+1)*LxLocal);
 		mpiExtremity.push_back( 0);
@@ -118,6 +126,12 @@ vector<double> MPI_Initializer::MpiDivision(Array_3D array, int nbProc, int myRa
 		cout << ((int)(2*myRank/nbProc)) << endl;
 
 	}
+    
+
+    // transformation indices
+		mpiIndices.push_back(mpiExtremity[0]/deltaX);
+		mpiIndices.push_back(mpiExtremity[2]/deltaY);
+		mpiIndices.push_back(mpiExtremity[4]/deltaZ);
 
 	return mpiExtremity;
 }

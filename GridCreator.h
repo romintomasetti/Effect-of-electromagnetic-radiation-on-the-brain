@@ -41,7 +41,7 @@ class GridCreator{
 		size_t numberOfNodesInEachDir[3] = {0,0,0};
 		size_t totalNumberOfNodes        = 0;
 
-		InputParser &input_parser;
+		InputParser &input_parser;  // A peut-être modifier !!!!
 		Materials   &materials;
 
 //	public:
@@ -55,7 +55,6 @@ class GridCreator{
 		void meshInitialization();
 
 		void test(double, double, double, double, double, double, double);
-
 
 };
 
