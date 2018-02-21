@@ -67,7 +67,7 @@ int MPI_Initializer::getRank(void){
 	return this->ID_MPI_Process.get();
 }
 
-vector<double> MPI_Initializer::MpiDivision(Array_3D array, int nbProc, int myRank){
+vector<double> MPI_Initializer::MpiDivision(Array_3D array, int nbProc, int myRank){  // Array not used !!!!!
 	double Lx = mesh.InputParser.Lx;
 	double Ly = mesh.InputParser.Ly;
 	double Lz = mesh.InputParser.Lz;
