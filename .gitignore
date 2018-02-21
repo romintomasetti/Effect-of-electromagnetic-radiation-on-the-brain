@@ -13,5 +13,7 @@
 *.vtk
 #
 build/*
-
+TESTS/*
+#
 main
+main.cpp
