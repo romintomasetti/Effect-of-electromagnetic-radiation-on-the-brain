@@ -1,0 +1,49 @@
+/* This is a comment */
+/* This is a true multiple line comment !
+ * Yo !
+ * Re-bonjour */
+//This is another comment
+$INFOS
+	$NAME
+		// Output file for fields:
+		output="TA MERE"
+		// Error log file:
+		error="TON PERE"
+		// Profiling (cpu time, memory, etc):
+		profile="TA SOEUR"
+	
+$MESH
+	// Size of the elements of the mesh:
+	$DELTAS
+		deltaX=1.0
+		deltaY=1.0
+		deltaZ=1.0
+		
+	// Boundaries of the domain
+	$DOMAIN_SIZE
+		// Length of the domain in each direction
+		L_X=200
+		L_Y=200
+		L_Z=200
+	
+	// Information on the source
+	$SOURCE
+		NBR_SOURCES=1
+		*SOURCE_1
+			// Length of the source in each direction
+			L_X=10
+			L_Y=10
+			L_Z=10
+			// Center of the source, (0,0,0) is in the lower left corner in front:
+			C_X=100
+			C_Y=100
+			C_Z=100
+			// Frequency [Hz]
+			FQCY=900E6
+
+$RUN_INFOS
+	$STOP_SIMUL_AFTER
+	// The simulation will stop after... (in sec)
+	stopTime=10
+		
+	

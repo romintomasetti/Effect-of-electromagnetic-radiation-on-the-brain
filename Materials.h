@@ -1,3 +1,6 @@
+#ifndef MATERIALS_H
+#define MATERIALS_H
+
 #include <vector>
 #include <string>
 #include <iostream>
@@ -46,3 +49,5 @@ class Materials{
 		map<string,unsigned char> get_dictionnary_MaterialToID(void);
 		map<unsigned char,string> get_dictionnary_IDToMaterial(void);
 };
+
+#endif

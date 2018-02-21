@@ -79,16 +79,19 @@ int main(int argc, char *argv[]){
 	}
 	cout << endl;
 	
+	cout << "Calling parser...\n";
+	string filenameInput = "TESTS/testSourceCenteredInCube.input";
+	InputParser input_parser;
+	input_parser.defaultParsingFromFile(filenameInput);
+	
 	cout << "Calling GridCreator constructor" << endl;
-	GridCreator mesher(allMat.get_dictionnary_MaterialToID());
+	GridCreator mesher(input_parser,allMat);
 	mesher.test(1,1,1,10,10,10,1);
 	mesher.meshInitialization();
 	
-	string filenameInput = "TESTS/testSourceCenteredInCube.input";
 	
-	cout << "Calling parser...\n";
-	InputParser input_parser;
-	input_parser.defaultParsingFromFile(filenameInput);
+	
+	
 	
 	ElectromagneticSource source;
 	source.setLengths(2,2,2);

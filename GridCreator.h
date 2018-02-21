@@ -9,6 +9,8 @@
 #include "Array_3D_Template.h"
 #include "Node3DField.h"
 #include "Node1DField.h"
+#include "InputParser.h"
+#include "Materials.h"
 
 
 class GridCreator{
@@ -39,12 +41,13 @@ class GridCreator{
 		size_t numberOfNodesInEachDir[3] = {0,0,0};
 		size_t totalNumberOfNodes        = 0;
 
+		InputParser &input_parser;
+		Materials   &materials;
 
 //	public:
 		// Constructor:
-		GridCreator(map<string,unsigned char> materialNameForMaterialID){
-			this->materialNameForMaterialID = materialNameForMaterialID;
-		}
+		GridCreator(InputParser &input_parser, Materials &materials):
+			input_parser(input_parser), materials(materials){}
 		// Destructor:
 		~GridCreator(void);
 	
