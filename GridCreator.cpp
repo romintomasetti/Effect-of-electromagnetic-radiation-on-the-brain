@@ -28,6 +28,13 @@ void GridCreator::meshInitialization(){
 	// Now, go through each node and decide in which material they are: TODO
 	// Missing also: initializtion of the heat mesh.
 	cout << "GridCreator::meshInitialization::OUT\n";
+
+	// Fonction à faire: obtenir les indices de début selon x,y,z de cette manière this->indices_x_first this->indices_y_first this->indices_z_first
+
+
+
+	//Fonction obtenir mu et epsilon en fonction des indices données (globaux)  this->epsilon    this->mu
+
 }
 		
 /* Destructor */

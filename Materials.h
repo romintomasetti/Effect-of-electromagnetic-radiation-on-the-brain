@@ -20,8 +20,7 @@ class Materials{
 		Array_3D_Template<double> properties;
 		// Number of properties:
 		unsigned int numberOfProperties = 0;
-		// Number of materials:
-		unsigned int numberOfMaterials  = 0;
+		
 		// Maximum number of temperature specifications:
 		unsigned int maxNumberOfTemp    = 0;
 		// Dictionnary with the materials and the chosen unsigned char assigned to it:
@@ -41,6 +40,8 @@ class Materials{
 		void   printAllProperties(void);
 		// Print the number of temperature lines per material:
 		void   printNumberOfTempLinePerMat(void);
+		// Number of materials (pour AlgoElectro.cpp)
+		unsigned int numberOfMaterials  = 0;
 		// Constructor:
 		Materials();
 		// Destructor:
