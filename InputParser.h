@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <map>
 
 #include "SetOnceVariable_Template.h"
 #include "ElectromagneticSource.h"
@@ -16,6 +17,13 @@ enum stringDollar_Header1{
 	MESH,
 	RUN_INFOS
 };
+enum stringDollar_Header2{
+	NAME,
+	DELTAS,
+	DOMAIN_SIZE,
+	SOURCE,
+	STOP_SIMUL_AFTER
+};
 
 class InputParser{
 	private:
@@ -26,19 +34,28 @@ class InputParser{
 		// Parsing function:
 		void basicParsing(const string filename);
 		// Check that the line is not a comment:
-		bool checkLineISNotComment(ifstream &file, string currentLine);
+		bool checkLineISNotComment(ifstream &, string &);
 		// Read header 1:
-		void readHeader(ifstream &file,string currentLine);
-		// INFOS - NAME:
-		SetOnceVariable_Template<string> nameOfSimulation;
-		SetOnceVariable_Template<string> nameOfErrorLogFile;
-		SetOnceVariable_Template<string> nameOfProfileFile;
+		void readHeader(ifstream &,std::string &);
+
+		void readHeader_INFOS(ifstream &file);
+		void readHeader_MESH (ifstream &file);
+		void readHeader_RUN_INFOS(ifstream &file);
+
+		void RemoveAnyBlankSpaceInStr(std::string &);
+
 		// Deltas:
 		double deltaX = 0.0, deltaY = 0.0, deltaZ = 0.0;
 		// Domain size:
 		double lengthX = 0.0, lengthY = 0.0, lengthZ = 0.0;
 		// Source:
 		ElectromagneticSource source;
+
+		/* 
+		 * All the properties read in the input file:
+		 */
+		// Contains error, output and profiling files:
+		map<std::string,std::string> outputNames;
 	public:
 		// Default constructor:
 		InputParser(){};
@@ -54,6 +71,11 @@ class InputParser{
 		double get_length(unsigned int);
 
 		stringDollar_Header1 hashit_Header1 (std::string const& inString);
+		stringDollar_Header2 hashit_Header2 (std::string const& inString);
+
+		map<std::string,std::string> get_outputNames(void){
+			return this->outputNames;
+		}
 };
 
 #endif

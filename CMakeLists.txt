@@ -9,12 +9,14 @@ include(CheckCXXCompilerFlag)
 
 set(EXEC_NAME main)
 
+add_definitions(-DDEBUG=2)
+
 check_cxx_compiler_flag("-std=c++11" STDCXX11)
   if(STDCXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif(STDCXX11)
 
-set (CPPFILES main.cpp Array_3D.cpp Materials.cpp GridCreator.cpp MPI_Initializer.cpp
+set (CPPFILES main.cpp Materials.cpp GridCreator.cpp MPI_Initializer.cpp
 			InputParser.cpp ElectromagneticSource.cpp)
 add_executable(${EXEC_NAME} ${CPPFILES})
 

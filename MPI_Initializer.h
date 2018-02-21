@@ -34,6 +34,7 @@ class MPI_Initializer{
 		int getRank(void);
 
 		vector<double> MpiDivision(GridCreator &, int, int);
+
 };
 
 #endif

@@ -5,25 +5,26 @@
 
 
 // Small enums for the dollar strings (see InputParser::readHeader)
-
 stringDollar_Header1 InputParser::hashit_Header1 (std::string const& inString) {
     if (inString == "INFOS") return INFOS;
     if (inString == "MESH") return MESH;
     if (inString == "RUN_INFOS") return RUN_INFOS;
+	else {
+		printf("In file %s at %d. Complain to Romin. Abort().\n",__FILE__,__LINE__);
+		abort();
+	}
 }
-enum stringDollar_Header2{
-	NAME,
-	DELTAS,
-	DOMAIN_SIZE,
-	SOURCE,
-	STOP_SIMUL_AFTER
-}
-stringDollar_Header2 hashit_Header2 (std::string const& inString) {
+stringDollar_Header2 InputParser::hashit_Header2 (std::string const& inString) {
     if (inString == "NAME") return NAME;
     if (inString == "DELTAS") return DELTAS;
     if (inString == "DOMAIN_SIZE") return DOMAIN_SIZE;
 	if (inString == "SOURCE") return SOURCE;
 	if (inString == "STOP_SIMUL_AFTER") return STOP_SIMUL_AFTER;
+	else {
+		printf("In file %s at %d. Complain to Romin. Abort().\n",__FILE__,__LINE__);
+		cout << "Faulty string is ::" + inString + "::" << endl;
+		abort();
+	}
 }
 
 // Get lengths
@@ -132,7 +133,7 @@ void InputParser::basicParsing(const string filename){
 	}
 }
 
-void InputParser::readHeader(ifstream &file,std::string currentLine){
+void InputParser::readHeader(ifstream &file,std::string &currentLine){
 	// We are in a Dollar zone.
 	// First, detect which dollar zone it is.
 	// Get the string after the dollar:
@@ -141,48 +142,329 @@ void InputParser::readHeader(ifstream &file,std::string currentLine){
 	strHeader1.erase(std::remove_if(strHeader1.begin(),
 			 strHeader1.end(), [](unsigned char x){return std::isspace(x);}),
 			 strHeader1.end());
+	cout << "String analyzed is " + strHeader1 << endl;
 	// Go with the switch:
 	switch(hashit_Header1(strHeader1)){
 		case INFOS    : 
-			readHeader_INFOS(file);
+			this->readHeader_INFOS(file);
+			cout << "EXITING SECTION INFOS WITH currentLine=" + currentLine << endl;
+			break;
 		case MESH     : 
-			readHeader_MESH (file);
+			this->readHeader_MESH (file);
+			break;
 		case RUN_INFOS: 
-			readHeader_RUN_INFOS(file);
+			this->readHeader_RUN_INFOS(file);
+			break;
 		default:
 			printf("Should not end up here. Complain to Romin. Abort.");
 			printf("(in file %s at %d)\n",__FILE__,__LINE__);
 			abort();
 	}
-	cout << "Current HEADER is ::" + strHeader1 + "::" << endl;
-	cout << "Not yet Implemented. Exit. Complain to Romin.\n";
-	printf("Aborting (File %s at %d)\n",__FILE__,__LINE__);
-	abort();
 }
 
 // Check that the line is not a comment:
-bool InputParser::checkLineISNotComment(ifstream &file, string currentLine){
+bool InputParser::checkLineISNotComment(ifstream &file, string &currentLine){
+	/* Check for line(s) being comments or blank */
+	std::string str = currentLine;
+	this->RemoveAnyBlankSpaceInStr(str);
+	if(str == string()){
+		cout << "It is a blank line !" << endl;
+		getline(file,currentLine);
+	}
 	string comment1_beg = "/*";
 	string comment1_end = "*/";
 	string comment2 = "//";
+	#if DEBUG > 3
 	cout << "check received " + currentLine << endl;
+	#endif
 	if(currentLine.find(comment1_beg) != std::string::npos){
 		// We have multiple lines comment ! Read all the comment before exiting.
+		#if DEBUG > 3
 		cout << "Multiple line comment:\n";
+		#endif
 		while(!file.eof()){
 			if(currentLine.find(comment1_end) != std::string::npos){
+				#if DEBUG > 2
 				cout << "\t|" + currentLine << "|\n" << endl;
+				#endif
 				break;
 			}
+			#if DEBUG > 2
 			cout << "\t|" + currentLine << "|\n" << endl;
+			#endif
 			getline(file,currentLine);
 		}
 		return true;
 	}else if(currentLine.find(comment2) != std::string::npos){
 		// We have one line comment !
+		#if DEBUG > 3
 		cout << "This is a one line comment : " + currentLine << endl;
+		#endif
+		while(!file.eof()){
+			#if DEBUG > 3
+			cout << "Comment 2 entering while\n" << endl;
+			#endif
+			if(currentLine.find(comment2) == std::string::npos){
+				#if DEBUG > 2
+				cout << "\t|" + currentLine << "|\n" << endl;
+				#endif
+				break;
+			}
+			#if DEBUG > 2
+			cout << "\t|" + currentLine << "|\n" << endl;
+			#endif
+			getline(file,currentLine);
+		}
 	}else{
 		return false;
 	}
 	return false;	
+}
+
+void InputParser::RemoveAnyBlankSpaceInStr(std::string &str){
+	str.erase(std::remove_if(str.begin(),
+			 str.end(), [](unsigned char x){return std::isspace(x);}),
+			 str.end());
+}
+
+void InputParser::readHeader_INFOS(ifstream &file){
+	//Inside the header(1) called 'INFOS', we have fields:
+	//		1) NAME - Contains fields:
+	//				a) output : name of the output files
+	//				b) error  : name of the error file
+	//				c) profile: name of the profiling file (cpu time, etc)
+	std::string currentLine = string();
+	
+	while(currentLine != "INFOS"){
+		// Read line:
+		getline(file,currentLine);
+		// Get rid of comments:
+		this->checkLineISNotComment(file,currentLine);
+		// Remove any blank space:
+		this->RemoveAnyBlankSpaceInStr(currentLine);
+		// Remove Dollar sign:
+		currentLine = currentLine.substr(currentLine.find("$")+1);
+		cout << "BEFORE THE SWITCH : " + currentLine << endl;
+		if(currentLine == "INFOS"){break;}
+		switch(this->hashit_Header2(currentLine)){
+			case NAME:
+				cout << "Entering case name\n";
+				while(!file.eof()){
+					cout << "Entering while\n";
+					// Note: sections are ended by $the-section-name.
+					getline(file,currentLine);
+					this->checkLineISNotComment(file,currentLine);
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+					cout << currentLine << endl;
+					if(currentLine == "$NAME"){
+						cout << "EXITING NAME\n";
+						break;
+					}
+					if(currentLine == string()){continue;}
+					std::size_t posEqual  = currentLine.find("=");
+					std::string propName  = currentLine.substr(0,posEqual); 
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+					cout << propName + "=" + propGiven << endl;
+					cout << "To compare with " + currentLine << endl;
+					if(propName != "output" && propName != "error" && propName != "profile"){
+						printf("InputParser::readHeader_INFOS:: You didn't provide a ");
+						printf("good member for $INFOS$NAME.\nAborting.\n");
+						cout << propName << endl;
+						printf("(in file %s at %d)\n",__FILE__,__LINE__);
+						abort();
+					}
+					this->outputNames[propName] = propGiven;
+				}
+				break;
+			default:
+				printf("Should not end up here. Complain to Romin. Abort.");
+				printf("(in file %s at %d)\n",__FILE__,__LINE__);
+				cout << "Faulty line is " + currentLine << endl << endl;
+				abort();
+		}
+	}
+}
+
+void InputParser::readHeader_MESH (ifstream &file){
+	/* Inside the section MESH, thee are fields:
+	 *		1) DELTAS containing:
+	 * 				a) deltaX
+	 * 				b) deltaY
+	 *				c) deltaZ
+	 */
+	std::string currentLine = string();
+	while(currentLine != "MESH"){
+		// Read line:
+		getline(file,currentLine);
+		// Get rid of comments:
+		this->checkLineISNotComment(file,currentLine);
+		// Remove any blank space:
+		this->RemoveAnyBlankSpaceInStr(currentLine);
+		// Remove Dollar sign:
+		currentLine = currentLine.substr(currentLine.find("$")+1);
+		cout << "BEFORE THE SWITCH : " + currentLine << endl;
+		if(currentLine == "MESH"){break;}
+		switch(this->hashit_Header2(currentLine)){
+			case DELTAS:
+				cout << "Entering case DELTAS\n";
+				while(!file.eof()){
+					// Note: sections are ended by $the-section-name.
+					// Read line:
+					getline(file,currentLine);
+					// Get rid of comments:
+					this->checkLineISNotComment(file,currentLine);
+					// Remove any blank in the string:
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+					cout << currentLine << endl;
+					// If the string is "$DELTAS" it means the section ends.
+					if(currentLine == "$DELTAS"){
+						cout << "EXITING DELTAS\n";
+						break;
+					}
+					// If the string is empty, it was just a white space. Continue.
+					if(currentLine == string()){continue;}
+					// Find the position of the equal sign:
+					std::size_t posEqual  = currentLine.find("=");
+					// The property we want to set:
+					std::string propName  = currentLine.substr(0,posEqual);
+					// The property name the user gave:
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+
+					cout << propName + "=" + propGiven << endl;
+					cout << "To compare with " + currentLine << endl;
+
+					if(propName == "deltaX"){
+						this->deltaX = std::stod(propGiven);
+						cout << "ADDED DELTAX is " << this->deltaX << endl;
+					}else if(propName == "deltaY"){
+						this->deltaY = std::stod(propGiven);
+						cout << "ADDED DELTAY is " << this->deltaX << endl;
+					}else if(propName == "deltaZ"){
+						this->deltaZ = std::stod(propGiven);
+						cout << "ADDED DELTAZ is " << this->deltaX << endl;
+					}else if(propName != "deltaX" 
+							&& propName != "deltaY" 
+							&& propName != "deltaZ"){
+						printf("InputParser::readHeader_MESH:: You didn't provide a ");
+						printf("good member for $MESH$DELTAS.\nAborting.\n");
+						cout << propName << endl;
+						printf("(in file %s at %d)\n",__FILE__,__LINE__);
+						abort();
+					}
+				}
+				break;
+			
+			case DOMAIN_SIZE:
+				cout << "Entering case DOMAIN_SIZE\n";
+				while(!file.eof()){
+					// Note: sections are ended by $the-section-name.
+					// Read line:
+					getline(file,currentLine);
+					// Get rid of comments:
+					this->checkLineISNotComment(file,currentLine);
+					// Remove any blank in the string:
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+					cout << currentLine << endl;
+					// If the string is "$DELTAS" it means the section ends.
+					if(currentLine == "$DOMAIN_SIZE"){
+						cout << "EXITING DOMAIN_SIZE\n";
+						break;
+					}
+					// If the string is empty, it was just a white space. Continue.
+					if(currentLine == string()){continue;}
+					// Find the position of the equal sign:
+					std::size_t posEqual  = currentLine.find("=");
+					// The property we want to set:
+					std::string propName  = currentLine.substr(0,posEqual);
+					// The property name the user gave:
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+
+					cout << propName + "=" + propGiven << endl;
+					cout << "To compare with " + currentLine << endl;
+
+					if(propName == "L_X"){
+						this->lengthX = std::stod(propGiven);
+						cout << "ADDED lengthX is " << this->lengthX << endl;
+					}else if(propName == "L_Y"){
+						this->lengthY = std::stod(propGiven);
+						cout << "ADDED lengthY is " << this->lengthX << endl;
+					}else if(propName == "L_Z"){
+						this->lengthZ = std::stod(propGiven);
+						cout << "ADDED lengthZ is " << this->lengthX << endl;
+					}else if(propName != "L_X" 
+							&& propName != "L_Y" 
+							&& propName != "L_Z"){
+						printf("InputParser::readHeader_MESH:: You didn't provide a ");
+						printf("good member for $MESH$DOMAIN_SIZE.\nAborting.\n");
+						cout << propName << endl;
+						printf("(in file %s at %d)\n",__FILE__,__LINE__);
+						abort();
+					}
+				}
+				break;
+
+			case SOURCE:
+				cout << "Entering case SOURCE\n";
+				while(!file.eof()){
+					// Note: sections are ended by $the-section-name.
+					// Read line:
+					getline(file,currentLine);
+					// Get rid of comments:
+					this->checkLineISNotComment(file,currentLine);
+					// Remove any blank in the string:
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+					cout << currentLine << endl;
+					// If the string is "$DELTAS" it means the section ends.
+					if(currentLine == "$SOURCE"){
+						cout << "EXITING SOURCE\n";
+						break;
+					}
+					// If the string is empty, it was just a white space. Continue.
+					if(currentLine == string()){continue;}
+					// Find the position of the equal sign:
+					std::size_t posEqual  = currentLine.find("=");
+					// The property we want to set:
+					std::string propName  = currentLine.substr(0,posEqual);
+					// The property name the user gave:
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+
+					cout << propName + "=" + propGiven << endl;
+					cout << "To compare with " + currentLine << endl;
+
+					if(propName == "L_X"){
+						this->lengthX = std::stod(propGiven);
+						cout << "ADDED lengthX is " << this->lengthX << endl;
+					}else if(propName == "L_Y"){
+						this->lengthY = std::stod(propGiven);
+						cout << "ADDED lengthY is " << this->lengthX << endl;
+					}else if(propName == "L_Z"){
+						this->lengthZ = std::stod(propGiven);
+						cout << "ADDED lengthZ is " << this->lengthX << endl;
+					}else if(propName != "L_X" 
+							&& propName != "L_Y" 
+							&& propName != "L_Z"){
+						printf("InputParser::readHeader_MESH:: You didn't provide a ");
+						printf("good member for $MESH$DOMAIN_SIZE.\nAborting.\n");
+						cout << propName << endl;
+						printf("(in file %s at %d)\n",__FILE__,__LINE__);
+						abort();
+					}
+				}
+				break;
+
+			default:
+				printf("Should not end up here. Complain to Romin. Abort.");
+				printf("(in file %s at %d)\n",__FILE__,__LINE__);
+				cout << "Faulty line is " + currentLine << endl << endl;
+				abort();
+		}
+	}
+
+	cout << "InputParser::readHeader_MESH::Not yet implemented" << endl;
+	abort();
+}
+
+void InputParser::readHeader_RUN_INFOS(ifstream &file){
+	cout << "InputParser::readHeader_RUN_INFOS::Not yet implemented" << endl;
+	abort();
 }
