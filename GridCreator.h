@@ -43,11 +43,11 @@ class GridCreator{
 
 		InputParser &input_parser;
 		Materials   &materials;
-
+        ElectromagneticSource &elec_source;
 //	public:
 		// Constructor:
 		GridCreator(InputParser &input_parser, Materials &materials):
-			input_parser(input_parser), materials(materials){}
+		input_parser(input_parser), materials(materials){}
 		// Destructor:
 		~GridCreator(void);
 	

@@ -4,20 +4,16 @@
 
 #include <vector>
 #include "SetOnceVariable_Template.h"
+#include "GridCreator.h"
 
 using namespace std;
+
+class GridCreator;
 
 class ElectromagneticSource{
 	private:
 		SetOnceVariable_Template<unsigned int> number_of_sources;
-		// Lengths and centers in each direction of each source:
-		std::vector<double> lengthX;
-		std::vector<double> lengthY;
-		std::vector<double> lengthZ;
-		std::vector<double> centerX;
-		std::vector<double> centerY;
-		std::vector<double> centerZ;
-		std::vector<double> frequency;
+		
 
 		std::vector<bool> lengthsAlreadySet;
 		std::vector<bool> centersAlreadySet;
@@ -36,6 +32,14 @@ class ElectromagneticSource{
 		// Destructor:
 		~ElectromagneticSource(){};
 		// Set the number of sources:
+		// Lengths and centers in each direction of each source:
+		std::vector<double> lengthX;
+		std::vector<double> lengthY;
+		std::vector<double> lengthZ;
+		std::vector<double> centerX;
+		std::vector<double> centerY;
+		std::vector<double> centerZ;
+		std::vector<double> frequency;
 		void set_number_of_sources(const unsigned int);
 		unsigned int get_number_of_sources(void){
 			return this->number_of_sources.get();
@@ -81,6 +85,9 @@ class ElectromagneticSource{
 		// Check that a node is inside the source:
 		bool isInsideSource(const size_t, const size_t, const size_t,
 							const unsigned int);
+		//Get value source  
+		//From mesh, t_current, i,j,k
+        void computeSourceValue(GridCreator, double,int ,int,int,unsigned int);
 };
 
 #endif

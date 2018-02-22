@@ -1,4 +1,5 @@
 #include "ElectromagneticSource.h"
+#include "GridCreator.h"
 
 #include <iostream>
 #include <cstdio>
@@ -159,9 +160,9 @@ void ElectromagneticSource::computeNodesInsideSource(const double L_dom_X,
 }
 
 bool ElectromagneticSource::isInsideSource(const size_t x, 
-																					 const size_t y, 
-																					 const size_t z,
-																					 const unsigned int i){
+														 const size_t y, 
+														 const size_t z,
+														 const unsigned int i){
 	// i represents the desired source.
 	if(this->nodesInsideAlreadySet[i] != true){
 		printf("ElectromagneticSource::isInsideSource::ERROR.\n");
@@ -181,4 +182,48 @@ bool ElectromagneticSource::isInsideSource(const size_t x,
 	}
 	// By default, return false:
 	return false;
+}
+
+
+/* --------------------------------------------------------------------------------------------------------------------- */
+/* Here, i,j,k are local indices */
+void ElectromagneticSource::computeSourceValue(GridCreator mesh, double tCurrent, int i, int j, int k,unsigned int ID_Source)
+{
+	double AirGap = 1;
+
+
+	/* Size d'une antenne du dipole */
+	double LengthDipoleX = mesh.elec_source.LengthX(ID_Source);
+	double LengthDipoleY = mesh.elec_source.LengthY(ID_Source);
+	double LengthDipoleZ = (mesh.elec_source.LengthZ(ID_Source) - AirGap)/2;
+
+	/* 	Here, GlobalIndices will contain the global indices corresponding to the local indices i,j,k, which are in the source */
+	int GlobalIndices[3];
+	GlobalIndices[0] = mesh.Transformation(i, j, k, mesh.myrank, mesh.numberofprocess);
+	GlobalIndices[1] = mesh.Transformation(i, j, k, mesh.myrank, mesh.numberofprocess);
+	GlobalIndices[2] = mesh.Transformation(i, j, k, mesh.myrank, mesh.numberofprocess);
+
+	/* We know that for a dipole antenna E_x, E_y, H_x, H_y and H_z are all equal to 0, whereas E_z is different if we are in the air gap or not */
+	mesh.nodeMagn(i,j,k).field[0] = 0.0;
+	mesh.nodeMagn(i,j,k).field[1] = 0.0;
+	mesh.nodeMagn(i,j,k).field[2] = 0.0;
+	mesh.nodeElec(i,j,k).field[0] = 0.0;
+	mesh.nodeElec(i,j,k).field[1] = 0.0;
+
+	/* Ask Romin if the function returns the indices or the physical coordinates */
+	double CenterAntenna[3] = mesh.elec_source.getCenter(ID_Source);
+
+	/* If we are in the antenna */
+	if(CenterAntenna[0]-(LengthDipoleX/2)/mesh.deltaX <= GlobalIndices[0]  && GlobalIndices[0] <= CenterAntenna[0]-(LengthDipoleX/2)/mesh.deltaX )
+	{
+		if(CenterAntenna[1]-(LengthDipoleY/2)/mesh.deltaY <= GlobalIndices[1] && GlobalIndices[1] <= CenterAntenna[1]-(LengthDipoleY/2)/mesh.deltaY)
+		{
+			if(CenterAntenna[2]-(LengthDipoleZ/2)/mesh.deltaZ <= GlobalIndices[2] && GlobalIndices[2] <= CenterAntenna[2]-(LengthDipoleY/2)/mesh.deltaZ)
+				mesh.nodesElec(i,j,k).field[2] = sin(2*M_PI*mesh.elec_source.frequency[ID_Source]*tCurrent);
+		}
+	}
+	else
+	{
+		mesh.nodesElec(i,j,k).field[2] = 0.0;	
+	}
 }
