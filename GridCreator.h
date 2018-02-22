@@ -43,13 +43,13 @@ class GridCreator{
 		size_t numberOfNodesInEachDir[3] = {0,0,0};
 		size_t totalNumberOfNodes        = 0;
 
-		InputParser &input_parser;  // A peut-être modifier !!!!
+		InputParser &input_parser;
 		Materials   &materials;
-
+        ElectromagneticSource &elec_source;
 //	public:
 		// Constructor:
 		GridCreator(InputParser &input_parser, Materials &materials):
-			input_parser(input_parser), materials(materials){}
+		input_parser(input_parser), materials(materials){}
 		// Destructor:
 		~GridCreator(void);
 	
@@ -58,7 +58,8 @@ class GridCreator{
 		// 
 		void test(double, double, double, double, double, double, double);
 		// Convert the local indices to global indices:
-		std::vector<int> ConvIndGlobToLocal(std::vector<int> LocalIndices);
+		void LocalToGlobal(unsigned long *localIndices, unsigned long *globalIndices);
+
 
 };
 

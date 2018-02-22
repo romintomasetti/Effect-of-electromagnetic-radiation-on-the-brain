@@ -33,40 +33,20 @@ using namespace std;
 
 
 int main(int argc, char *argv[]){
-	// This variable can be set only once:
-	SetOnceVariable_Template<int> setOnce;
-	//SetOnceVariable_Template<int> setOnceBis(5);
-	cout << "setOnce is " << setOnce.get() << endl;
-	setOnce = 1;
-	setOnce = 2;
-	setOnce = 3;
-	cout << "setOnce is " << setOnce.get() << endl;
-	setOnce.~SetOnceVariable_Template<int>();
 	/* First of all, initialize MPI because if it fails, the program must immediately be stopped. */
 	MPI_Initializer MPI_communicator(argc,argv,MPI_THREAD_MULTIPLE);
 	printf("\n---------\nMPI rank is %d and isRoot %d.\n--------\n",MPI_communicator.getRank(),
 		  MPI_communicator.isRootProcess());
 	
-	// The variable allMat will store the materials' properties.
+	/* The variable allMat will store the materials' properties */
 	Materials allMat;
 	allMat.getPropertiesFromFile("MaterialProperties.csv");
 	allMat.printAllProperties();
 	allMat.printNumberOfTempLinePerMat();
 	cout << "For material 0 at 25K, property 1 is ";
 	cout << allMat.getProperty(25.,0,1) << endl;
-
-	/* Each point (also called node hereinafter) in the grid has:
-		1) 3 coordinates                             (3 doubles)
-		2) 2*3 fields components (Ex,Ey,Ez,Hx,Hy,Hz) (6 doubles)
-		3) 1 temperature                             (1 double)
-		4) 1 number to determine the material        (1 unsigned char provided there are not more than 255 materials)
-		
-		We thus have 10*4 + 1 bytes per node.
-		*/
 	
-	
-	
-	
+	/* Small OPENMP example */
 	if(PARALLELISM_OMP_ENABLED)
 		cout << "OMP enabled.\n";
 	
@@ -79,11 +59,14 @@ int main(int argc, char *argv[]){
 	}
 	cout << endl;
 	
-	cout << "Calling parser...\n";
+	cout << "Calling input file parser...\n";
 	string filenameInput = "TESTS/testSourceCenteredInCube.input";
 	InputParser input_parser;
 	input_parser.defaultParsingFromFile(filenameInput);
 	
+	map<std::string,std::string> test222 = input_parser.get_outputNames();
+	cout << test222["output"] << test222["error"] << test222["profile"] << endl;
+
 	cout << "Calling GridCreator constructor" << endl;
 	GridCreator mesher(input_parser,allMat);
 	mesher.test(1,1,1,10,10,10,1);
@@ -94,21 +77,22 @@ int main(int argc, char *argv[]){
 	
 	
 	ElectromagneticSource source;
-	source.setLengths(2,2,2);
-	source.setCenter (5,5,5);
-	source.computeNodesInsideSource(10,10,10,1,1,1);
-	if(source.isInsideSource(5,5,5)){
+	source.set_number_of_sources(1);
+	source.setLengths(2,2,2,0);
+	source.setCenter (5,5,5,0);
+	source.computeNodesInsideSource(10,10,10,1,1,1,0);
+	if(source.isInsideSource(5,5,5,0)){
 		cout << "Node(5,5,5) is inside the source.\n";
 	}
-	if(source.isInsideSource(4,4,4)){
+	if(source.isInsideSource(4,4,4,0)){
 		cout << "Node(4,4,4) is inside the source.\n";
 	}
-	if(source.isInsideSource(3,3,3)){
+	if(source.isInsideSource(3,3,3,0)){
 		cout << "Node(3,3,3) is inside the source.\n";
 	}else{
 		cout << "Node(3,3,3) is NOT inside the source.\n";
 	}
-	if(source.isInsideSource(6,6,6)){
+	if(source.isInsideSource(6,6,6,0)){
 		cout << "Node(6,6,6) is inside the source.\n";
 	}
 	

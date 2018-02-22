@@ -28,6 +28,13 @@ void GridCreator::meshInitialization(){
 	// Now, go through each node and decide in which material they are: TODO
 	// Missing also: initializtion of the heat mesh.
 	cout << "GridCreator::meshInitialization::OUT\n";
+
+	// Fonction à faire: obtenir les indices de début selon x,y,z de cette manière this->indices_x_first this->indices_y_first this->indices_z_first
+
+
+
+	//Fonction obtenir mu et epsilon en fonction des indices données (globaux)  this->epsilon    this->mu
+
 }
 		
 /* Destructor */
@@ -49,14 +56,13 @@ void GridCreator::test(double deltaX, double deltaY, double deltaZ,
 	this->deltaT = deltaT;
 }
 
- std::vector<int> GridCreator::ConvIndGlobToLocal(std::vector<int> LocalIndices){
+ void GridCreator::GlobalToLocal(unsigned int *localIndices, unsigned int *globalIndices){
  	int i=0;
-	std::vector<int> GlobalIndices;
+	//std::vector<int> globalIndices;
 
 	for(i=0; i<3; i++){
-		GlobalIndices.push_back(LocalIndices[i]+this->originIndices[i]);
-		cout << GlobalIndices[i] << endl;
+		globalIndices[i] = localIndices[i] + this->originIndices[i];
+		cout << globalIndices[i] << endl;
 	}
-
  }
 

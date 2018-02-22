@@ -69,6 +69,7 @@ int MPI_Initializer::getRank(void){
 
 
 void MPI_Initializer::MpiDivision(GridCreator &subGrid, int nbProc, int myRank){  
+
 	double Lx = subGrid.input_parser.lengthX;
 	double Ly = subGrid.input_parser.lengthY;
 	double Lz = subGrid.input_parser.lengthZ;
