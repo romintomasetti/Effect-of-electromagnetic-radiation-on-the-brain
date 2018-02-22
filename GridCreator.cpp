@@ -55,3 +55,14 @@ void GridCreator::test(double deltaX, double deltaY, double deltaZ,
 	
 	this->deltaT = deltaT;
 }
+
+ void GridCreator::GlobalToLocal(unsigned int *localIndices, unsigned int *globalIndices){
+ 	int i=0;
+	//std::vector<int> globalIndices;
+
+	for(i=0; i<3; i++){
+		globalIndices[i] = localIndices[i] + this->originIndices[i];
+		cout << globalIndices[i] << endl;
+	}
+ }
+

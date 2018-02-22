@@ -49,6 +49,7 @@ class InputParser{
 
 		void RemoveAnyBlankSpaceInStr(std::string &);
 
+
 		// Time (in sec) after which the simulation must be stopped):
 		double stopTime = -1.0;
 
@@ -72,6 +73,10 @@ class InputParser{
 		InputParser(string file_name);
 		// Destructor:
 		~InputParser(void){};
+		// Deltas:
+		double deltaX = 0.0, deltaY = 0.0, deltaZ = 0.0;
+		// Domain size:
+		double lengthX = 0.0, lengthY = 0.0, lengthZ = 0.0;
 		// Default parser, using the field 'filename' of the class:
 		void defaultParsingFromFile(void);
 		// Parser:
