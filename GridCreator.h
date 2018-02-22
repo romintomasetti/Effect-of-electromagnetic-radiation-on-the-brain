@@ -35,6 +35,8 @@ class GridCreator{
 		unsigned long nbrElts_X = 0;
 		unsigned long nbrElts_Y = 0;
 		unsigned long nbrElts_Z = 0;
+		// Indices of the domain's first point
+		std::vector<int> originIndices;
 		// Time increment:
 		double deltaT = 0.0;
 		// Number of nodes:
@@ -53,8 +55,10 @@ class GridCreator{
 	
 		// Grid initialization:
 		void meshInitialization();
-
+		// 
 		void test(double, double, double, double, double, double, double);
+		// Convert the local indices to global indices:
+		std::vector<int> ConvIndGlobToLocal(std::vector<int> LocalIndices);
 
 };
 

@@ -48,3 +48,15 @@ void GridCreator::test(double deltaX, double deltaY, double deltaZ,
 	
 	this->deltaT = deltaT;
 }
+
+ std::vector<int> GridCreator::ConvIndGlobToLocal(std::vector<int> LocalIndices){
+ 	int i=0;
+	std::vector<int> GlobalIndices;
+
+	for(i=0; i<3; i++){
+		GlobalIndices.push_back(LocalIndices[i]+this->originIndices[i]);
+		cout << GlobalIndices[i] << endl;
+	}
+
+ }
+

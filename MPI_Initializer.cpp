@@ -68,10 +68,10 @@ int MPI_Initializer::getRank(void){
 }
 
 
-vector<double> MPI_Initializer::MpiDivision(GridCreator &subGrid, int nbProc, int myRank){  // Array not used !!!!!
-	double Lx = subGrid.InputParser.Lx;
-	double Ly = subGrid.InputParser.Ly;
-	double Lz = subGrid.InputParser.Lz;
+void MPI_Initializer::MpiDivision(GridCreator &subGrid, int nbProc, int myRank){  
+	double Lx = subGrid.input_parser.lengthX;
+	double Ly = subGrid.input_parser.lengthY;
+	double Lz = subGrid.input_parser.lengthZ;
 
 	double deltaX = subGrid.deltaX;
 	double deltaY = subGrid.deltaY;
@@ -80,7 +80,6 @@ vector<double> MPI_Initializer::MpiDivision(GridCreator &subGrid, int nbProc, in
 
 	int N = (int) pow(nbProc, 1.0/3.0);
 	std::vector<double> mpiExtremity;
-	std::vector<int> mpiIndices;
 
 
 	// Cubic case
@@ -111,7 +110,6 @@ vector<double> MPI_Initializer::MpiDivision(GridCreator &subGrid, int nbProc, in
 		 // Coordinates of all subdivisions in the order -> Lx, Ly, Lz
 	}
 
-
 	//Pair case
 	else{
 		double LxLocal = 2*Lx/nbProc;
@@ -127,12 +125,14 @@ vector<double> MPI_Initializer::MpiDivision(GridCreator &subGrid, int nbProc, in
 
 	}
     
+    // transformation of global lengths to indices and save them in subdomain
+	subGrid.originIndices.push_back(mpiExtremity[0]/deltaX);
+	subGrid.originIndices.push_back(mpiExtremity[2]/deltaY);
+	subGrid.originIndices.push_back(mpiExtremity[4]/deltaZ);
+	// Length of the subdomains
+	subGrid.lengthX = mpiExtremity[1]-mpiExtremity[0];
+	subGrid.lengthY = mpiExtremity[3]-mpiExtremity[2];
+	subGrid.lengthZ = mpiExtremity[5]-mpiExtremity[4];
 
-    // transformation indices
-		mpiIndices.push_back(mpiExtremity[0]/deltaX);
-		mpiIndices.push_back(mpiExtremity[2]/deltaY);
-		mpiIndices.push_back(mpiExtremity[4]/deltaZ);
-
-	return mpiExtremity;
 }
 
