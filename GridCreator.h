@@ -66,7 +66,10 @@ class GridCreator{
 		// Convert the local indices to global indices:
 		void LocalToGlobal(unsigned long *, unsigned long *);
 
-
+		// Assign to each node a material. For the first tests, it will 
+		// just set all materials to be air. For later simulations, we will
+		// have to read input files to link each node to a material.
+		void assignToEachNodeAMaterial(void);
 };
 
 #endif

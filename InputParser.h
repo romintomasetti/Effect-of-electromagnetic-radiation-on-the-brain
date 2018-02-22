@@ -25,7 +25,8 @@ enum stringDollar_Header2{
 	DOMAIN_SIZE,
 	SOURCE,
 	STOP_SIMUL_AFTER,
-	TEMP_INIT
+	TEMP_INIT,
+	MATERIALS
 };
 
 class InputParser{
@@ -54,7 +55,7 @@ class InputParser{
 		double stopTime = -1.0;
 
 		
-
+		SetOnceVariable_Template<string> simulationType;
 		
 
 		/* 
@@ -65,6 +66,15 @@ class InputParser{
 	public:
 		// Map that contains, for each material, the initial temperature:
 		map<std::string,double> GetInitTemp_FromMaterialName;
+
+		// Set simulationType
+		void set_SimulationType(const string str){
+			this->simulationType = str;
+		}
+
+		string get_SimulationType(void){
+			return this->simulationType.get();
+		}
 
 		// Source:
 		ElectromagneticSource source;

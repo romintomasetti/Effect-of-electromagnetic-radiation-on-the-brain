@@ -1,4 +1,5 @@
 #include "GridCreator.h"
+#include <omp.h>
 
 /* Grid initialization */
 void GridCreator::meshInitialization(){
@@ -27,23 +28,64 @@ void GridCreator::meshInitialization(){
 								  this->numberOfNodesInEachDir[2]+(size_t)1);
 	cout << "Done." << endl;
 	// Now, go through each node and decide in which material they are: TODO
+	/* ASSIGN TO EACH NODE A MATERIAL */
+	this->assignToEachNodeAMaterial();
+	cout << "GridCreator::meshInitialization::ASSIGN_TO_EACH_NODE_A_MATERIAL::DONE\n";
+
 	// Missing also: initializtion of the heat mesh.
+
+
 	cout << "GridCreator::meshInitialization::OUT\n";
 
-	// Fonction à faire: obtenir les indices de début selon x,y,z de cette manière this->indices_x_first this->indices_y_first this->indices_z_first
 
 
 
-	//Fonction obtenir mu et epsilon en fonction des indices données (globaux)  this->epsilon    this->mu
 
+}
+
+void GridCreator::assignToEachNodeAMaterial(void){
+	// Print the type of simulation it is:
+	cout << "GridCreator::assignToEachNodeAMaterial : ";
+	cout << this->input_parser.get_SimulationType() << endl;
+	// Now try to determine which type of simulation it is.
+	// Then assign to each node its material and initial temperature.
+	if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
+		cout << "\n\nTYPE OF SIMULATION IS AIR EVERYWHERE\n\n";
+		cout << "\n\nAssigning material and initial temperature for each node.\n";
+		
+		#pragma omp parallel for collapse(3)
+		for(size_t K = 0 ; K < this->numberOfNodesInEachDir[2] ; K ++){
+			for(size_t J = 0 ; J < this->numberOfNodesInEachDir[1] ; J ++ ){
+				for(size_t I = 0 ; I < this->numberOfNodesInEachDir[0] ; I ++){
+					/* Initialize material */
+					this->nodesElec(I,J,K).material    = 
+								this->materials.materialID_FromMaterialName["AIR"];
+					this->nodesMagn(I,J,K).material    = 
+								this->materials.materialID_FromMaterialName["AIR"];
+
+					/* Initialize temperature */
+					this->nodesElec(I,J,K).Temperature = 
+								this->input_parser.GetInitTemp_FromMaterialName["AIR"];
+					this->nodesMagn(I,J,K).Temperature = 
+								this->input_parser.GetInitTemp_FromMaterialName["AIR"];
+				}
+			}
+		}
+		printf("At node(5,5,5) we have material %d.\n",this->nodesElec(0,0,0).material);
+		cout << "This corresponds to " + 
+			this->materials.materialName_FromMaterialID[this->nodesElec(0,0,0).material];
+		cout << endl;
+		printf("Initial temperature at this node is %f.\n",
+			this->nodesElec(0,0,0).Temperature);
+	}
 }
 
 /*
  * Constructor of the class GridCreator.
  * Arguments are:
- * 		1)
- * 		2)
- * 		3)
+ * 		1) Object input_parser contains information from input file.
+ * 		2) Object materials contains information on all used materials.
+ * 		3) Object MPI_communicator used for MPI communications.
  */
 GridCreator::GridCreator(InputParser &input_parser,
 						 Materials &materials,

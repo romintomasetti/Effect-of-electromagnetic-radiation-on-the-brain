@@ -21,6 +21,7 @@ stringDollar_Header2 InputParser::hashit_Header2 (std::string const& inString) {
 	if (inString == "SOURCE") return SOURCE;
 	if (inString == "STOP_SIMUL_AFTER") return STOP_SIMUL_AFTER;
 	if (inString == "TEMP_INIT") return TEMP_INIT;
+	if (inString == "MATERIALS") return MATERIALS;
 	else {
 		printf("In file %s at %d. Complain to Romin. Abort().\n",__FILE__,__LINE__);
 		cout << "Faulty string is ::" + inString + "::" << endl;
@@ -531,6 +532,55 @@ void InputParser::readHeader_MESH (ifstream &file){
 							abort();
 						}
 					}
+				}
+				break;
+			case MATERIALS:
+				cout << "Entering case MATERIALS\n";
+				while(!file.eof()){
+					// Note: sections are ended by $the-section-name.
+					// Read line:
+					getline(file,currentLine);
+					// Get rid of comments:
+					this->checkLineISNotComment(file,currentLine);
+					// Remove any blank in the string:
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+					cout << currentLine << endl;
+					// If the string is "$DELTAS" it means the section ends.
+					if(currentLine == "$MATERIALS"){
+						cout << "EXITING MATERIALS\n";
+						break;
+					}
+					// If the string is empty, it was just a white space. Continue.
+					if(currentLine == string()){continue;}
+					// Find the position of the equal sign:
+					std::size_t posEqual  = currentLine.find("=");
+					// The property we want to set:
+					std::string propName  = currentLine.substr(0,posEqual);
+					// The property name the user gave:
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+
+					cout << propName + "=" + propGiven << endl;
+					cout << "To compare with " + currentLine << endl;
+
+					if(propName == "USE_AIR_EVERYWHERE"){
+						if(propGiven == "true"){
+							this->simulationType = "USE_AIR_EVERYWHERE";
+							cout << "SET simulationType to USE_AIR_EVERYWHERE\n";
+						}
+					}else if(propName != "USE_AIR_EVERYWHERE"){
+						printf("InputParser::readHeader_MESH:: You didn't provide a ");
+						printf("good member for $MESH$MATERIALS.\nAborting.\n");
+						cout << propName << endl;
+						printf("(in file %s at %d)\n",__FILE__,__LINE__);
+						abort();
+					}
+				}
+				/* Check that simulation type was effectively set: */
+				if(this->simulationType.get_alreadySet() == false){
+					printf("InputParser::readHeader_MESH::MATERIALS\n");
+					printf("Exiting section MATERIALS without specifying");
+					printf(" anything. Aborting().\n\n");
+					abort();
 				}
 				break;
 

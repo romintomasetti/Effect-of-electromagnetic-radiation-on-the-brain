@@ -45,25 +45,32 @@ int main(int argc, char *argv[]){
 	allMat.printNumberOfTempLinePerMat();
 	cout << "For material 0 at 25K, property 1 is ";
 	cout << allMat.getProperty(25.,0,1) << endl;
+
+	
 	
 	/* Small OPENMP example */
 	if(PARALLELISM_OMP_ENABLED)
 		cout << "OMP enabled.\n";
 	
+	omp_set_num_threads(4);
 	#pragma omp parallel if(PARALLELISM_OMP_ENABLED)
 	{
 		#pragma omp for
-		for(int i = 0 ; i < 10 ; i ++)
-			printf("%d, ",i);
+		for(int i = 0 ; i < 5; i ++){
+			printf("Thread rank: %d\n", omp_get_thread_num());
+		}
 		#pragma omp barrier
 	}
-	cout << endl;
+	cout << endl; 
 	
 	cout << "Calling input file parser...\n";
 	string filenameInput = "TESTS/testSourceCenteredInCube.input";
 	InputParser input_parser;
 	input_parser.defaultParsingFromFile(filenameInput);
 	
+	printf("Initial temperature for AIR is %f.\n",
+				input_parser.GetInitTemp_FromMaterialName["AIR"]);
+
 	map<std::string,std::string> test222 = input_parser.get_outputNames();
 	cout << test222["output"] << test222["error"] << test222["profile"] << endl;
 
