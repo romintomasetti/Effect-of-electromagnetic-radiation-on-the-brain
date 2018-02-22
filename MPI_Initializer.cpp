@@ -21,7 +21,13 @@ MPI_Initializer::MPI_Initializer(int argc, char *argv[],int required){
 		cout << this->provided.get() << ".\n";
 		// If the required level of thread support is higher than the provided one, abort:
 		if(this->required.get() > this->provided.get()){
-			cout << "The required level of thread support is higher than the provided one. ABORTING.\n";
+			// The current machine cannot provided the required level of
+			// thread support. Ask what to do.
+			cout << "The required level of thread support is higher than the provided one.\n";
+			cout << "For the communication between the MPI processes to work flowlessly";
+			cout << ", MPI_THREAD_MULTIPLE (or at least MPI_THREAD_SERIALIZED).\n";
+			cout << "You have thread support ";
+			
 			abort();
 		}
 	}

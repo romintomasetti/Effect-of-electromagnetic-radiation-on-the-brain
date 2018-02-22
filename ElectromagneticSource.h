@@ -4,7 +4,7 @@
 
 #include <vector>
 #include "SetOnceVariable_Template.h"
-#include "GridCreator.h"
+//#include "GridCreator.h"
 
 using namespace std;
 
@@ -40,6 +40,10 @@ class ElectromagneticSource{
 		std::vector<double> centerY;
 		std::vector<double> centerZ;
 		std::vector<double> frequency;
+
+		std::vector< SetOnceVariable_Template<double> > airgap;
+
+
 		void set_number_of_sources(const unsigned int);
 		unsigned int get_number_of_sources(void){
 			return this->number_of_sources.get();
@@ -59,6 +63,8 @@ class ElectromagneticSource{
 		void setFrequency(const double, const unsigned int);
 		void setAllFrequencies(vector<double> freqs);
 		
+		void set_airGaps(const std::vector<double> airGaps);
+
 		// Get length in each direction:
 		vector<double> getLengths(const unsigned int i){
 			vector<double> lengths = {this->lengthX[i],
@@ -83,11 +89,10 @@ class ElectromagneticSource{
 									 const double, const double, const double,
 									 const unsigned int);
 		// Check that a node is inside the source:
-		bool isInsideSource(const size_t, const size_t, const size_t,
-							const unsigned int);
+		bool isInsideSource(const size_t, const size_t, const size_t);
 		//Get value source  
 		//From mesh, t_current, i,j,k
-        void computeSourceValue(GridCreator, double,int ,int,int,unsigned int);
+        void computeSourceValue(GridCreator&, double,int ,int,int,char);
 };
 
 #endif

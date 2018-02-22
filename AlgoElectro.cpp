@@ -46,72 +46,105 @@ double Compute_dt(GridCreator mesh){
 }
 
 void update(GridCreator mesh,double dt,double t_current){   
-/* update magnetic Field */
-        int i,j,k;
-        for(k=1;k<mesh.numberOfNodesInEachDir[0];k++){
-            for(j=1;j<mesh.numberOfNodesInEachDir[1];j++){
-                for(i=1;i<mesh.numberOfNodesInEachDir[2];i++){
-                    
-                    double T=mesh.nodesMagn(i,j,k).Temperature;
-                    double mu_material=mesh.materials.getProperty(T,4,mesh.nodesMagn(i,j,k).material); 
-                    
-                    double Transfo[3];                                                     /* transformer les indices locaux en globaux voir Fonction Chris et Alex*/ 
-                    Transfo=Transformation(i,j,k,mesh.myrank,mesh.numberofprocess) ;      /* mettre dans gridcreator "numberofProcess" et " myrank"  */                         
-                    if(isInsideSource(Transfo[0],Transfo[1],Transfo[2])){                
-                        /* Fonction à faire  dans Electromagnetic Source composantes donne l'info si c'est E ou H et x ou y ou z */
-                        mesh.nodesMagn(i,j,k).field[0]=mesh.input_parser.source.getvalue(i,j,k,t_current,composants_1);
-                        mesh.nodesMagn(i,j,k).field[1]=mesh.input_parser.source.getvalue(i,j,k,t_current,composants_2);
-                        mesh.nodesMagn(i,j,k).field[2]=mesh.input_parser.source.getvalue(i,j,k,t_current,composants_3);
-                    }
-                    else{
+    unsigned long i,j,k;
 
-                        /* update magnetic field H_x */
-                        mesh.nodesMagn(i,j,k).field[0]= mesh.nodesMagn(i,j,k).field[0] + (dt/(mu_material*mesh.deltaZ))*(mesh.nodesElec(i,j,k).field[1]-mesh.nodesElec(i,j,k-1).field[1]) - (dt/(mu_material*mesh.deltaY))*(mesh.nodesElec(i,j,k).field[2]-mesh.nodesElec(i,j-1,k).field[2]);
-                        /* update magnetic Field H_y */
-                        mesh.nodesMagn(i,j,k).field[1]= mesh.nodesMagn(i,j,k).field[1]  + (dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i,j,k).field[2]-mesh.nodesElec(i-1,j,k).field[2]) -  (dt/(mu_material*mesh.deltaZ))*(mesh.nodesElec(i,j,k).field[0]-mesh.nodesElec(i,j,k-1).field[0]);
-                        /* update magnetic Field H_z */
-                        mesh.nodesMagn(i,j,k).field[2]= mesh.nodesMagn(i,j,k).field[2]  + (dt/(mu_material*mesh.deltaY))*(mesh.nodesElec(i,j,k).field[0]-mesh.nodesElec(i,j-1,k).field[0]) -  (dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i,j,k).field[1]-mesh.nodesElec(i-1,j,k).field[1]);
+    double T = 0.0;
+    double mu_material = 0.0;
 
-                        }
-                    }
+    unsigned long local[3];
+    unsigned long global[3];
+
+    for(k = 1 ; k < mesh.numberOfNodesInEachDir[0] ; k++ ){
+
+        for(j=1;j < mesh.numberOfNodesInEachDir[1];j++){
+
+            for(i=1;i < mesh.numberOfNodesInEachDir[2];i++){
+                
+                /* Get the global indices */
+                local[0] = i;
+                local[1] = j;
+                local[2] = k;
+                mesh.LocalToGlobal(&local,&global);
+
+                T = mesh.nodesMagn(i,j,k).Temperature;
+
+                mu_material = mesh.materials.getProperty(T,4,mesh.nodesMagn(i,j,k).material);  
+
+                /* mettre dans gridcreator "numberofProcess" et " myrank"  */
+                //Transfo = mesh.LocalToGlobal(i,j,k,mesh.MPI_communicator.getRank(),mesh.numberofprocess) ;  
+
+                if(mesh.input_parser.source.isInsideSource(global[0],global[1],global[2])){                
+                    /* Fonction à faire  dans Electromagnetic Source composantes donne l'info si c'est E ou H et x ou y ou z */
+                    mesh.input_parser.source.computeSourceValue(mesh,i,j,k,t_current,'H');
+                    /*mesh.nodesMagn(i,j,k).field[1]=mesh.input_parser.source.computeSourceValue(mesh,i,j,k,t_current);
+                    mesh.nodesMagn(i,j,k).field[2]=mesh.input_parser.source.computeSourceValue(mesh,i,j,k,t_current);*/
+                }
+                else{
+
+                    /* update magnetic field H_x */
+                    mesh.nodesMagn(i,j,k).field[0]= mesh.nodesMagn(i,j,k).field[0]  +
+                                     (dt/(mu_material*mesh.deltaZ))*(mesh.nodesElec(i,j,k).field[1]
+                                     -mesh.nodesElec(i,j,k-1).field[1]) -
+                                     (dt/(mu_material*mesh.deltaY))*(mesh.nodesElec(i,j,k).field[2]
+                                     -mesh.nodesElec(i,j-1,k).field[2]);
+                    /* update magnetic Field H_y */
+                    mesh.nodesMagn(i,j,k).field[1]= mesh.nodesMagn(i,j,k).field[1]  +
+                                     (dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i,j,k).field[2]-mesh.nodesElec(i-1,j,k).field[2]) -
+                                     (dt/(mu_material*mesh.deltaZ))*(mesh.nodesElec(i,j,k).field[0]-mesh.nodesElec(i,j,k-1).field[0]);
+                    /* update magnetic Field H_z */
+                    mesh.nodesMagn(i,j,k).field[2]= mesh.nodesMagn(i,j,k).field[2]  +
+                                     (dt/(mu_material*mesh.deltaY))*(mesh.nodesElec(i,j,k).field[0]-mesh.nodesElec(i,j-1,k).field[0]) -
+                                     (dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i,j,k).field[1]-mesh.nodesElec(i-1,j,k).field[1]);
                 }
             }
-        /* update electric field  */
-          for(k=1;k<mesh.numberOfNodesInEachDir[0];k++){
-            for(j=1;j<mesh.numberOfNodesInEachDir[1];j++){
-                for(i=1;i<mesh.numberOfNodesInEachDir[2];i++){
-                    
-                    double T=mesh.nodesElec(i,j,k).Temperature;
-                    double epsilon_material=mesh.materials.getProperty(T,4,mesh.nodesElec(i,j,k).material);
-                    if(isInsideSource(Transfo[0],Transfo[1],Transfo[2])){
-                        mesh.nodesMagn(i,j,k).field[0]=mesh.input_parser.source.getvalue(i,j,k,t_current,composants_4);
-                        mesh.nodesMagn(i,j,k).field[1]=mesh.input_parser.source.getvalue(i,j,k,t_current,composants_5);
-                        mesh.nodesMagn(i,j,k).field[2]=mesh.input_parser.source.getvalue(i,j,k,t_current,composants_6);
-                    }else{
+        }
+    }
+
+    /* update electric field  */
+    double epsilon_material = 0.0;
+    for(k=1;k<mesh.numberOfNodesInEachDir[0];k++){
+        for(j=1;j<mesh.numberOfNodesInEachDir[1];j++){
+            for(i=1;i<mesh.numberOfNodesInEachDir[2];i++){
+                
+                /* Get the global indices */
+                local[0] = i;
+                local[1] = j;
+                local[2] = k;
+                mesh.LocalToGlobal(&local,&global);
+
+                T = mesh.nodesElec(i,j,k).Temperature;
+
+                epsilon_material = mesh.materials.getProperty(T,4,mesh.nodesElec(i,j,k).material);
+
+                if(mesh.input_parser.source.isInsideSource(global[0],global[1],global[2])){
+                    mesh.input_parser.source.computeSourceValue(mesh, i,j,k,t_current,'E');
+                    //mesh.nodesMagn(i,j,k).field[1]=mesh.input_parser.source.computeSourceValue(mesh, i,j,k,t_current,composants_5);
+                    //mesh.nodesMagn(i,j,k).field[2]=mesh.input_parser.source.computeSourceValue(mesh, i,j,k,t_current,composants_6);
+                }else{
                     /* update magnetic field E_x */
                     mesh.nodesElec(i,j,k).field[0]= mesh.nodesElec(i,j,k).field[0] + (dt/(epsilon_material*mesh.deltaY))*(mesh.nodesMagn(i,j+1,k).field[2]-mesh.nodesMagn(i,j,k).field[2]) - (dt/(epsilon_material*mesh.deltaZ))*(mesh.nodesMagn(i,j,k+1).field[1]-mesh.nodesMagn(i,j,k).field[1]);
                     /* update magnetic Field E_y */
                     mesh.nodesElec(i,j,k).field[1]= mesh.nodesElec(i,j,k).field[1] + (dt/(epsilon_material*mesh.deltaZ))*(mesh.nodesMagn(i,j,k+1).field[0]-mesh.nodesMagn(i,j,k).field[0])  - (dt/(epsilon_material*mesh.deltaX))*(mesh.nodesMagn(i+1,j,k).field[2]-mesh.nodesMagn(i,j,k).field[2]);
                     /* update magnetic Field E_z */
                     mesh.nodesElec(i,j,k).field[2]= mesh.nodesElec(i,j,k).field[2] + (dt/(epsilon_material*mesh.deltaX))*(mesh.nodesMagn(i+1,j,k).field[1]-mesh.nodesMagn(i,j,k).field[1]) - (dt/(epsilon_material*mesh.deltaY))*(mesh.nodesMagn(i,j+1,k).field[0]-mesh.nodesMagn(i,j,k).field[0]);
-                         }
-                        }
-                    }
                 }
-           
+            }
+        }
+    }   
 }
 
 
 /*Fonction principale*/
 void run(GridCreator mesh){
     double t_current=0.0;
-    double t_final=mesh.input_parser.tempsfinal;                                      /*rajouter le temps final dans le fichier*/
+    /*rajouter le temps final dans le fichier*/
+    double t_final = mesh.input_parser.get_stopTime();                                      
     /*calcul condition CFL*/
     double dt=Compute_dt(mesh);
     /*loop over time*/
     while(t_current<t_final){        
-        void communicate(mesh);                              /* à faire*/
-        void update(mesh,dt,t_current);
+        this->communicate(mesh);                              /* à faire*/
+        this->update(mesh,dt,t_current);
         t_current=t_current+dt;
     }
 }

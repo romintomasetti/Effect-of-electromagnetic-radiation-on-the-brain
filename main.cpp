@@ -76,25 +76,7 @@ int main(int argc, char *argv[]){
 	
 	
 	
-	ElectromagneticSource source;
-	source.set_number_of_sources(1);
-	source.setLengths(2,2,2,0);
-	source.setCenter (5,5,5,0);
-	source.computeNodesInsideSource(10,10,10,1,1,1,0);
-	if(source.isInsideSource(5,5,5,0)){
-		cout << "Node(5,5,5) is inside the source.\n";
-	}
-	if(source.isInsideSource(4,4,4,0)){
-		cout << "Node(4,4,4) is inside the source.\n";
-	}
-	if(source.isInsideSource(3,3,3,0)){
-		cout << "Node(3,3,3) is inside the source.\n";
-	}else{
-		cout << "Node(3,3,3) is NOT inside the source.\n";
-	}
-	if(source.isInsideSource(6,6,6,0)){
-		cout << "Node(6,6,6) is inside the source.\n";
-	}
+	
 	
 	cout << "Calling all the destructors.\n";
 	

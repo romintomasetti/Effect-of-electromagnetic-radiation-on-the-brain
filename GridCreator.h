@@ -11,7 +11,7 @@
 #include "Node1DField.h"
 #include "InputParser.h"
 #include "Materials.h"
-
+#include "MPI_Initializer.h"
 
 class GridCreator{
 	public:
@@ -41,13 +41,18 @@ class GridCreator{
 		size_t numberOfNodesInEachDir[3] = {0,0,0};
 		size_t totalNumberOfNodes        = 0;
 
-		InputParser &input_parser;
-		Materials   &materials;
-        ElectromagneticSource &elec_source;
+		InputParser 	&input_parser;
+		Materials   	&materials;
+		MPI_Initializer &MPI_communicator;
+        
 //	public:
 		// Constructor:
-		GridCreator(InputParser &input_parser, Materials &materials):
-		input_parser(input_parser), materials(materials){}
+		GridCreator(InputParser &input_parser,
+					Materials &materials,
+					MPI_Initializer &MPI_communicator):
+					input_parser(input_parser),
+					materials(materials),
+					MPI_communicator(MPI_communicator){}
 		// Destructor:
 		~GridCreator(void);
 	

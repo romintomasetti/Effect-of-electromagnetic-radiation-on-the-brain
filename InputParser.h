@@ -55,8 +55,7 @@ class InputParser{
 		// Map that contains, for each material, the initial temperature:
 		map<std::string,double> GetInitTemp_FromMaterialName;
 
-		// Source:
-		ElectromagneticSource source;
+		
 
 		/* 
 		 * All the properties read in the input file:
@@ -64,6 +63,9 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
+		// Source:
+		ElectromagneticSource source;
+
 		// Default constructor:
 		InputParser(){};
 		// Constructor:
@@ -83,6 +85,8 @@ class InputParser{
 		map<std::string,std::string> get_outputNames(void){
 			return this->outputNames;
 		}
+
+		double get_stopTime(void){return this->stopTime;}
 
 		// Deltas:
 		double deltaX = 0.0, deltaY = 0.0, deltaZ = 0.0;
