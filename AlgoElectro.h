@@ -10,13 +10,13 @@
 #include <string>
 
 #include "Array_3D_Template.h"
-#include "Node.h"
+#include "Node3DField.h"
 #include "Materials.h"
+#include "MPI_Initializer.h"
 
 class AlgoElectro{
 	private:
 		int numberOfMaterials;
-		MPI_Initializer MPI;
 	public:
 		// Constructor:
 		AlgoElectro(int numberOfMaterials){
@@ -25,9 +25,13 @@ class AlgoElectro{
 		// Destructor:
 		~AlgoElectro(void);
 
-		void run(GridCreator);
-		void update(GridCreator);
+		void run(GridCreator&,MPI_Initializer&);
+		void update(GridCreator&, double, double);
 		// For the function communication, the class need an MPI communicator
-		void communicate(GridCreator);
+		void communicate(GridCreator&,MPI_Initializer&);
 
-}
+		double Compute_dt(GridCreator &);
+
+};
+
+#endif

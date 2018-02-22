@@ -13,7 +13,8 @@
 
 
 
-void AlgoElectro::communicate(GridCreator mesh){
+void AlgoElectro::communicate(GridCreator& mesh, 
+                                MPI_Initializer& MPI_communicator){
 /*à faire*/
 
 }
@@ -22,7 +23,7 @@ void AlgoElectro::communicate(GridCreator mesh){
 /* convention: nbrElts ne contient pas les voisins*/
 
 
-double AlgoElectro::Compute_dt(GridCreator mesh){
+double AlgoElectro::Compute_dt(GridCreator &mesh){
     double dx=mesh.deltaX;
     double dy=mesh.deltaY;
     double dz=mesh.deltaZ;
@@ -31,9 +32,24 @@ double AlgoElectro::Compute_dt(GridCreator mesh){
     double c=0.0;
     int i=0;                                                                                
     for (i=0;i<mesh.materials.numberOfMaterials;i++){
-            double mu_material=mesh.materials.getProperty(Materials_object[i].T_in,i,4);         /* !!!!!!!!!!!!!!/*� faire avec T initial*/     
-            double epsilon_material=mesh.materials.getProperty(Materials_object[i].T_in,i,5);    /* !!!!!!!!!!!!!!/*� faire avec T initial*/
+
+            //double temperature,unsigned char material, unsigned char property
+            /* !!!!!!!!!!!!!!/*� faire avec T initial*/
+
+            // Get material:
+            string material = mesh.materials.materialName_FromMaterialID[i];
+
+            double mu_material = mesh.materials.getProperty(
+                    mesh.input_parser.GetInitTemp_FromMaterialName[material],
+                    i,4);    
+
+            /* !!!!!!!!!!!!!!/*� faire avec T initial*/
+            double epsilon_material = mesh.materials.getProperty(
+                   mesh.input_parser.GetInitTemp_FromMaterialName[material],
+                    i,4);     
+
             c=1/(sqrt(mu_material*epsilon_material));
+
             if(i==0){
                 dt=1/(c*sqrt(1/(dx*dx) + 1/(dy*dy) + 1/(dz*dz)));
             }
@@ -47,7 +63,7 @@ double AlgoElectro::Compute_dt(GridCreator mesh){
     return dt;
 }
 
-void AlgoElectro::update(GridCreator mesh,double dt,double t_current){   
+void AlgoElectro::update(GridCreator &mesh,double dt,double t_current){   
     unsigned long i,j,k;
 
     double T = 0.0;
@@ -66,7 +82,7 @@ void AlgoElectro::update(GridCreator mesh,double dt,double t_current){
                 local[0] = i;
                 local[1] = j;
                 local[2] = k;
-                mesh.LocalToGlobal(&local,&global);
+                mesh.LocalToGlobal(local,global);
 
                 T = mesh.nodesMagn(i,j,k).Temperature;
 
@@ -112,7 +128,7 @@ void AlgoElectro::update(GridCreator mesh,double dt,double t_current){
                 local[0] = i;
                 local[1] = j;
                 local[2] = k;
-                mesh.LocalToGlobal(&local,&global);
+                mesh.LocalToGlobal(local,global);
 
                 T = mesh.nodesElec(i,j,k).Temperature;
 
@@ -137,7 +153,7 @@ void AlgoElectro::update(GridCreator mesh,double dt,double t_current){
 
 
 /*Fonction principale*/
-void AlgoElectro::run(GridCreator mesh){
+void AlgoElectro::run(GridCreator &mesh, MPI_Initializer &MPI_communicator){
     double t_current=0.0;
     /*rajouter le temps final dans le fichier*/
     double t_final = mesh.input_parser.get_stopTime();                                      
@@ -145,7 +161,7 @@ void AlgoElectro::run(GridCreator mesh){
     double dt=Compute_dt(mesh);
     /*loop over time*/
     while(t_current<t_final){        
-        this->communicate(mesh);                              /* à faire*/
+        this->communicate(mesh,MPI_communicator);                              /* à faire*/
         this->update(mesh,dt,t_current);
         t_current=t_current+dt;
     }

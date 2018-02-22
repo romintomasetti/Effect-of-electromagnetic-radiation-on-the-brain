@@ -17,7 +17,7 @@ check_cxx_compiler_flag("-std=c++11" STDCXX11)
   endif(STDCXX11)
 
 set (CPPFILES main.cpp Materials.cpp GridCreator.cpp MPI_Initializer.cpp
-			InputParser.cpp ElectromagneticSource.cpp)
+			InputParser.cpp ElectromagneticSource.cpp AlgoElectro.cpp)
 add_executable(${EXEC_NAME} ${CPPFILES})
 
 # MPI --

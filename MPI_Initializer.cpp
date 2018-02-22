@@ -27,7 +27,17 @@ MPI_Initializer::MPI_Initializer(int argc, char *argv[],int required){
 			cout << "For the communication between the MPI processes to work flowlessly";
 			cout << ", MPI_THREAD_MULTIPLE (or at least MPI_THREAD_SERIALIZED).\n";
 			cout << "You have thread support ";
-			
+			if(this->provided.get() == MPI_THREAD_SINGLE ){
+				cout << "MPI_THREAD_SINGLE. Aborting because it is too low.\n";
+			}else if(this->provided.get() == MPI_THREAD_FUNNELED ){
+				cout << "MPI_THREAD_FUNNELED. Aborting because it is too low.\n";
+			}else if(this->provided.get() == MPI_THREAD_SERIALIZED ){
+				cout << "MPI_THREAD_SERIALIZED. The communications will be severely affected";
+				cout << " but it is OK.\n";
+			}else if(this->required.get() == MPI_THREAD_MULTIPLE ){
+				cout << "MPI_THREAD_MULTIPLE. This is the best thread support you can have.";
+				cout << " We will intensively rely on that to communicate.\n";
+			}
 			abort();
 		}
 	}

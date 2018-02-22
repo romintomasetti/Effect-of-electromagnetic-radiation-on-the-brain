@@ -65,7 +65,7 @@ class GridCreator{
 		// 
 		void test(double, double, double, double, double, double, double);
 		// Convert the local indices to global indices:
-		void LocalToGlobal(unsigned long *localIndices, unsigned long *globalIndices);
+		void LocalToGlobal(unsigned long *, unsigned long *);
 
 
 };

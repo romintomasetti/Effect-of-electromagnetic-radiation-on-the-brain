@@ -463,18 +463,29 @@ void InputParser::readHeader_MESH (ifstream &file){
 						}else if(propName == "C_X"){
 							std::vector<double> temp = this->determineVectorFromStr(propGiven);
 							cout << temp[0] << temp[1] << endl;
+							this->source.setCenterAlongOneDir(0,temp);
 
 						}else if(propName == "C_Y"){
 							std::vector<double> temp = this->determineVectorFromStr(propGiven);
 							cout << temp[0] << temp[1] << endl;
+							this->source.setCenterAlongOneDir(1,temp);
 
 						}else if(propName == "C_Z"){
 							std::vector<double> temp = this->determineVectorFromStr(propGiven);
 							cout << temp[0] << temp[1] << endl;
+							this->source.setCenterAlongOneDir(2,temp);
 
 						}else if(propName == "FRQCY"){
 							std::vector<double> temp = this->determineVectorFromStr(propGiven);
 							cout << temp[0] << temp[1] << endl;
+							this->source.setAllFrequencies(temp);
+
+						}else if(propName == "AIR_GAP"){
+							std::vector<double> airgaps = this->determineVectorFromStr(propGiven);
+							cout << airgaps[0] << airgaps[1] << endl;
+							cout << "Setting AriGaps...";
+							this->source.set_airGaps(airgaps);
+							cout << "Done.\n";
 						
 						}else if(propName != "NBR_SOURCES" 
 								&& propName != "L_X" 

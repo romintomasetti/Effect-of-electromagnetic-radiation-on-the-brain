@@ -53,8 +53,7 @@ class InputParser{
 		// Time (in sec) after which the simulation must be stopped):
 		double stopTime = -1.0;
 
-		// Map that contains, for each material, the initial temperature:
-		map<std::string,double> GetInitTemp_FromMaterialName;
+		
 
 		
 
@@ -64,6 +63,9 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
+		// Map that contains, for each material, the initial temperature:
+		map<std::string,double> GetInitTemp_FromMaterialName;
+
 		// Source:
 		ElectromagneticSource source;
 
@@ -73,10 +75,7 @@ class InputParser{
 		InputParser(string file_name);
 		// Destructor:
 		~InputParser(void){};
-		// Deltas:
-		double deltaX = 0.0, deltaY = 0.0, deltaZ = 0.0;
-		// Domain size:
-		double lengthX = 0.0, lengthY = 0.0, lengthZ = 0.0;
+		
 		// Default parser, using the field 'filename' of the class:
 		void defaultParsingFromFile(void);
 		// Parser:

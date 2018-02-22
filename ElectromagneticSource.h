@@ -91,8 +91,10 @@ class ElectromagneticSource{
 		void computeNodesInsideSource(const double,const double, const double,
 									 const double, const double, const double,
 									 const unsigned int);
-		// Check that a node is inside the source:
+		// Check that a node is inside the source, you give the source:
 		bool isInsideSource(const size_t, const size_t, const size_t,const unsigned int);
+		// Check that a node is inside a source, don't specify which one:
+		bool isInsideSource(const size_t, const size_t, const size_t);
 		//Get value source  
 		//From mesh, t_current, i,j,k
         void computeSourceValue(GridCreator&, double,const size_t,const size_t,const size_t,char);

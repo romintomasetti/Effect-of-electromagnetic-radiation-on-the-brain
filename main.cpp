@@ -68,7 +68,7 @@ int main(int argc, char *argv[]){
 	cout << test222["output"] << test222["error"] << test222["profile"] << endl;
 
 	cout << "Calling GridCreator constructor" << endl;
-	GridCreator mesher(input_parser,allMat);
+	GridCreator mesher(input_parser,allMat,MPI_communicator);
 	mesher.test(1,1,1,10,10,10,1);
 	mesher.meshInitialization();
 	

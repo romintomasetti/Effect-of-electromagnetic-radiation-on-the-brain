@@ -102,6 +102,7 @@ void ElectromagneticSource::setCenterAlongOneDir(
 			this->centerZ[I] = values[I];
 		}
 	}else{
+		printf("ElectromagneticSource::setCenterAlongOneDir\n");
 		printf("Direction should be between 0 and 2. Aborting.\n");
 		std::abort();
 	}
@@ -161,11 +162,10 @@ void ElectromagneticSource::computeNodesInsideSource(const double L_dom_X,
 	this->nodesInsideAlreadySet[i] = true;
 }
 
-bool ElectromagneticSource::isInsideSource(const size_t x, 
-											const size_t y, 
-											const size_t z,const unsigned int i){
-
-	/* DETERMINE IN WHICH SOURCE WE ARE */
+bool ElectromagneticSource::isInsideSource(const size_t i_global, 
+											const size_t j_global, 
+											const size_t k_global,
+											const unsigned int i){
 
 	// i represents the desired source.
 	if(this->nodesInsideAlreadySet[i] != true){
@@ -174,14 +174,14 @@ bool ElectromagneticSource::isInsideSource(const size_t x,
 		printf("Aborting.\n\n");
 		std::abort();
 	}
-	if( ( x >= this->nbrNodeCorner1_X[i] &&
-		  x <= (this->nbrNodeCorner1_X[i] + this->nodesInsideAlong_X[i]))
+	if( ( i_global >= this->nbrNodeCorner1_X[i] &&
+		  i_global <= (this->nbrNodeCorner1_X[i] + this->nodesInsideAlong_X[i]))
 		&&
-		( y >= this->nbrNodeCorner1_Y[i] &&
-		  y <= (this->nbrNodeCorner1_Y[i] + this->nodesInsideAlong_Y[i]))
+		( j_global >= this->nbrNodeCorner1_Y[i] &&
+		  j_global <= (this->nbrNodeCorner1_Y[i] + this->nodesInsideAlong_Y[i]))
 		&&
-		( z >= this->nbrNodeCorner1_Z[i] &&
-		  z <= (this->nbrNodeCorner1_Z[i] + this->nodesInsideAlong_Z[i]))){
+		( k_global >= this->nbrNodeCorner1_Z[i] &&
+		  k_global <= (this->nbrNodeCorner1_Z[i] + this->nodesInsideAlong_Z[i]))){
 		return true;
 	}
 	// By default, return false:
@@ -190,7 +190,7 @@ bool ElectromagneticSource::isInsideSource(const size_t x,
 
 
 void ElectromagneticSource::set_airGaps(const std::vector<double> airGaps){
-	if(this->number_of_sources.get_alreadySet()){
+	if(!this->number_of_sources.get_alreadySet()){
 		printf("ElectromagneticSource::computeNodesInsideSource::ERROR\n");
 		printf("The number of sources hasn't been set, aborting.\n");
 		std::abort();
@@ -257,6 +257,18 @@ void ElectromagneticSource::computeSourceValue(GridCreator &mesh,
 	}
 
 	
+}
+
+bool ElectromagneticSource::isInsideSource(const size_t i_global,
+											const size_t j_global,
+											const size_t k_global){
+	for(unsigned int I = 0 ; I < this->number_of_sources.get() ; I ++){
+		if(this->isInsideSource(i_global,j_global,k_global,I)){
+			return true;
+		}
+	}
+	// By default we return -1, meaning we are not in a source.
+	return false;
 }
 
 int ElectromagneticSource::DetermineInWhichSourceWeAre(const size_t i_global,
