@@ -1,3 +1,5 @@
+#include "AlgoElectro.h"
+
 #include "Materials.h"
 #include "GridCreator.h"
 #include <fstream>
@@ -11,7 +13,7 @@
 
 
 
-void communicate(GridCreator mesh){
+void AlgoElectro::communicate(GridCreator mesh){
 /*à faire*/
 
 }
@@ -20,7 +22,7 @@ void communicate(GridCreator mesh){
 /* convention: nbrElts ne contient pas les voisins*/
 
 
-double Compute_dt(GridCreator mesh){
+double AlgoElectro::Compute_dt(GridCreator mesh){
     double dx=mesh.deltaX;
     double dy=mesh.deltaY;
     double dz=mesh.deltaZ;
@@ -45,7 +47,7 @@ double Compute_dt(GridCreator mesh){
     return dt;
 }
 
-void update(GridCreator mesh,double dt,double t_current){   
+void AlgoElectro::update(GridCreator mesh,double dt,double t_current){   
     unsigned long i,j,k;
 
     double T = 0.0;
@@ -135,7 +137,7 @@ void update(GridCreator mesh,double dt,double t_current){
 
 
 /*Fonction principale*/
-void run(GridCreator mesh){
+void AlgoElectro::run(GridCreator mesh){
     double t_current=0.0;
     /*rajouter le temps final dans le fichier*/
     double t_final = mesh.input_parser.get_stopTime();                                      
