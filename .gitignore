@@ -11,9 +11,13 @@
 *.vti
 *.pvti
 *.vtk
+*.json
 #
 build/*
 TESTS/*
+.vscode/*
 #
 main
 main.cpp
+
+
