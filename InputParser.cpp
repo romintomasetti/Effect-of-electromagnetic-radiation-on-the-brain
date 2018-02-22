@@ -65,6 +65,7 @@ void InputParser::defaultParsingFromFile(void){
 			cout << "Input file exist !" << endl;
 			#endif
 		}else{
+			cout << "InputParser::defaultParsingFromFile\n";
 			cout << "Input file doesn't exist ! Aborting.\n";
 			abort();
 		}
@@ -80,6 +81,7 @@ void InputParser::defaultParsingFromFile(string filename){
 		cout << "Input file exist !" << endl;
 		#endif
 	}else{
+		cout << "InputParser::defaultParsingFromFile\n";
 		cout << "Input file doesn't exist ! Aborting.\n";
 		abort();
 	}
@@ -88,9 +90,13 @@ void InputParser::defaultParsingFromFile(string filename){
 }
 
 bool InputParser::is_file_exist(const string fileName){
+	#if DEBUG > 4
 	cout << "InputParser::is_file_exist::IN\n";
+	#endif
     ifstream infile(fileName);
+	#if DEBUG > 4
 	cout << "InputParser::is_file_exist::OUT\n";
+	#endif
     return infile.good();
 }
 
@@ -103,27 +109,37 @@ void InputParser::basicParsing(const string filename){
 		inputFile.open(filename);
 		if(inputFile.fail()){
 			// Opening failed, aborting.
-			cout << "InputParser::basicParsing::Failed to open " + filename + ". Aborting.\n";
+			cout << "InputParser::basicParsing::Failed to open ";
+			cout << filename + ". Aborting.\n";
 			inputFile.clear();
 			abort();
 		}else if(inputFile.is_open()){
 			// Contains the current read line of the input file:
 			string currentLine;
 			
+			// Looping on the whole file:
 			while(!inputFile.eof()){
+
+				// Get line:
 				getline(inputFile,currentLine);
 				// Check that the line is not a comment:
 				if(this->checkLineISNotComment(inputFile,currentLine)){
 					// The line was a comment, ignoring it.
 				}
+				#if DEBUG > 4
 				cout << "Current line is " + currentLine << endl;
+				#endif
 				if(currentLine.find("$") != std::string::npos){
+					// If there is a dollar, we begin a section:
+					#if DEBUG > 4
 					cout << "There is a dollor in ::" + currentLine + "::\n";
+					#endif
 					this->readHeader(inputFile,currentLine);
 				}
 			}
 		}else{
-			cout << "InputParser::basicParsing::Should not end up here ! Complain to the developer.\n";
+			cout << "InputParser::basicParsing::Should not end up here !";
+			cout << " Complain to the developer.\n";
 			cout << "Aborting.\n";
 			abort();
 		}
@@ -131,6 +147,8 @@ void InputParser::basicParsing(const string filename){
 	}else{
 		cout << "The input file is not under .input format. Please check your input file";
 		cout << " " + filename << endl;
+		cout << "Aborting.\n";
+		std::abort();
 	}
 }
 
@@ -143,18 +161,28 @@ void InputParser::readHeader(ifstream &file,std::string &currentLine){
 	strHeader1.erase(std::remove_if(strHeader1.begin(),
 			 strHeader1.end(), [](unsigned char x){return std::isspace(x);}),
 			 strHeader1.end());
+	#if DEBUG > 4
 	cout << "String analyzed is " + strHeader1 << endl;
+	#endif
 	// Go with the switch:
 	switch(hashit_Header1(strHeader1)){
 		case INFOS    : 
 			this->readHeader_INFOS(file);
+			#if DEBUG > 4
 			cout << "EXITING SECTION INFOS WITH currentLine=" + currentLine << endl;
+			#endif
 			break;
 		case MESH     : 
 			this->readHeader_MESH (file);
+			#if DEBUG > 4
+			cout << "EXITING SECTION MESH WITH currentLine=" + currentLine << endl;
+			#endif
 			break;
 		case RUN_INFOS: 
 			this->readHeader_RUN_INFOS(file);
+			#if DEBUG > 4
+			cout << "EXITING SECTION RUN_INFOS WITH currentLine=" + currentLine << endl;
+			#endif
 			break;
 		default:
 			printf("Should not end up here. Complain to Romin. Abort.");
@@ -169,28 +197,33 @@ bool InputParser::checkLineISNotComment(ifstream &file, string &currentLine){
 	std::string str = currentLine;
 	this->RemoveAnyBlankSpaceInStr(str);
 	if(str == string()){
+		#if DEBUG > 4
 		cout << "It is a blank line !" << endl;
+		#endif
 		getline(file,currentLine);
 	}
+
 	string comment1_beg = "/*";
 	string comment1_end = "*/";
 	string comment2 = "//";
-	#if DEBUG > 3
+
+	#if DEBUG > 4
 	cout << "check received " + currentLine << endl;
 	#endif
+
 	if(currentLine.find(comment1_beg) != std::string::npos){
 		// We have multiple lines comment ! Read all the comment before exiting.
-		#if DEBUG > 3
+		#if DEBUG > 4
 		cout << "Multiple line comment:\n";
 		#endif
 		while(!file.eof()){
 			if(currentLine.find(comment1_end) != std::string::npos){
-				#if DEBUG > 2
+				#if DEBUG > 4
 				cout << "\t|" + currentLine << "|\n" << endl;
 				#endif
 				break;
 			}
-			#if DEBUG > 2
+			#if DEBUG > 4
 			cout << "\t|" + currentLine << "|\n" << endl;
 			#endif
 			getline(file,currentLine);
@@ -198,7 +231,7 @@ bool InputParser::checkLineISNotComment(ifstream &file, string &currentLine){
 		return true;
 	}else if(currentLine.find(comment2) != std::string::npos){
 		// We have one line comment !
-		#if DEBUG > 3
+		#if DEBUG > 4
 		cout << "This is a one line comment : " + currentLine << endl;
 		#endif
 		while(!file.eof()){

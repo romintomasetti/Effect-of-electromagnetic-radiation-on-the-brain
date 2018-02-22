@@ -33,7 +33,7 @@ class MPI_Initializer{
 		// Get rank/ID of the MPI process:
 		int getRank(void);
 
-		void MpiDivision(GridCreator &, int, int);
+		void MpiDivision(GridCreator &);
 
 };
 

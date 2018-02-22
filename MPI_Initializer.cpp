@@ -84,7 +84,10 @@ int MPI_Initializer::getRank(void){
 }
 
 
-void MPI_Initializer::MpiDivision(GridCreator &subGrid, int nbProc, int myRank){  
+void MPI_Initializer::MpiDivision(GridCreator &subGrid){  
+
+	int nbProc = this->number_of_MPI_Processes.get();
+	int myRank = this->ID_MPI_Process.get();
 
 	double Lx = subGrid.input_parser.lengthX;
 	double Ly = subGrid.input_parser.lengthY;

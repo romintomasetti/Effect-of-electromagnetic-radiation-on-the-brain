@@ -2,10 +2,11 @@
 
 /* Grid initialization */
 void GridCreator::meshInitialization(){
+
 	if(this->lengthX <= 0.0 || this->lengthY <= 0.0 || this->lengthZ <= 0.0){
 		cout << "One of the lengths of the domain is still <= to 0 (Line ";
 		printf("%d - FILE %s).Aborting.\n",__LINE__,__FILE__);
-		abort();
+		std::abort();
 	}
 	// First, compute the number of nodes from delta(X,Y,Z) and length(X,Y,Z):
 	this->numberOfNodesInEachDir[0] = (size_t) this->lengthX / this->deltaX +1;
@@ -36,25 +37,37 @@ void GridCreator::meshInitialization(){
 	//Fonction obtenir mu et epsilon en fonction des indices données (globaux)  this->epsilon    this->mu
 
 }
+
+/*
+ * Constructor of the class GridCreator.
+ * Arguments are:
+ * 		1)
+ * 		2)
+ * 		3)
+ */
+GridCreator::GridCreator(InputParser &input_parser,
+						 Materials &materials,
+						 MPI_Initializer &MPI_communicator):
+						 input_parser(input_parser),
+						 materials(materials),
+						 MPI_communicator(MPI_communicator){
+	// The DELTAS are common to any subgrid, so we can take that from the
+	// object reference 'input_parser'. However, the lengths along each direction
+	// cannot be taken from this object because this object gives the lengths
+	// of the whole domain and we need the lengths of this particular subgrid !!
+	this->deltaX = this->input_parser.deltaX;
+	this->deltaY = this->input_parser.deltaY;
+	this->deltaZ = this->input_parser.deltaZ;
+
+	// To get the lengths of this subgrid, call MpiDivision:
+	this->MPI_communicator.MpiDivision(*this);
+}
 		
 /* Destructor */
 GridCreator::~GridCreator(void){
 	cout << "Destructor of Grid creator ok.\n";
 }
 
-void GridCreator::test(double deltaX, double deltaY, double deltaZ, 
-					   double lengthX, double lengthY, double lengthZ, 
-					   double deltaT){
-	this->deltaX = deltaX;
-	this->deltaY = deltaY;
-	this->deltaZ = deltaZ;
-
-	this->lengthX = lengthX;
-	this->lengthY = lengthY;
-	this->lengthZ = lengthZ;
-	
-	this->deltaT = deltaT;
-}
 
  void GridCreator::LocalToGlobal(unsigned long *localIndices, unsigned long *globalIndices){
  	int i=0;

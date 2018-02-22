@@ -53,17 +53,16 @@ class GridCreator{
 		// Constructor:
 		GridCreator(InputParser &input_parser,
 					Materials &materials,
-					MPI_Initializer &MPI_communicator):
+					MPI_Initializer &MPI_communicator)/*:
 					input_parser(input_parser),
 					materials(materials),
-					MPI_communicator(MPI_communicator){}
+					MPI_communicator(MPI_communicator){}*/;
 		// Destructor:
 		~GridCreator(void);
 	
 		// Grid initialization:
 		void meshInitialization();
-		// 
-		void test(double, double, double, double, double, double, double);
+		
 		// Convert the local indices to global indices:
 		void LocalToGlobal(unsigned long *, unsigned long *);
 

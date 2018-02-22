@@ -28,5 +28,6 @@
         "typeinfo": "cpp",
         "utility": "cpp",
         "sstream": "cpp"
-    }
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }
