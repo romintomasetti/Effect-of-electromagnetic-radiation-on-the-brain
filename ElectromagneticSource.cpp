@@ -163,10 +163,10 @@ void ElectromagneticSource::computeNodesInsideSource(const double L_dom_X,
 
 bool ElectromagneticSource::isInsideSource(const size_t x, 
 											const size_t y, 
-											const size_t z){
+											const size_t z,const unsigned int i){
 
 	/* DETERMINE IN WHICH SOURCE WE ARE */
-	
+
 	// i represents the desired source.
 	if(this->nodesInsideAlreadySet[i] != true){
 		printf("ElectromagneticSource::isInsideSource::ERROR.\n");
@@ -204,11 +204,12 @@ void ElectromagneticSource::set_airGaps(const std::vector<double> airGaps){
 /* --------------------------------------------------------------------------------------------------------------------- */
 /* Here, i,j,k are local indices */
 void ElectromagneticSource::computeSourceValue(GridCreator &mesh,
-				 double tCurrent, int i_global, int j_global,
-				 int k_global,char CHAMP)
+				 double tCurrent, const size_t i_global, const size_t j_global,
+				 const size_t k_global,char CHAMP)
 {
 	//double AirGap = 1;
 
+	unsigned int ID_Source = this->DetermineInWhichSourceWeAre(i_global, j_global, k_global);
 
 	/* FIND IN WHICH SOURCE WE ARE */
 
@@ -225,28 +226,29 @@ void ElectromagneticSource::computeSourceValue(GridCreator &mesh,
 	*/
 	/* We know that for a dipole antenna E_x, E_y, H_x, H_y and H_z are all equal to 0, whereas E_z is different if we are in the air gap or not */
 	if(CHAMP == 'H'){
-		mesh.nodeMagn(i,j,k).field[0] = 0.0;
-		mesh.nodeMagn(i,j,k).field[1] = 0.0;
-		mesh.nodeMagn(i,j,k).field[2] = 0.0;
+		mesh.nodesMagn(i_global,j_global,k_global).field[0] = 0.0;
+		mesh.nodesMagn(i_global,j_global,k_global).field[1] = 0.0;
+		mesh.nodesMagn(i_global,j_global,k_global).field[2] = 0.0;
 	}else if(CHAMP == 'E'){
-		mesh.nodeElec(i,j,k).field[0] = 0.0;
-		mesh.nodeElec(i,j,k).field[1] = 0.0;
+		mesh.nodesElec(i_global,j_global,k_global).field[0] = 0.0;
+		mesh.nodesElec(i_global,j_global,k_global).field[1] = 0.0;
 		/* Ask Romin if the function returns the indices or the physical coordinates */
-		double CenterAntenna[3] = mesh.elec_source.getCenter(ID_Source);
+		double CenterAntenna[3];
+		this->getCenter(ID_Source,CenterAntenna);
 
 		/* If we are in the antenna */
-		if(CenterAntenna[0]-(LengthDipoleX/2)/mesh.deltaX <= GlobalIndices[0]  && GlobalIndices[0] <= CenterAntenna[0]-(LengthDipoleX/2)/mesh.deltaX )
+		/*if(CenterAntenna[0]-(LengthDipoleX/2)/mesh.deltaX <= GlobalIndices[0]  && GlobalIndices[0] <= CenterAntenna[0]-(LengthDipoleX/2)/mesh.deltaX )
 		{
 			if(CenterAntenna[1]-(LengthDipoleY/2)/mesh.deltaY <= GlobalIndices[1] && GlobalIndices[1] <= CenterAntenna[1]-(LengthDipoleY/2)/mesh.deltaY)
 			{
 				if(CenterAntenna[2]-(LengthDipoleZ/2)/mesh.deltaZ <= GlobalIndices[2] && GlobalIndices[2] <= CenterAntenna[2]-(LengthDipoleY/2)/mesh.deltaZ)
-					mesh.nodesElec(i,j,k).field[2] = sin(2*M_PI*mesh.elec_source.frequency[ID_Source]*tCurrent);
+					mesh.nodesElec(i_global,j_global,k_global).field[2] = sin(2*M_PI*mesh.elec_source.frequency[ID_Source]*tCurrent);
 			}
 		}
 		else
 		{
-			mesh.nodesElec(i,j,k).field[2] = 0.0;	
-		}
+			mesh.nodesElec(i_global,j_global,k_global).field[2] = 0.0;	
+		}*/
 	}else{
 		printf("ElectromagneticSource::computeSourceValue:: ERROR\n");
 		printf("Should be 'E' or 'H' but has '%c'.\n",CHAMP);
@@ -255,4 +257,16 @@ void ElectromagneticSource::computeSourceValue(GridCreator &mesh,
 	}
 
 	
+}
+
+int ElectromagneticSource::DetermineInWhichSourceWeAre(const size_t i_global,
+														const size_t j_global,
+														const size_t k_global){
+	for(unsigned int I = 0 ; I < this->number_of_sources.get() ; I ++){
+		if(this->isInsideSource(i_global,j_global,k_global,I)){
+			return I;
+		}
+	}
+	// By default we return -1, meaning we are not in a source.
+	return -1;
 }

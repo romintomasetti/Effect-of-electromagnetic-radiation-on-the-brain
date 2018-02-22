@@ -73,11 +73,14 @@ class ElectromagneticSource{
 			return lengths;
 		}
 		// Get center in each direction:
-		vector<double> getCenter(const unsigned int i){
-			vector<double> center = {this->centerX[i],
+		void getCenter(const unsigned int i, double *vec){
+			/*vector<double> center = {this->centerX[i],
 										this->centerY[i],
 										this->centerZ[i]};
-			return center;
+			return center;*/
+			vec[0] = this->centerX[i];
+			vec[1] = this->centerY[i];
+			vec[2] = this->centerZ[i];
 		}
 		// Get frequency:
 		double getFrequency(const unsigned int i){
@@ -89,10 +92,12 @@ class ElectromagneticSource{
 									 const double, const double, const double,
 									 const unsigned int);
 		// Check that a node is inside the source:
-		bool isInsideSource(const size_t, const size_t, const size_t);
+		bool isInsideSource(const size_t, const size_t, const size_t,const unsigned int);
 		//Get value source  
 		//From mesh, t_current, i,j,k
-        void computeSourceValue(GridCreator&, double,int ,int,int,char);
+        void computeSourceValue(GridCreator&, double,const size_t,const size_t,const size_t,char);
+
+		int DetermineInWhichSourceWeAre(const size_t,const size_t,const size_t);
 };
 
 #endif
