@@ -14,6 +14,8 @@ void ElectromagneticSource::set_number_of_sources(const unsigned int nbrSources)
 		this->centersAlreadySet.reserve(this->number_of_sources.get());
 		this->nodesInsideAlreadySet.reserve(this->number_of_sources.get());
 
+		this->airgap.reserve(this->number_of_sources.get());
+
 		this->lengthX.reserve(this->number_of_sources.get());
 		this->lengthY.reserve(this->number_of_sources.get());
 		this->lengthZ.reserve(this->number_of_sources.get());
@@ -160,9 +162,11 @@ void ElectromagneticSource::computeNodesInsideSource(const double L_dom_X,
 }
 
 bool ElectromagneticSource::isInsideSource(const size_t x, 
-														 const size_t y, 
-														 const size_t z,
-														 const unsigned int i){
+											const size_t y, 
+											const size_t z){
+
+	/* DETERMINE IN WHICH SOURCE WE ARE */
+	
 	// i represents the desired source.
 	if(this->nodesInsideAlreadySet[i] != true){
 		printf("ElectromagneticSource::isInsideSource::ERROR.\n");
@@ -185,45 +189,70 @@ bool ElectromagneticSource::isInsideSource(const size_t x,
 }
 
 
+void ElectromagneticSource::set_airGaps(const std::vector<double> airGaps){
+	if(this->number_of_sources.get_alreadySet()){
+		printf("ElectromagneticSource::computeNodesInsideSource::ERROR\n");
+		printf("The number of sources hasn't been set, aborting.\n");
+		std::abort();
+	}
+
+	for(unsigned int I = 0 ; I < this->number_of_sources.get() ; I ++ ){
+		this->airgap[I] = airGaps[I];
+	}
+}
+
 /* --------------------------------------------------------------------------------------------------------------------- */
 /* Here, i,j,k are local indices */
-void ElectromagneticSource::computeSourceValue(GridCreator mesh, double tCurrent, int i, int j, int k,unsigned int ID_Source)
+void ElectromagneticSource::computeSourceValue(GridCreator &mesh,
+				 double tCurrent, int i_global, int j_global,
+				 int k_global,char CHAMP)
 {
-	double AirGap = 1;
+	//double AirGap = 1;
 
+
+	/* FIND IN WHICH SOURCE WE ARE */
 
 	/* Size d'une antenne du dipole */
-	double LengthDipoleX = mesh.elec_source.LengthX(ID_Source);
-	double LengthDipoleY = mesh.elec_source.LengthY(ID_Source);
-	double LengthDipoleZ = (mesh.elec_source.LengthZ(ID_Source) - AirGap)/2;
+	double LengthDipoleX = this->lengthX[ID_Source];//mesh.elec_source.LengthX(ID_Source);
+	double LengthDipoleY = this->lengthY[ID_Source];//mesh.elec_source.LengthY(ID_Source);
+	double LengthDipoleZ = this->lengthZ[ID_Source];//(mesh.elec_source.LengthZ(ID_Source) - AirGap)/2;
 
 	/* 	Here, GlobalIndices will contain the global indices corresponding to the local indices i,j,k, which are in the source */
-	int GlobalIndices[3];
+	/*int GlobalIndices[3];
 	GlobalIndices[0] = mesh.Transformation(i, j, k, mesh.myrank, mesh.numberofprocess);
 	GlobalIndices[1] = mesh.Transformation(i, j, k, mesh.myrank, mesh.numberofprocess);
 	GlobalIndices[2] = mesh.Transformation(i, j, k, mesh.myrank, mesh.numberofprocess);
-
+	*/
 	/* We know that for a dipole antenna E_x, E_y, H_x, H_y and H_z are all equal to 0, whereas E_z is different if we are in the air gap or not */
-	mesh.nodeMagn(i,j,k).field[0] = 0.0;
-	mesh.nodeMagn(i,j,k).field[1] = 0.0;
-	mesh.nodeMagn(i,j,k).field[2] = 0.0;
-	mesh.nodeElec(i,j,k).field[0] = 0.0;
-	mesh.nodeElec(i,j,k).field[1] = 0.0;
+	if(CHAMP == 'H'){
+		mesh.nodeMagn(i,j,k).field[0] = 0.0;
+		mesh.nodeMagn(i,j,k).field[1] = 0.0;
+		mesh.nodeMagn(i,j,k).field[2] = 0.0;
+	}else if(CHAMP == 'E'){
+		mesh.nodeElec(i,j,k).field[0] = 0.0;
+		mesh.nodeElec(i,j,k).field[1] = 0.0;
+		/* Ask Romin if the function returns the indices or the physical coordinates */
+		double CenterAntenna[3] = mesh.elec_source.getCenter(ID_Source);
 
-	/* Ask Romin if the function returns the indices or the physical coordinates */
-	double CenterAntenna[3] = mesh.elec_source.getCenter(ID_Source);
-
-	/* If we are in the antenna */
-	if(CenterAntenna[0]-(LengthDipoleX/2)/mesh.deltaX <= GlobalIndices[0]  && GlobalIndices[0] <= CenterAntenna[0]-(LengthDipoleX/2)/mesh.deltaX )
-	{
-		if(CenterAntenna[1]-(LengthDipoleY/2)/mesh.deltaY <= GlobalIndices[1] && GlobalIndices[1] <= CenterAntenna[1]-(LengthDipoleY/2)/mesh.deltaY)
+		/* If we are in the antenna */
+		if(CenterAntenna[0]-(LengthDipoleX/2)/mesh.deltaX <= GlobalIndices[0]  && GlobalIndices[0] <= CenterAntenna[0]-(LengthDipoleX/2)/mesh.deltaX )
 		{
-			if(CenterAntenna[2]-(LengthDipoleZ/2)/mesh.deltaZ <= GlobalIndices[2] && GlobalIndices[2] <= CenterAntenna[2]-(LengthDipoleY/2)/mesh.deltaZ)
-				mesh.nodesElec(i,j,k).field[2] = sin(2*M_PI*mesh.elec_source.frequency[ID_Source]*tCurrent);
+			if(CenterAntenna[1]-(LengthDipoleY/2)/mesh.deltaY <= GlobalIndices[1] && GlobalIndices[1] <= CenterAntenna[1]-(LengthDipoleY/2)/mesh.deltaY)
+			{
+				if(CenterAntenna[2]-(LengthDipoleZ/2)/mesh.deltaZ <= GlobalIndices[2] && GlobalIndices[2] <= CenterAntenna[2]-(LengthDipoleY/2)/mesh.deltaZ)
+					mesh.nodesElec(i,j,k).field[2] = sin(2*M_PI*mesh.elec_source.frequency[ID_Source]*tCurrent);
+			}
 		}
+		else
+		{
+			mesh.nodesElec(i,j,k).field[2] = 0.0;	
+		}
+	}else{
+		printf("ElectromagneticSource::computeSourceValue:: ERROR\n");
+		printf("Should be 'E' or 'H' but has '%c'.\n",CHAMP);
+		printf("Abort.\n\n");
+		abort();
 	}
-	else
-	{
-		mesh.nodesElec(i,j,k).field[2] = 0.0;	
-	}
+
+	
 }
