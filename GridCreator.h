@@ -13,6 +13,8 @@
 #include "Materials.h"
 #include "MPI_Initializer.h"
 
+class MPI_Initializer;
+
 class GridCreator{
 	public:
 		// Dictionnary with the materials and the chosen unsigned char assigned to it:
