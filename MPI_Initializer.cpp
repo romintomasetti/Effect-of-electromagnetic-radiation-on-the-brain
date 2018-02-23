@@ -29,8 +29,10 @@ MPI_Initializer::MPI_Initializer(int argc, char *argv[],int required){
 			cout << "You have thread support ";
 			if(this->provided.get() == MPI_THREAD_SINGLE ){
 				cout << "MPI_THREAD_SINGLE. Aborting because it is too low.\n";
+				abort();
 			}else if(this->provided.get() == MPI_THREAD_FUNNELED ){
 				cout << "MPI_THREAD_FUNNELED. Aborting because it is too low.\n";
+				abort();
 			}else if(this->provided.get() == MPI_THREAD_SERIALIZED ){
 				cout << "MPI_THREAD_SERIALIZED. The communications will be severely affected";
 				cout << " but it is OK.\n";
@@ -38,7 +40,6 @@ MPI_Initializer::MPI_Initializer(int argc, char *argv[],int required){
 				cout << "MPI_THREAD_MULTIPLE. This is the best thread support you can have.";
 				cout << " We will intensively rely on that to communicate.\n";
 			}
-			abort();
 		}
 	}
 	
@@ -153,6 +154,14 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 	subGrid.lengthX = mpiExtremity[1]-mpiExtremity[0];
 	subGrid.lengthY = mpiExtremity[3]-mpiExtremity[2];
 	subGrid.lengthZ = mpiExtremity[5]-mpiExtremity[4];
+}
 
+bool MPI_Initializer::SendDataToNeighboor(double *vectorToSend,
+										  size_t lengthToSend,
+										  unsigned char direction){
+	// We can communicate in 6 directions
+	// By default, it is assumed that everything worked fine.
+	// Thus, return true.
+	return true;
 }
 

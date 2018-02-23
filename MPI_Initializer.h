@@ -35,6 +35,8 @@ class MPI_Initializer{
 
 		void MpiDivision(GridCreator &);
 
+		bool SendDataToNeighboor(double *,size_t,unsigned char);
+
 };
 
 #endif

@@ -23,7 +23,9 @@ void Materials::getPropertiesFromFile(string filename){
 	if(file.fail())
 	{
 		/* Opening failed - aborting ... */
-		printf("There was an error while opening the file containing the properties (line %d).\n",__LINE__);
+		printf("There was an error while opening the file containing the properties '%s' (line %d).\n",
+						filename.c_str(),__LINE__);
+		printf("Check the access path.\n");
 		abort();
 	}
 	////////////////////
@@ -40,7 +42,7 @@ void Materials::getPropertiesFromFile(string filename){
 
 	/* Determine the number of information per material and the number of different materials */
 	// Also, determine the number of properties.
-	unsigned int maxNumberOfTemp = 0, counter = 1, numberOfMaterials = -1;
+	unsigned int maxNumberOfTemp = 0, counter = 1, numberOfMaterials = 0;
 	// Note: numberOfMaterials starts at -1 because at the first comparaison between 
 	// 	 current- and previousMaterial, it will always trigger "numberOfMaterials++"
 	//	 even if it is not necessary.
@@ -49,14 +51,19 @@ void Materials::getPropertiesFromFile(string filename){
 	{
 		// Get the current line:
 		getline(file,currentLine);
+		cout << currentLine << endl;
 		if(currentLine.empty()){
 			// Do nothing, the line is empty !
 		}else{
 			// Get the position of the first comma:
+			bool materialName = false;
 			for(unsigned int i = 0 ; i < currentLine.length() ; i++){
 					if(currentLine[i] == ','){
 						// The current material is for example AIR,
-						currentMaterial.assign(currentLine,0,i);
+						if(materialName == false){
+							currentMaterial.assign(currentLine,0,i);
+							materialName = true;
+						}
 						if(numberOfPropertiesIsKnown == true)
 							break;
 						else
@@ -68,23 +75,33 @@ void Materials::getPropertiesFromFile(string filename){
 			if(currentMaterial.compare(previousMaterial) != 0){
 				// Increment the number of materials
 				numberOfMaterials++;
+
+				cout << "C::" + currentMaterial << "/P::" + previousMaterial << endl;
+
 				// We want to track the material for which we have the highest number of 
 				// properties specifications - it will be useful to initialize the table with
 				// all the properties.
 				counter ++;
-				if(maxNumberOfTemp < counter)
+				if(maxNumberOfTemp < counter){
 					maxNumberOfTemp = counter;
+				}
 				counter = 1;
 			}else{
 				counter++;
+				cout << "Counter is " << counter << endl;
 			}
 			previousMaterial = currentMaterial;
 		}
+	}
+	if(maxNumberOfTemp < counter){
+		maxNumberOfTemp = counter;
 	}
 	// Set the oject fields:
 	this->numberOfMaterials  = numberOfMaterials;
 	this->numberOfProperties = numberOfProperties;
 	this->maxNumberOfTemp    = maxNumberOfTemp; 	
+
+	cout << "maxNumberOfTemp = " << this->maxNumberOfTemp << endl;
 
 	// Allocate the this->properties 3d array.
 	/*this->properties = new double**[numberOfMaterials];
@@ -211,19 +228,33 @@ double Materials::getProperty(double temperature,unsigned char material, unsigne
 		cout << "Sorry, not yet implemented!\n";
 		abort();
 	}else{
+		/* WE DON'T INTERPOLATE */
+
+		if(this->numberOfMaterials < material){
+			printf("Materials::getProperty::ERROR\n");
+			printf("\tAsking for material %d but has only %d materials in the database.",material,
+									this->numberOfMaterials);
+			printf("\nAborting.\n\n");
+			abort();
+		}
+
 		// First, we retrieve the number of temperature info for this material:
 		unsigned char numberOfTempLines = this->numberOFTempForTheMaterial[material];
 		unsigned int temperatureIndex = 0;
 		double tempDiff = 1E10;
 		double temp;
+
+		printf("Materials::getProperty: looking for material %d.\n",material);
+
 		for(unsigned char I = 0 ; I < numberOfTempLines ; I ++){
-			cout << "I want temp " << temperature;
-			cout << " and I read " << this->properties(material,property,I) << endl;
-			temp = abs(this->properties(material,property,I)-temperature);
+			
+			temp = abs(this->properties(material,0,I)-temperature);
 			if( temp < tempDiff){
 				tempDiff = temp;
 				temperatureIndex = I;
-				cout << "For the moment I am the nearest.\n";
+			}else{
+				temperatureIndex = I;
+				break;
 			}
 		}
 		

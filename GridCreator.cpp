@@ -18,9 +18,12 @@ void GridCreator::meshInitialization(){
 										this->numberOfNodesInEachDir[2];
 	// Initialize nodesElec:
 	cout << "Allocate nodesElec\n";
-	this->nodesElec.set_size_data(this->numberOfNodesInEachDir[0],
-								  this->numberOfNodesInEachDir[1],
-								  this->numberOfNodesInEachDir[2]);
+
+	/* SIZE IS (Nx+2)*(Ny+2)*(Nz+2) TO ACCOUNT FOR NEIGHBOORS */
+
+	this->nodesElec.set_size_data(this->numberOfNodesInEachDir[0] +2,
+								  this->numberOfNodesInEachDir[1] +2,
+								  this->numberOfNodesInEachDir[2] +2);
 	// Initialize nodesMagn. It has two nodes more, in each direction:
 	cout << "Allocate nodesMagn\n";
 	this->nodesMagn.set_size_data(this->numberOfNodesInEachDir[0]+(size_t)1,
@@ -34,6 +37,15 @@ void GridCreator::meshInitialization(){
 
 	// Missing also: initializtion of the heat mesh.
 
+	for(unsigned int I = 0 ; I < this->input_parser.source.get_number_of_sources() ; I ++){
+		this->input_parser.source.computeNodesInsideSource(this->input_parser.lengthX,
+															this->input_parser.lengthY,
+															this->input_parser.lengthZ,
+															this->input_parser.deltaX,
+															this->input_parser.deltaY,
+															this->input_parser.deltaZ,
+															I);
+	}
 
 	cout << "GridCreator::meshInitialization::OUT\n";
 
@@ -54,23 +66,24 @@ void GridCreator::assignToEachNodeAMaterial(void){
 		cout << "\n\nAssigning material and initial temperature for each node.\n";
 		
 		#pragma omp parallel for collapse(3)
-		for(size_t K = 0 ; K < this->numberOfNodesInEachDir[2] ; K ++){
-			for(size_t J = 0 ; J < this->numberOfNodesInEachDir[1] ; J ++ ){
-				for(size_t I = 0 ; I < this->numberOfNodesInEachDir[0] ; I ++){
-					/* Initialize material */
-					this->nodesElec(I,J,K).material    = 
-								this->materials.materialID_FromMaterialName["AIR"];
-					this->nodesMagn(I,J,K).material    = 
-								this->materials.materialID_FromMaterialName["AIR"];
+			for(size_t K = 0 ; K < this->numberOfNodesInEachDir[2] ; K ++){
+				for(size_t J = 0 ; J < this->numberOfNodesInEachDir[1] ; J ++ ){
+					for(size_t I = 0 ; I < this->numberOfNodesInEachDir[0] ; I ++){
+						/* Initialize material */
+						this->nodesElec(I,J,K).material    = 
+									this->materials.materialID_FromMaterialName["AIR"];
+						this->nodesMagn(I,J,K).material    = 
+									this->materials.materialID_FromMaterialName["AIR"];
 
-					/* Initialize temperature */
-					this->nodesElec(I,J,K).Temperature = 
-								this->input_parser.GetInitTemp_FromMaterialName["AIR"];
-					this->nodesMagn(I,J,K).Temperature = 
-								this->input_parser.GetInitTemp_FromMaterialName["AIR"];
+						/* Initialize temperature */
+						this->nodesElec(I,J,K).Temperature = 
+									this->input_parser.GetInitTemp_FromMaterialName["AIR"];
+						this->nodesMagn(I,J,K).Temperature = 
+									this->input_parser.GetInitTemp_FromMaterialName["AIR"];
+					}
 				}
 			}
-		}
+
 		printf("At node(5,5,5) we have material %d.\n",this->nodesElec(0,0,0).material);
 		cout << "This corresponds to " + 
 			this->materials.materialName_FromMaterialID[this->nodesElec(0,0,0).material];
@@ -117,7 +130,8 @@ GridCreator::~GridCreator(void){
 
 	for(i=0; i<3; i++){
 		globalIndices[i] = localIndices[i] + this->originIndices[i];
-		cout << globalIndices[i] << endl;
 	}
+	printf("> LOCAL(%ld,%ld,%ld) to GLOBAL(%ld,%ld,%ld)\n",localIndices[0],localIndices[1],localIndices[2],
+															globalIndices[0],globalIndices[1],globalIndices[2]);
  }
 

@@ -12,6 +12,7 @@
 *.pvti
 *.vtk
 *.json
+*.xlsx
 #
 build/*
 TESTS/*

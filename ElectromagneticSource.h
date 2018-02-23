@@ -26,6 +26,13 @@ class ElectromagneticSource{
 		std::vector<size_t> nodesInsideAlong_X;
 		std::vector<size_t> nodesInsideAlong_Y;
 		std::vector<size_t> nodesInsideAlong_Z;
+
+		std::vector<size_t> nbrNodeCorner1_Airgap_X;
+		std::vector<size_t> nbrNodeCorner1_Airgap_Y;
+		std::vector<size_t> nbrNodeCorner1_Airgap_Z;
+		std::vector<size_t> nodesInsideAlong_Airgap_X;
+		std::vector<size_t> nodesInsideAlong_Airgap_Y;
+		std::vector<size_t> nodesInsideAlong_Airgap_Z;
 	public:
 		// Constructor:
 		ElectromagneticSource(){};
@@ -97,9 +104,18 @@ class ElectromagneticSource{
 		bool isInsideSource(const size_t, const size_t, const size_t);
 		//Get value source  
 		//From mesh, t_current, i,j,k
-        void computeSourceValue(GridCreator&, double,const size_t,const size_t,const size_t,char);
+        void computeSourceValue(GridCreator&,const size_t,const size_t,const size_t,double,char);
 
 		int DetermineInWhichSourceWeAre(const size_t,const size_t,const size_t);
+
+		bool isInsideAirGap(const size_t i_global, 
+							const size_t j_global, 
+							const size_t k_global,
+							const unsigned int i);
+
+		bool isInsideAirGap(const size_t i_global, 
+											const size_t j_global, 
+											const size_t k_global);
 };
 
 #endif

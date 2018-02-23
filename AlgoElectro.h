@@ -16,17 +16,13 @@
 
 class AlgoElectro{
 	private:
-		int numberOfMaterials;
 	public:
 		// Constructor:
-		AlgoElectro(int numberOfMaterials){
-			this->numberOfMaterials = numberOfMaterials;
-		}
+		AlgoElectro(){}
 		// Destructor:
 		~AlgoElectro(void);
 
-		void run(GridCreator&,MPI_Initializer&);
-		void update(GridCreator&, double, double);
+		void update(GridCreator&);
 		// For the function communication, the class need an MPI communicator
 		void communicate(GridCreator&,MPI_Initializer&);
 
