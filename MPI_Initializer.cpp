@@ -308,8 +308,3 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 
 
 }
-
-bool MPI_Initializer::SendNeighbour(int *RankNeighbour, char direction)
-{
-	int NbProcess = this->nbProc;
-}
