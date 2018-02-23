@@ -70,6 +70,11 @@ class GridCreator{
 		// just set all materials to be air. For later simulations, we will
 		// have to read input files to link each node to a material.
 		void assignToEachNodeAMaterial(void);
+
+		//Fonction send the values of the information of the face "char" 
+		 Node3DField **GetVecSend(char);
+		//Fonction receive the value of the information of the face "char" 
+		void SetVecReceive(char, Node3DField **);
 };
 
 #endif
