@@ -102,6 +102,16 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 	int N = (int) pow(nbProc, 1.0/3.0);
 	std::vector<double> mpiExtremity;
 
+	/* RankNeighbour[0] = SOUTH (along the opposite direction of the x-axis)
+	RankNeighbour[1] = NORTH (along the direction of the x-axis)
+	RankNeighbour[2] = WEST (along the opposite direction of the y-axis)
+	RankNeighbour[3] = EAST (along the direction of the y-axis)
+	RankNeighbour[4] = DOWN (along the opposite direction of the z-axis)
+	RankNeighbour[5] = UP (along the direction of the z-axis) */
+	int RankNeighbour[6];
+
+	int i;
+
 
 	// Cubic case
 	if(N*N*N == nbProc){
@@ -114,6 +124,79 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 		mpiExtremity.push_back((((int)(myRank/N) - ((int) (myRank/(N*N) ))*N )+1)*LyLocal);
 		mpiExtremity.push_back( myRank/ (N*N) * LzLocal);
 		mpiExtremity.push_back(((myRank/(N*N))+1)*LzLocal);
+
+		/* myRank%N gives the current position on the x-axis */
+		/* (((int)(myRank/N) - (int) (myRank/(N*N))*N )) gives the current position on the y-axis */
+		/* myRank/ (N*N) gives the current position on the z-axis */
+
+		int PositionOnX = myRank%N;
+		int PositionOnY = (((int)(myRank/N) - (int) (myRank/(N*N))*N ));
+		int PositionOnZ = myRank/ (N*N);
+
+		if(N == 1)
+		{
+			this->RankNeighbour[0] = -1;
+			this->RankNeighbour[1] = -1;
+			this->RankNeighbour[2] = -1;
+			this->RankNeighbour[3] = -1;
+			this->RankNeighbour[4] = -1;
+			this->RankNeighbour[5] = -1;
+		}
+		else
+		{
+		/* --------------------------------------------------------------------------------------------------- */
+		/* We do the x component */
+			if(PositionOnX == 0)
+			{
+				this->RankNeighbour[0] = -1;
+				this->RankNeighbour[1] = myRank+1;
+			}
+			else if(PositionOnX == N-1)
+			{
+				this->RankNeighbour[0] = myRank-1;
+				this->RankNeighbour[1] = -1;
+			}
+			else
+			{
+				this->RankNeighbour[0] = myRank-1;
+				this->RankNeighbour[1] = myRank+1;
+			}
+
+			/* We do the y component */
+			if(PositionOnY == 0)
+			{
+				this->RankNeighbour[2] = -1;
+				this->RankNeighbour[3] = myRank+N; 
+			}
+			else if(PositionOnY == N-1)
+			{
+				this->RankNeighbour[2] = myRank-N;
+				this->RankNeighbour[3] = -1;
+			}
+			else
+			{
+				this->RankNeighbour[2] = myRank-N;
+				this->RankNeighbour[3] = myRank+N;
+			}
+
+			/* We do the z component */
+			if(PositionOnZ == 0)
+			{
+				this->RankNeighbour[4] = -1;
+				this->RankNeighbour[5] = myRank+N*N;
+			}
+			else if(PositionOnZ == N-1)
+			{
+				this->RankNeighbour[4] = myRank-N*N;
+				this->RankNeighbour[5] = -1;
+			}
+			else
+			{
+				this->RankNeighbour[4] = myRank-N*N;
+				this->RankNeighbour[5] = myRank+N*N;
+			}
+			/* --------------------------------------------------------------------------------------------------------------- */
+		}
 	}
 
 	//Impair case
@@ -122,13 +205,41 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 		double LyLocal = Ly;
 		double LzLocal = Lz;
 
+		// Coordinates of all subdivisions in the order -> Lx, Ly, Lz
 		mpiExtremity.push_back(myRank*LxLocal);
 		mpiExtremity.push_back((myRank+1)*LxLocal);
 		mpiExtremity.push_back( 0);
 		mpiExtremity.push_back(LyLocal);
 		mpiExtremity.push_back(0);
 		mpiExtremity.push_back(LzLocal);
-		 // Coordinates of all subdivisions in the order -> Lx, Ly, Lz
+
+		int PositionOnX = myRank;
+		int PositionOnY = 0;
+		int PositionOnZ = 0;
+
+		/* We do the x component */
+		if(PositionOnX == 0)
+		{
+			this->RankNeighbour[0] = -1;
+			this->RankNeighbour [1] = myRank+1;
+		}
+		else if(PositionOnX == nbProc-1)
+		{
+			this->RankNeighbour[0] = myRank-1;
+			this->RankNeighbour[1] = -1;
+		}
+		else
+		{
+			this->RankNeighbour[0] = myRank-1;
+			this->RankNeighbour[1] = myRank+1;
+		}
+
+		/* We put -1 everywhere because we have only a separation along the x-axis */
+		this->RankNeighbour[2] = -1;
+		this->RankNeighbour[3] = -1;
+		this->RankNeighbour[4] = -1;
+		this->RankNeighbour[5] = -1;
+
 	}
 
 	//Pair case
@@ -142,7 +253,48 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 		mpiExtremity.push_back(((int)((2*myRank/nbProc))+1)*LyLocal);
 		mpiExtremity.push_back(0);
 		mpiExtremity.push_back(LzLocal); // Coordinates of all subdivisions in the order -> Lx, Ly, Lz
-		cout << ((int)(2*myRank/nbProc)) << endl;
+
+		int PositionOnX = myRank%(nbProc/2);
+		int PositionOnY = ((int)(2*myRank/nbProc));
+		int PositionOnZ = 0;
+
+		/* We do the x component */
+		if(PositionOnX == 0)
+		{
+			this->RankNeighbour[0] = -1;
+			this->RankNeighbour[1] = myRank+1;
+		}
+		else if(PositionOnX == nbProc/2 -1)
+		{
+			this->RankNeighbour[0] = myRank-1;
+			this->RankNeighbour[1] = -1;	
+		}
+		else
+		{
+			this->RankNeighbour[0] = myRank-1;
+			this->RankNeighbour[1] = myRank+1;
+		}
+
+		/* We do the y component */
+		if(PositionOnY == 0)
+		{
+			this->RankNeighbour[2] = -1;
+			this->RankNeighbour[3] = myRank+(nbProc/2);
+		}
+		else if(PositionOnY == 1)
+		{
+			this->RankNeighbour[2] = myRank-(nbProc/2);
+			this->RankNeighbour[3] = -1;
+		}
+		else
+		{
+			printf("This case is not envisageable \n",__FILE__,__LINE__);
+			abort();
+		}
+
+		/* We do the z component */
+		this->RankNeighbour[4] = -1;
+		this->RankNeighbour[5] = -1;
 
 	}
     
@@ -156,6 +308,7 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 	subGrid.lengthZ = mpiExtremity[5]-mpiExtremity[4];
 }
 
+<<<<<<< HEAD
 bool MPI_Initializer::SendDataToNeighboor(double *vectorToSend,
 										  size_t lengthToSend,
 										  unsigned char direction){
@@ -164,4 +317,7 @@ bool MPI_Initializer::SendDataToNeighboor(double *vectorToSend,
 	// Thus, return true.
 	return true;
 }
+=======
+>>>>>>> 9e992f84ec46e51311621d6093cc5009504729e1
 
+}
