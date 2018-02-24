@@ -261,29 +261,30 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                             ////// ajouter SIGNMA /// (see formulas)
 
 
-                            mesh.nodesMagn(i,j,k).field[0] = mesh.nodesMagn(i,j,k).field[0]  +
+                                                
+                            mesh.nodesMagn(i,j,k).field[0] = (((1-elec_conduct_mat*dt/(2*mu_material)))/((1+elec_conduct_mat*dt/(2*mu_material))))*mesh.nodesMagn(i,j,k).field[0]  +
 
-                                            (dt/(mu_material*mesh.deltaZ))*(mesh.nodesElec(i,j,k+1).field[1]
+                                            1/((1+elec_conduct_mat*dt/(2*mu_material)))* ((dt/(mu_material*mesh.deltaZ))*(mesh.nodesElec(i,j,k+1).field[1]
                                             -mesh.nodesElec(i,j,k).field[1]) -
 
                                             (dt/(mu_material*mesh.deltaY))*(mesh.nodesElec(i,j+1,k).field[2]
-                                            -mesh.nodesElec(i,j,k).field[2]);
+                                            -mesh.nodesElec(i,j,k).field[2]));
 
                             /* update magnetic Field H_y */
-                            mesh.nodesMagn(i,j,k).field[1]= mesh.nodesMagn(i,j,k).field[1]  +
-                                            (dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i+1,j,k).field[2]
+                            mesh.nodesMagn(i,j,k).field[1]= (((1-elec_conduct_mat*dt/(2*mu_material)))/((1+elec_conduct_mat*dt/(2*mu_material))))*mesh.nodesMagn(i,j,k).field[1]  +
+                                            1/((1+elec_conduct_mat*dt/(2*mu_material)))* ((dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i+1,j,k).field[2]
                                             -mesh.nodesElec(i,j,k).field[2]) -
 
                                             (dt/(mu_material*mesh.deltaZ))*(mesh.nodesElec(i,j,k+1).field[0]
-                                            -mesh.nodesElec(i,j,k).field[0]);
+                                            -mesh.nodesElec(i,j,k).field[0]));
                             
                             /* update magnetic Field H_z */
-                            mesh.nodesMagn(i,j,k).field[2]= mesh.nodesMagn(i,j,k).field[2]  +
-                                            (dt/(mu_material*mesh.deltaY))*(mesh.nodesElec(i,j+1,k).field[0]-
+                            mesh.nodesMagn(i,j,k).field[2]= (((1-elec_conduct_mat*dt/(2*mu_material)))/((1+elec_conduct_mat*dt/(2*mu_material))))*mesh.nodesMagn(i,j,k).field[2]  +
+                                            1/((1+elec_conduct_mat*dt/(2*mu_material)))* ((dt/(mu_material*mesh.deltaY))*(mesh.nodesElec(i,j+1,k).field[0]-
                                             mesh.nodesElec(i,j,k).field[0]) -
 
                                             (dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i+1,j,k).field[1]-
-                                            mesh.nodesElec(i,j,k).field[1]);
+                                            mesh.nodesElec(i,j,k).field[1]));
                         }
                     }
                 }
@@ -316,27 +317,27 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                             //mesh.nodesMagn(i,j,k).field[2]=mesh.input_parser.source.computeSourceValue(mesh, i,j,k,t_current,composants_6);
                         }else{
                             /* update magnetic field E_x */
-                            mesh.nodesElec(i,j,k).field[0]= mesh.nodesElec(i,j,k).field[0] +
+                            mesh.nodesElec(i,j,k).field[0]= (((1-elec_conduct_mat*dt/(2*epsilon_material)))/((1+elec_conduct_mat*dt/(2*epsilon_material))))*mesh.nodesElec(i,j,k).field[0] +
                             
-                                                 (dt/(epsilon_material*mesh.deltaY))*(mesh.nodesMagn(i,j,k).field[2]-
+                                                 1/((1+elec_conduct_mat*dt/(2*epsilon_material)))* ((dt/(epsilon_material*mesh.deltaY))*(mesh.nodesMagn(i,j,k).field[2]-
                                                  mesh.nodesMagn(i,j-1,k).field[2]) - 
 
                                                  (dt/(epsilon_material*mesh.deltaZ))*(mesh.nodesMagn(i,j,k).field[1]-
-                                                 mesh.nodesMagn(i,j,k-1).field[1]);
+                                                 mesh.nodesMagn(i,j,k-1).field[1]));
                             /* update magnetic Field E_y */
-                            mesh.nodesElec(i,j,k).field[1]= mesh.nodesElec(i,j,k).field[1] + 
-                                                (dt/(epsilon_material*mesh.deltaZ))*(mesh.nodesMagn(i,j,k).field[0]-
+                            mesh.nodesElec(i,j,k).field[1]= (((1-elec_conduct_mat*dt/(2*epsilon_material)))/((1+elec_conduct_mat*dt/(2*epsilon_material))))*mesh.nodesElec(i,j,k).field[1] + 
+                                                1/((1+elec_conduct_mat*dt/(2*epsilon_material)))* ((dt/(epsilon_material*mesh.deltaZ))*(mesh.nodesMagn(i,j,k).field[0]-
                                                 mesh.nodesMagn(i,j,k-1).field[0])  - 
 
                                                 (dt/(epsilon_material*mesh.deltaX))*(mesh.nodesMagn(i,j,k).field[2]-
-                                                mesh.nodesMagn(i-1,j,k).field[2]);
+                                                mesh.nodesMagn(i-1,j,k).field[2]));
                             /* update magnetic Field E_z */
-                            mesh.nodesElec(i,j,k).field[2]= mesh.nodesElec(i,j,k).field[2] +
-                                                 (dt/(epsilon_material*mesh.deltaX))*(mesh.nodesMagn(i,j,k).field[1]-
+                            mesh.nodesElec(i,j,k).field[2]= (((1-elec_conduct_mat*dt/(2*epsilon_material)))/((1+elec_conduct_mat*dt/(2*epsilon_material))))*mesh.nodesElec(i,j,k).field[2] +
+                                                 1/((1+elec_conduct_mat*dt/(2*epsilon_material)))* ((dt/(epsilon_material*mesh.deltaX))*(mesh.nodesMagn(i,j,k).field[1]-
                                                  mesh.nodesMagn(i-1,j,k).field[1]) -
                                                  
                                                   (dt/(epsilon_material*mesh.deltaY))*(mesh.nodesMagn(i,j,k).field[0]-
-                                                  mesh.nodesMagn(i,j-1,k).field[0]);
+                                                  mesh.nodesMagn(i,j-1,k).field[0]));
                         }
                     }
                 }
