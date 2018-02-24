@@ -24,6 +24,9 @@ class MPI_Initializer{
 		// Number of MPI processes:
 		SetOnceVariable_Template<int> number_of_MPI_Processes;
 	public:
+		// Rank of the MPI neighboors:
+		double RankNeighbour[6];
+
 		// Constructor:
 		MPI_Initializer(int argc, char *argv[], int required);
 		// Destructor:
@@ -32,6 +35,17 @@ class MPI_Initializer{
 		int isRootProcess(void);
 		// Get rank/ID of the MPI process:
 		int getRank(void);
+
+		int getNumberOfMPIProcesses(void){
+			if(this->number_of_MPI_Processes.get_alreadySet() == true)
+				return this->number_of_MPI_Processes.get();
+			else{
+				printf("MPI_Initializer::getNumberOfMPIProcesses::ERROR\n");
+				printf("The number of MPI processes has not been set yet.\n");
+				printf("Aborting.\n");
+				std::abort();
+			}
+		}
 
 		void MpiDivision(GridCreator &);
 

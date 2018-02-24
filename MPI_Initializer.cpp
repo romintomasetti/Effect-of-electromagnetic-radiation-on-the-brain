@@ -288,7 +288,8 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 		}
 		else
 		{
-			printf("This case is not envisageable \n",__FILE__,__LINE__);
+			printf("MPI_Initializer::MpiDivision\n");
+			printf("This case is not envisageable, at line %d in file %s.\n",__LINE__,__FILE__);
 			abort();
 		}
 
@@ -308,7 +309,6 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 	subGrid.lengthZ = mpiExtremity[5]-mpiExtremity[4];
 }
 
-<<<<<<< HEAD
 bool MPI_Initializer::SendDataToNeighboor(double *vectorToSend,
 										  size_t lengthToSend,
 										  unsigned char direction){
@@ -316,8 +316,4 @@ bool MPI_Initializer::SendDataToNeighboor(double *vectorToSend,
 	// By default, it is assumed that everything worked fine.
 	// Thus, return true.
 	return true;
-}
-=======
->>>>>>> 9e992f84ec46e51311621d6093cc5009504729e1
-
 }
