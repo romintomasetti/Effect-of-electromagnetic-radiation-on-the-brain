@@ -1,7 +1,4 @@
-
-
 cmake_minimum_required (VERSION 2.8)
-
 
 project (Effect-of-electromagnetic-radiation-on-the-brain CXX)
 
@@ -16,9 +13,19 @@ check_cxx_compiler_flag("-std=c++11" STDCXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif(STDCXX11)
 
-set (CPPFILES main.cpp Materials.cpp GridCreator.cpp MPI_Initializer.cpp
-			InputParser.cpp ElectromagneticSource.cpp AlgoElectro.cpp)
-add_executable(${EXEC_NAME} ${CPPFILES})
+#//set (CPPFILES main.cpp Materials.cpp GridCreator.cpp MPI_Initializer.cpp
+#//			InputParser.cpp ElectromagneticSource.cpp AlgoElectro.cpp InterfaceToParaviewer.cpp)
+
+# Romain Boman interface:
+ADD_SUBDIRECTORY( vtl )
+INCLUDE_DIRECTORIES(vtl)
+TARGET_LINK_LIBRARIES(vtl)
+
+
+FILE(GLOB SRCS *.h *.cpp)
+FILE(GLOB VTL vtl/*.h vtl/*.cpp)
+ADD_EXECUTABLE(${EXEC_NAME} ${SRCS} ${VTL})
+
 
 # MPI --
 # --------------------------------------------------------------
@@ -52,3 +59,4 @@ if(OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
+

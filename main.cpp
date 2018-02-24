@@ -17,8 +17,20 @@
 #include "SetOnceVariable_Template.h"
 #include "InputParser.h"
 #include "ElectromagneticSource.h"
+#include "AlgoElectro.h"
+
+#include "vtl/vtl.h"
+#include "vtl/vtlSPoints.h"
+
+#include "InterfaceToParaviewer.h"
 
 #define PARALLELISM_OMP_ENABLED 1
+
+#define KRED  "\x1B[31m"
+#define KGRN  "\x1B[32m"
+#define KNRM  "\x1B[0m"
+#define KBLU  "\x1B[34m"
+#define KYEL  "\x1B[33m"
 
 using namespace std;
 
@@ -33,6 +45,7 @@ using namespace std;
 
 
 int main(int argc, char *argv[]){
+
 	/* First of all, initialize MPI because if it fails, the program must immediately be stopped. */
 	MPI_Initializer MPI_communicator(argc,argv,MPI_THREAD_MULTIPLE);
 	printf("\n---------\nMPI rank is %d and isRoot %d.\n--------\n",MPI_communicator.getRank(),
@@ -40,13 +53,14 @@ int main(int argc, char *argv[]){
 	
 	/* The variable allMat will store the materials' properties */
 	Materials allMat;
-	allMat.getPropertiesFromFile("MaterialProperties.csv");
+	allMat.getPropertiesFromFile("data_air.csv");//MaterialProperties.csv
 	allMat.printAllProperties();
+	cout << "Print number of temp per mat::IN" << endl;
 	allMat.printNumberOfTempLinePerMat();
+	cout << "Print number of temp per mat::OUT" << endl;
 	cout << "For material 0 at 25K, property 1 is ";
 	cout << allMat.getProperty(25.,0,1) << endl;
 
-	
 	
 	/* Small OPENMP example */
 	if(PARALLELISM_OMP_ENABLED)
@@ -78,9 +92,15 @@ int main(int argc, char *argv[]){
 	GridCreator mesher(input_parser,allMat,MPI_communicator);
 	mesher.meshInitialization();
 	
+	vtl::SPoints gridBoman;
+
+	InterfaceToParaviewer interfaceToWriteOutput(mesher,gridBoman,MPI_communicator);
+
+	abort();
+
+	AlgoElectro algoElectromagn;
 	
-	
-	
+	algoElectromagn.update(mesher);
 	
 	
 	
