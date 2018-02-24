@@ -80,6 +80,13 @@ class GridCreator{
 		// have to read input files to link each node to a material.
 		void assignToEachNodeAMaterial(void);
 
+<<<<<<< HEAD
+=======
+		//Fonction send the values of the information of the face "char" 
+		 Node3DField **GetVecSend(char);
+		//Fonction receive the value of the information of the face "char" 
+		void SetVecReceive(char, Node3DField **);
+>>>>>>> 13a610b09d636d7b61e509554534182a44caf9f3
 };
 
 #endif
