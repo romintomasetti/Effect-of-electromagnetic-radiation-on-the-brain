@@ -81,18 +81,18 @@ class Vec3
     {
         return Vec3<U>(v[0], v[1], v[2]);
     }
-    T &operator[](int i)
+    T &operator[](size_t i)
     {   
         return v[i];
     }
-    T operator[](int i) const
+    T operator[](size_t i) const
     {   
         return v[i];
     }     
 };
 
 typedef Vec3<double> Vec3d;
-typedef Vec3<int> Vec3i;
+typedef Vec3<unsigned long> Vec3i;
 }
 
 #endif //VTLVEC3_H

@@ -48,6 +48,17 @@ void GridCreator::meshInitialization(){
 	this->assignToEachNodeAMaterial();
 	cout << "GridCreator::meshInitialization::ASSIGN_TO_EACH_NODE_A_MATERIAL::DONE\n";
 
+	/* Initialize source */
+	for(unsigned int I = 0 ; I < this->input_parser.source.get_number_of_sources() ; I ++){
+		this->input_parser.source.computeNodesInsideSource(this->input_parser.lengthX,
+													this->input_parser.lengthY,
+													this->input_parser.lengthZ,
+													this->input_parser.deltaX,
+													this->input_parser.deltaY,
+													this->input_parser.deltaZ,
+													I);
+	}
+
 	// Missing also: initializtion of the heat mesh.
 
 

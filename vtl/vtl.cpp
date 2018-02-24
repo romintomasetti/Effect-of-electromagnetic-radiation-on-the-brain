@@ -13,6 +13,9 @@
 #include "swapbytes.h"
 #include "vtlSPoints.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 using namespace vtl;
 
 #ifdef USE_ZLIB
@@ -204,6 +207,129 @@ size_t write_vectorXML(std::ofstream &f, std::vector<double> const &pos, bool us
     else
     {
         uLong sourcelen = (uLong)pos.size() * sizeof(float);
+        uLongf destlen = uLongf(sourcelen * 1.001) + 12; // see doc
+        char *destbuffer = new char[destlen];
+#ifdef USE_ZLIB
+        int status = compress2((Bytef *)destbuffer, &destlen,
+                               (Bytef *)&(buffer[0]), sourcelen, Z_DEFAULT_COMPRESSION);
+#else
+        int status = Z_OK + 1;
+#endif
+        if (status != Z_OK)
+        {
+            std::cout << "ERROR: zlib Error status=" << zlibstatus(status) << "\n";
+        }
+        else
+        {
+            //std::cout << "block of size " << sourcelen << " compressed to " << destlen << '\n';
+            // blocks description
+            uint32_t nblocks = 1;
+            f.write((char *)&nblocks, sizeof(uint32_t));
+            written += sizeof(uint32_t);
+            uint32_t srclen = (uint32_t)sourcelen;
+            f.write((char *)&srclen, sizeof(uint32_t));
+            written += sizeof(uint32_t);
+            uint32_t lastblocklen = 0;
+            f.write((char *)&lastblocklen, sizeof(uint32_t));
+            written += sizeof(uint32_t);
+            uint32_t szblocki = (uint32_t)destlen;
+            f.write((char *)&szblocki, sizeof(uint32_t));
+            written += sizeof(uint32_t);
+            // data
+            f.write(destbuffer, destlen);
+            written += destlen;
+        }
+
+        delete[] destbuffer;
+    }
+
+    return written;
+}
+
+size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string fieldName, char vecORsca, bool usez)
+{
+    size_t written = 0;
+
+    std::vector<float> buffer;
+    size_t size_field = 0;
+    if(vecORsca == 's'){
+        // Example: temperature field or coordinates x y z.
+        if(fieldName == "Temperature"){
+            std::vector<size_t> size = grid.nodesTemp.get_size_data();
+            printf("Has field Temperature and size(%ld,,%ld,%ld)\n",size[0],size[1],size[2]);
+            size_field = size[0]*size[1]*size[2];
+            buffer.resize(size_field);
+            size_t counter = 0 ;
+            for(size_t K = 0 ; K < size[0] ; K ++){
+                for(size_t J = 0 ; J < size[1] ; J ++){
+                    for(size_t I = 0 ; I < size[2] ; I ++){
+                        buffer[counter++] = (float)grid.nodesTemp(I,J,K).field;
+                    }
+                }
+            }
+
+        }else{
+            printf("vtl::write_vectorXML_custom::ERROR in scalar field name. Has %s\n",fieldName.c_str());
+            std::abort();
+        }
+    }else if(vecORsca == 'v'){
+        // Example: electric and magnetic fields:
+        if(fieldName == "ElectricField"){
+            std::vector<size_t> size = grid.nodesElec.get_size_data();
+            printf("Has field Temperature and size(%ld,,%ld,%ld)*3\n",size[0],size[1],size[2]);
+            size_field = size[0]*size[1]*size[2]*3;
+            buffer.resize(size_field);
+            size_t counter = 0;
+            for(size_t K = 0 ; K < size[0] ; K ++){
+                for(size_t J = 0 ; J < size[1] ; J ++){
+                    for(size_t I = 0 ; I < size[2] ; I ++){
+                        buffer[counter++] = (float)grid.nodesElec(I,J,K).field[0];
+                        buffer[counter++] = (float)grid.nodesElec(I,J,K).field[1];
+                        buffer[counter++] = (float)grid.nodesElec(I,J,K).field[2];
+                    }
+                }
+            }
+
+        }else if(fieldName == "MagneticField"){
+            std::vector<size_t> size = grid.nodesMagn.get_size_data();
+            printf("Has field Temperature and size(%ld,,%ld,%ld)*3\n",size[0],size[1],size[2]);
+            size_field = size[0]*size[1]*size[2]*3;
+            buffer.resize(size_field);
+            size_t counter = 0;
+            for(size_t K = 0 ; K < size[0] ; K ++){
+                for(size_t J = 0 ; J < size[1] ; J ++){
+                    for(size_t I = 0 ; I < size[2] ; I ++){
+                        buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[0];
+                        buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[1];
+                        buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[2];
+                    }
+                }
+            }
+
+        }else{
+            printf("vtl::write_vectorXML_custom::ERROR in vector field name. Has %s\n",fieldName.c_str());
+            std::abort();
+        }
+    }else{
+        printf("vtl::write_vectorXML_custom::ERROR on vecORsca\n");
+        std::abort();
+    }
+
+    if (!usez)
+    {
+        // data block size
+        //uint32_t sz = (uint32_t)pos.size() * sizeof(float);
+        uint32_t sz = (uint32_t)size_field * sizeof(float);
+        f.write((char *)&sz, sizeof(uint32_t));
+        written += sizeof(uint32_t);
+        // data
+        f.write((char *)&buffer[0], sz);
+        written += sz;
+    }
+    else
+    {
+        //uLong sourcelen = (uLong)pos.size() * sizeof(float);
+        uLong sourcelen = (uLong) size_field * sizeof(float);
         uLongf destlen = uLongf(sourcelen * 1.001) + 12; // see doc
         char *destbuffer = new char[destlen];
 #ifdef USE_ZLIB
@@ -613,6 +739,7 @@ VTL_API void vtl::export_spoints_LEGACY(std::string const &filename,
 VTL_API void vtl::export_spoints_XML(std::string const &filename,
                                 int step,
                                 SPoints const &grid, SPoints const &mygrid,
+							 	GridCreator &grid_creatorObj,
                                 Zip zip)
 {
 #if !defined(USE_ZLIB)
@@ -623,6 +750,16 @@ VTL_API void vtl::export_spoints_XML(std::string const &filename,
     }
 #endif
 
+    printf("\n\t>>> vtl::export_spoints_XML::Checking filename |%s|.\n\n",filename.c_str());
+    if(filename.find('/') != std::string::npos){
+        std::string directory = filename.substr(0,filename.find('/'));
+        printf("\n\t>>> vtl::export_spoints_XML::Filename contains directory |%s|.\n\n",directory.c_str());
+        // If directory doesn't exist, create it:
+        struct stat st = {0};
+        if (stat(directory.c_str(), &st) == -1) {
+            mkdir(directory.c_str(), 0700);
+        }
+    }
     // build file name (+rankno) + stepno + vtk extension
     std::stringstream s;
     s << filename;
@@ -669,6 +806,11 @@ VTL_API void vtl::export_spoints_XML(std::string const &filename,
     // ------------------------------------------------------------------------------------
     f << "      <PointData>\n";
 
+
+    //////////////////////////////////////////////////////////
+    //////         OVERWRITTING BOMAN FUNCTION          //////
+    //////////////////////////////////////////////////////////
+    ////// USING GRIDCREATOR OBJECT INSTREAD OF SPOINTS //////
     // scalar fields
     for (auto it = mygrid.scalars.begin(); it != mygrid.scalars.end(); ++it)
     {
@@ -679,7 +821,7 @@ VTL_API void vtl::export_spoints_XML(std::string const &filename,
         f << " RangeMin=\"0\" ";
         f << " RangeMax=\"1\" ";
         f << " offset=\"" << offset << "\" />\n";
-        offset += write_vectorXML(f2, *it->second, (zip==ZIPPED));
+        offset += write_vectorXML_custom(f2, grid_creatorObj, it->first ,'s', (zip==ZIPPED));
     }
 
     // vector fields
@@ -693,7 +835,7 @@ VTL_API void vtl::export_spoints_XML(std::string const &filename,
         f << " RangeMin=\"0\" ";
         f << " RangeMax=\"1\" ";
         f << " offset=\"" << offset << "\" />\n";
-        offset += write_vectorXML(f2, *it->second, (zip==ZIPPED));
+        offset += write_vectorXML_custom(f2, grid_creatorObj, it->first, 'v', (zip==ZIPPED));
     }
     f << "      </PointData>\n";
 

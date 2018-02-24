@@ -26,6 +26,8 @@
 
 #include "vtlSPoints.h"
 
+#include "../GridCreator.h"
+
 namespace vtl
 {
 class SPoints;
@@ -67,6 +69,7 @@ VTL_API void export_spoints_XML(std::string const &filename,
                                 int step,
                                 SPoints const &grid, 
                                 SPoints const &mygrid,
+                                GridCreator &grid_creator,
                                 Zip zip);
 
 VTL_API void export_spoints_XMLP(std::string const &filename,
