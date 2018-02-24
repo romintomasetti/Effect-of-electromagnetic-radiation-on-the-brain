@@ -24,6 +24,7 @@ class MPI_Initializer{
 		// Number of MPI processes:
 		SetOnceVariable_Template<int> number_of_MPI_Processes;
 	public:
+		const int rootProcess = ROOT_PROCESSOR;
 		// Rank of the MPI neighboors:
 		double RankNeighbour[6];
 

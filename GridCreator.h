@@ -13,11 +13,15 @@
 #include "Materials.h"
 #include "MPI_Initializer.h"
 #include "vtl/vtl.h"
+#include "vtl/vtlVec3.h"
+#include "vtl/vtlSPoints.h"
 
 class MPI_Initializer;
 
 class GridCreator{
 	public:
+		// Origin of the whole grid, that is, of all the simulation (same for all subgrids):
+		vtl::Vec3d originOfWholeSimulation = vtl::Vec3d(0.0,0.0,0.0);
 
 		// Dictionnary with the materials and the chosen unsigned char assigned to it:
 		map<string,unsigned char> materialNameForMaterialID;
@@ -45,7 +49,10 @@ class GridCreator{
 		double deltaT = 0.0;
 		// Number of nodes:
 		size_t numberOfNodesInEachDir[3] = {0,0,0};
-		size_t totalNumberOfNodes        = 0;
+		size_t totalNumberOfNodes        = 0; 
+
+		size_t numberOfNodesInEachDirTemp[3] = {0,0,0};
+		size_t totalNumberOfNodesTemp       = 0;
 
 		InputParser 	&input_parser;
 		Materials   	&materials;
@@ -72,6 +79,7 @@ class GridCreator{
 		// just set all materials to be air. For later simulations, we will
 		// have to read input files to link each node to a material.
 		void assignToEachNodeAMaterial(void);
+
 };
 
 #endif

@@ -14,15 +14,18 @@
 #include "Materials.h"
 #include "MPI_Initializer.h"
 
+#include "InterfaceToParaviewer.h"
+
 class AlgoElectro{
 	private:
+		unsigned long currentStep = 0;
 	public:
 		// Constructor:
 		AlgoElectro(){}
 		// Destructor:
 		~AlgoElectro(void);
 
-		void update(GridCreator&);
+		void update(GridCreator&, InterfaceToParaviewer&);
 		// For the function communication, the class need an MPI communicator
 		void communicate(GridCreator&,MPI_Initializer&);
 

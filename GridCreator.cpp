@@ -1,6 +1,7 @@
 #include "GridCreator.h"
 #include <omp.h>
 
+
 /* Grid initialization */
 void GridCreator::meshInitialization(){
 
@@ -11,11 +12,20 @@ void GridCreator::meshInitialization(){
 	}
 	// First, compute the number of nodes from delta(X,Y,Z) and length(X,Y,Z):
 	this->numberOfNodesInEachDir[0] = (size_t) this->lengthX / this->deltaX +1;
+	this->numberOfNodesInEachDirTemp[0] = this->numberOfNodesInEachDir[0];
+
 	this->numberOfNodesInEachDir[1] = (size_t) this->lengthY / this->deltaY +1;
+	this->numberOfNodesInEachDirTemp[1] = this->numberOfNodesInEachDir[1];
+
 	this->numberOfNodesInEachDir[2] = (size_t) this->lengthZ / this->deltaZ +1;
+	this->numberOfNodesInEachDirTemp[2] = this->numberOfNodesInEachDir[2];
+
 	this->totalNumberOfNodes        = this->numberOfNodesInEachDir[0] *
 										this->numberOfNodesInEachDir[1] * 
 										this->numberOfNodesInEachDir[2];
+	this->totalNumberOfNodesTemp = this->numberOfNodesInEachDirTemp[0] *
+									this->numberOfNodesInEachDirTemp[1] *
+									this->numberOfNodesInEachDirTemp[2];
 	// Initialize nodesElec:
 	cout << "Allocate nodesElec\n";
 
@@ -30,7 +40,12 @@ void GridCreator::meshInitialization(){
 								  this->numberOfNodesInEachDir[1]+(size_t)1,
 								  this->numberOfNodesInEachDir[2]+(size_t)1);
 	cout << "Done." << endl;
-	// Now, go through each node and decide in which material they are: TODO
+	// Initialize temperature field:
+	cout << "Allocate nodesTemp\n";
+	this->nodesTemp.set_size_data(this->numberOfNodesInEachDirTemp[0],
+									this->numberOfNodesInEachDirTemp[1],
+									this->numberOfNodesInEachDirTemp[2]);
+
 	/* ASSIGN TO EACH NODE A MATERIAL */
 	this->assignToEachNodeAMaterial();
 	cout << "GridCreator::meshInitialization::ASSIGN_TO_EACH_NODE_A_MATERIAL::DONE\n";

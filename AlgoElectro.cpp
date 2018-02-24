@@ -74,7 +74,7 @@ double AlgoElectro::Compute_dt(GridCreator &mesh){
     return dt;
 }
 
-void AlgoElectro::update(GridCreator &mesh){   
+void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForOutput){   
     /// Fetching final simulation time:
     double t_final   = mesh.input_parser.get_stopTime();
     /// Computing the optimal time step:
@@ -207,7 +207,6 @@ void AlgoElectro::update(GridCreator &mesh){
                     }
                     cout << "END" << endl;
             }
-            sleep(5);
             ///////////////////////////
             /* UPDATE MAGNETIC FIELD */
             ///////////////////////////
@@ -342,10 +341,16 @@ void AlgoElectro::update(GridCreator &mesh){
                     }
                 }
             }   
+            
+
+            /* WRITE RESULTS */
+            interfaceForOutput.convertAndWriteData(this->currentStep);
+
             ////////////////////////////////////////
             /// UPDATING CURRENT SIMULATION TIME ///
             ////////////////////////////////////////
             t_current=t_current+dt;
+            this->currentStep ++;
         }
 
         printf("ALGO::END::DT=%f::FINAL_TIME=%f\n",dt,t_current);

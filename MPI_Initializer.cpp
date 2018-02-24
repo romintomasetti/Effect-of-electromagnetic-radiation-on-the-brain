@@ -94,9 +94,9 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 	double Ly = subGrid.input_parser.lengthY;
 	double Lz = subGrid.input_parser.lengthZ;
 
-	double deltaX = subGrid.deltaX;
-	double deltaY = subGrid.deltaY;
-	double deltaZ = subGrid.deltaZ;
+	double deltaX = subGrid.input_parser.deltaX;
+	double deltaY = subGrid.input_parser.deltaY;
+	double deltaZ = subGrid.input_parser.deltaZ;
 
 
 	int N = (int) pow(nbProc, 1.0/3.0);
