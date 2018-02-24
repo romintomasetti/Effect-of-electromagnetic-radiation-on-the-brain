@@ -84,6 +84,9 @@ void GridCreator::assignToEachNodeAMaterial(void){
 								this->input_parser.GetInitTemp_FromMaterialName["AIR"];
 					this->nodesMagn(I,J,K).Temperature = 
 								this->input_parser.GetInitTemp_FromMaterialName["AIR"];
+
+					this->nodesTemp(I,J,K).field = I + this->numberOfNodesInEachDir[1] * 
+										(J + K * this->numberOfNodesInEachDir[0]) ;
 				}
 			}
 		}
@@ -139,8 +142,8 @@ GridCreator::~GridCreator(void){
 
 
 //  Function sending the values of the information of the face "char Direction" 
- Node3DField **GridCreator:GetVecSend(char Direction){
-	 int i,j,k;
+Node3DField **GridCreator::GetVecSend(size_t &size1,size_t &size2,char Direction){
+	 size_t i,j,k;
 
 
 	 /* Determine the face needed */
@@ -158,134 +161,164 @@ GridCreator::~GridCreator(void){
 	 
 	 
 	 /* Direction Y */
-	 if (Direction == "W"  || Direction == "E"){
-          Node3DField Table_send[this->numberOfNodesInEachDir[0]][this->numberOfNodesInEachDir[2]];
+	 if (Direction == 'W'  || Direction == 'E'){
+		// Allocate space:
+		Node3DField **Table_send;
+		size1 = this->numberOfNodesInEachDir[0];
+		size2 = this->numberOfNodesInEachDir[2];
+		Table_send = new Node3DField*[size1];
+		for(size_t I = 0 ; I < size1 ; I ++){
+		Table_send[I] = new Node3DField[size2];
+		}
+        //Node3DField Table_send[this->numberOfNodesInEachDir[0]][this->numberOfNodesInEachDir[2]];
 		  
-		  /* Face W */
-		  if (Direction == "W"){
-             for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
-				 for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
-					 Table_send[i-1][k-1]=this->nodesElec(i,0,k);
-				 }
-			 }
-		  }
+		/* Face W */
+		if (Direction == 'W'){
+			for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
+				for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
+					Table_send[i-1][k-1]=this->nodesElec(i,0,k);
+				}
+			}
+		}
 		  
-		  /* Face E */
-		  else(Direction= "E"){
-			 for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
-				 for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
-					 Table_send[i-1][k-1]=this->nodesElec(i,(this->numberOfNodesInEachDir[1])+1,k);
-				 }
-			 }
-		  }
+		/* Face E */
+		else/*(Direction == 'E')*/{
+			for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
+				for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
+					Table_send[i-1][k-1]=this->nodesElec(i,(this->numberOfNodesInEachDir[1])+1,k);
+				}
+			}
+		}
+		return Table_send;
 	 }
 	 
 	 
 	 /* Direction X */
-	 else if(Direction == "N" || Direction == "S"){
-          Node3DField Table_send[this->numberOfNodesInEachDir[1]][this->numberOfNodesInEachDir[2]];
+	 else if(Direction == 'N' || Direction == 'S'){
+		// Allocate space:
+		Node3DField **Table_send;
+		size1 = this->numberOfNodesInEachDir[1];
+		size2 = this->numberOfNodesInEachDir[2];
+		Table_send = new Node3DField*[size1];
+		for(size_t I = 0 ; I < size1 ; I ++){
+		Table_send[I] = new Node3DField[size2];
+		}
+        //Node3DField Table_send[this->numberOfNodesInEachDir[1]][this->numberOfNodesInEachDir[2]];
 		  
-		  /* Face N */
-		  if(Direction == "N"){
-			  for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
-				 for(k=1;  k <=this->numberOfNodesInEachDir[2];  k++){
-					 Table_send[j-1][k-1]=this->nodesElec((this->numberOfNodesInEachDir[0])+1,j,k);
-				 }
-			 }
-		  }
-		  
-		  /* Face S */
-		  else(Direction == "S"){
-			  for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
-				 for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
-					 Table_send[j-1][k-1]=this->nodesElec(0,j,k);
-				 }
-			 }
-		  }
+		/* Face N */
+		if(Direction == 'N'){
+			for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
+				for(k=1;  k <=this->numberOfNodesInEachDir[2];  k++){
+					Table_send[j-1][k-1]=this->nodesElec((this->numberOfNodesInEachDir[0])+1,j,k);
+				}
+			}
+		}
+		
+		/* Face S */
+		else/*(Direction == 'S')*/{
+			for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
+				for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
+					Table_send[j-1][k-1]=this->nodesElec(0,j,k);
+				}
+			}
+		}
+		return Table_send;
 	 }
 	 
 	 
 	 /* Direction Z */
-	 else if(Direction == "U" || Direction == "D"){
-		 Node3DField Table_send[this->numberOfNodesInEachDir[0]][this->numberOfNodesInEachDir[1]];
+	 else if(Direction == 'U' || Direction == 'D'){
+		// Allocate space:
+		Node3DField **Table_send;
+		size1 = this->numberOfNodesInEachDir[0];
+		size2 = this->numberOfNodesInEachDir[1];
+		Table_send = new Node3DField*[size1];
+		for(size_t I = 0 ; I < size1 ; I ++){
+		Table_send[I] = new Node3DField[size2];
+		}
+		//Node3DField Table_send[this->numberOfNodesInEachDir[0]][this->numberOfNodesInEachDir[1]];
 		 
-		 /* Face U */
-		 if(Direction == "U"){
-          	for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
-				 for(j=1;j <= this->numberOfNodesInEachDir[1];j++){
-					 Table_send[i-1][j-1]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1);
-				 }
-			 }
-		 }
-		 
-		 /* Face D */
-		 else(Direction == "D"){
-			 for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
-				 for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
-					 Table_send[i-1][j-1]=this->nodesElec(i,j,0);
-				 }
-			 }
-		 }
+		/* Face U */
+		if(Direction == 'U'){
+		for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
+				for(j=1;j <= this->numberOfNodesInEachDir[1];j++){
+					Table_send[i-1][j-1]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1);
+				}
+			}
+		}
+		
+		/* Face D */
+		else/*(Direction == 'D')*/{
+			for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
+				for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
+					Table_send[i-1][j-1]=this->nodesElec(i,j,0);
+				}
+			}
+		}
+
+		return Table_send;
 
 	 }
-	 return Table_send;
+	
  }
 
 
 
 // Fonction receive the value of the information of the face "char"
-void SetVecReceive(char Direction, Node3DField **Table_receive){
-	int i,j,k;
+void GridCreator::SetVecReceive(char Direction, Node3DField **Table_receive,size_t size1,size_t size2){
+	size_t i,j,k;
 
 
 	/* Direction X */
-	if(Direction == "N"){
+	if(Direction == 'N'){
 		for(j=0;  j< this->numberOfNodesInEachDir[1];  j++){
 			for(k=0;  k< this->numberOfNodesInEachDir[2];  k++){
-				this->nodesElec((this->numberOfNodesInEachDir[1])+1,j+1,k+1) = Table_receive(j,k);
+				this->nodesElec((this->numberOfNodesInEachDir[1])+1,j+1,k+1) = Table_receive[j][k];
 			}
 		}
 	}
-	if(Direction == "S"){
+	if(Direction == 'S'){
 		for(j=0;  j < this->numberOfNodesInEachDir[1];  j++){
 			for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
-				this->nodesElec(0,j+1,k+1) = Table_receive(j,k)
+				this->nodesElec(0,j+1,k+1) = Table_receive[j][k];
 			}
 		}
 	}
 
 	/* Direction Y */
-	if(Direction == "W"){
+	if(Direction == 'W'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			 for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
-				 this->nodesElec(i+1,0,k+1) = Table_receive(i,k);
+				 this->nodesElec(i+1,0,k+1) = Table_receive[i][k];
 			 }
 		}		
 	}
-	if(Direction == "E"){
+	if(Direction == 'E'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			 for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
-				 this->nodesElec(i+1,(this->numberOfNodesInEachDir[1])+1,k+1) = Table_receive(i,k);
+				 this->nodesElec(i+1,(this->numberOfNodesInEachDir[1])+1,k+1) = Table_receive[i][k];
 			 }
 		}
 	}
 
 	/* Direction Z */
-	if(Direction == "U"){
+	if(Direction == 'U'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			for(j=0;  j < this->numberOfNodesInEachDir[1];  j++){
-				this->nodesElec(i+1,j+1,(this->numberOfNodesInEachDir[2])+1) = Table_receive(i,j)
+				this->nodesElec(i+1,j+1,(this->numberOfNodesInEachDir[2])+1) = Table_receive[i][j];
 			}
 		}
 	}
-	if(Direction == "D"){
+	if(Direction == 'D'){
 		for(i=0;  i<this->numberOfNodesInEachDir[0];  i++){
 			for(j=0;  j< this->numberOfNodesInEachDir[1];  j++){
-				this->nodesElec(i+1,j+1,0) = Table_receive(i,j)
+				this->nodesElec(i+1,j+1,0) = Table_receive[i][j];
 			}
 		}
 	}
-	if(Direction != "U" && Direction != "D" && Direction != "W" && Direction != "E" && Direction != "N" && Direction != "S"){
-		printf("No face specify\n",__FILE__,__LINE__);
+	if(Direction != 'U' && Direction != 'D' && Direction != 'W' && Direction != 'E' 
+		&& Direction != 'N' && Direction != 'S'){
+		printf("GridCreator::SetVecReceive::ERROR\n");
+		printf("\tNo face specified, in %s at line %d.\n",__FILE__,__LINE__);
 	}
 }
