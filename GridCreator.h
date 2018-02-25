@@ -80,10 +80,31 @@ class GridCreator{
 		// have to read input files to link each node to a material.
 		void assignToEachNodeAMaterial(void);
 
-		//Fonction send the values of the information of the face "char" 
-		Node3DField **GetVecSend(size_t &,size_t &,char);
-		//Fonction receive the value of the information of the face "char" 
-		void SetVecReceive(char, Node3DField **,size_t,size_t);
+		/*
+		 * This function fills in the array of Node3DField nodes
+		 * with the nodes of the face specified by the 'char' argument.
+		 * Also, sizes of the 2d array are given. If they are wrong, 
+		 * they are corrected (so we need a reference to them).
+		 */
+		void GetVecSend(char, Node3DField ***,size_t &,size_t&);
+		//Fonction receive the value of the information of the face "char"
+		/*
+		 * This function fills in the array of the grid with data
+		 * received from the neighboors. Direction specified by
+		 * the 'char' argument. Sizes are given for error chacking.
+		 */ 
+		void SetVecRecv(char, Node3DField ***,size_t,size_t);
+
+		/* Communication with other MPI processes */
+		void communicateWithNeighboor(
+					char direction,
+					size_t size1_send,
+					size_t size2_send,
+					size_t size1_recv,
+					size_t size2_recv,
+                    Node3DField ***ElectricNodes_toSend,
+                    Node3DField ***ElectricNodes_toRecv,
+                    MPI_Request **requests_MPI);
 };
 
 #endif

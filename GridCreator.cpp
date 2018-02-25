@@ -27,12 +27,16 @@ void GridCreator::meshInitialization(){
 	this->totalNumberOfNodesTemp = this->numberOfNodesInEachDirTemp[0] *
 									this->numberOfNodesInEachDirTemp[1] *
 									this->numberOfNodesInEachDirTemp[2];
+
+	printf("Size of electric mesh is (%ld,%ld,%ld).\n",this->numberOfNodesInEachDir[0],
+					this->numberOfNodesInEachDir[1],this->numberOfNodesInEachDir[2]);
+	
 	// Initialize nodesElec:
 	cout << "Allocate nodesElec\n";
-	this->nodesElec.set_size_data(this->numberOfNodesInEachDir[0],
-								  this->numberOfNodesInEachDir[1],
-								  this->numberOfNodesInEachDir[2]);
-	// Initialize nodesMagn. It has two nodes more, in each direction:
+	this->nodesElec.set_size_data(this->numberOfNodesInEachDir[0] + 2,
+								  this->numberOfNodesInEachDir[1] + 2,
+								  this->numberOfNodesInEachDir[2] + 2);
+	// Initialize nodesMagn. It has one more node, in each direction:
 	cout << "Allocate nodesMagn\n";
 	this->nodesMagn.set_size_data(this->numberOfNodesInEachDir[0]+(size_t)1,
 								  this->numberOfNodesInEachDir[1]+(size_t)1,
@@ -96,8 +100,9 @@ void GridCreator::assignToEachNodeAMaterial(void){
 					this->nodesMagn(I,J,K).Temperature = 
 								this->input_parser.GetInitTemp_FromMaterialName["AIR"];
 
-					this->nodesTemp(I,J,K).field = I + this->numberOfNodesInEachDir[1] * 
-										(J + K * this->numberOfNodesInEachDir[0]) ;
+					this->nodesTemp(I,J,K).field = I /*+ this->numberOfNodesInEachDir[1] * 
+										(J + K * this->numberOfNodesInEachDir[0])*/ ;
+					//printf("nodesTemp(%ld,%ld,%ld).field = %f.\n",I,J,K,this->nodesTemp(I,J,K).field);
 				}
 			}
 		}
@@ -147,13 +152,14 @@ GridCreator::~GridCreator(void){
 
 	for(i=0; i<3; i++){
 		globalIndices[i] = localIndices[i] + this->originIndices[i];
-		cout << globalIndices[i] << endl;
 	}
  }
 
 
 //  Function sending the values of the information of the face "char Direction" 
-Node3DField **GridCreator::GetVecSend(size_t &size1,size_t &size2,char Direction){
+void GridCreator::GetVecSend(char Direction,
+				Node3DField ***array_send,
+				size_t &size1,size_t &size2){
 	 size_t i,j,k;
 
 
@@ -173,21 +179,36 @@ Node3DField **GridCreator::GetVecSend(size_t &size1,size_t &size2,char Direction
 	 
 	 /* Direction Y */
 	 if (Direction == 'W'  || Direction == 'E'){
-		// Allocate space:
-		Node3DField **Table_send;
-		size1 = this->numberOfNodesInEachDir[0];
-		size2 = this->numberOfNodesInEachDir[2];
-		Table_send = new Node3DField*[size1];
-		for(size_t I = 0 ; I < size1 ; I ++){
-		Table_send[I] = new Node3DField[size2];
+		// Check the sizes:
+		bool shouldReallocate = false;
+		size_t prev_size1 = size1, prev_size2 = size2;
+		if(size1 != this->numberOfNodesInEachDir[0]){
+			size1 = this->numberOfNodesInEachDir[0];
+			shouldReallocate = true;
 		}
-        //Node3DField Table_send[this->numberOfNodesInEachDir[0]][this->numberOfNodesInEachDir[2]];
+		if(size2 != this->numberOfNodesInEachDir[2]){
+			size2 = this->numberOfNodesInEachDir[2];
+			shouldReallocate = true;
+		}
+		if(shouldReallocate == true){
+			// Specified sizes are not correct. Reallocate space.
+			if((*array_send) != NULL){
+				// First, free previously allocated space.
+				for(size_t I = 0 ; I < prev_size1 ; I ++)
+					delete[] (*array_send)[I];
+				delete[] (*array_send);
+			}
+			// Now, allocate:
+			(*array_send) = new Node3DField*[size1];
+			for(size_t I = 0 ; I < size1 ; I ++)
+				(*array_send)[I] = new Node3DField[size2];
+		}
 		  
 		/* Face W */
 		if (Direction == 'W'){
 			for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
 				for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
-					Table_send[i-1][k-1]=this->nodesElec(i,0,k);
+					(*array_send)[i-1][k-1]=this->nodesElec(i,0,k);
 				}
 			}
 		}
@@ -196,23 +217,38 @@ Node3DField **GridCreator::GetVecSend(size_t &size1,size_t &size2,char Direction
 		else/*(Direction == 'E')*/{
 			for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
 				for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
-					Table_send[i-1][k-1]=this->nodesElec(i,(this->numberOfNodesInEachDir[1])+1,k);
+					(*array_send)[i-1][k-1]=this->nodesElec(i,(this->numberOfNodesInEachDir[1])+1,k);
 				}
 			}
 		}
-		return Table_send;
 	 }
 	 
 	 
 	 /* Direction X */
 	 else if(Direction == 'N' || Direction == 'S'){
-		// Allocate space:
-		Node3DField **Table_send;
-		size1 = this->numberOfNodesInEachDir[1];
-		size2 = this->numberOfNodesInEachDir[2];
-		Table_send = new Node3DField*[size1];
-		for(size_t I = 0 ; I < size1 ; I ++){
-		Table_send[I] = new Node3DField[size2];
+		// Check the sizes:
+		bool shouldReallocate = false;
+		size_t prev_size1 = size1, prev_size2 = size2;
+		if(size1 != this->numberOfNodesInEachDir[1]){
+			size1 = this->numberOfNodesInEachDir[1];
+			shouldReallocate = true;
+		}
+		if(size2 != this->numberOfNodesInEachDir[2]){
+			size2 = this->numberOfNodesInEachDir[2];
+			shouldReallocate = true;
+		}
+		if(shouldReallocate == true){
+			// Specified sizes are not correct. Reallocate space.
+			if((*array_send) != NULL){
+				// First, free previously allocated space.
+				for(size_t I = 0 ; I < prev_size1 ; I ++)
+					delete[] (*array_send)[I];
+				delete[] (*array_send);
+			}
+			// Now, allocate:
+			(*array_send) = new Node3DField*[size1];
+			for(size_t I = 0 ; I < size1 ; I ++)
+				(*array_send)[I] = new Node3DField[size2];
 		}
         //Node3DField Table_send[this->numberOfNodesInEachDir[1]][this->numberOfNodesInEachDir[2]];
 		  
@@ -220,7 +256,7 @@ Node3DField **GridCreator::GetVecSend(size_t &size1,size_t &size2,char Direction
 		if(Direction == 'N'){
 			for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
 				for(k=1;  k <=this->numberOfNodesInEachDir[2];  k++){
-					Table_send[j-1][k-1]=this->nodesElec((this->numberOfNodesInEachDir[0])+1,j,k);
+					(*array_send)[j-1][k-1]=this->nodesElec((this->numberOfNodesInEachDir[0])+1,j,k);
 				}
 			}
 		}
@@ -229,31 +265,47 @@ Node3DField **GridCreator::GetVecSend(size_t &size1,size_t &size2,char Direction
 		else/*(Direction == 'S')*/{
 			for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
 				for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
-					Table_send[j-1][k-1]=this->nodesElec(0,j,k);
+					(*array_send)[j-1][k-1]=this->nodesElec(0,j,k);
 				}
 			}
 		}
-		return Table_send;
 	 }
 	 
 	 
 	 /* Direction Z */
 	 else if(Direction == 'U' || Direction == 'D'){
-		// Allocate space:
-		Node3DField **Table_send;
-		size1 = this->numberOfNodesInEachDir[0];
-		size2 = this->numberOfNodesInEachDir[1];
-		Table_send = new Node3DField*[size1];
-		for(size_t I = 0 ; I < size1 ; I ++){
-		Table_send[I] = new Node3DField[size2];
+		// Check the sizes:
+		bool shouldReallocate = false;
+		size_t prev_size1 = size1, prev_size2 = size2;
+		if(size1 != this->numberOfNodesInEachDir[0]){
+			size1 = this->numberOfNodesInEachDir[0];
+			shouldReallocate = true;
 		}
+		if(size2 != this->numberOfNodesInEachDir[1]){
+			size2 = this->numberOfNodesInEachDir[1];
+			shouldReallocate = true;
+		}
+		if(shouldReallocate == true){
+			// Specified sizes are not correct. Reallocate space.
+			if((*array_send) != NULL){
+				// First, free previously allocated space.
+				for(size_t I = 0 ; I < prev_size1 ; I ++)
+					delete[] (*array_send)[I];
+				delete[] (*array_send);
+			}
+			// Now, allocate:
+			(*array_send) = new Node3DField*[size1];
+			for(size_t I = 0 ; I < size1 ; I ++)
+				(*array_send)[I] = new Node3DField[size2];
+		}
+		
 		//Node3DField Table_send[this->numberOfNodesInEachDir[0]][this->numberOfNodesInEachDir[1]];
 		 
 		/* Face U */
 		if(Direction == 'U'){
 		for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
 				for(j=1;j <= this->numberOfNodesInEachDir[1];j++){
-					Table_send[i-1][j-1]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1);
+					(*array_send)[i-1][j-1]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1);
 				}
 			}
 		}
@@ -262,12 +314,10 @@ Node3DField **GridCreator::GetVecSend(size_t &size1,size_t &size2,char Direction
 		else/*(Direction == 'D')*/{
 			for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
 				for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
-					Table_send[i-1][j-1]=this->nodesElec(i,j,0);
+					(*array_send)[i-1][j-1]=this->nodesElec(i,j,0);
 				}
 			}
 		}
-
-		return Table_send;
 
 	 }
 	
@@ -276,7 +326,7 @@ Node3DField **GridCreator::GetVecSend(size_t &size1,size_t &size2,char Direction
 
 
 // Fonction receive the value of the information of the face "char"
-void GridCreator::SetVecReceive(char Direction, Node3DField **Table_receive,size_t size1,size_t size2){
+void GridCreator::SetVecRecv(char Direction, Node3DField ***Table_receive,size_t size1,size_t size2){
 	size_t i,j,k;
 
 
@@ -284,14 +334,14 @@ void GridCreator::SetVecReceive(char Direction, Node3DField **Table_receive,size
 	if(Direction == 'N'){
 		for(j=0;  j< this->numberOfNodesInEachDir[1];  j++){
 			for(k=0;  k< this->numberOfNodesInEachDir[2];  k++){
-				this->nodesElec((this->numberOfNodesInEachDir[1])+1,j+1,k+1) = Table_receive[j][k];
+				this->nodesElec((this->numberOfNodesInEachDir[1])+1,j+1,k+1) = (*Table_receive)[j][k];
 			}
 		}
 	}
 	if(Direction == 'S'){
 		for(j=0;  j < this->numberOfNodesInEachDir[1];  j++){
 			for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
-				this->nodesElec(0,j+1,k+1) = Table_receive[j][k];
+				this->nodesElec(0,j+1,k+1) = (*Table_receive)[j][k];
 			}
 		}
 	}
@@ -300,14 +350,14 @@ void GridCreator::SetVecReceive(char Direction, Node3DField **Table_receive,size
 	if(Direction == 'W'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			 for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
-				 this->nodesElec(i+1,0,k+1) = Table_receive[i][k];
+				 this->nodesElec(i+1,0,k+1) = (*Table_receive)[i][k];
 			 }
 		}		
 	}
 	if(Direction == 'E'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			 for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
-				 this->nodesElec(i+1,(this->numberOfNodesInEachDir[1])+1,k+1) = Table_receive[i][k];
+				 this->nodesElec(i+1,(this->numberOfNodesInEachDir[1])+1,k+1) = (*Table_receive)[i][k];
 			 }
 		}
 	}
@@ -316,14 +366,14 @@ void GridCreator::SetVecReceive(char Direction, Node3DField **Table_receive,size
 	if(Direction == 'U'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			for(j=0;  j < this->numberOfNodesInEachDir[1];  j++){
-				this->nodesElec(i+1,j+1,(this->numberOfNodesInEachDir[2])+1) = Table_receive[i][j];
+				this->nodesElec(i+1,j+1,(this->numberOfNodesInEachDir[2])+1) = (*Table_receive)[i][j];
 			}
 		}
 	}
 	if(Direction == 'D'){
 		for(i=0;  i<this->numberOfNodesInEachDir[0];  i++){
 			for(j=0;  j< this->numberOfNodesInEachDir[1];  j++){
-				this->nodesElec(i+1,j+1,0) = Table_receive[i][j];
+				this->nodesElec(i+1,j+1,0) = (*Table_receive)[i][j];
 			}
 		}
 	}
@@ -332,4 +382,21 @@ void GridCreator::SetVecReceive(char Direction, Node3DField **Table_receive,size
 		printf("GridCreator::SetVecReceive::ERROR\n");
 		printf("\tNo face specified, in %s at line %d.\n",__FILE__,__LINE__);
 	}
+}
+
+
+/////////////////////////
+/// MPI COMMUNICATION ///
+/////////////////////////
+void GridCreator::communicateWithNeighboor(
+					char direction,
+					size_t size1_send,
+					size_t size2_send,
+					size_t size1_recv,
+					size_t size2_recv,
+                    Node3DField ***ElectricNodes_toSend,
+                    Node3DField ***ElectricNodes_toRecv,
+                    MPI_Request **requests_MPI){
+	printf("comminucateWithNeighboor not yet implemented, abort!\n");
+	std::abort();
 }

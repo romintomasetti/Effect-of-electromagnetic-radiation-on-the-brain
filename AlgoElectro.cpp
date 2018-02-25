@@ -103,7 +103,8 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
     /// In fact, we have 'parallélipipède rectangle' so      ///
     /// we have 6 simultaneous communications (one per face) ///
 	////////////////////////////////////////////////////////////
-	/*
+	
+    /*
     #pragma omp master
 	{
 		if(omp_get_max_threads() < 6){
@@ -115,98 +116,265 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
 		}
 	}
     */
+    
 
     /////////////////////////////////////////////////////////////////////
     /// The following lines are usefull for MPI_MULTIPLE_THREAD usage ///
     /////////////////////////////////////////////////////////////////////
-    /* REQ is the number of requests to check for. Taht is, 6 sends and 
+    /* REQ is the number of requests to check for. That is, 6 sends and 
      * 6 receives so 12 checks. */
+    
     /*
-    unsigned int REQ = 12;
-    MPI_Request *requests = (MPI_Request*) calloc(REQ,sizeof(MPI_Request));
-	int checkRequest[REQ];
-	for(int cc = 0 ; cc < REQ ; cc ++ )
+    unsigned int REQ_MPI = 12;
+    MPI_Request *requests_MPI = (MPI_Request*) calloc(REQ_MPI,sizeof(MPI_Request));
+	int checkRequest[REQ_MPI];
+	for(int cc = 0 ; cc < REQ_MPI ; cc ++ )
 		checkRequest[cc] = -1;
 	unsigned short int counterReq = 0;
     */
+
+    /////////////////////////////////////////////////////
+    /// INITIALIZING NEIGHBOORS FOR MPI COMMUNICATION ///
+    /////////////////////////////////////////////////////
+    /*
+    RankNeighbour[0] = SOUTH (along the opposite direction of the x-axis)
+	RankNeighbour[1] = NORTH (along the direction of the x-axis)
+	RankNeighbour[2] = WEST (along the opposite direction of the y-axis)
+	RankNeighbour[3] = EAST (along the direction of the y-axis)
+	RankNeighbour[4] = DOWN (along the opposite direction of the z-axis)
+	RankNeighbour[5] = UP (along the direction of the z-axis) 
+    */
+    /*
+    bool isNeighboor_at_UP    = false;
+    bool isNeighboor_at_DOWN  = false;
+    bool isNeighboor_at_SOUTH = false;
+    bool isNeighboor_at_NORTH = false;
+    bool isNeighboor_at_WEST  = false;
+    bool isNeighboor_at_EAST  = false;
+
+    if(mesh.MPI_communicator.RankNeighbour[0] != -1){isNeighboor_at_SOUTH = true;}
+    if(mesh.MPI_communicator.RankNeighbour[1] != -1){isNeighboor_at_NORTH = true;}
+    if(mesh.MPI_communicator.RankNeighbour[2] != -1){isNeighboor_at_WEST  = true;}
+    if(mesh.MPI_communicator.RankNeighbour[3] != -1){isNeighboor_at_EAST  = true;}
+    if(mesh.MPI_communicator.RankNeighbour[4] != -1){isNeighboor_at_DOWN  = true;}
+    if(mesh.MPI_communicator.RankNeighbour[5] != -1){isNeighboor_at_UP    = true;}
+    */
+    
     //////////////////////////////////////
     /// BEGINNING OF THE OPENMP REGION ///
     //////////////////////////////////////
     /*
     #pragma omp parallel default(none)\
-        shared(mesh)\
+        shared(ompi_mpi_comm_world)\
+        shared(mesh,interfaceForOutput)\
+        shared(requests_MPI,checkRequest,REQ_MPI,counterReq)\
         shared(t_current,dt,t_final)\
+        shared(isNeighboor_at_DOWN,isNeighboor_at_EAST,isNeighboor_at_NORTH)\
+        shared(isNeighboor_at_SOUTH,isNeighboor_at_UP,isNeighboor_at_WEST)\
         private(local,global)\
-        private(T,mu_material,epsilon_material)
+        private(T,mu_material,epsilon_material)\
+        private(elec_conduct_mat)
     {
-        // Create for each OMP thread 4 vectors, to send and receive data:
-        double *ElectricField_toRecv = NULL;
-        double *ElectricField_toSend = NULL;
-        double *MagneticField_toRecv = NULL;
-        double *MagneticField_toSend = NULL;
+    */
 
-        // Each OMP thread should be aware of the position of the MPI process:
-        unsigned short int MPI_curr_X = 0;
-        unsigned short int MPI_curr_Y = 0;
-        unsigned short int MPI_curr_Z = 0;
-        // Each OMP thread should know if there is a neighboor:        
-        bool isNeighboor_at_UP    = false;
-        bool isNeighboor_at_DOWN  = false;
-        bool isNeighboor_at_SOUTH = false;
-        bool isNeighboor_at_NORTH = false;
-        bool isNeighboor_at_WEST  = false;
-        bool isNeighboor_at_EAST  = false;
-        // Boolean to know if the thread can send and receive:
-        bool canSend = false;
-        bool canRecv = false;
-        // Boolean to know if the thread first sends or receives:
-        bool firstSend = true;
-        // Each OMP thread should know the 'coordinates' of the neighboor
-        // with who it communicates:
-        unsigned short int MPI_comm_X = 0;
-        unsigned short int MPI_comm_Y = 0;
-        unsigned short int MPI_comm_Z = 0;*/
+        // Create for each OMP thread 2 vectors, to send and receive data:
+        /*
+        Node3DField **ElectricNodes_toSend = NULL;
+        size_t size1_send, size2_send;
+        Node3DField **ElectricNodes_toRecv = NULL;
+        size_t size1_recv, size2_recv;
+        */
 
-        /* LINK AND INITIALIZE ALL VARIABLES WRITTEN ABOVE */
-       /* if(omp_get_thread_num() == 0){
-            if(isNeighboor_at_UP == true){
-                // 
-            }
-        }*/
+        // Each thread has its direction:
+        /*
+        char direction;
+        */
 
+        // If there is a neighboor at Down, we must send to and receive from Down.
+        // So we must initialize both _toSend and _toRecv Node3DField arrays.
         /////////////////////////////////////////////////
         /// CONVENTION FOR COMMUNICATION              ///
-        /// 1) OMP thread(0) communicates with UP.    ///
-        /// 2) OMP thread(1) communicates with DOWN.  ///
-        /// 3) OMP thread(2) communicates with SOUTH. ///
-        /// 3) OMP thread(3) communicates with NORTH. ///
-        /// 4) OMP thread(4) communicates with WEST.  ///
-        /// 5) OMP thread(5) communicates with EAST.  ///
+        /// 1) OMP thread(0) communicates with SOUTH. ///
+        /// 2) OMP thread(1) communicates with NORTH. ///
+        /// 3) OMP thread(2) communicates with WEST.  ///
+        /// 3) OMP thread(3) communicates with EAST.  ///
+        /// 4) OMP thread(4) communicates with DOWN.  ///
+        /// 5) OMP thread(5) communicates with UP.    ///
         /////////////////////////////////////////////////
-
+        /*
+        if(omp_get_thread_num() == 0){
+            // Communication with SOUTH.
+            direction = 'S';
+            if(isNeighboor_at_SOUTH == true){
+                counterReq += 2;
+                checkRequest[0] = 1;
+                checkRequest[1] = 1;
+                // There is a neighboor at south. Initialize arrays.
+                size1_send = mesh.numberOfNodesInEachDir[1];
+                size2_send = mesh.numberOfNodesInEachDir[2];
+                size1_recv = size1_send;
+                size2_recv = size2_send;
+                ElectricNodes_toSend = new Node3DField*[size1_send];
+                ElectricNodes_toRecv = new Node3DField*[size1_recv];
+                for(size_t I = 0 ; I < size1_send ; I ++)
+                    ElectricNodes_toSend[I] = new Node3DField[size2_send];
+                for(size_t I = 0 ; I < size1_recv ; I ++)
+                    ElectricNodes_toRecv[I] = new Node3DField[size2_recv];
+            }else{
+                counterReq += 2;
+            }
+        }
+        if(omp_get_thread_num() == 1){
+            // Communication with NORTH.
+            direction = 'N';
+            if(isNeighboor_at_NORTH == true){
+                counterReq += 2;
+                checkRequest[2] = 1;
+                checkRequest[3] = 1;
+                // There is a neighboor at north. Initialize arrays.
+                size1_send = mesh.numberOfNodesInEachDir[1];
+                size2_send = mesh.numberOfNodesInEachDir[2];
+                size1_recv = size1_send;
+                size2_recv = size2_send;
+                ElectricNodes_toSend = new Node3DField*[size1_send];
+                ElectricNodes_toRecv = new Node3DField*[size1_recv];
+                for(size_t I = 0 ; I < size1_send ; I ++)
+                    ElectricNodes_toSend[I] = new Node3DField[size2_send];
+                for(size_t I = 0 ; I < size1_recv ; I ++)
+                    ElectricNodes_toRecv[I] = new Node3DField[size2_recv];
+            }else{
+                counterReq += 2;
+            }
+        }
+        if(omp_get_thread_num() == 2){
+            // Communication with West.
+            direction = 'W';
+            if(isNeighboor_at_WEST){
+                counterReq += 2;
+                checkRequest[4] = 1;
+                checkRequest[5] = 1;
+                // There is a neighboor at West. Initialize arrays.
+                size1_send = mesh.numberOfNodesInEachDir[0];
+                size2_send = mesh.numberOfNodesInEachDir[2];
+                size1_recv = size1_send;
+                size2_recv = size2_send;
+                ElectricNodes_toSend = new Node3DField*[size1_send];
+                ElectricNodes_toRecv = new Node3DField*[size1_recv];
+                for(size_t I = 0 ; I < size1_send ; I ++)
+                    ElectricNodes_toSend[I] = new Node3DField[size2_send];
+                for(size_t I = 0 ; I < size1_recv ; I ++)
+                    ElectricNodes_toRecv[I] = new Node3DField[size2_recv];
+            }else{
+                counterReq += 2;
+            }
+        }
+        if(omp_get_thread_num() == 3){
+            // Communication with EAST.
+            direction = 'E';
+            if(isNeighboor_at_EAST){
+                counterReq += 2;
+                checkRequest[6] = 1;
+                checkRequest[7] = 1;
+                // There is a neighboor at EAST. Initialize arrays.
+                size1_send = mesh.numberOfNodesInEachDir[0];
+                size2_send = mesh.numberOfNodesInEachDir[2];
+                size1_recv = size1_send;
+                size2_recv = size2_send;
+                ElectricNodes_toSend = new Node3DField*[size1_send];
+                ElectricNodes_toRecv = new Node3DField*[size1_recv];
+                for(size_t I = 0 ; I < size1_send ; I ++)
+                    ElectricNodes_toSend[I] = new Node3DField[size2_send];
+                for(size_t I = 0 ; I < size1_recv ; I ++)
+                    ElectricNodes_toRecv[I] = new Node3DField[size2_recv];
+            }else{
+                counterReq += 2;
+            }
+        }
+        if(omp_get_thread_num() == 4){
+            // Communication with Down.
+            direction = 'D';
+            if(isNeighboor_at_DOWN){
+                counterReq += 2;
+                checkRequest[8] = 1;
+                checkRequest[9] = 1;
+                // There is a neighboor at DOWN. Initialize arrays.
+                size1_send = mesh.numberOfNodesInEachDir[0];
+                size2_send = mesh.numberOfNodesInEachDir[1];
+                size1_recv = size1_send;
+                size2_recv = size2_send;
+                ElectricNodes_toSend = new Node3DField*[size1_send];
+                ElectricNodes_toRecv = new Node3DField*[size1_recv];
+                for(size_t I = 0 ; I < size1_send ; I ++)
+                    ElectricNodes_toSend[I] = new Node3DField[size2_send];
+                for(size_t I = 0 ; I < size1_recv ; I ++)
+                    ElectricNodes_toRecv[I] = new Node3DField[size2_recv];
+            }else{
+                counterReq += 2;
+            }
+        }
+        if(omp_get_thread_num() == 5){
+            // Communication with UP.
+            direction = 'U';
+            if(isNeighboor_at_UP){
+                counterReq += 2;
+                checkRequest[10] = 1;
+                checkRequest[11] = 1;
+                // There is a neighboor at UP. Initialize arrays.
+                size1_send = mesh.numberOfNodesInEachDir[0];
+                size2_send = mesh.numberOfNodesInEachDir[1];
+                size1_recv = size1_send;
+                size2_recv = size2_send;
+                ElectricNodes_toSend = new Node3DField*[size1_send];
+                ElectricNodes_toRecv = new Node3DField*[size1_recv];
+                for(size_t I = 0 ; I < size1_send ; I ++)
+                    ElectricNodes_toSend[I] = new Node3DField[size2_send];
+                for(size_t I = 0 ; I < size1_recv ; I ++)
+                    ElectricNodes_toRecv[I] = new Node3DField[size2_recv];
+            }else{
+                counterReq += 2;
+            }
+        }
+        */
+        /////////////////////////////////
+        /// ALL OMP THREADS WAIT HERE ///
+        /////////////////////////////////
+        /*
+        #pragma omp barrier
+        if(REQ_MPI != counterReq){
+            printf("AlgoElectro.cpp::ERROR\n");
+            printf("\tThe number of MPI requests should be %d but has %d.\n",
+                REQ_MPI,counterReq);
+            printf("\tAborting.\n");
+            std::abort();
+        }
+        */
        /* printf("Inside algoElectro update :: aborting()\n");
         abort();*/
         int counter = 0;
         while(t_current<t_final){
 
-            /* AFFICHER LA TRANCHE Z=8 */
-            int tranche = 8;
-            printf("\n\t***************AFFICHAGE DE LA TRANCHE Z = %d***********\n\n",tranche);
+            /* AFFICHER LA TRANCHE Z=3 */
+            int tranche = 3;
+            #pragma omp master
+            {
+                printf("\n\t***************AFFICHAGE DE LA TRANCHE Z = %d***********\n\n",tranche);
 
+                for(unsigned long i=1; i <= mesh.numberOfNodesInEachDir[0] ;i++){
+                        for(unsigned long j=1; j <= mesh.numberOfNodesInEachDir[1]  ;j++){
+                            if(mesh.nodesElec(i,j,tranche).field[2] == 0){
+                                printf("%s%f%s,",KGRN,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                            }else if(mesh.nodesElec(i,j,tranche).field[2] < 0){
+                                printf("%s%f%s,",KBLU,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                            }else{
+                                printf("%s%f%s,",KRED,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                            }
+                        }
+                }
+                sleep(3);
+            }
+            #pragma omp barrier
             
 
-            for(unsigned long i=1; i <= mesh.numberOfNodesInEachDir[0] ;i++){
-                    for(unsigned long j=1; j <= mesh.numberOfNodesInEachDir[1]  ;j++){
-                        if(mesh.nodesElec(i,j,tranche).field[2] == 0){
-                            printf("%s%f%s,",KGRN,mesh.nodesElec(i,j,tranche).field[2],KNRM);
-                        }else if(mesh.nodesElec(i,j,tranche).field[2] < 0){
-                            printf("%s%f%s,",KBLU,mesh.nodesElec(i,j,tranche).field[2],KNRM);
-                        }else{
-                            printf("%s%f%s,",KRED,mesh.nodesElec(i,j,tranche).field[2],KNRM);
-                        }
-                    }
-                    cout << "END" << endl;
-            }
             ///////////////////////////
             /* UPDATE MAGNETIC FIELD */
             ///////////////////////////
@@ -215,7 +383,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                 for(unsigned long j=0;j <= mesh.numberOfNodesInEachDir[1] ; j++){
 
                     for(unsigned long i=0;i <= mesh.numberOfNodesInEachDir[0]  ; i++){
-                        printf("%s\t>>> NODE(%ld,%ld,%ld) <<<%s\n",KGRN,i,j,k,KNRM);
+                        printf("%s\t>>> NODE MAGN(%ld,%ld,%ld) <<<%s\n",KGRN,i,j,k,KNRM);
                         /* Get the global indices */
                         local[0] = i;
                         local[1] = j;
@@ -289,15 +457,16 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                     }
                 }
             }
-
-            /* update electric field  */
             
+            
+            ///////////////////////////
+            /* UPDATE ELECTRIC FIELD */
+            ///////////////////////////
             printf("%sELECTRIC FIELD%s\n",KRED,KNRM);
-
             for(unsigned long k=1 ; k <= mesh.numberOfNodesInEachDir[0];k++){
                 for(unsigned long j=1 ; j <= mesh.numberOfNodesInEachDir[1];j++){
                     for(unsigned long i=1; i <= mesh.numberOfNodesInEachDir[2];i++){
-                        printf("%s\t>>> NODE(%ld,%ld,%ld) <<<%s\n",KGRN,i,j,k,KNRM);
+                        printf("%s\t>>> NODE ELEC(%ld,%ld,%ld) <<<%s\n",KGRN,i,j,k,KNRM);
                         /* Get the global indices */
                         local[0] = i;
                         local[1] = j;
@@ -343,22 +512,87 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                 }
             }   
             
+            /////////////////////////////////////////
+            /* COMMUNICATION BETWEEN MPI PROCESSES */
+            /////////////////////////////////////////
+            /*
+            if(omp_get_thread_num() >= 0 && omp_get_thread_num() <= 5){
+                // Request the electric field to send:
+                mesh.GetVecSend(direction,&ElectricNodes_toSend,
+                    size1_send,size2_send);
+                mesh.communicateWithNeighboor(direction,
+                    size1_send,size2_send,
+                    size1_recv,size2_recv,
+                    &ElectricNodes_toSend,
+                    &ElectricNodes_toRecv,
+                    &requests_MPI);
+            }
+            */
+            ///////////////////////////////////////////////
+            /* CHECK ALL THE MPI REQUESTS ARE FULLFILLED */
+            ///////////////////////////////////////////////
+            /*
+            #pragma omp master
+            {
+                for(int iii = 0 ; iii < REQ_MPI ; iii++){
+                    if(checkRequest[iii] == 1){
+                        MPI_Wait(&requests_MPI[iii],MPI_STATUS_IGNORE);
+                    }
+                }
+            }
+            #pragma omp barrier
+            */
 
-            /* WRITE RESULTS */
-            interfaceForOutput.convertAndWriteData(this->currentStep);
-
+            ////////////////////////////////////////////////
+            /* PUT RECEIVED FIELDS INSIDE THE RIGHT ARRAY */
+            ////////////////////////////////////////////////
+            /*
+            if(omp_get_thread_num() >=0 && omp_get_thread_num() <=5){
+                mesh.SetVecRecv(direction,&ElectricNodes_toRecv,
+                    size1_recv,size2_recv);
+            }
+            #pragma omp barrier
+            */
+            /* WRITE RESULTS - ONLY MAIN OMP THREAD */
             ////////////////////////////////////////
             /// UPDATING CURRENT SIMULATION TIME ///
+            /// ONLY MAIN OMP THREAD !!!         ///
             ////////////////////////////////////////
-            t_current=t_current+dt;
-            this->currentStep ++;
+            /*
+            #pragma omp master
+            {
+                interfaceForOutput.convertAndWriteData(this->currentStep);
+                t_current=t_current+dt;
+                this->currentStep ++;
+            }
+            #pragma omp barrier
+            */
+            //MPI_Barrier(MPI_COMM_WORLD);
         }
 
         printf("ALGO::END::DT=%f::FINAL_TIME=%f\n",dt,t_current);
-   /* }*/
+
+        //////////////////////////////////////
+        /// FREE MEMORY OF EACH OMP THREAD ///
+        //////////////////////////////////////
+        /*
+        if(ElectricNodes_toRecv != NULL){
+            for(size_t I = 0 ; I < size1_recv ; I ++)
+                delete[] ElectricNodes_toRecv[I];
+            delete[] ElectricNodes_toRecv;
+        }
+        if(ElectricNodes_toSend != NULL){
+            for(size_t I = 0 ; I < size1_send ; I ++)
+                delete[] ElectricNodes_toSend[I];
+            delete[] ElectricNodes_toSend;
+        }
+        */
+    /*
+    }
+    */
 
     //// FREEING MEMORY ////
-   /* free(requests);*/
+    /*free(requests_MPI);*/
 }
 
 
