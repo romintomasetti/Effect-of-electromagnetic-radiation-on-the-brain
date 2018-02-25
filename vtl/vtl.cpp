@@ -264,6 +264,7 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
                 for(size_t J = 0 ; J < size[1] ; J ++){
                     for(size_t I = 0 ; I < size[2] ; I ++){
                         buffer[counter++] = (float)grid.nodesTemp(I,J,K).field;
+                        printf("nodesTemp(%ld,%ld,%ld)=%f.\n",I,J,K,(float)grid.nodesTemp(I,J,K).field);
                     }
                 }
             }
@@ -276,23 +277,28 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
         // Example: electric and magnetic fields:
         if(fieldName == "ElectricField"){
             std::vector<size_t> size = grid.nodesElec.get_size_data();
-            printf("Has field Temperature and size(%ld,,%ld,%ld)*3\n",size[0],size[1],size[2]);
-            size_field = size[0]*size[1]*size[2]*3;
+            printf("Has field Electric and size(%ld,%ld,%ld)*3\n",size[0],size[1],size[2]);
+            // Do not account for nodes of the neighboors:
+            size_field = (size[0]-2)*(size[1]-2)*(size[2]-2)*3;
             buffer.resize(size_field);
             size_t counter = 0;
-            for(size_t K = 0 ; K < size[0] ; K ++){
-                for(size_t J = 0 ; J < size[1] ; J ++){
-                    for(size_t I = 0 ; I < size[2] ; I ++){
+            for(size_t K = 1 ; K < size[0]-1 ; K ++){
+                for(size_t J = 1 ; J < size[1]-1 ; J ++){
+                    for(size_t I = 1 ; I < size[2]-1 ; I ++){
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[0];
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[1];
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[2];
+                        printf(">> ELEC(%ld,%ld,%ld) is (%f,%f,%f).\n",I,J,K,
+                            (float)grid.nodesElec(I,J,K).field[0],
+                            (float)grid.nodesElec(I,J,K).field[1],
+                            (float)grid.nodesElec(I,J,K).field[2]);
                     }
                 }
             }
 
         }else if(fieldName == "MagneticField"){
             std::vector<size_t> size = grid.nodesMagn.get_size_data();
-            printf("Has field Temperature and size(%ld,,%ld,%ld)*3\n",size[0],size[1],size[2]);
+            printf("Has field Magentic and size(%ld,,%ld,%ld)*3\n",size[0],size[1],size[2]);
             size_field = size[0]*size[1]*size[2]*3;
             buffer.resize(size_field);
             size_t counter = 0;
@@ -302,6 +308,10 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
                         buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[0];
                         buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[1];
                         buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[2];
+                        printf(">> MAGN(%ld,%ld,%ld) is (%f,%f,%f).\n",I,J,K,
+                            (float)grid.nodesMagn(I,J,K).field[0],
+                            (float)grid.nodesMagn(I,J,K).field[1],
+                            (float)grid.nodesMagn(I,J,K).field[2]);
                     }
                 }
             }

@@ -48,6 +48,7 @@ T& Array_3D_Template<T>::operator()(const size_t i, const size_t j, const size_t
 		printf("T& Array_3D_Template<T>::operator()::ERROR\n");
 		printf("Size of the array is Nx*Ny*Nz=%ld and you provide %ld (provided : [%ld,%ld,%ld]).\n",this->Nx*this->Ny*this->Nz,
 							i + this->Nx * ( j + k * this->Ny ),i,j,k);
+		std:abort();
 	}
 	return this->data[ i + this->Nx * ( j + k * this->Ny )];
 }
