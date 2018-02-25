@@ -81,6 +81,8 @@ int main(int argc, char *argv[]){
 	string filenameInput = "TESTS/testSourceCenteredInCube.input";
 	InputParser input_parser;
 	input_parser.defaultParsingFromFile(filenameInput);
+
+	
 	
 	printf("Initial temperature for AIR is %f.\n",
 				input_parser.GetInitTemp_FromMaterialName["AIR"]);
@@ -92,15 +94,12 @@ int main(int argc, char *argv[]){
 	GridCreator mesher(input_parser,allMat,MPI_communicator);
 	mesher.meshInitialization();
 	
-	vtl::SPoints gridBoman;
+	InterfaceToParaviewer interfaceToWriteOutput(mesher,MPI_communicator);
 
-	InterfaceToParaviewer interfaceToWriteOutput(mesher,gridBoman,MPI_communicator);
-
-	abort();
 
 	AlgoElectro algoElectromagn;
 	
-	algoElectromagn.update(mesher);
+	algoElectromagn.update(mesher,interfaceToWriteOutput);
 	
 	
 	
