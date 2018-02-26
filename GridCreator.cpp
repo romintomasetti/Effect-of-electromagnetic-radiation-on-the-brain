@@ -152,6 +152,7 @@ GridCreator::~GridCreator(void){
 
 	for(i=0; i<3; i++){
 		globalIndices[i] = localIndices[i] + this->originIndices[i];
+		cout << "!!!!!!!!!!!!!!!!!!!!!!! origin = "<<this->originIndices[i] << " !!!!!!!!!!!!!!!!!"<< endl;
 	}
  }
 

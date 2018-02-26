@@ -27,7 +27,8 @@
         "type_traits": "cpp",
         "typeinfo": "cpp",
         "utility": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "*.tpp": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

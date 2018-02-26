@@ -370,7 +370,8 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                             }
                         }
                 }
-                sleep(3);
+                char temp;
+                cin >> temp;  // pour appuyer sur enter à chaque affichage de tableau
             }
             #pragma omp barrier
             

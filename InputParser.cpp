@@ -91,6 +91,7 @@ void InputParser::defaultParsingFromFile(string filename){
 }
 
 bool InputParser::is_file_exist(const string fileName){
+	cout << fileName << endl;
 	#if DEBUG > 4
 	cout << "InputParser::is_file_exist::IN\n";
 	#endif
