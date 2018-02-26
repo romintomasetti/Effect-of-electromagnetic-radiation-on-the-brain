@@ -17,6 +17,7 @@
 build/*
 TESTS/*
 .vscode/*
+INTERFACAGE BOMAN/*
 #
 main
 main.cpp

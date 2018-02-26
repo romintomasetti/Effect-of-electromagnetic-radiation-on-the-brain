@@ -566,7 +566,21 @@ void InputParser::readHeader_MESH (ifstream &file){
 						if(propGiven == "true"){
 							this->simulationType = "USE_AIR_EVERYWHERE";
 							cout << "SET simulationType to USE_AIR_EVERYWHERE\n";
+						}else{
+							printf("You set USE_AIR_EVERYWHERE");
+							printf(" to false.Aborting.\n");
+							std::abort();
 						}
+
+					}else if(propName == "TEST_PARAVIEW"){
+						if(propGiven == "true"){
+							this->simulationType = "TEST_PARAVIEW";
+							std::cout << "SET simulationType to TEST_PARAVIEW" << std::endl;
+						}else{
+							printf("You set TEST_PARAVIEW to false. Aborting.\n");
+							std::abort();
+						}
+
 					}else if(propName != "USE_AIR_EVERYWHERE"){
 						printf("InputParser::readHeader_MESH:: You didn't provide a ");
 						printf("good member for $MESH$MATERIALS.\nAborting.\n");
