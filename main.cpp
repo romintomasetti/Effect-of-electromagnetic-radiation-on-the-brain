@@ -96,6 +96,10 @@ int main(int argc, char *argv[]){
 	
 	InterfaceToParaviewer interfaceToWriteOutput(mesher,MPI_communicator);
 
+	interfaceToWriteOutput.convertAndWriteData(0);
+
+	cout << "ABORTING" << endl;
+	abort();
 
 	AlgoElectro algoElectromagn;
 	
