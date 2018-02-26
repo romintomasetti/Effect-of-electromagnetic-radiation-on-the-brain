@@ -415,9 +415,113 @@ void GridCreator::communicateWithNeighboor(
 					size_t size2_send,
 					size_t size1_recv,
 					size_t size2_recv,
-                    Node3DField ***ElectricNodes_toSend,
-                    Node3DField ***ElectricNodes_toRecv,
+                    double **ElectricNodes_toSend,
+                    double **ElectricNodes_toRecv,
                     MPI_Request **requests_MPI){
-	printf("comminucateWithNeighboor not yet implemented, abort!\n");
-	std::abort();
+	/* Get OMP thread num */
+	int omp_thread = omp_get_thread_num();
+	if(omp_thread < 0 || omp_thread > 5){
+		printf("GridCreator::communicateWithNeighboor::ERROR (MPI %d, OMP %d)\n",
+			this->MPI_communicator.getRank(),omp_thread);
+		std::abort();
+	}
+
+	    /////////////////////////////////////////////////
+        /// CONVENTION FOR COMMUNICATION              ///
+        /// 1) OMP thread(0) communicates with SOUTH. ///
+        /// 2) OMP thread(1) communicates with NORTH. ///
+        /// 3) OMP thread(2) communicates with WEST.  ///
+        /// 3) OMP thread(3) communicates with EAST.  ///
+        /// 4) OMP thread(4) communicates with DOWN.  ///
+        /// 5) OMP thread(5) communicates with UP.    ///
+        /////////////////////////////////////////////////
+	int DECR = -1;
+	if(omp_thread == 0){
+		DECR = 0;
+	}else if(omp_thread == 1){
+		DECR = 2;
+	}else if(omp_thread == 2){
+		DECR = 4;
+	}else if(omp_thread == 3){
+		DECR = 6;
+	}else if(omp_thread == 4){
+		DECR = 8;
+	}else if(omp_thread == 5){
+		DECR = 10;
+	}else{
+		printf("GridCreator::communicateWithNeighboor::ERROR\n");
+		printf("\tIn MPI %d, at line %d, in file %s\n",this->MPI_communicator.getRank(),
+			__LINE__,__FILE__);
+		std::abort();
+	}
+
+	/* NEIGHBOOR IS EVEN, I AM ODD */
+	if((this->MPI_communicator.RankNeighbour[omp_thread]%2) == 0 &&
+	   (this->MPI_communicator.getRank()%2) != 0){
+		   	printf("NeigEven :: OMP %d , RANK(%d)=%d, MYRANK=%d\n",omp_thread,omp_thread,
+				this->MPI_communicator.RankNeighbour[omp_thread],
+				this->MPI_communicator.getRank());
+
+			/* We first send and then receive */
+			MPI_Isend((*ElectricNodes_toSend),size1_send*size2_send,MPI_DOUBLE,
+				this->MPI_communicator.RankNeighbour[omp_thread],omp_thread,
+				MPI_COMM_WORLD,&(*requests_MPI)[DECR+0]);
+
+			MPI_Irecv((*ElectricNodes_toRecv),size1_recv*size2_recv,
+				MPI_DOUBLE,this->MPI_communicator.RankNeighbour[omp_thread],
+				omp_thread,MPI_COMM_WORLD,&(*requests_MPI)[DECR+1]);
+
+	/* NEIGHBOOR IS ODD, I AM EVEN */
+	}else if( this->MPI_communicator.RankNeighbour[omp_thread]%2 != 0 &&
+		this->MPI_communicator.getRank()%2 == 0){
+			printf("NeighOdd :: OMP %d , RANK(%d)=%d, MYRANK=%d\n",omp_thread,omp_thread,
+				this->MPI_communicator.RankNeighbour[omp_thread],
+				this->MPI_communicator.getRank());
+
+			/* We first receive and then send */
+			MPI_Irecv((*ElectricNodes_toRecv),size1_recv*size2_recv,
+				MPI_DOUBLE,this->MPI_communicator.RankNeighbour[omp_thread],
+				omp_thread,MPI_COMM_WORLD,&(*requests_MPI)[DECR+1]);
+
+			MPI_Isend((*ElectricNodes_toSend),size1_send*size2_send,MPI_DOUBLE,
+				this->MPI_communicator.RankNeighbour[omp_thread],omp_thread,
+				MPI_COMM_WORLD,&(*requests_MPI)[DECR+0]);
+
+	/* NEIGHBOOR LARGER THAN ME */
+	}else if( this->MPI_communicator.RankNeighbour[omp_thread] > 
+		this->MPI_communicator.getRank()){
+			printf("Larger :: OMP %d , RANK(%d)=%d, MYRANK=%d\n",omp_thread,omp_thread,
+				this->MPI_communicator.RankNeighbour[omp_thread],
+				this->MPI_communicator.getRank());
+
+			/* First receive and then send */
+			MPI_Irecv((*ElectricNodes_toRecv),size1_recv*size2_recv,
+				MPI_DOUBLE,this->MPI_communicator.RankNeighbour[omp_thread],
+				omp_thread,MPI_COMM_WORLD,&(*requests_MPI)[DECR+1]);
+
+			MPI_Isend((*ElectricNodes_toSend),size1_send*size2_send,MPI_DOUBLE,
+				this->MPI_communicator.RankNeighbour[omp_thread],omp_thread,
+				MPI_COMM_WORLD,&(*requests_MPI)[DECR+0]);
+
+	/* NEIGHBOOR SMALLER THAN ME */
+	}else if( this->MPI_communicator.RankNeighbour[omp_thread] < 
+		this->MPI_communicator.getRank()){
+			printf("Smaller :: OMP %d , RANK(%d)=%d, MYRANK=%d\n",omp_thread,omp_thread,
+				this->MPI_communicator.RankNeighbour[omp_thread],
+				this->MPI_communicator.getRank());
+			/* First send and then receive */
+			MPI_Isend((*ElectricNodes_toSend),size1_send*size2_send,MPI_DOUBLE,
+				this->MPI_communicator.RankNeighbour[omp_thread],omp_thread,
+				MPI_COMM_WORLD,&(*requests_MPI)[DECR+0]);
+
+			MPI_Irecv((*ElectricNodes_toRecv),size1_recv*size2_recv,
+				MPI_DOUBLE,this->MPI_communicator.RankNeighbour[omp_thread],
+				omp_thread,MPI_COMM_WORLD,&(*requests_MPI)[DECR+1]);
+
+	}else{
+		printf("comminucateWithNeighboor not yet implemented, abort!\n");
+		std::abort();
+	}
+
+	
 }
