@@ -1,15 +1,9 @@
 #ifndef VTL_H
 #define VTL_H
 
-#if defined(WIN32)
-#ifdef vtl_EXPORTS
-#define VTL_API __declspec(dllexport)
-#else
-#define VTL_API __declspec(dllimport)
-#endif
-#else
+
 #define VTL_API
-#endif
+
 
 #ifdef _MSC_VER
 #if !defined(_CRT_SECURE_NO_WARNINGS)
@@ -26,7 +20,7 @@
 
 #include "vtlSPoints.h"
 
-#include "../GridCreator.h"
+#include "GridCreator.h"
 
 namespace vtl
 {

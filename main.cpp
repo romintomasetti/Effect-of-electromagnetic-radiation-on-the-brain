@@ -19,8 +19,8 @@
 #include "ElectromagneticSource.h"
 #include "AlgoElectro.h"
 
-#include "vtl/vtl.h"
-#include "vtl/vtlSPoints.h"
+#include "vtl.h"
+#include "vtlSPoints.h"
 
 #include "InterfaceToParaviewer.h"
 
