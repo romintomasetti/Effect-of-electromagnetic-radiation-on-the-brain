@@ -18,9 +18,8 @@ build/*
 TESTS/*
 .vscode/*
 vscode/*
-INTERFACAGE BOMAN/*
 #
 main
 main.cpp
-
+settings.json
 
