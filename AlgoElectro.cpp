@@ -362,15 +362,30 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                 for(unsigned long i=1; i <= mesh.numberOfNodesInEachDir[0] ;i++){
                         for(unsigned long j=1; j <= mesh.numberOfNodesInEachDir[1]  ;j++){
                             if(mesh.nodesElec(i,j,tranche).field[2] == 0){
-                                printf("%s%f%s,",KGRN,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                               // printf("%f,",mesh.nodesElec(i,j,tranche).field[2]);
+                               #ifdef _WIN32
+                                    printf("%f,",mesh.nodesElec(i,j,tranche).field[2]);
+                                #elif __linux__
+                                    printf("%s%f%s,",KGRN,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                                #endif
                             }else if(mesh.nodesElec(i,j,tranche).field[2] < 0){
-                                printf("%s%f%s,",KBLU,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                                #ifdef _WIN32
+                                    printf("%f,",mesh.nodesElec(i,j,tranche).field[2]);
+                                 #elif __linux__
+                                        printf("%s%f%s,",KBLU,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                                 #endif
                             }else{
-                                printf("%s%f%s,",KRED,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                                #ifdef _WIN32
+                                    printf("%f,",mesh.nodesElec(i,j,tranche).field[2]);
+                                #elif __linux__
+                                    printf("%s%f%s,",KRED,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                                #endif
                             }
                         }
+                        printf("\n");
                 }
-                sleep(3);
+                char tmp;
+                cin >> tmp;
             }
             #pragma omp barrier
             
