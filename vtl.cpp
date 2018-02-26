@@ -260,11 +260,11 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
             size_field = size[0]*size[1]*size[2];
             buffer.resize(size_field);
             size_t counter = 0 ;
-            for(size_t K = 0 ; K < size[0] ; K ++){
+            for(size_t K = 0 ; K < size[2] ; K ++){
                 for(size_t J = 0 ; J < size[1] ; J ++){
-                    for(size_t I = 0 ; I < size[2] ; I ++){
+                    for(size_t I = 0 ; I < size[0] ; I ++){
                         buffer[counter++] = (float)grid.nodesTemp(I,J,K).field;
-                        printf("nodesTemp(%ld,%ld,%ld)=%f.\n",I,J,K,(float)grid.nodesTemp(I,J,K).field);
+                        //printf("nodesTemp(%ld,%ld,%ld)=%f.\n",I,J,K,(float)grid.nodesTemp(I,J,K).field);
                     }
                 }
             }
@@ -277,7 +277,7 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
         // Example: electric and magnetic fields:
         if(fieldName == "ElectricField"){
             std::vector<size_t> size = grid.nodesElec.get_size_data();
-            printf("Has field Electric and size(%ld,%ld,%ld)*3\n",size[0],size[1],size[2]);
+            printf("Has field Electric and size(%ld,%ld,%ld)*3\n",(size[0]-2),size[1],size[2]);
             // Do not account for nodes of the neighboors:
             size_field = (size[0]-2)*(size[1]-2)*(size[2]-2)*3;
             buffer.resize(size_field);
@@ -288,10 +288,10 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[0];
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[1];
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[2];
-                        printf(">> ELEC(%ld,%ld,%ld) is (%f,%f,%f).\n",I,J,K,
+                        /*printf(">> ELEC(%ld,%ld,%ld) is (%f,%f,%f).\n",I,J,K,
                             (float)grid.nodesElec(I,J,K).field[0],
                             (float)grid.nodesElec(I,J,K).field[1],
-                            (float)grid.nodesElec(I,J,K).field[2]);
+                            (float)grid.nodesElec(I,J,K).field[2]);*/
                     }
                 }
             }
@@ -302,16 +302,16 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
             size_field = size[0]*size[1]*size[2]*3;
             buffer.resize(size_field);
             size_t counter = 0;
-            for(size_t K = 0 ; K < size[2] ; K ++){
-                for(size_t J = 0 ; J < size[1] ; J ++){
-                    for(size_t I = 0 ; I < size[0] ; I ++){
+            for(size_t K = 0 ; K < size[2]-1 ; K ++){
+                for(size_t J = 0 ; J < size[1]-1 ; J ++){
+                    for(size_t I = 0 ; I < size[0]-1 ; I ++){
                         buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[0];
                         buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[1];
                         buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[2];
-                        printf(">> MAGN(%ld,%ld,%ld) is (%f,%f,%f).\n",I,J,K,
+                        /*printf(">> MAGN(%ld,%ld,%ld) is (%f,%f,%f).\n",I,J,K,
                             (float)grid.nodesMagn(I,J,K).field[0],
                             (float)grid.nodesMagn(I,J,K).field[1],
-                            (float)grid.nodesMagn(I,J,K).field[2]);
+                            (float)grid.nodesMagn(I,J,K).field[2]);*/
                     }
                 }
             }
@@ -760,25 +760,16 @@ VTL_API void vtl::export_spoints_XML(std::string const &filename,
     }
 #endif
 
-    printf("\n\t>>> vtl::export_spoints_XML::Checking filename |%s|.\n\n",filename.c_str());
-    if(filename.find('/') != std::string::npos){
-        std::string directory = filename.substr(0,filename.find('/'));
-        printf("\n\t>>> vtl::export_spoints_XML::Filename contains directory |%s|.\n\n",directory.c_str());
-        // If directory doesn't exist, create it:
-        struct stat st = {0};
-        if (stat(directory.c_str(), &st) == -1) {
-            #ifdef __linux__ 
-                mkdir(directory.c_str(),0700);
-            #elif _WIN32
-                mkdir(directory.c_str());
-            #endif
-        }
-    }
     // build file name (+rankno) + stepno + vtk extension
     std::stringstream s;
     s << filename;
     if (mygrid.id >= 0)
         s << "_r" << mygrid.id;
+    else{
+        printf("vtl::export_spoints_XML::ERROR\n");
+        printf("\tmygrid.id=%d is smaller than 0. Aborting.\n",mygrid.id);
+        abort();
+    }
     s << '_' << std::setw(8) << std::setfill('0') << step << ".vti";
     std::stringstream s2;
     s2 << filename;
@@ -819,7 +810,6 @@ VTL_API void vtl::export_spoints_XML(std::string const &filename,
 
     // ------------------------------------------------------------------------------------
     f << "      <PointData>\n";
-
 
     //////////////////////////////////////////////////////////
     //////         OVERWRITTING BOMAN FUNCTION          //////
@@ -957,6 +947,7 @@ VTL_API void vtl::export_spoints_XMLP(std::string const &filename,
         f << "Source=\"";
         std::stringstream s;
         s << filename;
+        
         s << "_r" << it->id;
         s << '_' << std::setw(8) << std::setfill('0') << step << ".vti";
         f << s.str() << "\" />\n";

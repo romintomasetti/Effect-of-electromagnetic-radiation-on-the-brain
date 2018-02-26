@@ -30,8 +30,9 @@ void InterfaceToParaviewer::initializeAll(void){
                     this->grid_Creator.input_parser.deltaY +1;
     size_t nodesWholeDom_Z = (size_t) this->grid_Creator.input_parser.lengthZ /
                     this->grid_Creator.input_parser.deltaZ +1;
-    this->grid.np2 = vtl::Vec3i(nodesWholeDom_X,nodesWholeDom_Y,nodesWholeDom_Z);
-
+    // If we have 5 nodes, because we start with node 0, we go until node 4.
+    // So we do -1 in the next line.
+    this->grid.np2 = vtl::Vec3i(nodesWholeDom_X-1,nodesWholeDom_Y-1,nodesWholeDom_Z-1);
 
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -55,10 +56,13 @@ void InterfaceToParaviewer::initializeAll(void){
             this->sgrids[I].o  = this->grid_Creator.originOfWholeSimulation;
             // Setting the origin and end inidices of each subgrid:
             if(I == this->MPI_communicator.rootProcess){
+                this->mygrid.id = this->MPI_communicator.getRank();
                 // Don't communicate:
                 for(int k = 0 ; k < 3 ; k ++){
+                    this->mygrid.np1[k] = this->grid_Creator.originIndices[k];
+                    this->mygrid.np2[k] = this->mygrid.np1[k] + this->grid_Creator.numberOfNodesInEachDir[k] -1;
                     this->sgrids[I].np1[k] = this->grid_Creator.originIndices[k];
-                    this->sgrids[I].np2[k] = this->sgrids[I].np1[k] + this->grid_Creator.numberOfNodesInEachDir[k];
+                    this->sgrids[I].np2[k] = this->sgrids[I].np1[k] + this->grid_Creator.numberOfNodesInEachDir[k] -1;
                 }
             }else{
                 unsigned long np1[3], np2[3];
@@ -81,19 +85,25 @@ void InterfaceToParaviewer::initializeAll(void){
                                                                             this->sgrids[I].np2[1],
                                                                             this->sgrids[I].np2[2]);
         }
+
     }else if(this->MPI_communicator.isRootProcess() == INT_MIN){
         printf("InterfaceToParaviewer::initializeAll\n");
         printf("\t> From MPI process %d, I am not the root.\n",this->MPI_communicator.getRank());
         unsigned long np1[3],np2[3];
         for(int k = 0 ; k  <  3 ; k ++ ){
             np1[k] = this->grid_Creator.originIndices[k];
-            np2[k] = np1[k] + this->grid_Creator.numberOfNodesInEachDir[k];
+            np2[k] = np1[k] + this->grid_Creator.numberOfNodesInEachDir[k] -1;
             cout << "np2[2]=" << np2[2] << endl;
-        }
+        }   
         MPI_Send(&np1,3,MPI_UNSIGNED_LONG,this->MPI_communicator.rootProcess,TAG_NP1,MPI_COMM_WORLD);
         printf("\t> From MPI process %d, np1 sent to root.\n",this->MPI_communicator.getRank());
         MPI_Send(&np2,3,MPI_UNSIGNED_LONG,this->MPI_communicator.rootProcess,TAG_NP2,MPI_COMM_WORLD);
         printf("\t> From MPI process %d, np2 sent to root.\n",this->MPI_communicator.getRank());
+        this->mygrid.id = this->MPI_communicator.getRank();
+        for(int k = 0 ; k < 3 ; k ++){
+            this->mygrid.np1[k] = np1[k];
+            this->mygrid.np2[k] = np2[k];
+        }
     }
     
     MPI_Barrier(MPI_COMM_WORLD);
@@ -120,11 +130,17 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep){
     cout << "Output VTK files will be named by " + outputName << endl;
 
     /* ALL MPI PROCESSES CALL THE FOLLOWING SAVING FUNCTION */
+    cout << "nodesElec(1,1,1).field[0]=";
     cout << this->grid_Creator.nodesElec(1,1,1).field[0] << endl;
+    cout << "nodesElec(1,1,1).field[1]=";
     cout << this->grid_Creator.nodesElec(1,1,1).field[1] << endl;
+    cout << "nodesElec(1,1,1).field[2]=";
     cout << this->grid_Creator.nodesElec(1,1,1).field[2] << endl;
+    cout << "nodesMagn(1,1,1).field[0]=";
     cout << this->grid_Creator.nodesMagn(1,1,1).field[0] << endl;
+    cout << "nodesMagn(1,1,1).field[1]=";
     cout << this->grid_Creator.nodesMagn(1,1,1).field[1] << endl;
+    cout << "nodesMagn(1,1,1).field[2]=";
     cout << this->grid_Creator.nodesMagn(1,1,1).field[2] << endl;
     
     try{
@@ -143,4 +159,5 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep){
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
+    cout << "WRITING DONE (MPI " << this->MPI_communicator.getRank() << endl;
 }

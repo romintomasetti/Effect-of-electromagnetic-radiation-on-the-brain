@@ -114,13 +114,21 @@ void GridCreator::assignToEachNodeAMaterial(void){
 		for(size_t K = 0 ; K < this->numberOfNodesInEachDir[2]+1 ; K ++){
 			for(size_t J = 0 ; J < this->numberOfNodesInEachDir[1]+1 ; J ++ ){
 				for(size_t I = 0 ; I < this->numberOfNodesInEachDir[0]+1 ; I ++){
-					this->nodesElec(I,J,K).field[0] = (double)I;
-					this->nodesElec(I,J,K).field[1] = (double)J;
-					this->nodesElec(I,J,K).field[2] = (double)K;
-					this->nodesMagn(I,J,K).field[0] = (double)I;
-					this->nodesMagn(I,J,K).field[1] = (double)J;
-					this->nodesMagn(I,J,K).field[2] = (double)K;
-
+					unsigned long local[3];
+					unsigned long global[3];
+					local[0] = I;
+					local[1] = J;
+					local[2] = K;
+					this->LocalToGlobal(local,global);
+					this->nodesElec(I,J,K).field[0] = (double)global[0];
+					this->nodesElec(I,J,K).field[1] = (double)global[1];
+					this->nodesElec(I,J,K).field[2] = (double)global[2];
+					this->nodesMagn(I,J,K).field[0] = (double)global[0];
+					this->nodesMagn(I,J,K).field[1] = (double)global[1];
+					this->nodesMagn(I,J,K).field[2] = (double)global[2];
+					printf("%d::local(%ld,%ld,%ld) to global(%ld,%ld,%ld)\n",
+						this->MPI_communicator.getRank(),
+						local[0],local[1],local[2],global[0],global[1],global[2]);
 					printf("nodesMagn(%ld,%ld,%ld) = %f\n",I,J,K,this->nodesMagn(I,J,K).field[0]);
 				}
 			}
@@ -159,12 +167,12 @@ GridCreator::~GridCreator(void){
 }
 
 
- void GridCreator::LocalToGlobal(unsigned long *localIndices, unsigned long *globalIndices){
+ void GridCreator::LocalToGlobal(unsigned long *localIndices,
+ 						 unsigned long *globalIndices){
  	int i=0;
-	//std::vector<int> globalIndices;
 
 	for(i=0; i<3; i++){
-		globalIndices[i] = localIndices[i] + this->originIndices[i];
+		globalIndices[i] = localIndices[i] +(unsigned long) this->originIndices[i];
 	}
  }
 
