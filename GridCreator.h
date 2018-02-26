@@ -97,14 +97,14 @@ class GridCreator{
 
 		/* Communication with other MPI processes */
 		void communicateWithNeighboor(
-					char direction,
-					size_t size1_send,
-					size_t size2_send,
-					size_t size1_recv,
-					size_t size2_recv,
-                    Node3DField ***ElectricNodes_toSend,
-                    Node3DField ***ElectricNodes_toRecv,
-                    MPI_Request **requests_MPI);
+					char /*direction*/,
+					size_t /*size1_send*/,
+					size_t /*size2_send*/,
+					size_t /*size1_recv*/,
+					size_t /*size2_recv*/,
+                    Node3DField *** /*ElectricNodes_toSend*/,
+                    Node3DField *** /*ElectricNodes_toRecv*/,
+                    MPI_Request ** /*requests_MPI*/);
 };
 
 #endif

@@ -120,6 +120,13 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep){
     cout << "Output VTK files will be named by " + outputName << endl;
 
     /* ALL MPI PROCESSES CALL THE FOLLOWING SAVING FUNCTION */
+    cout << this->grid_Creator.nodesElec(1,1,1).field[0] << endl;
+    cout << this->grid_Creator.nodesElec(1,1,1).field[1] << endl;
+    cout << this->grid_Creator.nodesElec(1,1,1).field[2] << endl;
+    cout << this->grid_Creator.nodesMagn(1,1,1).field[0] << endl;
+    cout << this->grid_Creator.nodesMagn(1,1,1).field[1] << endl;
+    cout << this->grid_Creator.nodesMagn(1,1,1).field[2] << endl;
+    
     try{
         export_spoints_XML(outputName, currentStep, this->grid, this->mygrid,this->grid_Creator, vtl::ZIPPED);
     }catch(...){
