@@ -2,7 +2,7 @@
 #define INTERFACETOPARAVIEWER_H
 
 #include "GridCreator.h"
-#include "vtl/vtl.h"
+#include "vtl.h"
 #include "Array_3D_Template.h"
 
 class InterfaceToParaviewer{

@@ -1,5 +1,5 @@
 #include "InterfaceToParaviewer.h"
-#include "vtl/vtlSPoints.h"
+#include "vtlSPoints.h"
 
 #include "unistd.h"
 

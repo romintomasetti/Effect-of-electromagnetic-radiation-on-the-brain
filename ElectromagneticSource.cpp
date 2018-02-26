@@ -5,6 +5,10 @@
 #include <cstdio>
 #include <cstdlib>
 
+
+#ifndef M_PI
+  #define M_PI 3.14
+#endif 
 // Set the number of sources:
 void ElectromagneticSource::set_number_of_sources(const unsigned int nbrSources){
 	if(!this->number_of_sources.get_alreadySet()){

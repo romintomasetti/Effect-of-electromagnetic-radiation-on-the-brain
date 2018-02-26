@@ -16,14 +16,11 @@ check_cxx_compiler_flag("-std=c++11" STDCXX11)
 #//set (CPPFILES main.cpp Materials.cpp GridCreator.cpp MPI_Initializer.cpp
 #//			InputParser.cpp ElectromagneticSource.cpp AlgoElectro.cpp InterfaceToParaviewer.cpp)
 
-# Romain Boman interface:
-ADD_SUBDIRECTORY( vtl )
-INCLUDE_DIRECTORIES(vtl)
-TARGET_LINK_LIBRARIES(vtl)
+
+
 
 
 FILE(GLOB SRCS *.h *.cpp)
-FILE(GLOB VTL vtl/*.h vtl/*.cpp)
 ADD_EXECUTABLE(${EXEC_NAME} ${SRCS} ${VTL})
 
 

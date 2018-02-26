@@ -12,9 +12,9 @@
 #include "InputParser.h"
 #include "Materials.h"
 #include "MPI_Initializer.h"
-#include "vtl/vtl.h"
-#include "vtl/vtlVec3.h"
-#include "vtl/vtlSPoints.h"
+#include "vtl.h"
+#include "vtlVec3.h"
+#include "vtlSPoints.h"
 
 class MPI_Initializer;
 
