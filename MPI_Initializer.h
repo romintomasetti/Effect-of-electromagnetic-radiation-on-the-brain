@@ -26,7 +26,7 @@ class MPI_Initializer{
 	public:
 		const int rootProcess = ROOT_PROCESSOR;
 		// Rank of the MPI neighboors:
-		double RankNeighbour[6];
+		int RankNeighbour[6];
 
 		// Constructor:
 		MPI_Initializer(int argc, char *argv[], int required);
