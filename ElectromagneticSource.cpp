@@ -228,11 +228,11 @@ bool ElectromagneticSource::isInsideSource(const size_t i_global,
 		&&
 		( k_global >= this->nbrNodeCorner1_Z[i] &&
 		  k_global <= (this->nbrNodeCorner1_Z[i] + this->nodesInsideAlong_Z[i]))){
-		printf("ElectromagneticSource::isInsideSource::TRUE\n");
+		//printf("ElectromagneticSource::isInsideSource::TRUE\n");
 		return true;
 	}
 	// By default, return false:
-	printf("ElectromagneticSource::isInsideSource::FALSE\n");
+	//printf("ElectromagneticSource::isInsideSource::FALSE\n");
 	return false;
 }
 
@@ -257,10 +257,10 @@ void ElectromagneticSource::computeSourceValue(GridCreator &mesh,
 {
 	//double AirGap = 1;
 	
-	printf("ElectromagneticSource::computeSourceValue::(%ld,%ld,%ld)\n",i_global,j_global,k_global);
+	//printf("ElectromagneticSource::computeSourceValue::(%ld,%ld,%ld)\n",i_global,j_global,k_global);
 
 	unsigned int ID_Source = this->DetermineInWhichSourceWeAre(i_global, j_global, k_global);
-	printf("ElectromagneticSource::computeSourceValue::ID_Source=%d.\n",ID_Source);
+	//printf("ElectromagneticSource::computeSourceValue::ID_Source=%d.\n",ID_Source);
 	if(ID_Source == -1){
 		abort();
 	}
@@ -289,8 +289,8 @@ void ElectromagneticSource::computeSourceValue(GridCreator &mesh,
 
 		if(isInsideAirGap(i_global,j_global,k_global,ID_Source) == true){
 			mesh.nodesElec(i_global,j_global,k_global).field[2] = sin(2*M_PI*mesh.input_parser.source.frequency[ID_Source]*tCurrent);
-			cout << "INSIDE AIRGAP" << endl;
-			printf("E_Z(%.10f) = %.7f\n",tCurrent,sin(2*M_PI*mesh.input_parser.source.frequency[ID_Source]*tCurrent)*1000000000000);
+			//cout << "INSIDE AIRGAP" << endl;
+			//printf("E_Z(%.10f) = %.7f\n",tCurrent,sin(2*M_PI*mesh.input_parser.source.frequency[ID_Source]*tCurrent)*1000000000000);
 		}
 		/* Ask Romin if the function returns the indices or the physical coordinates */
 		/*double CenterAntenna[3];
@@ -364,11 +364,11 @@ bool ElectromagneticSource::isInsideAirGap(const size_t i_global,
 		&&
 		( k_global >= this->nbrNodeCorner1_Airgap_Z[i] &&
 		  k_global <= (this->nbrNodeCorner1_Airgap_Z[i] + this->nodesInsideAlong_Airgap_Z[i]))){
-		printf("ElectromagneticSource::isInsideAirGap::TRUE\n");
+		//printf("ElectromagneticSource::isInsideAirGap::TRUE\n");
 		return true;
 	}
 	// By default, return false:
-	printf("ElectromagneticSource::isInsideAirGap::FALSE\n");
+	//printf("ElectromagneticSource::isInsideAirGap::FALSE\n");
 	return false;
 }
 

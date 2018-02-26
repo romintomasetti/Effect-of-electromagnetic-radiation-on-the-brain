@@ -244,7 +244,7 @@ double Materials::getProperty(double temperature,unsigned char material, unsigne
 		double tempDiff = 1E10;
 		double temp;
 
-		printf("Materials::getProperty: looking for material %d.\n",material);
+		//printf("Materials::getProperty: looking for material %d.\n",material);
 
 		for(unsigned char I = 0 ; I < numberOfTempLines ; I ++){
 			

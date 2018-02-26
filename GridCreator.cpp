@@ -201,28 +201,13 @@ void GridCreator::GetVecSend(char Direction,
 	 /* Direction Y */
 	 if (Direction == 'W'  || Direction == 'E'){
 		// Check the sizes:
-		bool shouldReallocate = false;
-		size_t prev_size1 = size1, prev_size2 = size2;
 		if(size1 != this->numberOfNodesInEachDir[0]){
-			size1 = this->numberOfNodesInEachDir[0];
-			shouldReallocate = true;
+			printf("Aborting at line %d, file %s\n",__LINE__,__FILE__);
+			abort();
 		}
 		if(size2 != this->numberOfNodesInEachDir[2]){
-			size2 = this->numberOfNodesInEachDir[2];
-			shouldReallocate = true;
-		}
-		if(shouldReallocate == true){
-			// Specified sizes are not correct. Reallocate space.
-			if((*array_send) != NULL){
-				// First, free previously allocated space.
-				for(size_t I = 0 ; I < prev_size1 ; I ++)
-					delete[] (*array_send)[I];
-				delete[] (*array_send);
-			}
-			// Now, allocate:
-			(*array_send) = new Node3DField*[size1];
-			for(size_t I = 0 ; I < size1 ; I ++)
-				(*array_send)[I] = new Node3DField[size2];
+			printf("Aborting at line %d, file %s\n",__LINE__,__FILE__);
+			abort();
 		}
 		  
 		/* Face W */
@@ -252,31 +237,16 @@ void GridCreator::GetVecSend(char Direction,
 	 /* Direction X */
 	 else if(Direction == 'N' || Direction == 'S'){
 		// Check the sizes:
-		bool shouldReallocate = false;
-		size_t prev_size1 = size1, prev_size2 = size2;
 		if(size1 != this->numberOfNodesInEachDir[1]){
-			size1 = this->numberOfNodesInEachDir[1];
-			shouldReallocate = true;
+			printf("Aborting at line %d, file %s\n",__LINE__,__FILE__);
+			printf("Expected %ld but has %ld\n",this->numberOfNodesInEachDir[1],
+				size1);
+			abort();
 		}
 		if(size2 != this->numberOfNodesInEachDir[2]){
-			size2 = this->numberOfNodesInEachDir[2];
-			shouldReallocate = true;
-		}
-		if(shouldReallocate == true){
-			// Specified sizes are not correct. Reallocate space.
-			if((*array_send) != NULL){
-				// First, free previously allocated space.
-				for(size_t I = 0 ; I < prev_size1 ; I ++)
-					delete[] (*array_send)[I];
-				delete[] (*array_send);
-			}
-			// Now, allocate:
-			(*array_send) = new Node3DField*[size1];
-			for(size_t I = 0 ; I < size1 ; I ++)
-				(*array_send)[I] = new Node3DField[size2];
-		}
-        //Node3DField Table_send[this->numberOfNodesInEachDir[1]][this->numberOfNodesInEachDir[2]];
-		  
+			printf("Aborting at line %d, file %s\n",__LINE__,__FILE__);
+			abort();
+		} 
 		/* Face N */
 		if(Direction == 'N'){
 			for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
@@ -304,28 +274,13 @@ void GridCreator::GetVecSend(char Direction,
 	 /* Direction Z */
 	 else if(Direction == 'U' || Direction == 'D'){
 		// Check the sizes:
-		bool shouldReallocate = false;
-		size_t prev_size1 = size1, prev_size2 = size2;
 		if(size1 != this->numberOfNodesInEachDir[0]){
-			size1 = this->numberOfNodesInEachDir[0];
-			shouldReallocate = true;
+			printf("Aborting at line %d, file %s\n",__LINE__,__FILE__);
+			abort();
 		}
 		if(size2 != this->numberOfNodesInEachDir[1]){
-			size2 = this->numberOfNodesInEachDir[1];
-			shouldReallocate = true;
-		}
-		if(shouldReallocate == true){
-			// Specified sizes are not correct. Reallocate space.
-			if((*array_send) != NULL){
-				// First, free previously allocated space.
-				for(size_t I = 0 ; I < prev_size1 ; I ++)
-					delete[] (*array_send)[I];
-				delete[] (*array_send);
-			}
-			// Now, allocate:
-			(*array_send) = new Node3DField*[size1];
-			for(size_t I = 0 ; I < size1 ; I ++)
-				(*array_send)[I] = new Node3DField[size2];
+			printf("Aborting at line %d, file %s\n",__LINE__,__FILE__);
+			abort();
 		}
 		
 		//Node3DField Table_send[this->numberOfNodesInEachDir[0]][this->numberOfNodesInEachDir[1]];
@@ -509,9 +464,13 @@ void GridCreator::communicateWithNeighboor(
 				MPI_DOUBLE,this->MPI_communicator.RankNeighbour[omp_thread],
 				omp_thread,MPI_COMM_WORLD,&(*requests_MPI)[DECR+1]);
 
+			cout << "MPI_Irecv::done." << endl;
+
 			MPI_Isend((*ElectricNodes_toSend),size1_send*size2_send,MPI_DOUBLE,
 				this->MPI_communicator.RankNeighbour[omp_thread],omp_thread,
 				MPI_COMM_WORLD,&(*requests_MPI)[DECR+0]);
+
+			cout << "MPI_Isend::done." << endl;
 
 	/* NEIGHBOOR LARGER THAN ME */
 	}else if( this->MPI_communicator.RankNeighbour[omp_thread] > 

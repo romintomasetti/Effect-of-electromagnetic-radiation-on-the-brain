@@ -86,14 +86,14 @@ class GridCreator{
 		 * Also, sizes of the 2d array are given. If they are wrong, 
 		 * they are corrected (so we need a reference to them).
 		 */
-		void GetVecSend(char, Node3DField ***,size_t &,size_t&);
+		void GetVecSend(char, double **,size_t &,size_t&);
 		//Fonction receive the value of the information of the face "char"
 		/*
 		 * This function fills in the array of the grid with data
 		 * received from the neighboors. Direction specified by
 		 * the 'char' argument. Sizes are given for error chacking.
 		 */ 
-		void SetVecRecv(char, Node3DField ***,size_t,size_t);
+		void SetVecRecv(char, double **,size_t,size_t);
 
 		/* Communication with other MPI processes */
 		void communicateWithNeighboor(
@@ -102,8 +102,8 @@ class GridCreator{
 					size_t /*size2_send*/,
 					size_t /*size1_recv*/,
 					size_t /*size2_recv*/,
-                    Node3DField *** /*ElectricNodes_toSend*/,
-                    Node3DField *** /*ElectricNodes_toRecv*/,
+                    double ** /*ElectricNodes_toSend*/,
+                    double ** /*ElectricNodes_toRecv*/,
                     MPI_Request ** /*requests_MPI*/);
 };
 
