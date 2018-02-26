@@ -282,9 +282,9 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
             size_field = (size[0]-2)*(size[1]-2)*(size[2]-2)*3;
             buffer.resize(size_field);
             size_t counter = 0;
-            for(size_t K = 1 ; K < size[0]-1 ; K ++){
+            for(size_t K = 1 ; K < size[2]-1 ; K ++){
                 for(size_t J = 1 ; J < size[1]-1 ; J ++){
-                    for(size_t I = 1 ; I < size[2]-1 ; I ++){
+                    for(size_t I = 1 ; I < size[0]-1 ; I ++){
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[0];
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[1];
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[2];
@@ -302,9 +302,9 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
             size_field = size[0]*size[1]*size[2]*3;
             buffer.resize(size_field);
             size_t counter = 0;
-            for(size_t K = 0 ; K < size[0] ; K ++){
+            for(size_t K = 0 ; K < size[2] ; K ++){
                 for(size_t J = 0 ; J < size[1] ; J ++){
-                    for(size_t I = 0 ; I < size[2] ; I ++){
+                    for(size_t I = 0 ; I < size[0] ; I ++){
                         buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[0];
                         buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[1];
                         buffer[counter++] = (float)grid.nodesMagn(I,J,K).field[2];
@@ -767,7 +767,11 @@ VTL_API void vtl::export_spoints_XML(std::string const &filename,
         // If directory doesn't exist, create it:
         struct stat st = {0};
         if (stat(directory.c_str(), &st) == -1) {
-            mkdir(directory.c_str());
+            #ifdef _WIN32
+                mkdir(directory.c_str());
+            #elif __linux__
+                mkdir(directory.c_str(),0700);
+            #endif
         }
     }
     // build file name (+rankno) + stepno + vtk extension

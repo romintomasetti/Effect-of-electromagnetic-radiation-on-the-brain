@@ -99,10 +99,6 @@ void GridCreator::assignToEachNodeAMaterial(void){
 								this->input_parser.GetInitTemp_FromMaterialName["AIR"];
 					this->nodesMagn(I,J,K).Temperature = 
 								this->input_parser.GetInitTemp_FromMaterialName["AIR"];
-
-					this->nodesTemp(I,J,K).field = I /*+ this->numberOfNodesInEachDir[1] * 
-										(J + K * this->numberOfNodesInEachDir[0])*/ ;
-					//printf("nodesTemp(%ld,%ld,%ld).field = %f.\n",I,J,K,this->nodesTemp(I,J,K).field);
 				}
 			}
 		}
@@ -112,6 +108,23 @@ void GridCreator::assignToEachNodeAMaterial(void){
 		cout << endl;
 		printf("Initial temperature at this node is %f.\n",
 			this->nodesElec(0,0,0).Temperature);
+	}else if(this->input_parser.get_SimulationType() == "TEST_PARAVIEW"){
+		cout << "Using paraview" << endl;
+		
+		for(size_t K = 0 ; K < this->numberOfNodesInEachDir[2]+1 ; K ++){
+			for(size_t J = 0 ; J < this->numberOfNodesInEachDir[1]+1 ; J ++ ){
+				for(size_t I = 0 ; I < this->numberOfNodesInEachDir[0]+1 ; I ++){
+					this->nodesElec(I,J,K).field[0] = (double)I;
+					this->nodesElec(I,J,K).field[1] = (double)J;
+					this->nodesElec(I,J,K).field[2] = (double)K;
+					this->nodesMagn(I,J,K).field[0] = (double)I;
+					this->nodesMagn(I,J,K).field[1] = (double)J;
+					this->nodesMagn(I,J,K).field[2] = (double)K;
+
+					printf("nodesMagn(%ld,%ld,%ld) = %f\n",I,J,K,this->nodesMagn(I,J,K).field[0]);
+				}
+			}
+		}
 	}
 }
 
@@ -152,6 +165,7 @@ GridCreator::~GridCreator(void){
 
 	for(i=0; i<3; i++){
 		globalIndices[i] = localIndices[i] + this->originIndices[i];
+		cout << "!!!!!!!!!!!!!!!!!!!!!!! origin = "<<this->originIndices[i] << " !!!!!!!!!!!!!!!!!"<< endl;
 	}
  }
 

@@ -259,54 +259,75 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 		int PositionOnZ = 0;
 
 		/* We do the x component */
-		if(PositionOnX == 0)
-		{
+		if(nbProc == 2){
 			this->RankNeighbour[0] = -1;
-			this->RankNeighbour[1] = myRank+1;
+			this->RankNeighbour[1] = -1;
+			cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!! NTP !!! RankNeighbour x: " <<this->RankNeighbour[0] << " ; " <<this->RankNeighbour[1] << endl;
 		}
-		else if(PositionOnX == nbProc/2 -1)
-		{
-			this->RankNeighbour[0] = myRank-1;
-			this->RankNeighbour[1] = -1;	
-		}
-		else
-		{
-			this->RankNeighbour[0] = myRank-1;
-			this->RankNeighbour[1] = myRank+1;
-		}
+		else{
+			if(PositionOnX == 0)
+			{
+				this->RankNeighbour[0] = -1;
+				this->RankNeighbour[1] = myRank + 1;
+				
+				cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!! NTM !!! RankNeighbour x: " <<this->RankNeighbour[0] << " ; " <<this->RankNeighbour[1] << endl;
 
+			}
+			else if(PositionOnX == nbProc/2 -1)
+			{
+				this->RankNeighbour[0] = myRank-1;
+				this->RankNeighbour[1] = -1;
+				cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!!RankNeighbour x: " <<this->RankNeighbour[0] << " ; "<<this->RankNeighbour[1] << endl;	
+			}
+			else
+			{
+				this->RankNeighbour[0] = myRank-1;
+				this->RankNeighbour[1] = myRank+1;
+				cout << myRank<< "!!!!!!!!!!!!!!!!!!!!!!RankNeighbour x: " <<this->RankNeighbour[0] << " ; "<<this->RankNeighbour[1] << endl;
+			}
+		}
 		/* We do the y component */
 		if(PositionOnY == 0)
 		{
 			this->RankNeighbour[2] = -1;
 			this->RankNeighbour[3] = myRank+(nbProc/2);
+			cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!!RankNeighbour y: " <<this->RankNeighbour[2] << " ; "<< this->RankNeighbour[3] << endl;
 		}
 		else if(PositionOnY == 1)
 		{
 			this->RankNeighbour[2] = myRank-(nbProc/2);
 			this->RankNeighbour[3] = -1;
+			cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!!RankNeighbour y: " <<this->RankNeighbour[2] << " ; "<<this->RankNeighbour[3] << endl;
 		}
 		else
 		{
 			printf("MPI_Initializer::MpiDivision\n");
 			printf("This case is not envisageable, at line %d in file %s.\n",__LINE__,__FILE__);
 			abort();
+
 		}
 
 		/* We do the z component */
 		this->RankNeighbour[4] = -1;
 		this->RankNeighbour[5] = -1;
+		cout << myRank<< "!!!!!!!!!!!!!!!!!!!!!!RankNeighbour z: " <<this->RankNeighbour[4] << " ; "<<this->RankNeighbour[5] << endl;
 
 	}
-    
+
     // transformation of global lengths to indices and save them in subdomain
 	subGrid.originIndices.push_back(mpiExtremity[0]/deltaX);
 	subGrid.originIndices.push_back(mpiExtremity[2]/deltaY);
 	subGrid.originIndices.push_back(mpiExtremity[4]/deltaZ);
+	cout << myRank<< "---------------------->  x: " <<subGrid.originIndices[0] << endl;
+	cout << myRank<< "---------------------->  y: " <<subGrid.originIndices[1] << endl;
+	cout << myRank<< "---------------------->  z: " <<subGrid.originIndices[2] << endl;
+
 	// Length of the subdomains
 	subGrid.lengthX = mpiExtremity[1]-mpiExtremity[0];
 	subGrid.lengthY = mpiExtremity[3]-mpiExtremity[2];
 	subGrid.lengthZ = mpiExtremity[5]-mpiExtremity[4];
+	
+
 }
 
 bool MPI_Initializer::SendDataToNeighboor(double *vectorToSend,
