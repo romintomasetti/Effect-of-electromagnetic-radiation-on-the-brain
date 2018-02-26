@@ -327,7 +327,7 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 	subGrid.lengthY = mpiExtremity[3]-mpiExtremity[2];
 	subGrid.lengthZ = mpiExtremity[5]-mpiExtremity[4];
 	
-	abort();
+
 }
 
 bool MPI_Initializer::SendDataToNeighboor(double *vectorToSend,
