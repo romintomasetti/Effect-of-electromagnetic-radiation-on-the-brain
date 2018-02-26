@@ -767,7 +767,11 @@ VTL_API void vtl::export_spoints_XML(std::string const &filename,
         // If directory doesn't exist, create it:
         struct stat st = {0};
         if (stat(directory.c_str(), &st) == -1) {
-            mkdir(directory.c_str());
+            #ifdef __linux__ 
+                mkdir(directory.c_str(),0700);
+            #elif _WIN32
+                mkdir(directory.c_str());
+            #endif
         }
     }
     // build file name (+rankno) + stepno + vtk extension
