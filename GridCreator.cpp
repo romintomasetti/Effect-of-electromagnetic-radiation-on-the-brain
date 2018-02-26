@@ -179,10 +179,10 @@ GridCreator::~GridCreator(void){
 
 //  Function sending the values of the information of the face "char Direction" 
 void GridCreator::GetVecSend(char Direction,
-				Node3DField ***array_send,
+				double **array_send,
 				size_t &size1,size_t &size2){
 	 size_t i,j,k;
-
+	 size_t counter=0;
 
 	 /* Determine the face needed */
 	 
@@ -229,7 +229,9 @@ void GridCreator::GetVecSend(char Direction,
 		if (Direction == 'W'){
 			for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
 				for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
-					(*array_send)[i-1][k-1]=this->nodesElec(i,0,k);
+					(*array_send)[counter++]=this->nodesElec(i,0,k).field[0];
+					(*array_send)[counter++]=this->nodesElec(i,0,k).field[1];
+					(*array_send)[counter++]=this->nodesElec(i,0,k).field[2];
 				}
 			}
 		}
@@ -238,7 +240,9 @@ void GridCreator::GetVecSend(char Direction,
 		else/*(Direction == 'E')*/{
 			for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
 				for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
-					(*array_send)[i-1][k-1]=this->nodesElec(i,(this->numberOfNodesInEachDir[1])+1,k);
+					(*array_send)[counter++]=this->nodesElec(i,(this->numberOfNodesInEachDir[1])+1,k).field[0];
+					(*array_send)[counter++]=this->nodesElec(i,(this->numberOfNodesInEachDir[1])+1,k).field[1];
+					(*array_send)[counter++]=this->nodesElec(i,(this->numberOfNodesInEachDir[1])+1,k).field[2];
 				}
 			}
 		}
@@ -277,7 +281,9 @@ void GridCreator::GetVecSend(char Direction,
 		if(Direction == 'N'){
 			for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
 				for(k=1;  k <=this->numberOfNodesInEachDir[2];  k++){
-					(*array_send)[j-1][k-1]=this->nodesElec((this->numberOfNodesInEachDir[0])+1,j,k);
+					(*array_send)[counter++]=this->nodesElec((this->numberOfNodesInEachDir[0])+1,j,k).field[0];
+					(*array_send)[counter++]=this->nodesElec((this->numberOfNodesInEachDir[0])+1,j,k).field[1];
+					(*array_send)[counter++]=this->nodesElec((this->numberOfNodesInEachDir[0])+1,j,k).field[2];
 				}
 			}
 		}
@@ -286,7 +292,9 @@ void GridCreator::GetVecSend(char Direction,
 		else/*(Direction == 'S')*/{
 			for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
 				for(k=1;  k <= this->numberOfNodesInEachDir[2];  k++){
-					(*array_send)[j-1][k-1]=this->nodesElec(0,j,k);
+					(*array_send)[counter++]=this->nodesElec(0,j,k).field[0];
+					(*array_send)[counter++]=this->nodesElec(0,j,k).field[1];
+					(*array_send)[counter++]=this->nodesElec(0,j,k).field[2];
 				}
 			}
 		}
@@ -326,7 +334,9 @@ void GridCreator::GetVecSend(char Direction,
 		if(Direction == 'U'){
 		for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
 				for(j=1;j <= this->numberOfNodesInEachDir[1];j++){
-					(*array_send)[i-1][j-1]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1);
+					(*array_send)[counter++]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1).field[0];
+					(*array_send)[counter++]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1).field[1];
+					(*array_send)[counter++]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1).field[2];
 				}
 			}
 		}
@@ -335,7 +345,9 @@ void GridCreator::GetVecSend(char Direction,
 		else/*(Direction == 'D')*/{
 			for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
 				for(j=1;  j <= this->numberOfNodesInEachDir[1];  j++){
-					(*array_send)[i-1][j-1]=this->nodesElec(i,j,0);
+					(*array_send)[counter++]=this->nodesElec(i,j,0).field[0];
+					(*array_send)[counter++]=this->nodesElec(i,j,0).field[1];
+					(*array_send)[counter++]=this->nodesElec(i,j,0).field[2];
 				}
 			}
 		}
@@ -347,22 +359,26 @@ void GridCreator::GetVecSend(char Direction,
 
 
 // Fonction receive the value of the information of the face "char"
-void GridCreator::SetVecRecv(char Direction, Node3DField ***Table_receive,size_t size1,size_t size2){
+void GridCreator::SetVecRecv(char Direction, double **Table_receive,size_t size1,size_t size2){
 	size_t i,j,k;
-
+	size_t count=0;;
 
 	/* Direction X */
 	if(Direction == 'N'){
 		for(j=0;  j< this->numberOfNodesInEachDir[1];  j++){
 			for(k=0;  k< this->numberOfNodesInEachDir[2];  k++){
-				this->nodesElec((this->numberOfNodesInEachDir[1])+1,j+1,k+1) = (*Table_receive)[j][k];
+				this->nodesElec((this->numberOfNodesInEachDir[1])+1,j+1,k+1).field[0] = (*Table_receive)[count++];
+				this->nodesElec((this->numberOfNodesInEachDir[1])+1,j+1,k+1).field[1] = (*Table_receive)[count++];
+				this->nodesElec((this->numberOfNodesInEachDir[1])+1,j+1,k+1).field[2] = (*Table_receive)[count++];
 			}
 		}
 	}
 	if(Direction == 'S'){
 		for(j=0;  j < this->numberOfNodesInEachDir[1];  j++){
 			for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
-				this->nodesElec(0,j+1,k+1) = (*Table_receive)[j][k];
+				this->nodesElec(0,j+1,k+1).field[0] = (*Table_receive)[count++];
+				this->nodesElec(0,j+1,k+1).field[1] = (*Table_receive)[count++];
+				this->nodesElec(0,j+1,k+1).field[2] = (*Table_receive)[count++];
 			}
 		}
 	}
@@ -371,14 +387,19 @@ void GridCreator::SetVecRecv(char Direction, Node3DField ***Table_receive,size_t
 	if(Direction == 'W'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			 for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
-				 this->nodesElec(i+1,0,k+1) = (*Table_receive)[i][k];
+				 this->nodesElec(i+1,0,k+1).field[0] = (*Table_receive)[count++];
+				 this->nodesElec(i+1,0,k+1).field[1] = (*Table_receive)[count++];
+				 this->nodesElec(i+1,0,k+1).field[2] = (*Table_receive)[count++];
 			 }
 		}		
 	}
 	if(Direction == 'E'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			 for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
-				 this->nodesElec(i+1,(this->numberOfNodesInEachDir[1])+1,k+1) = (*Table_receive)[i][k];
+
+				 this->nodesElec(i+1,(this->numberOfNodesInEachDir[1])+1,k+1).field[0] = (*Table_receive)[count++];
+				 this->nodesElec(i+1,(this->numberOfNodesInEachDir[1])+1,k+1).field[1] = (*Table_receive)[count++];
+				 this->nodesElec(i+1,(this->numberOfNodesInEachDir[1])+1,k+1).field[2] = (*Table_receive)[count++];
 			 }
 		}
 	}
@@ -387,14 +408,19 @@ void GridCreator::SetVecRecv(char Direction, Node3DField ***Table_receive,size_t
 	if(Direction == 'U'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			for(j=0;  j < this->numberOfNodesInEachDir[1];  j++){
-				this->nodesElec(i+1,j+1,(this->numberOfNodesInEachDir[2])+1) = (*Table_receive)[i][j];
+
+				this->nodesElec(i+1,j+1,(this->numberOfNodesInEachDir[2])+1).field[0] = (*Table_receive)[count++];
+				this->nodesElec(i+1,j+1,(this->numberOfNodesInEachDir[2])+1).field[1] = (*Table_receive)[count++];
+				this->nodesElec(i+1,j+1,(this->numberOfNodesInEachDir[2])+1).field[2] = (*Table_receive)[count++];
 			}
 		}
 	}
 	if(Direction == 'D'){
 		for(i=0;  i<this->numberOfNodesInEachDir[0];  i++){
 			for(j=0;  j< this->numberOfNodesInEachDir[1];  j++){
-				this->nodesElec(i+1,j+1,0) = (*Table_receive)[i][j];
+				this->nodesElec(i+1,j+1,0).field[0] = (*Table_receive)[count++];
+				this->nodesElec(i+1,j+1,0).field[1] = (*Table_receive)[count++];
+				this->nodesElec(i+1,j+1,0).field[2] = (*Table_receive)[count++];
 			}
 		}
 	}

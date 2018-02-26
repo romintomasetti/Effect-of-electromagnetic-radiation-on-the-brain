@@ -499,10 +499,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                                             (dt/(mu_material*mesh.deltaY))*(mesh.nodesElec(i,j+1,k).field[2]
                                             -mesh.nodesElec(i,j,k).field[2]));
 
-                            if(abs(mesh.nodesMagn(i,j,k).field[0] - temp) > 1E-15){
+                            /*if(abs(mesh.nodesMagn(i,j,k).field[0] - temp) > 1E-15){
                                 cout << "THERE ARE DIFFERENT[0]" << temp << "!=" << mesh.nodesMagn(i,j,k).field[0] << endl;
                                 abort();
-                            }
+                            }*/
 
                             temp = C_hyh * mesh.nodesMagn(i,j,k).field[1]
                                     + C_hye_1 * (mesh.nodesElec(i+1,j,k).field[2]-
@@ -518,10 +518,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                                             (dt/(mu_material*mesh.deltaZ))*(mesh.nodesElec(i,j,k+1).field[0]
                                             -mesh.nodesElec(i,j,k).field[0]));
                             
-                            if(abs(mesh.nodesMagn(i,j,k).field[1] - temp) > 1E-15){
+                           /* if(abs(mesh.nodesMagn(i,j,k).field[1] - temp) > 1E-15){
                                 cout << "THERE ARE DIFFERENT[1]" << temp << "!=" << mesh.nodesMagn(i,j,k).field[1] << endl;
                                 abort();
-                            }
+                            }*/
                             
                             temp = C_hzh * mesh.nodesMagn(i,j,k).field[2]
                                     + C_hze_1 * (mesh.nodesElec(i,j+1,k).field[0]-
@@ -537,10 +537,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                                             (dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i+1,j,k).field[1]-
                                             mesh.nodesElec(i,j,k).field[1]));
 
-                            if(abs(mesh.nodesMagn(i,j,k).field[2] - temp) > 1E-15){
+                           /* if(abs(mesh.nodesMagn(i,j,k).field[2] - temp) > 1E-15){
                                 cout << "THERE ARE DIFFERENT[2]" << temp << "!=" << mesh.nodesMagn(i,j,k).field[2] << endl;
                                 abort();
-                            }
+                            }*/
                         }
                     }
                 }
@@ -603,10 +603,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                                                  (dt/(epsilon_material*mesh.deltaZ))*(mesh.nodesMagn(i,j,k).field[1]-
                                                  mesh.nodesMagn(i,j,k-1).field[1]));
 
-                            if(abs(temp - mesh.nodesElec(i,j,k).field[0]) > 1E-15){
+                            /*if(abs(temp - mesh.nodesElec(i,j,k).field[0]) > 1E-15){
                                 cout << "They are different nodesElec[0]" << endl;
                                 abort();
-                            }
+                            }*/
 
                             /* update electric Field E_y */
                             temp = C_eye * mesh.nodesElec(i,j,k).field[1]
@@ -624,11 +624,11 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                                                 (dt/(epsilon_material*mesh.deltaX))*(mesh.nodesMagn(i,j,k).field[2]-
                                                 mesh.nodesMagn(i-1,j,k).field[2])));
 
-                            if(abs(temp - mesh.nodesElec(i,j,k).field[1]) > 1E-15){
+                          /*  if(abs(temp - mesh.nodesElec(i,j,k).field[1]) > 1E-15){
                                 cout << "They are different nodesElec[1]" << endl;
                                 cout << temp << "!=" << mesh.nodesElec(i,j,k).field[1] << endl;
                                 abort();
-                            }
+                            }*/
                                 
                             /* update electric Field E_z */
                             temp = C_eze * mesh.nodesElec(i,j,k).field[2]
@@ -645,11 +645,11 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                                                   (dt/(epsilon_material*mesh.deltaY))*(mesh.nodesMagn(i,j,k).field[0]-
                                                   mesh.nodesMagn(i,j-1,k).field[0]));
 
-                            if(abs(temp - mesh.nodesElec(i,j,k).field[2]) > 1E-15){
+                            /*if(abs(temp - mesh.nodesElec(i,j,k).field[2]) > 1E-15){
                                 cout << "They are different nodesElec[2]" << endl;
                                 cout << temp << "!=" << mesh.nodesElec(i,j,k).field[2] << endl;
                                 abort();
-                            }
+                            }*/
                         }
                     }
                 }
