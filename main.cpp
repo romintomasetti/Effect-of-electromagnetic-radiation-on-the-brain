@@ -98,9 +98,6 @@ int main(int argc, char *argv[]){
 
 	interfaceToWriteOutput.convertAndWriteData(0);
 
-	cout << "ABORTING" << endl;
-	MPI_Barrier(MPI_COMM_WORLD);
-	abort();
 
 	AlgoElectro algoElectromagn;
 	

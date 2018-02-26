@@ -172,7 +172,7 @@ GridCreator::~GridCreator(void){
  	int i=0;
 
 	for(i=0; i<3; i++){
-		globalIndices[i] = localIndices[i] +(unsigned long) this->originIndices[i];
+		globalIndices[i] = localIndices[i] + this->originIndices[i];
 	}
  }
 

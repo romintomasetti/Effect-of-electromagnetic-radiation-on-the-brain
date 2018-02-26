@@ -80,6 +80,9 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
     /// Computing the optimal time step:
     double dt        = this->Compute_dt(mesh);
 
+    double deltaX = mesh.deltaX;
+    double deltaY = mesh.deltaY;
+    double deltaZ = mesh.deltaZ;
 
     /// Current simulation time:
     double t_current = 0.0;
@@ -358,19 +361,59 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             #pragma omp master
             {
                 printf("\n\t***************AFFICHAGE DE LA TRANCHE Z = %d***********\n\n",tranche);
-
+                printf("ELECTYRIC FIELD\n");
                 for(unsigned long i=1; i <= mesh.numberOfNodesInEachDir[0] ;i++){
                         for(unsigned long j=1; j <= mesh.numberOfNodesInEachDir[1]  ;j++){
                             if(mesh.nodesElec(i,j,tranche).field[2] == 0){
-                                printf("%s%f%s,",KGRN,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                               // printf("%f,",mesh.nodesElec(i,j,tranche).field[2]);
+                               #ifdef _WIN32
+                                    printf("%f,",mesh.nodesElec(i,j,tranche).field[2]);
+                                #elif __linux__
+                                    printf("%s%f%s,",KGRN,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                                #endif
                             }else if(mesh.nodesElec(i,j,tranche).field[2] < 0){
-                                printf("%s%f%s,",KBLU,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                                #ifdef _WIN32
+                                    printf("%f,",mesh.nodesElec(i,j,tranche).field[2]);
+                                 #elif __linux__
+                                        printf("%s%f%s,",KBLU,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                                 #endif
                             }else{
-                                printf("%s%f%s,",KRED,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                                #ifdef _WIN32
+                                    printf("%f,",mesh.nodesElec(i,j,tranche).field[2]);
+                                #elif __linux__
+                                    printf("%s%f%s,",KRED,mesh.nodesElec(i,j,tranche).field[2],KNRM);
+                                #endif
                             }
                         }
+                        printf("\n");
                 }
-                sleep(3);
+                printf("Magn field\n");
+                for(unsigned long i=0; i <= mesh.numberOfNodesInEachDir[0]+1 ;i++){
+                        for(unsigned long j=0; j <= mesh.numberOfNodesInEachDir[1]+1  ;j++){
+                            if(mesh.nodesMagn(i,j,tranche).field[2] == 0){
+                               #ifdef _WIN32
+                                    printf("%f,",mesh.nodesMagn(i,j,tranche).field[2]);
+                                #elif __linux__
+                                    printf("%s%f%s,",KGRN,mesh.nodesMagn(i,j,tranche).field[2],KNRM);
+                                #endif
+                            }else if(mesh.nodesMagn(i,j,tranche).field[2] < 0){
+                                #ifdef _WIN32
+                                    printf("%f,",mesh.nodesMagn(i,j,tranche).field[2]);
+                                 #elif __linux__
+                                        printf("%s%f%s,",KBLU,mesh.nodesMagn(i,j,tranche).field[2],KNRM);
+                                 #endif
+                            }else{
+                                #ifdef _WIN32
+                                    printf("%f,",mesh.nodesMagn(i,j,tranche).field[2]);
+                                #elif __linux__
+                                    printf("%s%f%s,",KRED,mesh.nodesMagn(i,j,tranche).field[2],KNRM);
+                                #endif
+                            }
+                        }
+                        printf("\n");
+                }
+                //char temp;
+                //cin >> temp;  // pour appuyer sur enter à chaque affichage de tableau
             }
             #pragma omp barrier
             
@@ -390,8 +433,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                         local[2] = k;
                         mesh.LocalToGlobal(local,global);
 
-                        
-
                         T = mesh.nodesMagn(i,j,k).Temperature;
                         printf("> Fetching temperature: %f\n",T);
 
@@ -402,16 +443,31 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                         printf("> Fetched mu_material for material %d is %f.\n",
                                                 mesh.nodesMagn(i,j,k).material,mu_material);
 
-
+                        
                         elec_conduct_mat = mesh.materials.getProperty(T,mesh.nodesMagn(i,j,k).material,6);
                         
+                        /* COEFFICIENTS MAGNETIC FIELD */
+                        double COEF_H  = elec_conduct_mat*dt/(2*mu_material);
+
+                        double C_hxh   = (1-COEF_H) / (1+COEF_H);
+                        double C_hxe_1 = 1 / ( 1 + COEF_H) * dt/(mu_material*deltaZ);
+                        double C_hxe_2 = 1 / ( 1 + COEF_H) * dt/(mu_material*deltaY);
+                        
+                        double C_hyh   = (1-COEF_H) / (1+COEF_H);
+                        double C_hye_1 = 1 / ( 1 + COEF_H) * dt/(mu_material*deltaX);
+                        double C_hye_2 = 1 / ( 1 + COEF_H) * dt/(mu_material*deltaZ);
+                        
+                        double C_hzh   = (1-COEF_H) / (1+COEF_H);
+                        double C_hze_1 = 1 / ( 1 + COEF_H) * dt/(mu_material*deltaY); 
+                        double C_hze_2 = 1 / ( 1 + COEF_H) * dt/(mu_material*deltaX);
+
                         /* mettre dans gridcreator "numberofProcess" et " myrank"  */
                         //Transfo = mesh.LocalToGlobal(i,j,k,mesh.MPI_communicator.getRank(),mesh.numberofprocess) ;  
                         printf("> isInsideSource...");
                         mesh.input_parser.source.isInsideSource(global[0],global[1],global[2]);
                         printf("Done.\n");
 
-                        if(mesh.input_parser.source.isInsideSource(global[0],global[1],global[2])){                
+                        if(false && mesh.input_parser.source.isInsideSource(global[0],global[1],global[2])){                
                             /* Fonction à faire  dans Electromagnetic Source composantes donne l'info si c'est E ou H et x ou y ou z */
                             printf("> Fetching source value...");
                             mesh.input_parser.source.computeSourceValue(mesh,global[0],global[1],global[2],t_current,'H');
@@ -427,8 +483,13 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                             //////////////////////////////////////////////////////////////////////////////////////////
                             ///////////////// achtung attention  attentionze /////
                             ////// ajouter SIGNMA /// (see formulas)
+                            
 
-
+                            double temp = C_hxh * mesh.nodesMagn(i,j,k).field[0]
+                                                            + C_hxe_1 * (mesh.nodesElec(i,j,k+1).field[1]-
+                                                                            mesh.nodesElec(i,j,k).field[1]) 
+                                                            - C_hxe_2 * (mesh.nodesElec(i,j+1,k).field[2]-
+                                                                            mesh.nodesElec(i,j,k).field[2]);
                                                 
                             mesh.nodesMagn(i,j,k).field[0] = (((1-elec_conduct_mat*dt/(2*mu_material)))/((1+elec_conduct_mat*dt/(2*mu_material))))*mesh.nodesMagn(i,j,k).field[0]  +
 
@@ -438,6 +499,17 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                                             (dt/(mu_material*mesh.deltaY))*(mesh.nodesElec(i,j+1,k).field[2]
                                             -mesh.nodesElec(i,j,k).field[2]));
 
+                            if(abs(mesh.nodesMagn(i,j,k).field[0] - temp) > 1E-15){
+                                cout << "THERE ARE DIFFERENT[0]" << temp << "!=" << mesh.nodesMagn(i,j,k).field[0] << endl;
+                                abort();
+                            }
+
+                            temp = C_hyh * mesh.nodesMagn(i,j,k).field[1]
+                                    + C_hye_1 * (mesh.nodesElec(i+1,j,k).field[2]-
+                                                 mesh.nodesElec(i,j,k).field[2])
+                                    - C_hye_2 * (mesh.nodesElec(i,j,k+1).field[0]-
+                                                 mesh.nodesElec(i,j,k).field[0]);
+
                             /* update magnetic Field H_y */
                             mesh.nodesMagn(i,j,k).field[1]= (((1-elec_conduct_mat*dt/(2*mu_material)))/((1+elec_conduct_mat*dt/(2*mu_material))))*mesh.nodesMagn(i,j,k).field[1]  +
                                             1/((1+elec_conduct_mat*dt/(2*mu_material)))* ((dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i+1,j,k).field[2]
@@ -446,6 +518,17 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                                             (dt/(mu_material*mesh.deltaZ))*(mesh.nodesElec(i,j,k+1).field[0]
                                             -mesh.nodesElec(i,j,k).field[0]));
                             
+                            if(abs(mesh.nodesMagn(i,j,k).field[1] - temp) > 1E-15){
+                                cout << "THERE ARE DIFFERENT[1]" << temp << "!=" << mesh.nodesMagn(i,j,k).field[1] << endl;
+                                abort();
+                            }
+                            
+                            temp = C_hzh * mesh.nodesMagn(i,j,k).field[2]
+                                    + C_hze_1 * (mesh.nodesElec(i,j+1,k).field[0]-
+                                                 mesh.nodesElec(i,j,k).field[0])
+                                    - C_hze_2 * (mesh.nodesElec(i+1,j,k).field[1]-
+                                                 mesh.nodesElec(i,j,k).field[1]);
+
                             /* update magnetic Field H_z */
                             mesh.nodesMagn(i,j,k).field[2]= (((1-elec_conduct_mat*dt/(2*mu_material)))/((1+elec_conduct_mat*dt/(2*mu_material))))*mesh.nodesMagn(i,j,k).field[2]  +
                                             1/((1+elec_conduct_mat*dt/(2*mu_material)))* ((dt/(mu_material*mesh.deltaY))*(mesh.nodesElec(i,j+1,k).field[0]-
@@ -453,6 +536,11 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
 
                                             (dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i+1,j,k).field[1]-
                                             mesh.nodesElec(i,j,k).field[1]));
+
+                            if(abs(mesh.nodesMagn(i,j,k).field[2] - temp) > 1E-15){
+                                cout << "THERE ARE DIFFERENT[2]" << temp << "!=" << mesh.nodesMagn(i,j,k).field[2] << endl;
+                                abort();
+                            }
                         }
                     }
                 }
@@ -479,13 +567,34 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
 
                         elec_conduct_mat = mesh.materials.getProperty(T,mesh.nodesElec(i,j,k).material,6);
 
+                        /* COEFFICIENTS ELECTRIC FIELD */
+                        double COEF_E  = elec_conduct_mat*dt/(2*epsilon_material);
+                        
+                        double C_exe   = (1-COEF_E) / (1+COEF_E);
+                        double C_exh_1 = 1 / ( 1 + COEF_E) * dt/(epsilon_material*deltaY);
+                        double C_exh_2 = 1 / ( 1 + COEF_E) * dt/(epsilon_material*deltaZ);
+
+                        double C_eye   = (1-COEF_E) / (1+COEF_E);
+                        double C_eyh_1 = 1 / ( 1 + COEF_E) * dt/(epsilon_material*deltaZ);
+                        double C_eyh_2 = 1 / ( 1 + COEF_E) * dt/(epsilon_material*deltaX);
+
+                        double C_eze   = (1-COEF_E) / (1+COEF_E);
+                        double C_ezh_1 = 1 / ( 1 + COEF_E) * dt/(epsilon_material*deltaX);
+                        double C_ezh_2 = 1 / ( 1 + COEF_E) * dt/(epsilon_material*deltaY);
+
+
                         if(mesh.input_parser.source.isInsideSource(global[0],global[1],global[2])){
 
                             mesh.input_parser.source.computeSourceValue(mesh, global[0],global[1],global[2],t_current,'E');
                             //mesh.nodesMagn(i,j,k).field[1]=mesh.input_parser.source.computeSourceValue(mesh, i,j,k,t_current,composants_5);
                             //mesh.nodesMagn(i,j,k).field[2]=mesh.input_parser.source.computeSourceValue(mesh, i,j,k,t_current,composants_6);
                         }else{
-                            /* update magnetic field E_x */
+                            /* update electric field E_x */
+                            double temp = C_exe * mesh.nodesElec(i,j,k).field[0]
+                                        + C_exh_1 * (mesh.nodesMagn(i,j,k).field[2]-
+                                                     mesh.nodesMagn(i,j-1,k).field[2])
+                                        - C_exh_2 * (mesh.nodesMagn(i,j,k).field[1]-
+                                                     mesh.nodesMagn(i,j,k-1).field[1]);
                             mesh.nodesElec(i,j,k).field[0]= (((1-elec_conduct_mat*dt/(2*epsilon_material)))/((1+elec_conduct_mat*dt/(2*epsilon_material))))*mesh.nodesElec(i,j,k).field[0] +
                             
                                                  1/((1+elec_conduct_mat*dt/(2*epsilon_material)))* ((dt/(epsilon_material*mesh.deltaY))*(mesh.nodesMagn(i,j,k).field[2]-
@@ -493,20 +602,54 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
 
                                                  (dt/(epsilon_material*mesh.deltaZ))*(mesh.nodesMagn(i,j,k).field[1]-
                                                  mesh.nodesMagn(i,j,k-1).field[1]));
-                            /* update magnetic Field E_y */
-                            mesh.nodesElec(i,j,k).field[1]= (((1-elec_conduct_mat*dt/(2*epsilon_material)))/((1+elec_conduct_mat*dt/(2*epsilon_material))))*mesh.nodesElec(i,j,k).field[1] + 
-                                                1/((1+elec_conduct_mat*dt/(2*epsilon_material)))* ((dt/(epsilon_material*mesh.deltaZ))*(mesh.nodesMagn(i,j,k).field[0]-
+
+                            if(abs(temp - mesh.nodesElec(i,j,k).field[0]) > 1E-15){
+                                cout << "They are different nodesElec[0]" << endl;
+                                abort();
+                            }
+
+                            /* update electric Field E_y */
+                            temp = C_eye * mesh.nodesElec(i,j,k).field[1]
+                                    + C_eyh_1 * (mesh.nodesMagn(i,j,k).field[0]-
+                                                 mesh.nodesMagn(i,j,k-1).field[0])
+                                    - C_eyh_2 * (mesh.nodesMagn(i,j,k).field[2]-
+                                                 mesh.nodesMagn(i-1,j,k).field[2]);
+
+                            double TEMP_1 = (((1-elec_conduct_mat*dt/(2*epsilon_material)))/((1+elec_conduct_mat*dt/(2*epsilon_material))));
+                            
+                            mesh.nodesElec(i,j,k).field[1]= TEMP_1*mesh.nodesElec(i,j,k).field[1] + 
+                                                1/((1+elec_conduct_mat*dt/(2*epsilon_material)))*( ((dt/(epsilon_material*mesh.deltaZ))*(mesh.nodesMagn(i,j,k).field[0]-
                                                 mesh.nodesMagn(i,j,k-1).field[0])  - 
 
                                                 (dt/(epsilon_material*mesh.deltaX))*(mesh.nodesMagn(i,j,k).field[2]-
-                                                mesh.nodesMagn(i-1,j,k).field[2]));
-                            /* update magnetic Field E_z */
+                                                mesh.nodesMagn(i-1,j,k).field[2])));
+
+                            if(abs(temp - mesh.nodesElec(i,j,k).field[1]) > 1E-15){
+                                cout << "They are different nodesElec[1]" << endl;
+                                cout << temp << "!=" << mesh.nodesElec(i,j,k).field[1] << endl;
+                                abort();
+                            }
+                                
+                            /* update electric Field E_z */
+                            temp = C_eze * mesh.nodesElec(i,j,k).field[2]
+                                    + C_ezh_1 * (mesh.nodesMagn(i,j,k).field[1]-
+                                                 mesh.nodesMagn(i-1,j,k).field[1])
+                                    - C_ezh_2 * (mesh.nodesMagn(i,j,k).field[0]-
+                                                 mesh.nodesMagn(i,j-1,k).field[0]);
+
+
                             mesh.nodesElec(i,j,k).field[2]= (((1-elec_conduct_mat*dt/(2*epsilon_material)))/((1+elec_conduct_mat*dt/(2*epsilon_material))))*mesh.nodesElec(i,j,k).field[2] +
                                                  1/((1+elec_conduct_mat*dt/(2*epsilon_material)))* ((dt/(epsilon_material*mesh.deltaX))*(mesh.nodesMagn(i,j,k).field[1]-
                                                  mesh.nodesMagn(i-1,j,k).field[1]) -
                                                  
                                                   (dt/(epsilon_material*mesh.deltaY))*(mesh.nodesMagn(i,j,k).field[0]-
                                                   mesh.nodesMagn(i,j-1,k).field[0]));
+
+                            if(abs(temp - mesh.nodesElec(i,j,k).field[2]) > 1E-15){
+                                cout << "They are different nodesElec[2]" << endl;
+                                cout << temp << "!=" << mesh.nodesElec(i,j,k).field[2] << endl;
+                                abort();
+                            }
                         }
                     }
                 }
@@ -561,9 +704,12 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             /*
             #pragma omp master
             {
+                */
                 interfaceForOutput.convertAndWriteData(this->currentStep);
+                
                 t_current=t_current+dt;
                 this->currentStep ++;
+                /*
             }
             #pragma omp barrier
             */

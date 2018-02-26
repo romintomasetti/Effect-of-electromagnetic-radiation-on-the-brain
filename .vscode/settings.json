@@ -28,8 +28,12 @@
         "typeinfo": "cpp",
         "utility": "cpp",
         "sstream": "cpp",
+<<<<<<< HEAD
         "ctime": "cpp",
         "iomanip": "cpp"
+=======
+        "*.tpp": "cpp"
+>>>>>>> 726259508eb41d4ccbd8f7352aaff866e00668f7
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

@@ -172,9 +172,9 @@ void ElectromagneticSource::computeNodesInsideSource(const double L_dom_X,
 		printf("The number of sources hasn't been set, aborting.\n");
 		std::abort();
 	}
-	this->nbrNodeCorner1_X[i] = (size_t) (this->centerX[i] - this->lengthX[i] / 2) / deltaX;
-	this->nbrNodeCorner1_Y[i] = (size_t) (this->centerY[i] - this->lengthY[i] / 2) / deltaY;
-	this->nbrNodeCorner1_Z[i] = (size_t) (this->centerZ[i] - this->lengthZ[i] / 2) / deltaZ;
+	this->nbrNodeCorner1_X[i] = (size_t) (this->centerX[i] - this->lengthX[i] / 2) / deltaX +1;
+	this->nbrNodeCorner1_Y[i] = (size_t) (this->centerY[i] - this->lengthY[i] / 2) / deltaY +1;
+	this->nbrNodeCorner1_Z[i] = (size_t) (this->centerZ[i] - this->lengthZ[i] / 2) / deltaZ +1;
 	
 	this->nodesInsideAlong_X[i] = (size_t) this->lengthX[i] / deltaX + 1;
 	this->nodesInsideAlong_Y[i] = (size_t) this->lengthY[i] / deltaY + 1;
@@ -182,9 +182,9 @@ void ElectromagneticSource::computeNodesInsideSource(const double L_dom_X,
 
 	this->nodesInsideAlreadySet[i] = true;
 
-	this->nbrNodeCorner1_Airgap_X[i] = (size_t) (this->centerX[i] - this->lengthX[i] / 2) / deltaX;
-	this->nbrNodeCorner1_Airgap_Y[i] = (size_t) (this->centerY[i] - this->lengthY[i] / 2) / deltaY;
-	this->nbrNodeCorner1_Airgap_Z[i] = (size_t) (this->centerZ[i] - this->airgap[i].get() / 2) / deltaZ;
+	this->nbrNodeCorner1_Airgap_X[i] = (size_t) (this->centerX[i] - this->lengthX[i] / 2) / deltaX +1;
+	this->nbrNodeCorner1_Airgap_Y[i] = (size_t) (this->centerY[i] - this->lengthY[i] / 2) / deltaY +1;
+	this->nbrNodeCorner1_Airgap_Z[i] = (size_t) (this->centerZ[i] - this->airgap[i].get() / 2) / deltaZ +1;
 
 	this->nodesInsideAlong_Airgap_X[i] = (size_t) this->lengthX[i] / deltaX + 1;
 	this->nodesInsideAlong_Airgap_Y[i] = (size_t) this->lengthY[i] / deltaY + 1;
