@@ -13,6 +13,10 @@
 *.vtk
 *.json
 *.xlsx
+*.jpg
+*.jpeg
+*.eps
+*.tiff
 #
 build/*
 TESTS/*
