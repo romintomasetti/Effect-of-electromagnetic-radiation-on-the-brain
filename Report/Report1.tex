@@ -146,18 +146,21 @@ An important point should be pointed out here : no boundary conditions were impo
 Another important point worth mentionning is the fact that the implemented code is a parallel version of the YEE algorithm. To parallelize the code, a combination between MPI and openMP has been implemented. MPI is used to separate the big grid into smaller ones, which means that the separation into subgrids has to be explained.
 
 
+
 \section{MPI decomposition}
 Here, the decomposition of the big grid into smaller ones will be explained. In order to be able to deal with all cases, the division is size dependent : indeed, the separation will not be the same if one consider a cubic, an even or an odd number of processes.
+
 \subsection{Cubic number of processes}
 First, the case of a cubic number of processes have to be tested : if this condition is met, the division of the initial grid is schematized in \Cref{fig:CUBICSEPARATION}
 %
 \begin{figure}
 	\centering
-	\includegraphics[scale=0.5]{}
-	\caption{Results for the thin wire excited by a one-component electric field.}
-	\label{fig:THINWIRE}
+	\includegraphics[scale=0.5]{MPI_cubic_division}
+	\caption{Schematic representation of the grid separation in the case of a cubic number of processes.}
+	\label{fig:CUBICSEPARATION}
 \end{figure}
 %
+The numbering of the different processes in thois case is first along the \textit{x}-axis, then along the \textit{y}-axis and finally along the \textit{z}-axis, meaning that processes 0,1,...,N-1 are along the \textit{x}-axis, then the processes N, N+1,...,2*N-1 are also along the \textit{x}-axis, but one "step" further along the \textit{y}-axis. We continue the numbering until we are at the extremity of the \textit{y}-axis. Once the first stage is filled, we increase the height and reiterate the numbering from N^2.
 
 
 \section{Explanation of the test cases}
