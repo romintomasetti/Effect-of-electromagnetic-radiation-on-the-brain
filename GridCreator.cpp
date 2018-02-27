@@ -74,42 +74,6 @@ void GridCreator::meshInitialization(){
 
 }
 
-void GridCreator::fillInProperties(void){
-	/* This function fills in the properties of each node, thanks to its temperature */
-	// '+2' because of the neighboors:
-	size_t numberOfNodesElec = (this->numberOfNodesInEachDir[0]+2)
-							 * (this->numberOfNodesInEachDir[1]+2) 
-							 * (this->numberOfNodesInEachDir[2]+2);
-	double mu_mat   = 0.0;
-	double eps_mat  = 0.0;
-	double cond_mat = 0.0;
-	double T        = 0.0;
-
-	for(size_t I = 0 ; I < numberOfNodesElec ; I ++){
-		T       = this->nodesElec[I].Temperature;
-		mu_mat  = this->materials.getProperty(T,this->nodesElec[I].material,4);
-		eps_mat = this->materials.getProperty(T,this->nodesElec[I].material,5);
-		cond_mat= this->materials.getProperty(T,this->nodesElec[I].material,6);
-		this->nodesElec[I].mu           = mu_mat;
-		this->nodesElec[I].epsilon      = eps_mat;
-		this->nodesElec[I].conductivity = cond_mat;
-	}
-
-	// '+1' because there is one magnetic node more:
-	size_t numberOfNodesMagn = (this->numberOfNodesInEachDir[0]+1)
-								*(this->numberOfNodesInEachDir[1]+1)
-								*(this->numberOfNodesInEachDir[2]+1);
-	for(size_t I = 0 ; I < numberOfNodesMagn ; I ++){
-		T       = this->nodesMagn[I].Temperature;
-		mu_mat  = this->materials.getProperty(T,this->nodesMagn[I].material,4);
-		eps_mat = this->materials.getProperty(T,this->nodesMagn[I].material,5);
-		cond_mat= this->materials.getProperty(T,this->nodesMagn[I].material,6);
-		this->nodesMagn[I].mu           = mu_mat;
-		this->nodesMagn[I].epsilon      = eps_mat;
-		this->nodesMagn[I].conductivity = cond_mat;
-	}
-}
-
 void GridCreator::assignToEachNodeAMaterial(void){
 	// Print the type of simulation it is:
 	cout << "GridCreator::assignToEachNodeAMaterial : ";
@@ -162,10 +126,10 @@ void GridCreator::assignToEachNodeAMaterial(void){
 					this->nodesMagn(I,J,K).field[0] = (double)global[0];
 					this->nodesMagn(I,J,K).field[1] = (double)global[1];
 					this->nodesMagn(I,J,K).field[2] = (double)global[2];
-					//printf("%d::local(%ld,%ld,%ld) to global(%ld,%ld,%ld)\n",
-					//	this->MPI_communicator.getRank(),
-					//	local[0],local[1],local[2],global[0],global[1],global[2]);
-					//printf("nodesMagn(%ld,%ld,%ld) = %f\n",I,J,K,this->nodesMagn(I,J,K).field[0]);
+					printf("%d::local(%ld,%ld,%ld) to global(%ld,%ld,%ld)\n",
+						this->MPI_communicator.getRank(),
+						local[0],local[1],local[2],global[0],global[1],global[2]);
+					printf("nodesMagn(%ld,%ld,%ld) = %f\n",I,J,K,this->nodesMagn(I,J,K).field[0]);
 				}
 			}
 		}
@@ -336,7 +300,7 @@ void GridCreator::GetVecSend(char Direction,
 		/* Face U */
 		if(Direction == 'U'){
 		for(i=1;  i <= this->numberOfNodesInEachDir[0];  i++){
-				for(j=1 ; j <= this->numberOfNodesInEachDir[1];j++){
+				for(j=1;j <= this->numberOfNodesInEachDir[1];j++){
 					(*array_send)[counter++]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1).field[0];
 					(*array_send)[counter++]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1).field[1];
 					(*array_send)[counter++]=this->nodesElec(i,j,(this->numberOfNodesInEachDir[2])+1).field[2];
@@ -373,7 +337,7 @@ void GridCreator::SetVecRecv(char Direction, double **Table_receive,size_t size1
 	printf("SetVecRecv IN : MPI %d OMP %d  direction %c %ld %ld \n", this->MPI_communicator.getRank(),
 	 			omp_get_thread_num(), Direction, size1, size2 );
 	size_t i,j,k;
-	size_t count = 0;
+	size_t count=0;;
 
 	/* Direction X */
 	if(Direction == 'N'){
@@ -385,7 +349,7 @@ void GridCreator::SetVecRecv(char Direction, double **Table_receive,size_t size1
 			}
 		}
 	}
-	else if(Direction == 'S'){
+	if(Direction == 'S'){
 		for(j=0;  j < this->numberOfNodesInEachDir[1];  j++){
 			for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
 				this->nodesElec(0,j+1,k+1).field[0] = (*Table_receive)[count++];
@@ -398,7 +362,7 @@ void GridCreator::SetVecRecv(char Direction, double **Table_receive,size_t size1
 	
 
 	/* Direction Y */
-	else if(Direction == 'W'){
+	if(Direction == 'W'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			 for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
 				 this->nodesElec(i+1,0,k+1).field[0] = (*Table_receive)[count++];
@@ -407,7 +371,7 @@ void GridCreator::SetVecRecv(char Direction, double **Table_receive,size_t size1
 			 }
 		}		
 	}
-	else if(Direction == 'E'){
+	if(Direction == 'E'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			 for(k=0;  k < this->numberOfNodesInEachDir[2];  k++){
 
@@ -419,7 +383,7 @@ void GridCreator::SetVecRecv(char Direction, double **Table_receive,size_t size1
 	}
 
 	/* Direction Z */
-	else if(Direction == 'U'){
+	if(Direction == 'U'){
 		for(i=0;  i < this->numberOfNodesInEachDir[0];  i++){
 			for(j=0;  j < this->numberOfNodesInEachDir[1];  j++){
 
@@ -429,7 +393,7 @@ void GridCreator::SetVecRecv(char Direction, double **Table_receive,size_t size1
 			}
 		}
 	}
-	else if(Direction == 'D'){
+	if(Direction == 'D'){
 		for(i=0;  i<this->numberOfNodesInEachDir[0];  i++){
 			for(j=0;  j< this->numberOfNodesInEachDir[1];  j++){
 				this->nodesElec(i+1,j+1,0).field[0] = (*Table_receive)[count++];
@@ -438,15 +402,14 @@ void GridCreator::SetVecRecv(char Direction, double **Table_receive,size_t size1
 			}
 		}
 	}
-	else if(Direction != 'U' && Direction != 'D' && Direction != 'W' && Direction != 'E' 
+	if(Direction != 'U' && Direction != 'D' && Direction != 'W' && Direction != 'E' 
 		&& Direction != 'N' && Direction != 'S'){
 		printf("GridCreator::SetVecReceive::ERROR\n");
 		printf("\tNo face specified, in %s at line %d.\n",__FILE__,__LINE__);
 	}
-
 	if(count != size1*size2*3){
 		printf("Size1=%ld, Size2=%ld, count=%ld\n",size1,size2,count);
-		std::abort();
+		abort();
 	}
 	printf("SetVecRecv OUT : MPI %d OMP %d  direction %c %ld %ld %ld %ld\n", this->MPI_communicator.getRank(),
 	 			omp_get_thread_num(), Direction, size1, size2, size1*size2*3, count );

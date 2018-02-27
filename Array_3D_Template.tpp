@@ -53,16 +53,6 @@ T& Array_3D_Template<T>::operator()(const size_t i, const size_t j, const size_t
 	return this->data[ i + this->Nx * ( j + k * this->Ny )];
 }
 
-// Accessor [] overload:
-template<typename T>
-T& Array_3D_Template<T>::operator[](const size_t index){
-	if(index < 0 || index > this->Nx*this->Ny*this->Nz){
-		printf("Array_3D_Template::ERROR::index out of bound\n");
-		abort();
-	}
-	return this->data[index];
-}
-
 /* Destructor */
 template<typename T>
 Array_3D_Template<T>::~Array_3D_Template(void){

@@ -100,9 +100,7 @@ int main(int argc, char *argv[]){
 	
 	algoElectromagn.update(mesher,interfaceToWriteOutput);
 	
-	/* Creer une classe solver thermo et faire une boucle while et 
-	 * appeler l'un puis l'autre */
-	/* Optimiser le code et pas faire trop d'appels à get property */
+	
 	
 	cout << "Calling all the destructors.\n";
 	
