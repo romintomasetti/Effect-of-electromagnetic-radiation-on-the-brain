@@ -163,7 +163,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
     //////////////////////////////////////
     
     #pragma omp parallel default(none)\
-        shared(ompi_mpi_comm_world)\
+        default(shared)
         shared(deltaX,deltaY,deltaZ)\
         shared(mesh,interfaceForOutput)\
         shared(requests_MPI,checkRequest,REQ_MPI,counterReq)\
@@ -184,7 +184,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
 
         // Each thread has its direction:
         char direction;
-        bool hasNeighboor = false;
         
 
         // If there is a neighboor at Down, we must send to and receive from Down.
@@ -203,7 +202,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with SOUTH.
             direction = 'S';
             if(isNeighboor_at_SOUTH == true){
-                hasNeighboor = true;
                 counterReq += 2;
                 checkRequest[0] = 1;
                 checkRequest[1] = 1;
@@ -222,7 +220,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with NORTH.
             direction = 'N';
             if(isNeighboor_at_NORTH == true){
-                hasNeighboor = true;
                 counterReq += 2;
                 checkRequest[2] = 1;
                 checkRequest[3] = 1;
@@ -241,7 +238,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with West.
             direction = 'W';
             if(isNeighboor_at_WEST){
-                hasNeighboor = true;
                 counterReq += 2;
                 checkRequest[4] = 1;
                 checkRequest[5] = 1;
@@ -260,7 +256,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with EAST.
             direction = 'E';
             if(isNeighboor_at_EAST){
-                hasNeighboor = true;
                 counterReq += 2;
                 checkRequest[6] = 1;
                 checkRequest[7] = 1;
@@ -279,7 +274,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with Down.
             direction = 'D';
             if(isNeighboor_at_DOWN){
-                hasNeighboor = true;
                 counterReq += 2;
                 checkRequest[8] = 1;
                 checkRequest[9] = 1;
@@ -298,7 +292,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with UP.
             direction = 'U';
             if(isNeighboor_at_UP){
-                hasNeighboor = true;
                 counterReq += 2;
                 checkRequest[10] = 1;
                 checkRequest[11] = 1;
@@ -420,7 +413,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                 for(unsigned long j=0;j <= mesh.numberOfNodesInEachDir[1] ; j++){
 
                     for(unsigned long i=0;i <= mesh.numberOfNodesInEachDir[0]  ; i++){
-                        //printf("%s\t>>> NODE MAGN(%ld,%ld,%ld) <<<%s\n",KGRN,i,j,k,KNRM);
+                        printf("%s\t>>> NODE MAGN(%ld,%ld,%ld) <<<%s\n",KGRN,i,j,k,KNRM);
                         /* Get the global indices */
                         local[0] = i;
                         local[1] = j;
@@ -428,14 +421,14 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                         mesh.LocalToGlobal(local,global);
 
                         T = mesh.nodesMagn(i,j,k).Temperature;
-                        //printf("> Fetching temperature: %f\n",T);
+                        printf("> Fetching temperature: %f\n",T);
 
-                        //printf("> Fetching mu_material for material %d.\n",mesh.nodesMagn(i,j,k).material);
+                        printf("> Fetching mu_material for material %d.\n",mesh.nodesMagn(i,j,k).material);
 
                         mu_material = mesh.materials.getProperty(T,mesh.nodesMagn(i,j,k).material,4);  
 
-                        //printf("> Fetched mu_material for material %d is %f.\n",
-                                                //mesh.nodesMagn(i,j,k).material,mu_material);
+                        printf("> Fetched mu_material for material %d is %f.\n",
+                                                mesh.nodesMagn(i,j,k).material,mu_material);
 
                         
                         elec_conduct_mat = mesh.materials.getProperty(T,mesh.nodesMagn(i,j,k).material,6);
@@ -514,7 +507,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                                             (dt/(mu_material*mesh.deltaZ))*(mesh.nodesElec(i,j,k+1).field[0]
                                             -mesh.nodesElec(i,j,k).field[0]));*/
                             
-                            /*if(abs(mesh.nodesMagn(i,j,k).field[1] - temp) > 1E-15){
+                           /* if(abs(mesh.nodesMagn(i,j,k).field[1] - temp) > 1E-15){
                                 cout << "THERE ARE DIFFERENT[1]" << temp << "!=" << mesh.nodesMagn(i,j,k).field[1] << endl;
                                 abort();
                             }*/
@@ -533,7 +526,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                                             (dt/(mu_material*mesh.deltaX))*(mesh.nodesElec(i+1,j,k).field[1]-
                                             mesh.nodesElec(i,j,k).field[1]));*/
 
-                            /*if(abs(mesh.nodesMagn(i,j,k).field[2] - temp) > 1E-15){
+                           /* if(abs(mesh.nodesMagn(i,j,k).field[2] - temp) > 1E-15){
                                 cout << "THERE ARE DIFFERENT[2]" << temp << "!=" << mesh.nodesMagn(i,j,k).field[2] << endl;
                                 abort();
                             }*/
@@ -569,7 +562,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             for(unsigned long k=1 ; k <= mesh.numberOfNodesInEachDir[0];k++){
                 for(unsigned long j=1 ; j <= mesh.numberOfNodesInEachDir[1];j++){
                     for(unsigned long i=1; i <= mesh.numberOfNodesInEachDir[2];i++){
-                        //printf("%s\t>>> NODE ELEC(%ld,%ld,%ld) <<<%s\n",KGRN,i,j,k,KNRM);
+                        printf("%s\t>>> NODE ELEC(%ld,%ld,%ld) <<<%s\n",KGRN,i,j,k,KNRM);
                         /* Get the global indices */
                         local[0] = i;
                         local[1] = j;
@@ -676,10 +669,8 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             /////////////////////////////////////////
             /* COMMUNICATION BETWEEN MPI PROCESSES */
             /////////////////////////////////////////
-            if(omp_get_thread_num() >= 0 && omp_get_thread_num() <= 5
-                && hasNeighboor == true){
+            if(omp_get_thread_num() >= 0 && omp_get_thread_num() <= 5){
                 // Request the electric field to send:
-                printf("Before get, sizes(%ld,%ld)\n",size1_send,size2_send);
                 mesh.GetVecSend(direction,&ElectricNodes_toSend,
                     size1_send,size2_send);
                 mesh.communicateWithNeighboor(direction,
@@ -689,7 +680,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                     &ElectricNodes_toRecv,
                     &requests_MPI);
             }
-            MPI_Barrier(MPI_COMM_WORLD);
+            
             ///////////////////////////////////////////////
             /* CHECK ALL THE MPI REQUESTS ARE FULLFILLED */
             ///////////////////////////////////////////////
@@ -697,7 +688,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             {
                 for(int iii = 0 ; iii < REQ_MPI ; iii++){
                     if(checkRequest[iii] == 1){
-                        printf("Checking requests_MPI[%d]\n",iii);
                         MPI_Wait(&requests_MPI[iii],MPI_STATUS_IGNORE);
                     }
                 }
@@ -708,9 +698,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             ////////////////////////////////////////////////
             /* PUT RECEIVED FIELDS INSIDE THE RIGHT ARRAY */
             ////////////////////////////////////////////////
-            if(omp_get_thread_num() >=0 && omp_get_thread_num() <=5
-                && hasNeighboor == true){
-                printf("OMP %d :: setVecRecv\n",omp_get_thread_num());
+            if(omp_get_thread_num() >=0 && omp_get_thread_num() <=5){
                 mesh.SetVecRecv(direction,&ElectricNodes_toRecv,
                     size1_recv,size2_recv);
             }
