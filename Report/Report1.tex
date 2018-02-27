@@ -174,6 +174,18 @@ If the number of processes is not cubic, the parity of this number is checked. I
 %
 The methodology is as follow : the initial grid is first cut into 2 subgrids along the \textit{xz}-midplane. If there are only 2 processes, the subdivision is finished. If there are more, the grid is further cut along parallel \textit{yz}-planes.
 
+\subsection{Odd number of processes}
+If the number of processes is neither cubic, nor even, it is odd. In this case, the division is depicted in \Cref{fig:ODDSEPARATION}.
+%
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.5]{MPI_impair_division}
+    \caption{Schematic representation of the grid separation in the case of an odd number of processes.}
+    \label{fig:ODDSEPARATION}
+\end{figure}
+%
+As can be seen in this picture, the subgrids are made by cutting the initial grid with \textit{yz}-planes. The number of separations is obtained by considering that each division is one process.
+
 
 
 
