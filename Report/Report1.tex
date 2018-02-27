@@ -1,4 +1,4 @@
-\documentclass[12 pt]{report}
+\documentclass[12 pt]{article}
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -34,9 +34,9 @@
     \vspace{-2.6cm}
     \hspace{0.5\textwidth}
     
-    \begin{minipage}[t]{\textwidth}
+    \begin{minipage}[t]{1.1\textwidth}
         \begin{flushright}
-            \includegraphics[scale = 0.6]{uLIEGE_Faculte_SciencesAppliquees_Logo_CMJN_pos}
+            \includegraphics[scale=0.15]{uLIEGE_Faculte_SciencesAppliquees_Logo_CMJN_pos}
         \end{flushright}
     \end{minipage}
 
@@ -105,38 +105,38 @@
 \listoftables
 \newpage
 
-\section{Questions to ask on February, 20}
+% \section{Questions to ask on February, 20}
 
-\begin{itemize}
-	%
-	\item Do we have to take into account the frequency-dependency of the electromagnetic properties of the materials? (see \url{https://em.geosci.xyz/content/physical_properties/magnetic_permeability/magnetic_permeability_frequency_dependent.html})
-	%
-	\item Regarding the already-written code:
-		\begin{itemize}
-			\item Comments on the created classes?
-			\item Is speed affected? Or we don't care?
-			\item Especially, ask if Array\_3D\_Template<Node> nodes is a good way to start !
-		\end{itemize}
-	%
-	\item Regarding testing, what are the simplest tests? Could we compare our results with other simulations? Do we have to compare with something that can be hand-solved?
-	%
-	\item Check our reasoning on the nodes. They all have:
-		\begin{itemize}
-			\item 3 coordinates (3 doubles) - How are we going to mesh ??? (we think we are obliged to keep rectangular parallelepiped because of the numerical scheme)
-			%
-			\item 6 fields (3 for $\vec{E}$ and 3 for $\vec{H}$ so 6 doubles)
-			%
-			\item 1 temperature (1 double)
-			%
-			\item 1 unsigned char for the ID of the material
-			%
-			\item $\Rightarrow$ That would make 10 doubles and one unsigned char or 10*4+1 bytes per node.
-		\end{itemize}
-\end{itemize}
+% \begin{itemize}
+% 	%
+% 	\item Do we have to take into account the frequency-dependency of the electromagnetic properties of the materials? (see \url{https://em.geosci.xyz/content/physical_properties/magnetic_permeability/magnetic_permeability_frequency_dependent.html})
+% 	%
+% 	\item Regarding the already-written code:
+% 		\begin{itemize}
+% 			\item Comments on the created classes?
+% 			\item Is speed affected? Or we don't care?
+% 			\item Especially, ask if Array\_3D\_Template<Node> nodes is a good way to start !
+% 		\end{itemize}
+% 	%
+% 	\item Regarding testing, what are the simplest tests? Could we compare our results with other simulations? Do we have to compare with something that can be hand-solved?
+% 	%
+% 	\item Check our reasoning on the nodes. They all have:
+% 		\begin{itemize}
+% 			\item 3 coordinates (3 doubles) - How are we going to mesh ??? (we think we are obliged to keep rectangular parallelepiped because of the numerical scheme)
+% 			%
+% 			\item 6 fields (3 for $\vec{E}$ and 3 for $\vec{H}$ so 6 doubles)
+% 			%
+% 			\item 1 temperature (1 double)
+% 			%
+% 			\item 1 unsigned char for the ID of the material
+% 			%
+% 			\item $\Rightarrow$ That would make 10 doubles and one unsigned char or 10*4+1 bytes per node.
+% 		\end{itemize}
+% \end{itemize}
 
-\section{Database for human tissues}
+% \section{Database for human tissues}
 
-\url{https://www.itis.ethz.ch/virtual-population/tissue-properties/downloads/database-v3-1/}
+% \url{https://www.itis.ethz.ch/virtual-population/tissue-properties/downloads/database-v3-1/}
 
 \section{Introduction}
 In this first report, some of the test cases we used to test the code will be explained and the corresponding results will be analyzed. \\
@@ -160,16 +160,30 @@ First, the case of a cubic number of processes have to be tested : if this condi
 	\label{fig:CUBICSEPARATION}
 \end{figure}
 %
-The numbering of the different processes in thois case is first along the \textit{x}-axis, then along the \textit{y}-axis and finally along the \textit{z}-axis, meaning that processes 0,1,...,N-1 are along the \textit{x}-axis, then the processes N, N+1,...,2*N-1 are also along the \textit{x}-axis, but one "step" further along the \textit{y}-axis. We continue the numbering until we are at the extremity of the \textit{y}-axis. Once the first stage is filled, we increase the height and reiterate the numbering from N^2.
+The numbering of the different processes in thois case is first along the \textit{x}-axis, then along the \textit{y}-axis and finally along the \textit{z}-axis, meaning that processes $0,1,\cdots,N-1$ are along the \textit{x}-axis, then the processes $N, N+1,\cdots,2*N-1$ are also along the \textit{x}-axis, but one "step" further along the \textit{y}-axis. We continue the numbering until we are at the extremity of the \textit{y}-axis. Once the first stage is filled, we increase the height and reiterate the numbering from $N^2$.
+
+\subsection{Even number of processes}
+If the number of processes is not cubic, the parity of this number is checked. If it is even, the division into subgrids is represented in \Cref{fig:EVENSEPARATION}.
+%
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.5]{MPI_pair_division}
+    \caption{Schematic representation of the grid separation in the case of an even number of processes.}
+    \label{fig:EVENSEPARATION}
+\end{figure}
+%
+The methodology is as follow : the initial grid is first cut into 2 subgrids along the \textit{xz}-midplane. If there are only 2 processes, the subdivision is finished. If there are more, the grid is further cut along parallel \textit{yz}-planes.
+
+
 
 
 \section{Explanation of the test cases}
 \subsection{Thin wire}
-As was previously said, the study case here is that of a thin wire anly excited by only an electric field along one direction. As can be seen in \Cref{fig:THINWIRE}, the magnetic field generated in such a configuration is consistent with the physical intuition.
+As was previously said, the study case here is that of a thin wire only excited by only an electric field along one direction. As can be seen in \Cref{fig:THINWIRE}, the magnetic field generated in such a configuration is consistent with the physical intuition.
 %
 \begin{figure}
 	\centering
-	\includegraphics[scale=0.5]{}
+	\includegraphics[scale=0.5]{MPI_cubic_division}
 	\caption{Results for the thin wire excited by a one-component electric field.}
 	\label{fig:THINWIRE}
 \end{figure}
@@ -181,7 +195,7 @@ Here, a dipole antenna is studied, but its air gap has a null dimension, meaning
 %
 \begin{figure}
 	\centering
-	\includegraphics[scale=0.5]{}
+	\includegraphics[scale=0.5]{MPI_cubic_division}
 	\caption{Results for the dipole antenna with a zero air gap.}
 	\label{fig:DIPOLEANTENNA}
 \end{figure}
