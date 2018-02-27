@@ -142,7 +142,23 @@
 In this first report, some of the test cases we used to test the code will be explained and the corresponding results will be analyzed. \\
 The first test case that was developed is that of a thin wire on which only one component of the electric field is not set to zero. In theory, this configuration should produce a rotating magnetic field. \\
 Another test case that was developed is that of an electric dipole antenna in which an electric field along one direction is set to a non zero value. \\
-An important point should be pointed out here : no boundary conditions were imposed, which means that the presented results are meaningless when the different signals arrive to boundaries.
+An important point should be pointed out here : no boundary conditions were imposed, which means that the presented results are meaningless when the different signals arrive to boundaries. \\
+Another important point worth mentionning is the fact that the implemented code is a parallel version of the YEE algorithm. To parallelize the code, a combination between MPI and openMP has been implemented. MPI is used to separate the big grid into smaller ones, which means that the separation into subgrids has to be explained.
+
+
+\section{MPI decomposition}
+Here, the decomposition of the big grid into smaller ones will be explained. In order to be able to deal with all cases, the division is size dependent : indeed, the separation will not be the same if one consider a cubic, an even or an odd number of processes.
+\subsection{Cubic number of processes}
+First, the case of a cubic number of processes have to be tested : if this condition is met, the division of the initial grid is schematized in \Cref{fig:CUBICSEPARATION}
+%
+\begin{figure}
+	\centering
+	\includegraphics[scale=0.5]{}
+	\caption{Results for the thin wire excited by a one-component electric field.}
+	\label{fig:THINWIRE}
+\end{figure}
+%
+
 
 \section{Explanation of the test cases}
 \subsection{Thin wire}
