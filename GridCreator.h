@@ -98,6 +98,7 @@ class GridCreator{
 		/* Communication with other MPI processes */
 		void communicateWithNeighboor(
 					char /*direction*/,
+					char /* type*/,
 					size_t /*size1_send*/,
 					size_t /*size2_send*/,
 					size_t /*size1_recv*/,

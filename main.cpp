@@ -96,9 +96,6 @@ int main(int argc, char *argv[]){
 	
 	InterfaceToParaviewer interfaceToWriteOutput(mesher,MPI_communicator);
 
-	interfaceToWriteOutput.convertAndWriteData(0);
-
-
 	AlgoElectro algoElectromagn;
 	
 	algoElectromagn.update(mesher,interfaceToWriteOutput);
