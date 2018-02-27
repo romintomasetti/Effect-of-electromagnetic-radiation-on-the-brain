@@ -106,6 +106,8 @@ class GridCreator{
                     double ** /*ElectricNodes_toSend*/,
                     double ** /*ElectricNodes_toRecv*/,
                     MPI_Request ** /*requests_MPI*/);
+
+		void fillInProperties(void);
 };
 
 #endif
