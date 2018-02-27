@@ -150,7 +150,11 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
     bool isNeighboor_at_NORTH = false;
     bool isNeighboor_at_WEST  = false;
     bool isNeighboor_at_EAST  = false;
+<<<<<<< HEAD
     bool hasNeighboor         = false;
+=======
+    bool hasNeighboor = false;
+>>>>>>> d955eeab7ca062a38e95fe89557db2c9f0ebbb31
 
     if(mesh.MPI_communicator.RankNeighbour[0] != -1){isNeighboor_at_SOUTH = true;}
     if(mesh.MPI_communicator.RankNeighbour[1] != -1){isNeighboor_at_NORTH = true;}
@@ -163,7 +167,11 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
     /// BEGINNING OF THE OPENMP REGION ///
     //////////////////////////////////////
     
+<<<<<<< HEAD
     #pragma omp parallel  default(shared)\
+=======
+    #pragma omp parallel default(shared) \
+>>>>>>> d955eeab7ca062a38e95fe89557db2c9f0ebbb31
         shared(deltaX,deltaY,deltaZ)\
         shared(mesh,interfaceForOutput)\
         shared(requests_MPI,checkRequest,REQ_MPI,counterReq)\
