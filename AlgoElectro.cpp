@@ -150,6 +150,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
     bool isNeighboor_at_NORTH = false;
     bool isNeighboor_at_WEST  = false;
     bool isNeighboor_at_EAST  = false;
+    bool hasNeighboor = false;
 
     if(mesh.MPI_communicator.RankNeighbour[0] != -1){isNeighboor_at_SOUTH = true;}
     if(mesh.MPI_communicator.RankNeighbour[1] != -1){isNeighboor_at_NORTH = true;}
@@ -162,8 +163,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
     /// BEGINNING OF THE OPENMP REGION ///
     //////////////////////////////////////
     
-    #pragma omp parallel default(none)\
-        default(shared)
+    #pragma omp parallel default(shared) \
         shared(deltaX,deltaY,deltaZ)\
         shared(mesh,interfaceForOutput)\
         shared(requests_MPI,checkRequest,REQ_MPI,counterReq)\
@@ -202,13 +202,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with SOUTH.
             direction = 'S';
             if(isNeighboor_at_SOUTH == true){
-<<<<<<< HEAD
-=======
                 printf("MPI %d :: has neighboor at SOUTH (rank %d)\n",
                     mesh.MPI_communicator.getRank(),
                     mesh.MPI_communicator.RankNeighbour[0]);
                 hasNeighboor = true;
->>>>>>> d4be4bfbda3284330d442b62641b9663233358e8
                 counterReq += 2;
                 checkRequest[0] = 1;
                 checkRequest[1] = 1;
@@ -227,13 +224,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with NORTH.
             direction = 'N';
             if(isNeighboor_at_NORTH == true){
-<<<<<<< HEAD
-=======
                 printf("MPI %d :: has neighboor at NORTH (rank %d)\n",
                     mesh.MPI_communicator.getRank(),
                     mesh.MPI_communicator.RankNeighbour[1]);
                 hasNeighboor = true;
->>>>>>> d4be4bfbda3284330d442b62641b9663233358e8
                 counterReq += 2;
                 checkRequest[2] = 1;
                 checkRequest[3] = 1;
@@ -252,13 +246,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with West.
             direction = 'W';
             if(isNeighboor_at_WEST){
-<<<<<<< HEAD
-=======
                 printf("MPI %d :: has neighboor at WEST (rank %d)\n",
                     mesh.MPI_communicator.getRank(),
                     mesh.MPI_communicator.RankNeighbour[2]);
                 hasNeighboor = true;
->>>>>>> d4be4bfbda3284330d442b62641b9663233358e8
                 counterReq += 2;
                 checkRequest[4] = 1;
                 checkRequest[5] = 1;
@@ -277,13 +268,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with EAST.
             direction = 'E';
             if(isNeighboor_at_EAST){
-<<<<<<< HEAD
-=======
                 printf("MPI %d :: has neighboor at EAST (rank %d)\n",
                     mesh.MPI_communicator.getRank(),
                     mesh.MPI_communicator.RankNeighbour[3]);
                 hasNeighboor = true;
->>>>>>> d4be4bfbda3284330d442b62641b9663233358e8
                 counterReq += 2;
                 checkRequest[6] = 1;
                 checkRequest[7] = 1;
@@ -302,13 +290,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with Down.
             direction = 'D';
             if(isNeighboor_at_DOWN){
-<<<<<<< HEAD
-=======
                 printf("MPI %d :: has neighboor at DOWN (rank %d)\n",
                     mesh.MPI_communicator.getRank(),
                     mesh.MPI_communicator.RankNeighbour[4]);
                 hasNeighboor = true;
->>>>>>> d4be4bfbda3284330d442b62641b9663233358e8
                 counterReq += 2;
                 checkRequest[8] = 1;
                 checkRequest[9] = 1;
@@ -327,13 +312,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             // Communication with UP.
             direction = 'U';
             if(isNeighboor_at_UP){
-<<<<<<< HEAD
-=======
                 printf("MPI %d :: has neighboor at UP (rank %d)\n",
                     mesh.MPI_communicator.getRank(),
                     mesh.MPI_communicator.RankNeighbour[5]);
                 hasNeighboor = true;
->>>>>>> d4be4bfbda3284330d442b62641b9663233358e8
                 counterReq += 2;
                 checkRequest[10] = 1;
                 checkRequest[11] = 1;
@@ -713,13 +695,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             /////////////////////////////////////////
             if(omp_get_thread_num() >= 0 && omp_get_thread_num() <= 5){
                 // Request the electric field to send:
-<<<<<<< HEAD
-=======
                 printf("MPI %d :: OMP %d ::Before get, sizes(%ld,%ld)\n",
                     mesh.MPI_communicator.getRank(),
                     omp_get_thread_num(),
                     size1_send,size2_send);
->>>>>>> d4be4bfbda3284330d442b62641b9663233358e8
                 mesh.GetVecSend(direction,&ElectricNodes_toSend,
                     size1_send,size2_send);
                 mesh.communicateWithNeighboor(direction,'V',
@@ -741,9 +720,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                         mesh.MPI_communicator.RankNeighbour[i]);
                 for(int iii = 0 ; iii < REQ_MPI ; iii++){
                     if(checkRequest[iii] == 1){
-<<<<<<< HEAD
-                        MPI_Wait(&requests_MPI[iii],MPI_STATUS_IGNORE);
-=======
                         printf("MPI %d::Checking requests_MPI[%d]...",
                             mesh.MPI_communicator.getRank(),iii);
                         //MPI_Wait(&requests_MPI[iii],MPI_STATUS_IGNORE);
@@ -751,7 +727,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                     }else{
                         printf("MPI %d::Not checking %d.\n",
                             mesh.MPI_communicator.getRank(),iii);
->>>>>>> d4be4bfbda3284330d442b62641b9663233358e8
                     }
                 }
             }
