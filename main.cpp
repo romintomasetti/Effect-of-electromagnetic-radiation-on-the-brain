@@ -24,6 +24,8 @@
 
 #include "InterfaceToParaviewer.h"
 
+#include "GridCreator_NEW.h"
+
 #define PARALLELISM_OMP_ENABLED 1
 
 #define KRED  "\x1B[31m"
@@ -66,16 +68,7 @@ int main(int argc, char *argv[]){
 	if(PARALLELISM_OMP_ENABLED)
 		cout << "OMP enabled.\n";
 	
-	omp_set_num_threads(4);
-	#pragma omp parallel if(PARALLELISM_OMP_ENABLED)
-	{
-		#pragma omp for
-		for(int i = 0 ; i < 5; i ++){
-			printf("Thread rank: %d\n", omp_get_thread_num());
-		}
-		#pragma omp barrier
-	}
-	cout << endl; 
+	omp_set_num_threads(6);
 	
 	cout << "Calling input file parser...\n";
 	string filenameInput = "TESTS/testSourceCenteredInCube.input";
@@ -95,6 +88,11 @@ int main(int argc, char *argv[]){
 	mesher.meshInitialization();
 	
 	InterfaceToParaviewer interfaceToWriteOutput(mesher,MPI_communicator);
+	/*interfaceToWriteOutput.convertAndWriteData(0);
+	MPI_Barrier(MPI_COMM_WORLD);
+	sleep(2);
+	fprintf(stderr,"Abprting at line %d, file %s\n",__LINE__,__FILE__);
+	abort();*/
 
 	AlgoElectro algoElectromagn;
 	

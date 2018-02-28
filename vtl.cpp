@@ -256,7 +256,8 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
         // Example: temperature field or coordinates x y z.
         if(fieldName == "Temperature"){
             std::vector<size_t> size = grid.nodesTemp.get_size_data();
-            printf("Has field Temperature and size(%ld,,%ld,%ld)\n",size[0],size[1],size[2]);
+            printf("MPI %d :: Has field Temperature and size(%ld,,%ld,%ld)\n",
+                grid.MPI_communicator.getRank(),size[0],size[1],size[2]);
             size_field = size[0]*size[1]*size[2];
             buffer.resize(size_field);
             size_t counter = 0 ;
@@ -277,7 +278,8 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
         // Example: electric and magnetic fields:
         if(fieldName == "ElectricField"){
             std::vector<size_t> size = grid.nodesElec.get_size_data();
-            printf("Has field Electric and size(%ld,%ld,%ld)*3\n",(size[0]-2),size[1],size[2]);
+            printf("MPI %d :: Has field Electric and size(%ld,%ld,%ld)*3\n",
+                grid.MPI_communicator.getRank(),(size[0]-2),size[1]-2,size[2]-2);
             // Do not account for nodes of the neighboors:
             size_field = (size[0]-2)*(size[1]-2)*(size[2]-2)*3;
             buffer.resize(size_field);
@@ -288,7 +290,11 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[0];
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[1];
                         buffer[counter++] = (float)grid.nodesElec(I,J,K).field[2];
-                        /*printf(">> ELEC(%ld,%ld,%ld) is (%f,%f,%f).\n",I,J,K,
+                        unsigned long local[3] = {I,J,K};
+                        unsigned long global[3] = {0,0,0};
+                        grid.LocalToGlobal(local,global);
+                        /*printf(">> ELEC(%ld,%ld,%ld) is (%f,%f,%f).\n",global[0],
+                            global[1],global[2],
                             (float)grid.nodesElec(I,J,K).field[0],
                             (float)grid.nodesElec(I,J,K).field[1],
                             (float)grid.nodesElec(I,J,K).field[2]);*/
@@ -298,8 +304,9 @@ size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string f
 
         }else if(fieldName == "MagneticField"){
             std::vector<size_t> size = grid.nodesMagn.get_size_data();
-            printf("Has field Magentic and size(%ld,,%ld,%ld)*3\n",size[0],size[1],size[2]);
-            size_field = size[0]*size[1]*size[2]*3;
+            printf("MPI %d :: Has field Magentic and size(%ld,,%ld,%ld)*3\n",
+                grid.MPI_communicator.getRank(),size[0]-1,size[1]-1,size[2]-1);
+            size_field = (size[0]-1)*(size[1]-1)*(size[2]-1)*3;
             buffer.resize(size_field);
             size_t counter = 0;
             for(size_t K = 0 ; K < size[2]-1 ; K ++){
@@ -809,7 +816,7 @@ VTL_API void vtl::export_spoints_XML(std::string const &filename,
       << mygrid.np1[2] << ' ' << mygrid.np2[2] << "\">\n";
 
     // ------------------------------------------------------------------------------------
-    f << "      <PointData>\n";
+    f << "      <CellData>\n";
 
     //////////////////////////////////////////////////////////
     //////         OVERWRITTING BOMAN FUNCTION          //////
@@ -841,11 +848,11 @@ VTL_API void vtl::export_spoints_XML(std::string const &filename,
         f << " offset=\"" << offset << "\" />\n";
         offset += write_vectorXML_custom(f2, grid_creatorObj, it->first, 'v', (zip==ZIPPED));
     }
-    f << "      </PointData>\n";
+    f << "      </CellData>\n";
 
     // ------------------------------------------------------------------------------------
-    f << "      <CellData>\n";
-    f << "      </CellData>\n";
+    f << "      <PointData>\n";
+    f << "      </PointData>\n";
 
     f2.close();
 
@@ -914,7 +921,7 @@ VTL_API void vtl::export_spoints_XMLP(std::string const &filename,
     f << "Spacing=\"" << grid.dx[0] << ' ' << grid.dx[1] << ' ' << grid.dx[2] << "\">\n";
 
     // ------------------------------------------------------------------------------------
-    f << "      <PPointData>\n";
+    f << "      <PCellData>\n";
     // scalar fields
     for (auto it = mygrid.scalars.begin(); it != mygrid.scalars.end(); ++it)
     {
@@ -928,11 +935,11 @@ VTL_API void vtl::export_spoints_XMLP(std::string const &filename,
         f << " Name=\"" << it->first << "\" ";
         f << " NumberOfComponents=\"3\" />\n";
     }
-    f << "      </PPointData>\n";
+    f << "      </PCellData>\n";
 
     // ------------------------------------------------------------------------------------
-    f << "      <PCellData>\n";
-    f << "      </PCellData>\n";
+    f << "      <PPointData>\n";
+    f << "      </PPointData>\n";
 
     // ------------------------------------------------------------------------------------
 

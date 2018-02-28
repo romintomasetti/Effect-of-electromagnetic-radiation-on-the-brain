@@ -1,4 +1,4 @@
-#include <GridCreator_NEW.h>
+#include "GridCreator_NEW.h"
 
 GridCreator_NEW::GridCreator_NEW(InputParser &input_parser,
 					    Materials &materials,

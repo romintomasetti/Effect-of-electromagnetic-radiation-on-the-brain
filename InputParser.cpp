@@ -582,6 +582,16 @@ void InputParser::readHeader_MESH (ifstream &file){
 							std::abort();
 						}
 
+					}else if(propName == "DEBUG_MPI_COMM"){
+						if(propGiven == "true"){
+							this->simulationType = "DEBUG_MPI_COMM";
+							std::cout << "SET simulationType to DEBUG_MPI_COMM" << std::endl;
+						}else{
+							printf("You set DEBUG_MPI_COMM to false. Aborting.\n");
+							std::abort();
+						}
+
+
 					}else if(propName != "USE_AIR_EVERYWHERE"){
 						printf("InputParser::readHeader_MESH:: You didn't provide a ");
 						printf("good member for $MESH$MATERIALS.\nAborting.\n");

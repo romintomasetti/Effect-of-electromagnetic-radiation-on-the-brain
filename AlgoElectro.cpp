@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #include <omp.h>
-#include <mpi.h>
+#include <mpi.h> 
 
 #define KRED  "\x1B[31m"
 #define KGRN  "\x1B[32m"
@@ -57,7 +57,7 @@ double AlgoElectro::Compute_dt(GridCreator &mesh){
             /* !!!!!!!!!!!!!!/*� faire avec T initial*/
             double epsilon_material = mesh.materials.getProperty(
                    mesh.input_parser.GetInitTemp_FromMaterialName[material],
-                    i,4);     
+                    i,5);     
 
             c=1/(sqrt(mu_material*epsilon_material));
 
@@ -150,7 +150,6 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
     bool isNeighboor_at_NORTH = false;
     bool isNeighboor_at_WEST  = false;
     bool isNeighboor_at_EAST  = false;
-    bool hasNeighboor         = false;
 
     if(mesh.MPI_communicator.RankNeighbour[0] != -1){isNeighboor_at_SOUTH = true;}
     if(mesh.MPI_communicator.RankNeighbour[1] != -1){isNeighboor_at_NORTH = true;}
@@ -171,10 +170,11 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
         shared(isNeighboor_at_DOWN,isNeighboor_at_EAST,isNeighboor_at_NORTH)\
         shared(isNeighboor_at_SOUTH,isNeighboor_at_UP,isNeighboor_at_WEST)\
         private(local,global)\
-        private(hasNeighboor)\
         private(T,mu_material,epsilon_material)\
         private(elec_conduct_mat)
     {
+        // Boolean to know whether there is a neighboor or not for the OMP thread
+        bool hasNeighboor = false;
 
         // Create for each OMP thread 2 vectors, to send and receive data:
         double *ElectricNodes_toSend = NULL;
@@ -249,6 +249,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                 ElectricNodes_toRecv = new double[size1_recv*size2_recv*3];
             }else{
                 counterReq += 2;
+                hasNeighboor = false;
             }
         }
         if(omp_get_thread_num() == 2){
@@ -441,12 +442,14 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             double C_hzh  = 0.0;
             double C_hze_1= 0.0;
             double C_hze_2= 0.0;
-
+            
+        if(mesh.input_parser.get_SimulationType() != "DEBUG_MPI_COMM"){
             #pragma omp for schedule(static) nowait\
                 private(COEF_H)\
                 private(C_hxh,C_hxe_1,C_hxe_2)\
                 private(C_hyh,C_hye_1,C_hye_2)\
-                private(C_hzh,C_hze_1,C_hze_2)
+                private(C_hzh,C_hze_1,C_hze_2)\
+                private(local,global)
             for(unsigned long k = 0 ; k <= mesh.numberOfNodesInEachDir[2] ; k++ ){
 
                 for(unsigned long j=0;j <= mesh.numberOfNodesInEachDir[1] ; j++){
@@ -454,10 +457,10 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                     for(unsigned long i=0;i <= mesh.numberOfNodesInEachDir[0]  ; i++){
                         //printf("%s\t>>> NODE MAGN(%ld,%ld,%ld) <<<%s\n",KGRN,i,j,k,KNRM);
                         /* Get the global indices */
-                        local[0] = i;
+                        /*local[0] = i;
                         local[1] = j;
                         local[2] = k;
-                        mesh.LocalToGlobal(local,global);
+                        mesh.LocalToGlobal(local,global);*/
 
                         T = mesh.nodesMagn(i,j,k).Temperature;
                         //printf("> Fetching temperature: %f\n",T);
@@ -566,7 +569,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                     }
                 }
             }
-            
+        }
             #pragma omp barrier
 
             double COEF_E = 0.0;
@@ -586,20 +589,32 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             /* UPDATE ELECTRIC FIELD */
             ///////////////////////////
             printf("%sELECTRIC FIELD%s\n",KRED,KNRM);
+        if(mesh.input_parser.get_SimulationType() != "DEBUG_MPI_COMM"){
             #pragma for schedule(static) nowait\
                 private(COEF_E)\
                 private(C_exe,C_exh_1,C_exh_2)\
                 private(C_eye,C_eyh_1,C_eyh_2)\
-                private(C_eze,C_ezh_1,C_ezh_2)
-            for(unsigned long k=1 ; k <= mesh.numberOfNodesInEachDir[0];k++){
+                private(C_eze,C_ezh_1,C_ezh_2)\
+                private(local,global)
+            for(unsigned long k=1 ; k <= mesh.numberOfNodesInEachDir[2];k++){
                 for(unsigned long j=1 ; j <= mesh.numberOfNodesInEachDir[1];j++){
-                    for(unsigned long i=1; i <= mesh.numberOfNodesInEachDir[2];i++){
-                        //printf("%s\t>>> NODE ELEC(%ld,%ld,%ld) <<<%s\n",KGRN,i,j,k,KNRM);
+                    for(unsigned long i=1; i <= mesh.numberOfNodesInEachDir[0];i++){
                         /* Get the global indices */
-                        local[0] = i;
-                        local[1] = j;
-                        local[2] = k;
+                        local[0] = i - 1;
+                        local[1] = j - 1;
+                        local[2] = k - 1;
                         mesh.LocalToGlobal(local,global);
+
+                        /*printf("%s\t>>> MPI %d ::  NODE ELEC(%ld,%ld,%ld) TO (%ld,%ld,%ld) <<<%s\n",KGRN,
+                            mesh.MPI_communicator.getRank(),i,j,k,
+                            global[0],global[1],global[2],KNRM);
+                        
+
+                        if(k == 1){
+                            printf("MPI %d :: nodesElec(%ld,%ld,%ld) to global(%ld,%ld,%ld)\n",
+                                mesh.MPI_communicator.getRank(),i,j,k,global[0],
+                                global[1],global[2]);
+                        }*/
 
                         T = mesh.nodesElec(i,j,k).Temperature;
 
@@ -624,12 +639,20 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                         C_ezh_2 = 1 / ( 1 + COEF_E) * dt/(epsilon_material*deltaY);
 
 
-                        if(mesh.input_parser.source.isInsideSource(global[0],global[1],global[2])){
+                        if(global[0] >= 75 && global[0] <= 85 &&
+                            global[1] >= 75 && global[1] <= 85 &&
+                            global[2] >= 75 && global[2] <= 85){
+                            mesh.nodesElec(i,j,k).field[0] = 0;
+                            mesh.nodesElec(i,j,k).field[1] = 0;
+                            mesh.nodesElec(i,j,k).field[2] = sin(2*M_PI*500000*t_current);
+                            continue;
+                        
+                        //if(mesh.input_parser.source.isInsideSource(global[0],global[1],global[2])){
 
-                            mesh.input_parser.source.computeSourceValue(mesh, global[0],global[1],global[2],t_current,'E');
+                            //mesh.input_parser.source.computeSourceValue(mesh, global[0],global[1],global[2],t_current,'E');
                             //mesh.nodesMagn(i,j,k).field[1]=mesh.input_parser.source.computeSourceValue(mesh, i,j,k,t_current,composants_5);
                             //mesh.nodesMagn(i,j,k).field[2]=mesh.input_parser.source.computeSourceValue(mesh, i,j,k,t_current,composants_6);
-                        }else{
+                       }else{
                             /* update electric field E_x */
                             mesh.nodesElec(i,j,k).field[0] = C_exe * mesh.nodesElec(i,j,k).field[0]
                                         + C_exh_1 * (mesh.nodesMagn(i,j,k).field[2]-
@@ -696,7 +719,8 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                     }
                 }
             }   
-            
+        }
+
             #pragma omp barrier
 
             /////////////////////////////////////////

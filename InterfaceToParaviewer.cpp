@@ -31,8 +31,8 @@ void InterfaceToParaviewer::initializeAll(void){
     size_t nodesWholeDom_Z = (size_t) this->grid_Creator.input_parser.lengthZ /
                     this->grid_Creator.input_parser.deltaZ +1;
     // If we have 5 nodes, because we start with node 0, we go until node 4.
-    // So we do -1 in the next line.
-    this->grid.np2 = vtl::Vec3i(nodesWholeDom_X-1,nodesWholeDom_Y-1,nodesWholeDom_Z-1);
+    // So we do -1 in the next line. But finally we don't do -1 because we use cells.
+    this->grid.np2 = vtl::Vec3i(nodesWholeDom_X,nodesWholeDom_Y,nodesWholeDom_Z);
 
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -60,9 +60,9 @@ void InterfaceToParaviewer::initializeAll(void){
                 // Don't communicate:
                 for(int k = 0 ; k < 3 ; k ++){
                     this->mygrid.np1[k] = this->grid_Creator.originIndices[k];
-                    this->mygrid.np2[k] = this->mygrid.np1[k] + this->grid_Creator.numberOfNodesInEachDir[k] -1;
+                    this->mygrid.np2[k] = this->mygrid.np1[k] + this->grid_Creator.numberOfNodesInEachDir[k];
                     this->sgrids[I].np1[k] = this->grid_Creator.originIndices[k];
-                    this->sgrids[I].np2[k] = this->sgrids[I].np1[k] + this->grid_Creator.numberOfNodesInEachDir[k] -1;
+                    this->sgrids[I].np2[k] = this->sgrids[I].np1[k] + this->grid_Creator.numberOfNodesInEachDir[k];
                 }
             }else{
                 unsigned long np1[3], np2[3];
@@ -92,7 +92,7 @@ void InterfaceToParaviewer::initializeAll(void){
         unsigned long np1[3],np2[3];
         for(int k = 0 ; k  <  3 ; k ++ ){
             np1[k] = this->grid_Creator.originIndices[k];
-            np2[k] = np1[k] + this->grid_Creator.numberOfNodesInEachDir[k] -1;
+            np2[k] = np1[k] + this->grid_Creator.numberOfNodesInEachDir[k];
             cout << "np2[2]=" << np2[2] << endl;
         }   
         MPI_Send(&np1,3,MPI_UNSIGNED_LONG,this->MPI_communicator.rootProcess,TAG_NP1,MPI_COMM_WORLD);

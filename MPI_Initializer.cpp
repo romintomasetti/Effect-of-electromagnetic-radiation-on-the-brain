@@ -53,6 +53,7 @@ MPI_Initializer::MPI_Initializer(int argc, char *argv[],int required){
 	MPI_Comm_size( MPI_COMM_WORLD, &number_of_MPI_Processes);
 	this->number_of_MPI_Processes = number_of_MPI_Processes;
 	cout << "number of MPI processes is " << this->number_of_MPI_Processes.get() << endl;
+
 	#if DEBUG > 1
 	cout << "MPI_Initializer::constructor::OUT" << endl;
 	#endif
@@ -98,6 +99,10 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 	double deltaY = subGrid.input_parser.deltaY;
 	double deltaZ = subGrid.input_parser.deltaZ;
 
+	size_t nbr_nodes_X = (size_t) Lx / deltaX + 1;
+	size_t nbr_nodes_Y = (size_t) Ly / deltaY + 1;
+	size_t nbr_nodes_Z = (size_t) Lz / deltaZ + 1;
+
 
 	int N = (int) pow(nbProc, 1.0/3.0);
 	std::vector<double> mpiExtremity;
@@ -115,6 +120,7 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 
 	// Cubic case
 	if(N*N*N == nbProc){
+		/*
 		double LxLocal = Lx/N;
 		double LyLocal = Ly/N;
 		double LzLocal = Lz/N;
@@ -124,6 +130,7 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 		mpiExtremity.push_back((((int)(myRank/N) - ((int) (myRank/(N*N) ))*N )+1)*LyLocal);
 		mpiExtremity.push_back( myRank/ (N*N) * LzLocal);
 		mpiExtremity.push_back(((myRank/(N*N))+1)*LzLocal);
+		*/
 
 		/* myRank%N gives the current position on the x-axis */
 		/* (((int)(myRank/N) - (int) (myRank/(N*N))*N )) gives the current position on the y-axis */
@@ -132,6 +139,43 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 		int PositionOnX = myRank%N;
 		int PositionOnY = (((int)(myRank/N) - (int) (myRank/(N*N))*N ));
 		int PositionOnZ = myRank/ (N*N);
+
+		size_t nbr_nodes_local_X = (size_t) nbr_nodes_X / N;
+		if(nbr_nodes_local_X * N != nbr_nodes_X){
+			if(PositionOnX == N-1){
+				subGrid.numberOfNodesInEachDir[0] = nbr_nodes_local_X + (-nbr_nodes_local_X * N + nbr_nodes_X);
+			}else{
+				subGrid.numberOfNodesInEachDir[0] = nbr_nodes_local_X;
+			}
+		}else{
+			subGrid.numberOfNodesInEachDir[0] = nbr_nodes_local_X;
+		}
+
+		size_t nbr_nodes_local_Y = (size_t) nbr_nodes_Y / N;
+		if(nbr_nodes_local_Y * N != nbr_nodes_Y){
+			if(PositionOnY == N-1){
+				subGrid.numberOfNodesInEachDir[1] = nbr_nodes_local_Y + (-nbr_nodes_local_Y * N + nbr_nodes_Y);
+			}else{
+				subGrid.numberOfNodesInEachDir[1] = nbr_nodes_local_Y;
+			}
+		}else{
+			subGrid.numberOfNodesInEachDir[1] = nbr_nodes_local_Y;
+		}
+
+		size_t nbr_nodes_local_Z = (size_t) nbr_nodes_Z / N;
+		if(nbr_nodes_local_Z * N != nbr_nodes_Z){
+			if(PositionOnZ == N-1){
+				subGrid.numberOfNodesInEachDir[2] = nbr_nodes_local_Z + (-nbr_nodes_local_Z * N + nbr_nodes_Z);
+			}else{
+				subGrid.numberOfNodesInEachDir[2] = nbr_nodes_local_Z;
+			}
+		}else{
+			subGrid.numberOfNodesInEachDir[2] = nbr_nodes_local_Z;
+		}
+		
+		subGrid.originIndices.push_back( PositionOnX * nbr_nodes_local_X );
+		subGrid.originIndices.push_back( PositionOnY * nbr_nodes_local_Y );
+		subGrid.originIndices.push_back( PositionOnZ * nbr_nodes_local_Z );
 
 		if(N == 1)
 		{
@@ -206,16 +250,36 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 		double LzLocal = Lz;
 
 		// Coordinates of all subdivisions in the order -> Lx, Ly, Lz
+		/*
 		mpiExtremity.push_back(myRank*LxLocal);
 		mpiExtremity.push_back((myRank+1)*LxLocal);
 		mpiExtremity.push_back( 0);
 		mpiExtremity.push_back(LyLocal);
 		mpiExtremity.push_back(0);
 		mpiExtremity.push_back(LzLocal);
+		*/
 
 		int PositionOnX = myRank;
 		int PositionOnY = 0;
 		int PositionOnZ = 0;
+
+		size_t nbr_nodes_local_X = (size_t) nbr_nodes_X / nbProc;
+		if(nbr_nodes_local_X * nbProc != nbr_nodes_X){
+			if(PositionOnX == nbProc-1){
+				subGrid.numberOfNodesInEachDir[0] = nbr_nodes_local_X + nbr_nodes_X - nbr_nodes_local_X*nbProc;
+			}else{
+				subGrid.numberOfNodesInEachDir[0] = nbr_nodes_local_X;
+			}
+		}else{
+			subGrid.numberOfNodesInEachDir[0] = nbr_nodes_local_X;
+		}
+
+		subGrid.numberOfNodesInEachDir[1] = nbr_nodes_Y;
+		subGrid.numberOfNodesInEachDir[2] = nbr_nodes_Z;
+
+		subGrid.originIndices.push_back( PositionOnX * nbr_nodes_local_X );
+		subGrid.originIndices.push_back( PositionOnY * nbr_nodes_Y );
+		subGrid.originIndices.push_back( PositionOnZ * nbr_nodes_Z );
 
 		/* We do the x component */
 		if(PositionOnX == 0)
@@ -247,16 +311,48 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 		double LxLocal = 2*Lx/nbProc;
 		double LyLocal = Ly/2;
 		double LzLocal = Lz;
+		/*
 		mpiExtremity.push_back(myRank%(nbProc/2)*LxLocal);
 		mpiExtremity.push_back(((myRank%(nbProc/2))+1)*LxLocal);
 		mpiExtremity.push_back(((int)(2*myRank/nbProc))*LyLocal);
 		mpiExtremity.push_back(((int)((2*myRank/nbProc))+1)*LyLocal);
 		mpiExtremity.push_back(0);
 		mpiExtremity.push_back(LzLocal); // Coordinates of all subdivisions in the order -> Lx, Ly, Lz
+		*/
 
 		int PositionOnX = myRank%(nbProc/2);
 		int PositionOnY = ((int)(2*myRank/nbProc));
 		int PositionOnZ = 0;
+
+		size_t nbr_nodes_local_X = (size_t) 2*nbr_nodes_X / (nbProc);
+		size_t nbr_nodes_local_Y = (size_t) nbr_nodes_Y / 2;
+		size_t nbr_nodes_local_Z = nbr_nodes_Z;
+
+		if(nbr_nodes_local_X * (nbProc/2) != nbr_nodes_X){
+			if(PositionOnX == nbProc/2 - 1){
+				subGrid.numberOfNodesInEachDir[0] = nbr_nodes_local_X + nbr_nodes_X - nbr_nodes_local_X * (nbProc/2);
+			}else{
+				subGrid.numberOfNodesInEachDir[0] = nbr_nodes_local_X;
+			}
+		}else{
+			subGrid.numberOfNodesInEachDir[0] = nbr_nodes_local_X;
+		}
+
+		if(nbr_nodes_local_Y * 2 != nbr_nodes_X){
+			if(PositionOnY == 1){
+				subGrid.numberOfNodesInEachDir[1] = nbr_nodes_local_Y + nbr_nodes_Y - nbr_nodes_local_Y * 2;
+			}else{
+				subGrid.numberOfNodesInEachDir[1] = nbr_nodes_local_Y;
+			}
+		}else{
+			subGrid.numberOfNodesInEachDir[1] = nbr_nodes_local_Y;
+		}
+
+		subGrid.numberOfNodesInEachDir[2] = nbr_nodes_local_Z;
+
+		subGrid.originIndices.push_back( PositionOnX * nbr_nodes_local_X );
+		subGrid.originIndices.push_back( PositionOnY * nbr_nodes_local_Y );
+		subGrid.originIndices.push_back( PositionOnZ * nbr_nodes_local_Z );
 
 		/* We do the x component */
 		if(nbProc == 2){
@@ -315,17 +411,19 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 	}
 
     // transformation of global lengths to indices and save them in subdomain
-	subGrid.originIndices.push_back(mpiExtremity[0]/deltaX);
-	subGrid.originIndices.push_back(mpiExtremity[2]/deltaY);
-	subGrid.originIndices.push_back(mpiExtremity[4]/deltaZ);
+	/*
+	subGrid.originIndices.push_back(round(mpiExtremity[0]/deltaX));
+	subGrid.originIndices.push_back(round(mpiExtremity[2]/deltaY));
+	subGrid.originIndices.push_back(round(mpiExtremity[4]/deltaZ));
+	*/
 	cout << myRank<< "---------------------->  x: " <<subGrid.originIndices[0] << endl;
 	cout << myRank<< "---------------------->  y: " <<subGrid.originIndices[1] << endl;
 	cout << myRank<< "---------------------->  z: " <<subGrid.originIndices[2] << endl;
 
 	// Length of the subdomains
-	subGrid.lengthX = mpiExtremity[1]-mpiExtremity[0];
+	/*subGrid.lengthX = mpiExtremity[1]-mpiExtremity[0];
 	subGrid.lengthY = mpiExtremity[3]-mpiExtremity[2];
-	subGrid.lengthZ = mpiExtremity[5]-mpiExtremity[4];
+	subGrid.lengthZ = mpiExtremity[5]-mpiExtremity[4];*/
 	
 
 }

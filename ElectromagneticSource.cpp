@@ -280,18 +280,18 @@ void ElectromagneticSource::computeSourceValue(GridCreator &mesh,
 	*/
 	/* We know that for a dipole antenna E_x, E_y, H_x, H_y and H_z are all equal to 0, whereas E_z is different if we are in the air gap or not */
 	if(CHAMP == 'H'){
-		mesh.nodesMagn(i_global,j_global,k_global).field[0] = 0.0;
-		mesh.nodesMagn(i_global,j_global,k_global).field[1] = 0.0;
-		mesh.nodesMagn(i_global,j_global,k_global).field[2] = 0.0;
+		//mesh.nodesMagn(i_global,j_global,k_global).field[0] = 0.0;
+		//mesh.nodesMagn(i_global,j_global,k_global).field[1] = 0.0;
+		//mesh.nodesMagn(i_global,j_global,k_global).field[2] = 0.0;
 	}else if(CHAMP == 'E'){
 		mesh.nodesElec(i_global,j_global,k_global).field[0] = 0.0;
 		mesh.nodesElec(i_global,j_global,k_global).field[1] = 0.0;
 
-		if(isInsideAirGap(i_global,j_global,k_global,ID_Source) == true){
+		//if(isInsideAirGap(i_global,j_global,k_global,ID_Source) == true){
 			mesh.nodesElec(i_global,j_global,k_global).field[2] = sin(2*M_PI*mesh.input_parser.source.frequency[ID_Source]*tCurrent);
 			//cout << "INSIDE AIRGAP" << endl;
 			//printf("E_Z(%.10f) = %.7f\n",tCurrent,sin(2*M_PI*mesh.input_parser.source.frequency[ID_Source]*tCurrent)*1000000000000);
-		}
+		//}
 		/* Ask Romin if the function returns the indices or the physical coordinates */
 		/*double CenterAntenna[3];
 		this->getCenter(ID_Source,CenterAntenna);

@@ -4,9 +4,9 @@
 #include <vector>
 #include <cstdio>
 
-#include <Materials.h>
-#include <MPI_Initializer.h>
-#include <InputParser.h>
+#include "Materials.h"
+#include "MPI_Initializer.h"
+#include "InputParser.h"
 
 class GridCreator_NEW{
     public:
@@ -46,7 +46,7 @@ class GridCreator_NEW{
 		MPI_Initializer &MPI_communicator;
 
         // Origin of the indices:
-        std::vector<size_t> originIndices = {-1,-1,-1};
+        std::vector<size_t> originIndices = {0,0,0};
 
         ////////////////////////////////////////////////////////////
         /// FUNCTIONS:
