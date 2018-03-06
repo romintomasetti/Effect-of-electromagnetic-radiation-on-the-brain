@@ -1,6 +1,11 @@
 #include "ProfilingClass.h"
 
 #include <iostream>
+#include <cstring>
+
+#include <iomanip>
+#include <sstream>
+
 
 // Adding memory usage:
 void ProfilingClass::addMemoryUsage(std::string type,double mem){
@@ -56,5 +61,56 @@ void ProfilingClass::incrementTimingInput(std::string timingInput, double incr){
         // The timing input exists.
         this->time_taken_for[timingInput] += incr;
         printf("Time for %s is now %f seconds.\n",timingInput.c_str(),this->time_taken_for[timingInput]);
+    }
+}
+
+// Destructor:
+ProfilingClass::~ProfilingClass(void){
+
+    std::cout << "ProfilingClass::~ProfilingClass::IN" << std::endl;
+
+    if(this->outputFileName == std::string()){
+        // The output file's name has not been set. Aborting.
+        fprintf(stderr,"ProfilingClass::~ProfilingClass::ERROR\n");
+        fprintf(stderr,"The output file's name has not been set. Aborting.\n");
+        abort();
+    }
+    /* Write the timings and memory usage inside the output file */
+    this->outputFile.open(this->outputFileName.c_str());
+    if(this->outputFile.is_open()){
+        // Write inside file.
+        std::cout << "ProfilingClass::~ProfilingClass::WRITING" << std::endl;
+        // Memory usage:
+        this->outputFile << "Memory usage is ";
+        this->outputFile << std::fixed << std::setprecision(10) << this->usedMemoryInMegaBytes;
+        this->outputFile << " MBytes." << std::endl;
+
+        // Timing inputs:
+        std::map<std::string,double>::iterator it;
+        for (it=this->time_taken_for.begin(); it!=this->time_taken_for.end();++it ){
+            this->outputFile << ">>> " << it->first;
+            this->outputFile << " => " ;
+            this->outputFile << std::fixed << std::setprecision(10) << it->second;
+            this->outputFile << " seconds.\n";
+        }
+    }else{
+        // File could not be opened.
+        fprintf(stderr,"ProfilingClass::~ProfilingClass::ERROR\n");
+        fprintf(stderr,"Cannot open the file %s.\n",this->outputFileName.c_str());
+    }
+
+    std::cout << "ProfilingClass::~ProfilingClass::OUT" << std::endl;
+}
+
+// Set the output file's name:
+void ProfilingClass::setOutputFileName(std::string str){
+    if(this->outputFileName == std::string()){
+        // The output file's name was not set. Set it.
+        this->outputFileName = str;
+    }else{
+        // The output file's nam was not set. Print a warning.
+        printf("ProfilingClass::setOutputFileName::WARNING\n");
+        printf("Output file's name was already set to %s.\n",this->outputFileName.c_str());
+        printf("I do nothing and keep this name.\n");
     }
 }

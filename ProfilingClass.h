@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <map>
 #include <stdlib.h>
+#include <iostream>
+#include <fstream>
 
 class ProfilingClass{
     private:
@@ -15,11 +17,15 @@ class ProfilingClass{
         // Dictionnary for arbitrary time input:
         std::map<std::string,double> time_taken_for;
 
+        // File for output:
+        std::ofstream outputFile;
+        std::string   outputFileName = std::string();
+
     public:
         // Constructor:
         ProfilingClass(void){}
         // Destructor:
-        ~ProfilingClass(void){}
+        ~ProfilingClass(void);
 
         // Adding memory usage:
         void addMemoryUsage(std::string,double);
@@ -29,6 +35,9 @@ class ProfilingClass{
 
         // Increment a timing input:
         void incrementTimingInput(std::string, double);
+
+        // Set the output file's name:
+        void setOutputFileName(std::string);
 
 };
 
