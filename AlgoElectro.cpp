@@ -590,7 +590,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             ///////////////////////////
             printf("%sELECTRIC FIELD%s\n",KRED,KNRM);
         if(mesh.input_parser.get_SimulationType() != "DEBUG_MPI_COMM"){
-            #pragma for schedule(static) nowait\
+            #pragma omp for schedule(static) nowait\
                 private(COEF_E)\
                 private(C_exe,C_exh_1,C_exh_2)\
                 private(C_eye,C_eyh_1,C_eyh_2)\
@@ -639,12 +639,23 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
                         C_ezh_2 = 1 / ( 1 + COEF_E) * dt/(epsilon_material*deltaY);
 
 
-                        if(global[0] >= 75 && global[0] <= 85 &&
-                            global[1] >= 75 && global[1] <= 85 &&
-                            global[2] >= 75 && global[2] <= 85){
-                            mesh.nodesElec(i,j,k).field[0] = 0;
-                            mesh.nodesElec(i,j,k).field[1] = 0;
-                            mesh.nodesElec(i,j,k).field[2] = sin(2*M_PI*500000*t_current);
+                        if(global[0] >= 95 && global[0] <= 105 &&
+                            global[1] >= 95 && global[1] <= 105 &&
+                            global[2] >= 95 && global[2] <= 105){
+                                printf("COUCOU\n"); 
+                            //mesh.nodesElec(i,j,k).field[0] = 0;
+                            //mesh.nodesElec(i,j,k).field[1] = 0;
+                            mesh.nodesElec(i,j,k).field[2] = sin(2*M_PI*900E6*t_current);
+                            mesh.nodesElec(i,j,k).field[0] = C_exe * mesh.nodesElec(i,j,k).field[0]
+                                        + C_exh_1 * (mesh.nodesMagn(i,j,k).field[2]-
+                                                     mesh.nodesMagn(i,j-1,k).field[2])
+                                        - C_exh_2 * (mesh.nodesMagn(i,j,k).field[1]-
+                                                     mesh.nodesMagn(i,j,k-1).field[1]);
+                            mesh.nodesElec(i,j,k).field[1] = C_eye * mesh.nodesElec(i,j,k).field[1]
+                                    + C_eyh_1 * (mesh.nodesMagn(i,j,k).field[0]-
+                                                 mesh.nodesMagn(i,j,k-1).field[0])
+                                    - C_eyh_2 * (mesh.nodesMagn(i,j,k).field[2]-
+                                                 mesh.nodesMagn(i-1,j,k).field[2]);
                             continue;
                         
                         //if(mesh.input_parser.source.isInsideSource(global[0],global[1],global[2])){

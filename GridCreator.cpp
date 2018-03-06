@@ -56,12 +56,12 @@ void GridCreator::meshInitialization(){
 
 	/* Initialize source */
 	for(unsigned int I = 0 ; I < this->input_parser.source.get_number_of_sources() ; I ++){
-		this->input_parser.source.computeNodesInsideSource(this->input_parser.lengthX,
-													this->input_parser.lengthY,
-													this->input_parser.lengthZ,
-													this->input_parser.deltaX,
-													this->input_parser.deltaY,
-													this->input_parser.deltaZ,
+		this->input_parser.source.computeNodesInsideSource(this->input_parser.lengthX_WholeDomain,
+													this->input_parser.lengthY_WholeDomain,
+													this->input_parser.lengthZ_WholeDomain,
+													this->input_parser.deltaX_Electro,
+													this->input_parser.deltaY_Electro,
+													this->input_parser.deltaZ_Electro,
 													I);
 	}
 
@@ -181,9 +181,9 @@ GridCreator::GridCreator(InputParser &input_parser,
 	// object reference 'input_parser'. However, the lengths along each direction
 	// cannot be taken from this object because this object gives the lengths
 	// of the whole domain and we need the lengths of this particular subgrid !!
-	this->deltaX = this->input_parser.deltaX;
-	this->deltaY = this->input_parser.deltaY;
-	this->deltaZ = this->input_parser.deltaZ;
+	this->deltaX = this->input_parser.deltaX_Electro;
+	this->deltaY = this->input_parser.deltaY_Electro;
+	this->deltaZ = this->input_parser.deltaZ_Electro;
 
 	// To get the lengths of this subgrid, call MpiDivision:
 	this->MPI_communicator.MpiDivision(*this);
