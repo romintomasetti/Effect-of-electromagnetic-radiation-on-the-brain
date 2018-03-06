@@ -13,6 +13,9 @@ check_cxx_compiler_flag("-std=c++11" STDCXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif(STDCXX11)
 
+# ADDING OPTIMIZATION:
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -Wextra")
+
 # ADDING WARNINGS
 if(MSVC)
     # Force to always compile with W4
