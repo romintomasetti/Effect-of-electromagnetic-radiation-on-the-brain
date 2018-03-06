@@ -34,6 +34,8 @@
 #define KBLU  "\x1B[34m"
 #define KYEL  "\x1B[33m"
 
+#include "ProfilingClass.h"
+
 using namespace std;
 
 /*
@@ -47,6 +49,8 @@ using namespace std;
 
 
 int main(int argc, char *argv[]){
+
+	ProfilingClass profiler;
 
 	/* First of all, initialize MPI because if it fails, the program must immediately be stopped. */
 	MPI_Initializer MPI_communicator(argc,argv,MPI_THREAD_MULTIPLE);
@@ -76,6 +80,14 @@ int main(int argc, char *argv[]){
 	input_parser.defaultParsingFromFile(filenameInput);
 
 	
+	std::string profilingName = string();
+	profilingName = input_parser.get_outputNames()["profile"];
+	profilingName.append("_RANK");
+	profilingName.append(std::to_string(MPI_communicator.getRank()));
+	profiler.setOutputFileName(profilingName);
+	
+
+	
 	
 	printf("Initial temperature for AIR is %f.\n",
 				input_parser.GetInitTemp_FromMaterialName["AIR"]);
@@ -83,20 +95,22 @@ int main(int argc, char *argv[]){
 	map<std::string,std::string> test222 = input_parser.get_outputNames();
 	cout << test222["output"] << test222["error"] << test222["profile"] << endl;
 
-	cout << "Calling GridCreator constructor" << endl;
-	GridCreator mesher(input_parser,allMat,MPI_communicator);
-	mesher.meshInitialization();
+	//cout << "Calling GridCreator constructor" << endl;
+	//GridCreator mesher(input_parser,allMat,MPI_communicator);
+	//mesher.meshInitialization();
 	
-	InterfaceToParaviewer interfaceToWriteOutput(mesher,MPI_communicator);
-	/*interfaceToWriteOutput.convertAndWriteData(0);
+	//InterfaceToParaviewer interfaceToWriteOutput(mesher,MPI_communicator);
+	//interfaceToWriteOutput.convertAndWriteData(0);
 	MPI_Barrier(MPI_COMM_WORLD);
-	sleep(2);
-	fprintf(stderr,"Abprting at line %d, file %s\n",__LINE__,__FILE__);
-	abort();*/
-
-	AlgoElectro algoElectromagn;
 	
-	algoElectromagn.update(mesher,interfaceToWriteOutput);
+
+	GridCreator_NEW gridTest(input_parser,allMat,MPI_communicator,profiler);
+	gridTest.meshInitialization();
+
+
+	//AlgoElectro algoElectromagn;
+	
+	//algoElectromagn.update(mesher,interfaceToWriteOutput);
 	
 	
 	
