@@ -14,7 +14,9 @@ check_cxx_compiler_flag("-std=c++11" STDCXX11)
   endif(STDCXX11)
 
 # ADDING OPTIMIZATION:
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Ofast -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frerun-loop-opt -fexpensive-optimizations")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdelayed-branch -funroll-loops")
 
 # ADDING WARNINGS
 if(MSVC)
