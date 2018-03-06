@@ -91,7 +91,7 @@ class InputParser{
 		// Parser:
 		void defaultParsingFromFile(string filename);
 		// Get lengths
-		double get_length(unsigned int);
+		double get_length_WholeDomain(unsigned int /*DIRECTION 0, 1 or 2*/);
 
 		stringDollar_Header1 hashit_Header1 (std::string const& inString);
 		stringDollar_Header2 hashit_Header2 (std::string const& inString);
@@ -102,10 +102,23 @@ class InputParser{
 
 		double get_stopTime(void){return this->stopTime;}
 
-		// Deltas:
-		double deltaX = 0.0, deltaY = 0.0, deltaZ = 0.0;
-		// Domain size:
-		double lengthX = 0.0, lengthY = 0.0, lengthZ = 0.0;
+		// Spatial step for the electromagnetic grid:
+		double deltaX_Electro = 0.0;
+		double deltaY_Electro = 0.0;
+		double deltaZ_Electro = 0.0;
+		/* 
+		 * Spatial step for the thermal grid, considered as homogeneous,
+		 * i.e. deltaX_therm = deltaY_therm = deltaZ_therm
+		 */
+		double delta_Thermal = 0.0;
+		
+		/*
+		 * Length of the domain in each direction.
+		 * The length is given in meters.
+		 */
+		double lengthX_WholeDomain = 0.0;
+		double lengthY_WholeDomain = 0.0;
+		double lengthZ_WholeDomain = 0.0;
 };
 
 #endif

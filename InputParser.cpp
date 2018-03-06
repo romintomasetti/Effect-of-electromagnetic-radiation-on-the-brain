@@ -30,14 +30,14 @@ stringDollar_Header2 InputParser::hashit_Header2 (std::string const& inString) {
 }
 
 // Get lengths
-double InputParser::get_length(unsigned int direction){
+double InputParser::get_length_WholeDomain(unsigned int direction){
 	// Direction = 0 gives along X, 1 along Y, 2 along Z:
 	if(direction == 0){
-		return this->lengthX;
+		return this->lengthX_WholeDomain;
 	}else if(direction == 1){
-		return this->lengthY;
+		return this->lengthY_WholeDomain;
 	}else if(direction == 2){
-		return this->lengthZ;
+		return this->lengthZ_WholeDomain;
 	}else{
 		printf("InputParser::get_length::ERROR:\n\tDirection should be between 0 and 2.");
 		printf("Aborting (file %s at %d).\n",__FILE__,__LINE__);
@@ -369,20 +369,29 @@ void InputParser::readHeader_MESH (ifstream &file){
 					cout << propName + "=" + propGiven << endl;
 					cout << "To compare with " + currentLine << endl;
 
-					if(propName == "deltaX"){
-						this->deltaX = std::stod(propGiven);
-						cout << "ADDED DELTAX is " << this->deltaX << endl;
-					}else if(propName == "deltaY"){
-						this->deltaY = std::stod(propGiven);
-						cout << "ADDED DELTAY is " << this->deltaX << endl;
-					}else if(propName == "deltaZ"){
-						this->deltaZ = std::stod(propGiven);
-						cout << "ADDED DELTAZ is " << this->deltaX << endl;
-					}else if(propName != "deltaX" 
-							&& propName != "deltaY" 
-							&& propName != "deltaZ"){
+					// Spatial step delta along X for electromagnetic mesh:
+					if(propName == "deltaX_Electro"){
+						this->deltaX_Electro = std::stod(propGiven);
+						cout << "ADDED DELTAX_Electro is " << this->deltaX_Electro << std::endl;
+					// Spatial step delta along Y for electromagnetic mesh:
+					}else if(propName == "deltaY_Electro"){
+						this->deltaY_Electro = std::stod(propGiven);
+						cout << "ADDED DELTAY_Electro is " << this->deltaY_Electro << std::endl;
+					// Spatial step delta along Z for electromagnetic mesh:
+					}else if(propName == "deltaZ_Electro"){
+						this->deltaZ_Electro = std::stod(propGiven);
+						cout << "ADDED DELTAZ is " << this->deltaZ_Electro << std::endl;
+					// Spatial step delta along all three directions for the thermal mesh:
+					}else if(propName == "delta_Thermal"){
+						this->delta_Thermal = std::stod(propGiven);
+						cout << "ADDED DELTA THERMAL is " << this->delta_Thermal << std::endl;
+					
+					}else if(propName != "deltaX_electro" 
+							&& propName != "deltaY_Electro" 
+							&& propName != "deltaZ_Electro"
+							&& propName != "delta_Thermal"){
 						printf("InputParser::readHeader_MESH:: You didn't provide a ");
-						printf("good member for $MESH$DELTAS.\nAborting.\n");
+						printf("good member for $MESH$DELTAS. Has %s.\nAborting.\n",propName.c_str());
 						cout << propName << endl;
 						printf("(in file %s at %d)\n",__FILE__,__LINE__);
 						abort();
@@ -419,14 +428,14 @@ void InputParser::readHeader_MESH (ifstream &file){
 					cout << "To compare with " + currentLine << endl;
 
 					if(propName == "L_X"){
-						this->lengthX = std::stod(propGiven);
-						cout << "ADDED lengthX is " << this->lengthX << endl;
+						this->lengthX_WholeDomain = std::stod(propGiven);
+						cout << "ADDED lengthX_WholeDomain is " << this->lengthX_WholeDomain << endl;
 					}else if(propName == "L_Y"){
-						this->lengthY = std::stod(propGiven);
-						cout << "ADDED lengthY is " << this->lengthX << endl;
+						this->lengthY_WholeDomain = std::stod(propGiven);
+						cout << "ADDED lengthY_WholeDomain is " << this->lengthY_WholeDomain << endl;
 					}else if(propName == "L_Z"){
-						this->lengthZ = std::stod(propGiven);
-						cout << "ADDED lengthZ is " << this->lengthX << endl;
+						this->lengthZ_WholeDomain = std::stod(propGiven);
+						cout << "ADDED lengthZ_WholeDomain is " << this->lengthZ_WholeDomain << endl;
 					}else if(propName != "L_X" 
 							&& propName != "L_Y" 
 							&& propName != "L_Z"){
