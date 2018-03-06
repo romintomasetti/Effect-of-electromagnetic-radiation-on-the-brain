@@ -556,9 +556,14 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			subGrid.size_Thermal[2] = nbr_nodes_local_thermal_Z;
 		}
 		
-		subGrid.originIndices.push_back( PositionOnX * nbr_nodes_local_X );
-		subGrid.originIndices.push_back( PositionOnY * nbr_nodes_local_Y );
-		subGrid.originIndices.push_back( PositionOnZ * nbr_nodes_local_Z );
+		// Origin indices for the electromagnetic grid:
+		subGrid.originIndices_Electro[0] = PositionOnX * nbr_nodes_local_X;
+		subGrid.originIndices_Electro[1] = PositionOnY * nbr_nodes_local_Y;
+		subGrid.originIndices_Electro[2] = PositionOnZ * nbr_nodes_local_Z;
+		// Origin indices for the thermal grid:
+		subGrid.originIndices_Thermal[0] = PositionOnX * nbr_nodes_local_thermal_X;
+		subGrid.originIndices_Thermal[1] = PositionOnY * nbr_nodes_local_thermal_Y;
+		subGrid.originIndices_Thermal[2] = PositionOnZ * nbr_nodes_local_thermal_Z;
 
 		if(N == 1)
 		{
@@ -633,7 +638,9 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		int PositionOnY = 0;
 		int PositionOnZ = 0;
 
-		size_t nbr_nodes_local_X = (size_t) nbr_nodes_X / nbProc;
+		size_t nbr_nodes_local_X         = nbr_nodes_X / nbProc;
+		size_t nbr_nodes_local_thermal_X = nbr_nodes_thermal_X / nbProc;
+
 		if(nbr_nodes_local_X * nbProc != nbr_nodes_X){
 			if(PositionOnX == nbProc-1){
 				subGrid.sizes_EH[0] = nbr_nodes_local_X + nbr_nodes_X - nbr_nodes_local_X*nbProc;
@@ -644,12 +651,32 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			subGrid.sizes_EH[0] = nbr_nodes_local_X;
 		}
 
+		if(nbr_nodes_local_thermal_X * nbProc != nbr_nodes_X){
+			if(PositionOnX == nbProc-1){
+				subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X
+						+ nbr_nodes_thermal_X - nbr_nodes_local_thermal_X * nbProc;
+			}else{
+				subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X;
+			}
+		}else{
+			subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X;
+		}
+
 		subGrid.sizes_EH[1] = nbr_nodes_Y;
 		subGrid.sizes_EH[2] = nbr_nodes_Z;
 
-		subGrid.originIndices.push_back( PositionOnX * nbr_nodes_local_X );
-		subGrid.originIndices.push_back( PositionOnY * nbr_nodes_Y );
-		subGrid.originIndices.push_back( PositionOnZ * nbr_nodes_Z );
+		subGrid.size_Thermal[1] = nbr_nodes_thermal_Y;
+		subGrid.size_Thermal[2] = nbr_nodes_thermal_Z;
+
+		// Origin indices for the electromagnetc grid:
+		subGrid.originIndices_Electro[0] = PositionOnX * nbr_nodes_local_X;
+		subGrid.originIndices_Electro[1] = PositionOnY * nbr_nodes_Y;
+		subGrid.originIndices_Electro[2] = PositionOnZ * nbr_nodes_Z;
+		// Origin indices for the thermal grid:
+		subGrid.originIndices_Thermal[0] = PositionOnX * nbr_nodes_local_thermal_X;
+		subGrid.originIndices_Thermal[1] = PositionOnY * nbr_nodes_thermal_Y;
+		subGrid.originIndices_Thermal[2] = PositionOnZ * nbr_nodes_thermal_Z;
+
 
 		/* We do the x component */
 		if(PositionOnX == 0)
@@ -683,9 +710,13 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		int PositionOnY = ((int)(2*myRank/nbProc));
 		int PositionOnZ = 0;
 
-		size_t nbr_nodes_local_X = (size_t) 2*nbr_nodes_X / (nbProc);
-		size_t nbr_nodes_local_Y = (size_t) nbr_nodes_Y / 2;
+		size_t nbr_nodes_local_X = 2*nbr_nodes_X / (nbProc);
+		size_t nbr_nodes_local_Y = nbr_nodes_Y / 2;
 		size_t nbr_nodes_local_Z = nbr_nodes_Z;
+
+		size_t nbr_nodes_local_thermal_X = 2*nbr_nodes_thermal_X / nbProc;
+		size_t nbr_nodes_local_thermal_Y = nbr_nodes_thermal_Y / 2;
+		size_t nbr_nodes_local_thermal_Z = nbr_nodes_thermal_Z;
 
 		if(nbr_nodes_local_X * (nbProc/2) != nbr_nodes_X){
 			if(PositionOnX == nbProc/2 - 1){
@@ -695,6 +726,17 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			}
 		}else{
 			subGrid.sizes_EH[0] = nbr_nodes_local_X;
+		}
+
+		if(nbr_nodes_local_thermal_X * (nbProc/2) != nbr_nodes_X){
+			if(PositionOnX == nbProc/2 - 1){
+				subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X +
+						nbr_nodes_thermal_X - nbr_nodes_local_thermal_X * (nbProc/2);
+			}else{
+				subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X;
+			}
+		}else{
+			subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X;
 		}
 
 		if(nbr_nodes_local_Y * 2 != nbr_nodes_X){
@@ -707,11 +749,28 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			subGrid.sizes_EH[1] = nbr_nodes_local_Y;
 		}
 
-		subGrid.sizes_EH[2] = nbr_nodes_local_Z;
+		if(nbr_nodes_local_thermal_Y * 2 != nbr_nodes_thermal_Y){
+			if(PositionOnY == 1){
+				subGrid.size_Thermal[1] = nbr_nodes_local_thermal_Y
+						+ nbr_nodes_thermal_Y - nbr_nodes_local_thermal_Y * 2;
+			}else{
+				subGrid.size_Thermal[1] = nbr_nodes_local_thermal_Y;
+			}
+		}else{
+			subGrid.size_Thermal[1] = nbr_nodes_local_thermal_Y;
+		}
 
-		subGrid.originIndices.push_back( PositionOnX * nbr_nodes_local_X );
-		subGrid.originIndices.push_back( PositionOnY * nbr_nodes_local_Y );
-		subGrid.originIndices.push_back( PositionOnZ * nbr_nodes_local_Z );
+		subGrid.sizes_EH[2]     = nbr_nodes_local_Z;
+		subGrid.size_Thermal[2] = nbr_nodes_local_thermal_Z; 
+
+		// Origin indices for the electromagnetic grid:
+		subGrid.originIndices_Electro[0] = PositionOnX * nbr_nodes_local_X;
+		subGrid.originIndices_Electro[1] = PositionOnY * nbr_nodes_local_Y;
+		subGrid.originIndices_Electro[2] = PositionOnZ * nbr_nodes_local_Z;
+		// Origin indices for the thermal grid:
+		subGrid.originIndices_Thermal[0] = PositionOnX * nbr_nodes_local_thermal_X;
+		subGrid.originIndices_Thermal[1] = PositionOnY * nbr_nodes_local_thermal_Y;
+		subGrid.originIndices_Thermal[2] = PositionOnZ * nbr_nodes_local_thermal_Z;
 
 		/* We do the x component */
 		if(nbProc == 2){
@@ -769,8 +828,13 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 
 	}
 
-	cout << myRank<< "---------------------->  x: " <<subGrid.originIndices[0] << endl;
-	cout << myRank<< "---------------------->  y: " <<subGrid.originIndices[1] << endl;
-	cout << myRank<< "---------------------->  z: " <<subGrid.originIndices[2] << endl;
+	printf("MPI %d ->  originIndices_Electro (%ld,%ld,%ld)\n",myRank,
+		subGrid.originIndices_Electro[0],
+		subGrid.originIndices_Electro[1],
+		subGrid.originIndices_Electro[2]);
+	printf("MPI %d ->  originInices_thermal  (%ld,%ld,%ld)\n",myRank,
+		subGrid.originIndices_Thermal[0],
+		subGrid.originIndices_Thermal[1],
+		subGrid.originIndices_Thermal[2]);
 
 }
