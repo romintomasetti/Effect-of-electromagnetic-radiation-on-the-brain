@@ -6,43 +6,44 @@
 $INFOS
 	$NAME
 		// Output file for fields:
-		output="TA MERE"
+		output=OUTPUT_FILES
 		// Error log file:
-		error="TON PERE"
+		error=ERROR_LOG
 		// Profiling (cpu time, memory, etc):
-		profile="TA SOEUR"
+		profile=PROFILING
 	$NAME
 $INFOS
 
 $MESH
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX=1.0
-		deltaY=1.0
-		deltaZ=1.0
+		deltaX_Electro=1.0
+		deltaY_Electro=1.0
+		deltaZ_Electro=1.0
+		delta_Thermal=1.0
 	$DELTAS
 		
 	// Boundaries of the domain
 	$DOMAIN_SIZE
 		// Length of the domain in each direction
-		L_X=200
-		L_Y=200
-		L_Z=200
+		L_X=20
+		L_Y=20
+		L_Z=20
 	$DOMAIN_SIZE
 	
 	// Information on the source
 	$SOURCE
-		NBR_SOURCES=2
+		NBR_SOURCES=1
 		// Length of the source in each direction
-		L_X=10;15
-		L_Y=10;15
-		L_Z=10;15
+		L_X=10
+		L_Y=10
+		L_Z=10
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=100;200
-		C_Y=100;200
-		C_Z=100;200
+		C_X=100
+		C_Y=100
+		C_Z=100
 		// Frequency [Hz]
-		FRQCY=900E6;900E6
+		FRQCY=900E6
 		// Air gap (in meter)
 		AIR_GAP=1;2
 	$SOURCE
