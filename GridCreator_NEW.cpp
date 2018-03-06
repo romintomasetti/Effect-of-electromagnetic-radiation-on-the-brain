@@ -253,10 +253,10 @@ GridCreator_NEW::~GridCreator_NEW(void){
 void GridCreator_NEW::meshInitialization(void){
     
     // Timing the grid initialization (in CPU time):
-    std::clock_t start_grid_init_CPU_TIME;
-    std::clock_t end___grid_init_CPU_TIME;
-    this->profiler.addTimingInputToDictionnary("Grid_meshInit");
-    start_grid_init_CPU_TIME = std::clock();
+    double start_grid_init;
+    double end___grid_init;
+    this->profiler.addTimingInputToDictionnary("Grid_meshInit_omp_get_wtime");
+    start_grid_init = omp_get_wtime();  
 
     double memory = 0.0;
 
@@ -402,10 +402,9 @@ void GridCreator_NEW::meshInitialization(void){
     this->Assign_Init_Temperature_to_Temperature_nodes();
 
     // Get elapsed CPU time:
-    end___grid_init_CPU_TIME = std::clock();
-    double elapsedTimeSec = (end___grid_init_CPU_TIME - start_grid_init_CPU_TIME)
-                                 / (double)(CLOCKS_PER_SEC);
-    this->profiler.incrementTimingInput("Grid_meshInit",elapsedTimeSec);
+    end___grid_init = omp_get_wtime(); 
+    double elapsedTimeSec = end___grid_init - start_grid_init;
+    this->profiler.incrementTimingInput("Grid_meshInit_omp_get_wtime",elapsedTimeSec);
 
 
 }
