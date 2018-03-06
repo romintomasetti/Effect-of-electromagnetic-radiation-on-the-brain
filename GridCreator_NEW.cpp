@@ -5,6 +5,14 @@
 #include <stdlib.h>
 #include "omp.h"
 
+/*
+ * Defines for the column number of the properties:
+ */
+#define COLUMN_PERMEABILITY 4
+#define COLUMN_PERMITTIVITY 5
+#define COLUMN_ELEC_CONDUC  6
+#define COLUMN_MAGN_CONDUC  7
+
 /* CONSTRUCTOR */
 GridCreator_NEW::GridCreator_NEW(InputParser &input_parser,
 					    Materials &materials,
@@ -35,30 +43,65 @@ GridCreator_NEW::~GridCreator_NEW(void){
     if(this->E_x != NULL){delete[] this->E_x;}
     // E_x_material:
     if(this->E_x_material !=NULL){delete[] this->E_x_material;}
+    // E_x_eps:
+    if(this->E_x_eps != NULL){delete[] this->E_x_eps;}
+    // E_x_electrical_cond
+    if(this->E_x_electrical_cond != NULL){delete[] this->E_x_electrical_cond;}
+
     // E_y:
     if(this->E_y != NULL){delete[] this->E_y;}
     // E_y_material:
     if(this->E_y_material != NULL){delete[] this->E_y_material;}
+    // E_y_eps:
+    if(this->E_y_eps != NULL){delete[] this->E_y_eps;}
+    // E_y_electrical_cond
+    if(this->E_y_electrical_cond != NULL){delete[] this->E_y_electrical_cond;}
+
     // E_z:
     if(this->E_z != NULL){delete[] this->E_z;}
     // E_z_material:
     if(this->E_z_material != NULL){delete[] this->E_z_material;}
+    // E_z_eps:
+    if(this->E_z_eps != NULL){delete[] this->E_z_eps;}
+    // E_z_electrical_cond
+    if(this->E_z_electrical_cond != NULL){delete[] this->E_z_electrical_cond;}
+
     // H_x:
     if(this->H_x != NULL){delete[] this->H_x;}
     // H_x_material:
     if(this->H_x_material!= NULL){delete[] this->H_x_material;}
+    // H_x_mu:
+    if(this->H_x_mu != NULL){delete[] this->H_x_mu;}
+    // H_x_magnetic_cond:
+    if(this->H_x_magnetic_cond != NULL){delete[] this->H_x_magnetic_cond;}
+
     // H_y:
     if(this->H_y != NULL){delete[] this->H_y;}
     // H_y_material:
     if(this->H_y_material != NULL){delete[] this->H_y_material;}
+    // H_y_mu:
+    if(this->H_y_mu != NULL){delete[] this->H_y_mu;}
+    // H_y_magnetic_cond:
+    if(this->H_y_magnetic_cond != NULL){delete[] this->H_y_magnetic_cond;}
+
     // H_z:
     if(this->H_z != NULL){delete[] this->H_z;}
     // H_z_material:
     if(this->H_z_material != NULL){delete[] this->H_z_material;}
+    // H_z_mu:
+    if(this->H_z_mu != NULL){delete[] this->H_z_mu;}
+    // H_z_magnetic_cond:
+    if(this->H_z_magnetic_cond != NULL){delete[] this->H_z_magnetic_cond;}
+
     // Temperature:
     if(this->temperature != NULL){delete[] this->temperature;}
     // Temperature_material:
     if(this->temperature_material != NULL){delete[] this->temperature_material;}
+    // Thermal conductivity:
+    if(this->thermal_conductivity != NULL){delete[] this->thermal_conductivity;}
+    // Thermal diffusivity:
+    if(this->thermal_diffusivity != NULL){delete[] this->thermal_diffusivity;}
+
 
     std::cout << "GridCreator_NEW::~GridCreator_NEW::OUT" << std::endl;
 }
@@ -73,6 +116,8 @@ void GridCreator_NEW::meshInitialization(void){
     start_grid_init_CPU_TIME = std::clock();
 
     double memory = 0.0;
+
+    size_t size;
 
     size_t M = this->sizes_EH[0];
     size_t N = this->sizes_EH[1];
@@ -89,30 +134,39 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing E_x" << std::endl;
     #endif
     // Size of E_x is  (M − 1) × N × P. Add 2 nodes in each direction for the neighboors.
-    this->E_x          = new double[(M-1+2)*(N+2)*(P+2)];
-    this->E_x_material = new unsigned char[(M-1+2)*(N+2)*(P+2)];
+    size = (M-1+2)*(N+2)*(P+2);
+    this->E_x                 = new double[size];
+    this->E_x_material        = new unsigned char[size];
+    this->E_x_eps             = new double[size];
+    this->E_x_electrical_cond = new double [size];
 
-    memory = (8+1) * (M-1+2)*(N+2)*(P+2);
+    memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
     #if DEBUG > 2
     std::cout << "GridCreator_New::initializing E_y" << std::endl;
     #endif
     // Size of E_y is  M × (N − 1) × P. Add 2 nodes in each direction for the neighboors.
-    this->E_y = new double[(M+2)*(N-1+2)*(P+2)];
-    this->E_y_material = new unsigned char[(M+2)*(N-1+2)*(P+2)];
+    size = (M+2)*(N-1+2)*(P+2);
+    this->E_y                 = new double[size];
+    this->E_y_material        = new unsigned char[size];
+    this->E_y_eps             = new double[size];
+    this->E_y_electrical_cond = new double[size];
 
-    memory = (8+1) * (M+2)*(N-1+2)*(P+2);
+    memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
     #if DEBUG > 2
     std::cout << "GridCreator_New::initializing E_y" << std::endl;
     #endif
     // Size of E_z is  M × N × (P − 1). Add 2 nodes in each direction for the neighboors.
-    this->E_z          = new double[(M+2)*(N+2)*(P-1+2)];
-    this->E_z_material = new unsigned char[(M+2)*(N+2)*(P-1+2)];
+    size = (M+2)*(N+2)*(P-1+2);
+    this->E_z                 = new double[size];
+    this->E_z_material        = new unsigned char[size];
+    this->E_z_eps             = new double[size];
+    this->E_z_electrical_cond = new double[size];
 
-    memory = (8+1) * (M+2)*(N+2)*(P-1+2);
+    memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
     /* ALLOCATE SPACE FOR THE MAGNETIC FIELDS */
@@ -121,30 +175,39 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing H_x" << std::endl;
     #endif
     // Size of H_x is  M × (N − 1) × (P − 1). Add 2 nodes in each direction for the neighboors.
-    this->H_x          = new double[(M+2)*(N-1+2)*(P-1+2)];
-    this->H_x_material = new unsigned char[(M+2)*(N-1+2)*(P-1+2)];
+    size = (M+2)*(N-1+2)*(P-1+2);
+    this->H_x               = new double[size];
+    this->H_x_material      = new unsigned char[size];
+    this->H_x_magnetic_cond = new double[size];
+    this->H_x_mu            = new double[size];
 
-    memory = (8+1) * (M+2)*(N-1+2)*(P-1+2);
+    memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
     #if DEBUG > 2
     std::cout << "GridCreator_New::initializing H_y" << std::endl;
     #endif
     // Size of H_y is  (M − 1) × N × (P − 1). Add 2 nodes in each direction for the neighboors.
-    this->H_y = new double[(M-1+2)*(N+2)*(P-1+2)];
-    this->H_y_material = new unsigned char[(M-1+2)*(N+2)*(P-1+2)];
+    size = (M-1+2)*(N+2)*(P-1+2);
+    this->H_y               = new double[size];
+    this->H_y_material      = new unsigned char[size];
+    this->H_y_mu            = new double[size];
+    this->H_y_magnetic_cond = new double[size];
 
-    memory = (8+1) * (M-1+2)*(N+2)*(P-1+2);
+    memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
     #if DEBUG > 2
     std::cout << "GridCreator_New::initializing H_z" << std::endl;
     #endif
     // Size of H_z is  (M − 1) × (N − 1) × P. Add 2 nodes in each direction for the nieghboors.
-    this->H_z          = new double[(M-1+2)*(N-1+2)*(P+2)];
-    this->H_z_material = new unsigned char[(M-1+2)*(N-1+2)*(P+2)];
+    size = (M-1+2)*(N-1+2)*(P+2);
+    this->H_z               = new double[size];
+    this->H_z_material      = new unsigned char[size];
+    this->H_z_mu            = new double[size];
+    this->H_z_magnetic_cond = new double[size];
 
-    memory = (8+1) * (M-1+2)*(N-1+2)*(P+2);
+    memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
     /* ALLOCATE SPACE FOR THE TEMPERATURE FIELD */
@@ -156,13 +219,19 @@ void GridCreator_NEW::meshInitialization(void){
     size_t T = this->size_Thermal * this->size_Thermal * this->size_Thermal;
     this->temperature          = new double[T];
     this->temperature_material = new unsigned char[T];
+    this->thermal_conductivity = new double[T];
+    this->thermal_diffusivity  = new double[T];
 
-    memory = (8+1) * T;
+    memory = (8+1+8+8) * T;
     this->profiler.addMemoryUsage("BYTES",memory);
 
     /* INITIALIZATION OF THE NODES */
     this->Assign_A_Material_To_Each_Node();
 
+    /* INITIALIZATION OF TEMPERATURE NODES (give a initial temperature) */
+    this->Assign_Init_Temperature_to_Temperature_nodes();
+
+    // Get elapsed CPU time:
     end___grid_init_CPU_TIME = std::clock();
     double elapsedTimeSec = (end___grid_init_CPU_TIME - start_grid_init_CPU_TIME)
                                  / (double)(CLOCKS_PER_SEC);
@@ -172,7 +241,7 @@ void GridCreator_NEW::meshInitialization(void){
 
 }
 
-/* Assign a material to each node */
+/* Assign a material to each node (both electromagnetic and thermal grid)*/
 void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
     /*
      * This function fills in the vectors of material.
@@ -196,8 +265,6 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
     if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
         
         unsigned char mat = this->materials.materialID_FromMaterialName["AIR"];
-
-        double init_air_temp = this->input_parser.GetInitTemp_FromMaterialName["AIR"];
 
         #pragma omp parallel num_threads(nbr_omp_threads)
         {
@@ -240,15 +307,15 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
             }
             /* END OF for(size_t K = 0 ; K < P+2 ; K ++) */
 
-            #pragma omp for collapse(3)\
-                private(index)
-            for(size_t I = 0 ; I < T ; I++){
-                for(size_t J = 0 ; J < T ; J ++){
-                    for(size_t K = 0 ; K < T ; K ++){
-                        this->temperature[I + T * (J + T * K)] = init_air_temp;
+            // Temperature nodes:
+            #pragma omp for collapse(3)
+                    for(size_t I = 0 ; I < T ; I++){
+                        for(size_t J = 0 ; J < T ; J ++){
+                            for(size_t K = 0 ; K < T ; K ++){
+                                this->temperature_material[I + T * (J + T * K)] = mat;
+                            }
+                        }
                     }
-                }
-            }
         }
     }
     /* END OF     if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE") */
@@ -260,4 +327,152 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
         fprintf(stderr,"\tFile %s:%d\n",__FILE__,__LINE__);
         abort();
     }
+}
+
+// Assign to each node of the temperature field an initial temperature:
+void GridCreator_NEW::Assign_Init_Temperature_to_Temperature_nodes(void){
+
+    unsigned int DEFAULT = 4;
+    unsigned int nbr_omp_threads = 0;
+    if((unsigned)omp_get_num_threads() > DEFAULT){
+            nbr_omp_threads = omp_get_num_threads();
+    }else{
+        nbr_omp_threads = DEFAULT;
+    }
+
+    // Retrieve size of the temperature field:
+    size_t T = this->size_Thermal;
+
+    if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
+
+        double init_air_temp = this->input_parser.GetInitTemp_FromMaterialName["AIR"];
+
+        #pragma omp parallel num_threads(nbr_omp_threads)
+        {
+            #pragma omp for collapse(3)
+                    for(size_t I = 0 ; I < T ; I++){
+                        for(size_t J = 0 ; J < T ; J ++){
+                            for(size_t K = 0 ; K < T ; K ++){
+                                this->temperature[I + T * (J + T * K)] = init_air_temp;
+                            }
+                        }
+                    }
+        }
+    }else{
+        fprintf(stderr,"GridCreator_NEW::Assign_Temperature_to_Temperature_nodes::ERROR\n");
+        fprintf(stderr,"\t>>> Simulation type doesn't correspond to any known type. Aborting.\n");
+        fprintf(stderr,"\tFile %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+}
+
+// Assign to each electromagnetic node its properties as a function of the temperature:
+void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo /*= string()*/){
+
+    std::cout << "GridCreator_NEW::Initialize_Electromagnetic_Properties::IN" << std::endl;
+
+    unsigned int DEFAULT = 4;
+    unsigned int nbr_omp_threads = 0;
+    if((unsigned)omp_get_num_threads() > DEFAULT){
+            nbr_omp_threads = omp_get_num_threads();
+    }else{
+        nbr_omp_threads = DEFAULT;
+    }
+
+    // Decide what to do based on the argument string 'whatToDo':
+
+    if(whatToDo == "AIR_AT_INIT_TEMP"){
+        /*
+         * The nodes properties (mu, eps, magn. and elec. cond.) are assigned by assuming initial
+         * air temperature.
+         */
+        size_t M = this->sizes_EH[0];
+        size_t N = this->sizes_EH[1];
+        size_t P = this->sizes_EH[2];
+
+        size_t index;
+
+        // Retrieve the air temperature:
+        double air_init_temp = this->input_parser.GetInitTemp_FromMaterialName["AIR"];
+        unsigned char mat    = this->materials.materialID_FromMaterialName["AIR"];
+        double eps           = this->materials.getProperty(air_init_temp,
+                                                            mat,
+                                                            COLUMN_PERMITTIVITY);
+        double electric_cond = this->materials.getProperty(air_init_temp,
+                                                            mat,
+                                                            COLUMN_ELEC_CONDUC);
+        double mu            = this->materials.getProperty(air_init_temp,
+                                                            mat,
+                                                            COLUMN_PERMEABILITY);
+        double magnetic_cond = this->materials.getProperty(air_init_temp,
+                                                            mat,
+                                                            COLUMN_MAGN_CONDUC);
+
+        // Loop over electric field:
+        #pragma omp parallel num_threads(nbr_omp_threads)
+        {
+            #pragma omp for collapse(3)
+                for(size_t K = 0 ; K < P+2 ; K ++){
+                    for(size_t J = 0 ; J < N+2 ; J ++ ){
+                        for(size_t I = 0 ; I < M+2 ; I ++){
+
+                            index = I + N * ( J + M * K );
+
+                            // Fill in the electric field Ex of size (M − 1) × N × P:
+                            if(I < (M-1)+2){
+                                
+                                this->E_x_eps[index]             = eps;
+                                this->E_x_electrical_cond[index] = electric_cond;
+
+                            }
+
+                            // Fill in the electric field Ey of size M × (N − 1) × P:
+                            if(J < (N-1)+2){
+                                
+                                this->E_y_eps[index]             = eps;
+                                this->E_y_electrical_cond[index] = electric_cond;
+                            }
+
+                            // Fill in the electric field Ez of size M × N × (P − 1):
+                            if(K < (P-1)+2){
+                                
+                                this->E_z_eps[index]             = eps;
+                                this->E_z_electrical_cond[index] = electric_cond;
+                            }
+
+                            // Fill in the magnetic field Hx of size M × (N − 1) × (P − 1):
+                            if(J < (N-1)+2 && K < (P-1)+2){
+                                
+                                this->H_x_mu[index]            = mu;
+                                this->H_x_magnetic_cond[index] = magnetic_cond;
+
+                            }
+
+                            // Fill in the magnetic field Hy of size (M − 1) × N × (P − 1):
+                            if(I < (M-1)+2 && K < (P-1)+2){
+                                
+                                this->H_y_mu[index]            = mu;
+                                this->H_y_magnetic_cond[index] = magnetic_cond;
+
+                            }
+
+                            // Fill in the magnetic field Hz of size (M − 1) × (N − 1) × P:
+                            if(I < (M-1)+2 && J < (N-1)+2){
+                                
+                                this->H_z_mu[index]            = mu;
+                                this->H_z_magnetic_cond[index] = magnetic_cond;
+
+                            }
+                        }
+                    }
+                }
+        }
+
+    }else{
+        fprintf(stderr,"GridCreator_NEW::Initialize_Electromagnetic_Properties::ERROR\n");
+        fprintf(stderr,"No 'whatToDo' corresponding to %s. Aborting.\n",whatToDo.c_str());
+        fprintf(stderr,"In file %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+
 }

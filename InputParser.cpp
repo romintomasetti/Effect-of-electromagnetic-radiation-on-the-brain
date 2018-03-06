@@ -355,6 +355,29 @@ void InputParser::readHeader_MESH (ifstream &file){
 					// If the string is "$DELTAS" it means the section ends.
 					if(currentLine == "$DELTAS"){
 						cout << "EXITING DELTAS\n";
+						cout << "Veryfying compatibility between EM and TH grids...\n";
+						// Check all electromagnetic deltas are equal !
+						if(this->deltaX_Electro == this->deltaY_Electro
+							&& this->deltaX_Electro == this->deltaZ_Electro
+							&& this->deltaY_Electro == this->deltaZ_Electro)
+						{
+							// Check the ratio:
+							double ratio = this->deltaX_Electro / this->delta_Thermal;
+							if(ratio - this->ratio_EM_TH_delta != 0){
+								fprintf(stderr,"InputParser::Wrong spatial steps\n");
+								fprintf(stderr,"Spatial step EM is %f.",this->deltaX_Electro);
+								fprintf(stderr,"Spatial step TH is %f.",this->delta_Thermal);
+								fprintf(stderr,"Announced ratio is %d but has %f.\n",
+									this->ratio_EM_TH_delta,ratio);
+								fprintf(stderr,"Aborting.\nFile %s:%d\n",__FILE__,__LINE__);
+								std::abort();
+							}
+						}else{
+							fprintf(stderr,"InputParser::wrong electromagnetic time steps.\n");
+							fprintf(stderr,"Spatial steps for EM grid should be equal.\nAborting.\n");
+							fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+							std::abort();
+						}
 						break;
 					}
 					// If the string is empty, it was just a white space. Continue.
@@ -385,7 +408,12 @@ void InputParser::readHeader_MESH (ifstream &file){
 					}else if(propName == "delta_Thermal"){
 						this->delta_Thermal = std::stod(propGiven);
 						cout << "ADDED DELTA THERMAL is " << this->delta_Thermal << std::endl;
-					
+					// Ratio between the spatial and thermal grids
+					// If deltaElectro = 4 and deltaThermal = 2, the ratio is 0.5.
+					}else if(propName == "ratio_EM_TH_delta"){
+						this->ratio_EM_TH_delta = (unsigned)std::stoi(propGiven);
+						cout << "ADDED ratio_EM_TH_delta is " << this->ratio_EM_TH_delta << std::endl;
+
 					}else if(propName != "deltaX_electro" 
 							&& propName != "deltaY_Electro" 
 							&& propName != "deltaZ_Electro"

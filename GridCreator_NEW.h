@@ -26,30 +26,50 @@ class GridCreator_NEW{
         std::vector<double> delta_Electromagn = {-1.0,-1.0,-1.0};
         // Number of nodes along each direction for the electromagnetic mesh, eqivalent to M,N,P:
         std::vector<size_t> sizes_EH = {0,0,0};
-        // Electric fields along X,Y,Z, and the corresponding material:
+        // Electric fields along X,Y,Z, and the corresponding material 
+        // + permittivity (eps) and electrical conductivity:
         double *E_x                 = NULL;
         unsigned char *E_x_material = NULL;
+        double *E_x_eps             = NULL;
+        double *E_x_electrical_cond = NULL;
+
         double *E_y                 = NULL;
         unsigned char *E_y_material = NULL;
+        double *E_y_eps             = NULL;
+        double *E_y_electrical_cond = NULL;
+
         double *E_z                 = NULL;
         unsigned char *E_z_material = NULL;
+        double *E_z_eps             = NULL;
+        double *E_z_electrical_cond = NULL;
 
-        // Magnetic fields along X,Y,Z, and the corresponding material:
+        // Magnetic fields along X,Y,Z, and the corresponding material 
+        // + magnetic permeability (mu) and magnetic conductivity:
         double *H_x                 = NULL;
         unsigned char *H_x_material = NULL;
+        double *H_x_mu              = NULL;
+        double *H_x_magnetic_cond   = NULL;
+
         double *H_y                 = NULL;
         unsigned char *H_y_material = NULL;
+        double *H_y_mu              = NULL;
+        double *H_y_magnetic_cond   = NULL;
+
         double *H_z                 = NULL;
         unsigned char *H_z_material = NULL;
+        double *H_z_mu              = NULL;
+        double *H_z_magnetic_cond   = NULL;
 
         /*
          * Spatial step for the thermal grid, considered as homogeneous, i.e. the spatial step is the same
          * in every direction.
          */
         double delta_Thermal = -1.0;
-        // Temperature field, and the corresponding material:
+        // Temperature field, and the corresponding material + conductivity and diffusivity:
         double *temperature                 = NULL;
         unsigned char *temperature_material = NULL;
+        double *thermal_conductivity        = NULL;
+        double *thermal_diffusivity         = NULL;
         size_t size_Thermal = 0;
 
         
@@ -87,5 +107,11 @@ class GridCreator_NEW{
 
         // Assign a material to each node:
         void Assign_A_Material_To_Each_Node(void);
+
+        // Assign to each node of the temperature field an initial temperature:
+        void Assign_Init_Temperature_to_Temperature_nodes(void);
+
+        // Assign to each electromagnetic node its properties as a function of the temperature:
+        void Initialize_Electromagnetic_Properties(std::string whatToDo = string());
 };
 #endif
