@@ -449,9 +449,16 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 	double deltaY = subGrid.input_parser.deltaY_Electro;
 	double deltaZ = subGrid.input_parser.deltaZ_Electro;
 
-	size_t nbr_nodes_X = (size_t) Lx / deltaX + 1;
-	size_t nbr_nodes_Y = (size_t) Ly / deltaY + 1;
-	size_t nbr_nodes_Z = (size_t) Lz / deltaZ + 1;
+	// Retrieve the spatial step of the thermal grid:
+	double delta_thermal = subGrid.input_parser.delta_Thermal;
+
+	size_t nbr_nodes_X =  Lx / deltaX + 1;
+	size_t nbr_nodes_Y =  Ly / deltaY + 1;
+	size_t nbr_nodes_Z =  Lz / deltaZ + 1;
+
+	size_t nbr_nodes_thermal_X = Lx / delta_thermal + 1;
+	size_t nbr_nodes_thermal_Y = Ly / delta_thermal + 1;
+	size_t nbr_nodes_thermal_Z = Lz / delta_thermal + 1;
 
 
 	int N = (int) pow(nbProc, 1.0/3.0);
@@ -477,7 +484,9 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		int PositionOnY = (((int)(myRank/N) - (int) (myRank/(N*N))*N ));
 		int PositionOnZ = myRank/ (N*N);
 
-		size_t nbr_nodes_local_X = (size_t) nbr_nodes_X / N;
+		size_t nbr_nodes_local_X         = nbr_nodes_X / N;
+		size_t nbr_nodes_local_thermal_X = nbr_nodes_thermal_X / N;
+
 		if(nbr_nodes_local_X * N != nbr_nodes_X){
 			if(PositionOnX == N-1){
 				subGrid.sizes_EH[0] = nbr_nodes_local_X + (-nbr_nodes_local_X * N + nbr_nodes_X);
@@ -488,7 +497,20 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			subGrid.sizes_EH[0] = nbr_nodes_local_X;
 		}
 
-		size_t nbr_nodes_local_Y = (size_t) nbr_nodes_Y / N;
+		if(nbr_nodes_local_thermal_X * N != nbr_nodes_thermal_X){
+			if(PositionOnX == N-1){
+				subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X +
+						(-nbr_nodes_local_thermal_X * N + nbr_nodes_thermal_X);
+			}else{
+				subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X;
+			}
+		}else{
+			subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X;
+		}
+
+		size_t nbr_nodes_local_Y         = nbr_nodes_Y / N;
+		size_t nbr_nodes_local_thermal_Y = nbr_nodes_thermal_Y / N;
+
 		if(nbr_nodes_local_Y * N != nbr_nodes_Y){
 			if(PositionOnY == N-1){
 				subGrid.sizes_EH[1] = nbr_nodes_local_Y + (-nbr_nodes_local_Y * N + nbr_nodes_Y);
@@ -499,7 +521,20 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			subGrid.sizes_EH[1] = nbr_nodes_local_Y;
 		}
 
-		size_t nbr_nodes_local_Z = (size_t) nbr_nodes_Z / N;
+		if(nbr_nodes_local_thermal_Y * N != nbr_nodes_thermal_Y){
+			if(PositionOnY == N-1){
+				subGrid.size_Thermal[1] = nbr_nodes_local_thermal_Y +
+						(-nbr_nodes_local_thermal_Y * N + nbr_nodes_thermal_Y);
+			}else{
+				subGrid.size_Thermal[1] = nbr_nodes_local_thermal_Y;
+			}
+		}else{
+			subGrid.size_Thermal[1] = nbr_nodes_local_thermal_Y;
+		}
+
+		size_t nbr_nodes_local_Z         = nbr_nodes_Z / N;
+		size_t nbr_nodes_local_thermal_Z = nbr_nodes_thermal_Z / N;
+
 		if(nbr_nodes_local_Z * N != nbr_nodes_Z){
 			if(PositionOnZ == N-1){
 				subGrid.sizes_EH[2] = nbr_nodes_local_Z + (-nbr_nodes_local_Z * N + nbr_nodes_Z);
@@ -508,6 +543,17 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			}
 		}else{
 			subGrid.sizes_EH[2] = nbr_nodes_local_Z;
+		}
+
+		if(nbr_nodes_local_thermal_Z * N != nbr_nodes_thermal_Z){
+			if(PositionOnZ == N-1){
+				subGrid.size_Thermal[2] = nbr_nodes_local_thermal_Z +
+						(-nbr_nodes_local_thermal_Z * N + nbr_nodes_thermal_Z);
+			}else{
+				subGrid.size_Thermal[2] = nbr_nodes_local_thermal_Z;
+			}
+		}else{
+			subGrid.size_Thermal[2] = nbr_nodes_local_thermal_Z;
 		}
 		
 		subGrid.originIndices.push_back( PositionOnX * nbr_nodes_local_X );
