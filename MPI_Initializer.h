@@ -7,6 +7,9 @@
 #include <limits.h>
 #include "SetOnceVariable_Template.h"
 #include "GridCreator.h"
+#include "GridCreator_NEW.h"
+
+class GridCreator_NEW;
 
 using namespace std;
 
@@ -49,6 +52,8 @@ class MPI_Initializer{
 		}
 
 		void MpiDivision(GridCreator &);
+
+		void MPI_DIVISION(GridCreator_NEW & /*subgrid*/);
 
 		bool SendDataToNeighboor(double *,size_t,unsigned char);
 
