@@ -641,7 +641,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
 
                         if(global[0] >= 95 && global[0] <= 105 &&
                             global[1] >= 95 && global[1] <= 105 &&
-                            global[2] >= 95 && global[2] <= 105){
+                            global[2] >= 95 && global[2] <= 105){ 
                                 printf("COUCOU\n"); 
                             //mesh.nodesElec(i,j,k).field[0] = 0;
                             //mesh.nodesElec(i,j,k).field[1] = 0;
