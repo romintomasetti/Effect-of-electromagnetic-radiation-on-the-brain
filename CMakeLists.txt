@@ -30,7 +30,7 @@ endif()
 
 
 
-FILE(GLOB SRCS *.h *.cpp)
+FILE(GLOB SRCS *.h *.hpp *.cpp)
 ADD_EXECUTABLE(${EXEC_NAME} ${SRCS} ${VTL})
 
 
