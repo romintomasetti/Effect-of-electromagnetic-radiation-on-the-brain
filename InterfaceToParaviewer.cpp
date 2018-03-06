@@ -16,23 +16,30 @@ void InterfaceToParaviewer::initializeAll(void){
     // Retrieve the number of MPI processes:
     int nb_MPI = this->MPI_communicator.getNumberOfMPIProcesses();
 
-    double dx = this->grid_Creator.input_parser.deltaX;
-    double dy = this->grid_Creator.input_parser.deltaY;
-    double dz = this->grid_Creator.input_parser.deltaZ;
+    double dx_Electro = this->grid_Creator.input_parser.deltaX_Electro;
+    double dy_Electro = this->grid_Creator.input_parser.deltaY_Electro;
+    double dz_Electro = this->grid_Creator.input_parser.deltaZ_Electro;
+
+    /* CHECK DELTAS */
+    if(dx_Electro <= 0 || dy_Electro <= 0 || dz_Electro <= 0){
+        fprintf(stderr,"InterfaceToParaviewer::initializeAll::ERROR :: One of the spatial step for the electromagnetic mesh is negative or zeros.\n");
+        fprintf(stderr,"InterfaceToParaviewer::initializeAll::ABORTING (line %d, file %s).\n",__LINE__,__FILE__);
+        abort();
+    }
 
     /* INITIALIZE 'grid' for each MPI process (even for non-root ones) */
     this->grid.o = this->grid_Creator.originOfWholeSimulation;
-    this->grid.dx = vtl::Vec3d(dx,dy,dz);
+    this->grid.dx = vtl::Vec3d(dx_Electro,dy_Electro,dz_Electro);
     this->grid.np1 = vtl::Vec3i(0,0,0);
-    size_t nodesWholeDom_X = (size_t) this->grid_Creator.input_parser.lengthX /
-                    this->grid_Creator.input_parser.deltaX +1;
-    size_t nodesWholeDom_Y = (size_t) this->grid_Creator.input_parser.lengthY /
-                    this->grid_Creator.input_parser.deltaY +1;
-    size_t nodesWholeDom_Z = (size_t) this->grid_Creator.input_parser.lengthZ /
-                    this->grid_Creator.input_parser.deltaZ +1;
+    size_t nodesWholeDom_X_Electro = (size_t) this->grid_Creator.input_parser.lengthX_WholeDomain /
+                    this->grid_Creator.input_parser.deltaX_Electro +1;
+    size_t nodesWholeDom_Y_Electro = (size_t) this->grid_Creator.input_parser.lengthY_WholeDomain /
+                    this->grid_Creator.input_parser.deltaY_Electro +1;
+    size_t nodesWholeDom_Z_Electro = (size_t) this->grid_Creator.input_parser.lengthZ_WholeDomain /
+                    this->grid_Creator.input_parser.deltaZ_Electro +1;
     // If we have 5 nodes, because we start with node 0, we go until node 4.
     // So we do -1 in the next line. But finally we don't do -1 because we use cells.
-    this->grid.np2 = vtl::Vec3i(nodesWholeDom_X,nodesWholeDom_Y,nodesWholeDom_Z);
+    this->grid.np2 = vtl::Vec3i(nodesWholeDom_X_Electro,nodesWholeDom_Y_Electro,nodesWholeDom_Z_Electro);
 
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -51,7 +58,7 @@ void InterfaceToParaviewer::initializeAll(void){
             // Giving the MPI ID to the element sgrids[I]:
             this->sgrids[I].id = I;
             // Giving the spacing to the element sgrids[I]:
-            this->sgrids[I].dx = vtl::Vec3d(dx,dy,dz);
+            this->sgrids[I].dx = vtl::Vec3d(dx_Electro,dy_Electro,dz_Electro);
             // Setting the origin:
             this->sgrids[I].o  = this->grid_Creator.originOfWholeSimulation;
             // Setting the origin and end inidices of each subgrid:
