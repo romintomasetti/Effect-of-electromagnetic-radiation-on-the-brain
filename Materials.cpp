@@ -237,6 +237,16 @@ double Materials::getProperty(double temperature,unsigned char material, unsigne
 			printf("\nAborting.\n\n");
 			abort();
 		}
+		/* Next : smaller or equal because one of the column is for temperature !*/
+		if(this->numberOfProperties <= property){
+			fprintf(stderr,"Materials::getProperty::ERROR\n");
+			fprintf(stderr,"Given property(%d) is higher than the number of properties(%d)",
+				property,this->numberOfProperties-1);
+			// UP: the -1 is to account for the column with temperature, whch is
+			// not a property !
+			fprintf(stderr,"Aborting. In file %s:%d\n",__FILE__,__LINE__);
+			abort();
+		}
 
 		// First, we retrieve the number of temperature info for this material:
 		unsigned char numberOfTempLines = this->numberOFTempForTheMaterial[material];
