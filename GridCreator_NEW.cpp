@@ -117,11 +117,12 @@ void GridCreator_NEW::meshInitialization(void){
 
     double memory = 0.0;
 
-    size_t size;
-
     size_t M = this->sizes_EH[0];
     size_t N = this->sizes_EH[1];
     size_t P = this->sizes_EH[2];
+
+    size_t size;
+
     if(M == 0 || N == 0 || P == 0){
         fprintf(stderr,"GridCreator_NEW::meshInitialization::ERROR\n");
         fprintf(stderr,"\t>>> One of the quantities (M,N,P)=(%zu,%zu,%zu) is invalid.\nAborting.\n",M,N,P);
@@ -134,7 +135,10 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing E_x" << std::endl;
     #endif
     // Size of E_x is  (M − 1) × N × P. Add 2 nodes in each direction for the neighboors.
-    size = (M-1+2)*(N+2)*(P+2);
+    this->size_Ex[0] = M - 1 + 2;
+    this->size_Ex[1] = N + 2;
+    this->size_Ex[2] = P + 2;
+    size = this->size_Ex[0] * this->size_Ex[1] * this->size_Ex[2];
     this->E_x                 = new double[size];
     this->E_x_material        = new unsigned char[size];
     this->E_x_eps             = new double[size];
@@ -147,7 +151,10 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing E_y" << std::endl;
     #endif
     // Size of E_y is  M × (N − 1) × P. Add 2 nodes in each direction for the neighboors.
-    size = (M+2)*(N-1+2)*(P+2);
+    this->size_Ey[0] = M + 2;
+    this->size_Ey[1] = N - 1 + 2;
+    this->size_Ey[2] = P + 2;
+    size = this->size_Ey[0] * this->size_Ey[1] * this->size_Ey[2];
     this->E_y                 = new double[size];
     this->E_y_material        = new unsigned char[size];
     this->E_y_eps             = new double[size];
@@ -160,7 +167,10 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing E_y" << std::endl;
     #endif
     // Size of E_z is  M × N × (P − 1). Add 2 nodes in each direction for the neighboors.
-    size = (M+2)*(N+2)*(P-1+2);
+    this->size_Ez[0] = M + 2;
+    this->size_Ez[1] = N + 2;
+    this->size_Ez[2] = P - 1 + 2;
+    size = this->size_Ez[0] * this->size_Ez[1] * this->size_Ez[2];
     this->E_z                 = new double[size];
     this->E_z_material        = new unsigned char[size];
     this->E_z_eps             = new double[size];
@@ -175,7 +185,10 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing H_x" << std::endl;
     #endif
     // Size of H_x is  M × (N − 1) × (P − 1). Add 2 nodes in each direction for the neighboors.
-    size = (M+2)*(N-1+2)*(P-1+2);
+    this->size_Hx[0] = M + 2;
+    this->size_Hx[1] = N - 1 + 2;
+    this->size_Hx[2] = P - 1 + 2;
+    size = this->size_Hx[0] * this->size_Hx[1] * this->size_Hx[2];
     this->H_x               = new double[size];
     this->H_x_material      = new unsigned char[size];
     this->H_x_magnetic_cond = new double[size];
@@ -188,7 +201,10 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing H_y" << std::endl;
     #endif
     // Size of H_y is  (M − 1) × N × (P − 1). Add 2 nodes in each direction for the neighboors.
-    size = (M-1+2)*(N+2)*(P-1+2);
+    this->size_Hy[0] = M - 1 + 2;
+    this->size_Hy[1] = N + 2;
+    this->size_Hy[2] = P - 1 + 2;
+    size = this->size_Hy[0] * this->size_Hy[1] * this->size_Hy[2];
     this->H_y               = new double[size];
     this->H_y_material      = new unsigned char[size];
     this->H_y_mu            = new double[size];
@@ -201,7 +217,10 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing H_z" << std::endl;
     #endif
     // Size of H_z is  (M − 1) × (N − 1) × P. Add 2 nodes in each direction for the nieghboors.
-    size = (M-1+2)*(N-1+2)*(P+2);
+    this->size_Hz[0] = M - 1 + 2;
+    this->size_Hz[1] = N - 1 + 2;
+    this->size_Hz[2] = P + 2;
+    size = this->size_Hz[0] * this->size_Hz[1] * this->size_Hz[2];
     this->H_z               = new double[size];
     this->H_z_material      = new unsigned char[size];
     this->H_z_mu            = new double[size];
@@ -217,6 +236,14 @@ void GridCreator_NEW::meshInitialization(void){
     #endif
     // The temperature grid is homogeneous. (this->size_Thermal^3).
     size_t T = this->size_Thermal * this->size_Thermal * this->size_Thermal;
+
+    if(T == 0){
+        fprintf(stderr,"GridCreator_NEW::meshInitialization::ERROR\n");
+        fprintf(stderr,"Your temperature grid is empty (size T is 0).\n");
+        fprintf(stderr,"Aborting.\nFile %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+
     this->temperature          = new double[T];
     this->temperature_material = new unsigned char[T];
     this->thermal_conductivity = new double[T];
@@ -236,7 +263,6 @@ void GridCreator_NEW::meshInitialization(void){
     double elapsedTimeSec = (end___grid_init_CPU_TIME - start_grid_init_CPU_TIME)
                                  / (double)(CLOCKS_PER_SEC);
     this->profiler.incrementTimingInput("Grid_meshInit",elapsedTimeSec);
-    std::cout << "GridInit => Time: " << elapsedTimeSec << " s" << std::endl;
 
 
 }
@@ -268,45 +294,90 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
 
         #pragma omp parallel num_threads(nbr_omp_threads)
         {
-            #pragma omp for collapse(3)\
+            // EX field:
+            #pragma omp for collapse(3) nowait\
                 private(index)
-            for(size_t K = 0 ; K < P+2 ; K ++){
-                for(size_t J = 0 ; J < N+2 ; J ++ ){
-                    for(size_t I = 0 ; I < M+2 ; I ++){
+            for(size_t K = 0 ; K < this->size_Ex[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Ex[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
 
-                        index = I + N * ( J + M * K );
-
-                        // Fill in the electric field Ex of size (M − 1) × N × P:
-                        if(I < (M-1)+2){
-                            this->E_x_material[index] = mat;
-                        }
-                        // Fill in the electric field Ey of size M × (N − 1) × P:
-                        if(J < (N-1)+2){
-                            this->E_y_material[index] = mat;
-                        }
-                        // Fill in the electric field Ez of size M × N × (P − 1):
-                        if(K < (P-1)+2){
-                            this->E_z_material[index] = mat;
-                        }
-                        // Fill in the magnetic field Hx of size M × (N − 1) × (P − 1):
-                        if(J < (N-1)+2 && K < (P-1)+2){
-                            this->H_x_material[index] = mat;
-                        }
-                        // Fill in the magnetic field Hy of size (M − 1) × N × (P − 1):
-                        if(I < (M-1)+2 && K < (P-1)+2){
-                            this->H_y_material[index] = mat;
-                        }
-                        // Fill in the magnetic field Hz of size (M − 1) × (N − 1) × P:
-                        if(I < (M-1)+2 && J < (N-1)+2){
-                            this->H_z_material[index] = mat;
-                        }
+                        index = I + this->size_Ex[1] * ( J + this->size_Ex[0] * K );
+                        this->E_x_material[index] = mat;
+                        
                     }
-                    /* END OF for(size_t I = 0 ; I < M+2 ; I ++) */
                 }
-                /* END OF for(size_t J = 0 ; J < N+2 ; J ++ ) */
             }
-            /* END OF for(size_t K = 0 ; K < P+2 ; K ++) */
 
+            // EY field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Ey[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Ey[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
+
+                        index = I + this->size_Ey[1] * ( J + this->size_Ey[0] * K );
+                        this->E_y_material[index] = mat;
+                        
+                    }
+                }
+            }
+
+            // EZ field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Ez[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Ez[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
+
+                        index = I + this->size_Ez[1] * ( J + this->size_Ez[0] * K );
+                        this->E_z_material[index] = mat;
+                        
+                    }
+                }
+            }
+
+            // HX field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Hx[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Hx[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
+
+                        index = I + this->size_Hx[1] * ( J + this->size_Hx[0] * K );
+                        this->H_x_material[index] = mat;
+                        
+                    }
+                }
+            }
+
+            // HY field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Hy[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Hy[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
+
+                        index = I + this->size_Hy[1] * ( J + this->size_Hy[0] * K );
+                        this->H_y_material[index] = mat;
+                        
+                    }
+                }
+            }
+
+            // HZ field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Hz[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Hz[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
+
+                        index = I + this->size_Hz[1] * ( J + this->size_Hz[0] * K );
+                        this->H_z_material[index] = mat;
+                        
+                    }
+                }
+            }
+                  
             // Temperature nodes:
             #pragma omp for collapse(3)
                     for(size_t I = 0 ; I < T ; I++){
@@ -408,64 +479,98 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                                                             mat,
                                                             COLUMN_MAGN_CONDUC);
 
-        // Loop over electric field:
         #pragma omp parallel num_threads(nbr_omp_threads)
         {
-            #pragma omp for collapse(3)
-                for(size_t K = 0 ; K < P+2 ; K ++){
-                    for(size_t J = 0 ; J < N+2 ; J ++ ){
-                        for(size_t I = 0 ; I < M+2 ; I ++){
+            // EX field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Ex[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Ex[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
 
-                            index = I + N * ( J + M * K );
-
-                            // Fill in the electric field Ex of size (M − 1) × N × P:
-                            if(I < (M-1)+2){
-                                
-                                this->E_x_eps[index]             = eps;
-                                this->E_x_electrical_cond[index] = electric_cond;
-
-                            }
-
-                            // Fill in the electric field Ey of size M × (N − 1) × P:
-                            if(J < (N-1)+2){
-                                
-                                this->E_y_eps[index]             = eps;
-                                this->E_y_electrical_cond[index] = electric_cond;
-                            }
-
-                            // Fill in the electric field Ez of size M × N × (P − 1):
-                            if(K < (P-1)+2){
-                                
-                                this->E_z_eps[index]             = eps;
-                                this->E_z_electrical_cond[index] = electric_cond;
-                            }
-
-                            // Fill in the magnetic field Hx of size M × (N − 1) × (P − 1):
-                            if(J < (N-1)+2 && K < (P-1)+2){
-                                
-                                this->H_x_mu[index]            = mu;
-                                this->H_x_magnetic_cond[index] = magnetic_cond;
-
-                            }
-
-                            // Fill in the magnetic field Hy of size (M − 1) × N × (P − 1):
-                            if(I < (M-1)+2 && K < (P-1)+2){
-                                
-                                this->H_y_mu[index]            = mu;
-                                this->H_y_magnetic_cond[index] = magnetic_cond;
-
-                            }
-
-                            // Fill in the magnetic field Hz of size (M − 1) × (N − 1) × P:
-                            if(I < (M-1)+2 && J < (N-1)+2){
-                                
-                                this->H_z_mu[index]            = mu;
-                                this->H_z_magnetic_cond[index] = magnetic_cond;
-
-                            }
-                        }
+                        index = I + this->size_Ex[1] * ( J + this->size_Ex[0] * K );
+                        this->E_x_eps[index] = eps;
+                        this->E_x_electrical_cond[index] = electric_cond;
+                        
                     }
                 }
+            }
+
+            // EY field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Ey[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Ey[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
+
+                        index = I + this->size_Ey[1] * ( J + this->size_Ey[0] * K );
+                        this->E_y_eps[index] = eps;
+                        this->E_y_electrical_cond[index] = electric_cond;
+                        
+                    }
+                }
+            }
+
+            // EZ field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Ez[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Ez[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
+
+                        index = I + this->size_Ez[1] * ( J + this->size_Ez[0] * K );
+                        this->E_z_eps[index] = eps;
+                        this->E_z_electrical_cond[index] = electric_cond;
+                        
+                    }
+                }
+            }
+
+            // HX field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Hx[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Hx[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
+
+                        index = I + this->size_Hx[1] * ( J + this->size_Hx[0] * K );
+                        this->H_x_mu[index] = mu;
+                        this->H_x_magnetic_cond[index] = magnetic_cond;
+                        
+                    }
+                }
+            }
+
+            // HY field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Hy[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Hy[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
+
+                        index = I + this->size_Hy[1] * ( J + this->size_Hy[0] * K );
+                        this->H_y_mu[index] = mu;
+                        this->H_y_magnetic_cond[index] = magnetic_cond;
+                        
+                    }
+                }
+            }
+
+            // HZ field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Hz[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Hz[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
+
+                        index = I + this->size_Hz[1] * ( J + this->size_Hz[0] * K );
+                        this->H_z_mu[index] = mu;
+                        this->H_z_magnetic_cond[index] = magnetic_cond;
+                        
+                    }
+                }
+            }
+
         }
 
     }else{

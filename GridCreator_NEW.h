@@ -33,15 +33,21 @@ class GridCreator_NEW{
         double *E_x_eps             = NULL;
         double *E_x_electrical_cond = NULL;
 
+        std::vector<size_t> size_Ex = {0,0,0}; //= (M − 1 + 2) * (N + 2) * (P + 2);
+
         double *E_y                 = NULL;
         unsigned char *E_y_material = NULL;
         double *E_y_eps             = NULL;
         double *E_y_electrical_cond = NULL;
 
+        std::vector<size_t> size_Ey = {0,0,0}; //= (M + 2) * (N − 1 + 2) * (P + 2);
+
         double *E_z                 = NULL;
         unsigned char *E_z_material = NULL;
         double *E_z_eps             = NULL;
         double *E_z_electrical_cond = NULL;
+
+        std::vector<size_t> size_Ez = {0,0,0}; //= (M + 2) * (N + 2) * (P − 1 + 2);
 
         // Magnetic fields along X,Y,Z, and the corresponding material 
         // + magnetic permeability (mu) and magnetic conductivity:
@@ -50,15 +56,21 @@ class GridCreator_NEW{
         double *H_x_mu              = NULL;
         double *H_x_magnetic_cond   = NULL;
 
+        std::vector<size_t> size_Hx = {0,0,0}; //= (M+2) * (N − 1 +2) * (P − 1 +2)
+
         double *H_y                 = NULL;
         unsigned char *H_y_material = NULL;
         double *H_y_mu              = NULL;
         double *H_y_magnetic_cond   = NULL;
 
+        std::vector<size_t> size_Hy = {0,0,0}; //= (M − 1 +2) * (N+2) * (P − 1 + 2)
+
         double *H_z                 = NULL;
         unsigned char *H_z_material = NULL;
         double *H_z_mu              = NULL;
         double *H_z_magnetic_cond   = NULL;
+
+        std::vector<size_t> size_Hz = {0,0,0}; //= (M − 1 + 2) * (N − 1 +2) * (P+2)
 
         /*
          * Spatial step for the thermal grid, considered as homogeneous, i.e. the spatial step is the same
