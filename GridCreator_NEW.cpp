@@ -37,71 +37,214 @@ GridCreator_NEW::GridCreator_NEW(InputParser &input_parser,
 GridCreator_NEW::~GridCreator_NEW(void){
     std::cout << "GridCreator_NEW::~GridCreator_NEW::IN" << std::endl;
 
+    size_t totalFreedMemory = 0;
     /* FREE ALLOCATED SPACE */
 
     // E_x:
-    if(this->E_x != NULL){delete[] this->E_x;}
+    if(this->E_x != NULL){
+        delete[] this->E_x;
+        totalFreedMemory += 8* this->size_Ex[0] *
+                             this->size_Ex[1] *
+                             this->size_Ex[2];
+    }
     // E_x_material:
-    if(this->E_x_material !=NULL){delete[] this->E_x_material;}
+    if(this->E_x_material !=NULL){
+        delete[] this->E_x_material;
+        totalFreedMemory += 1* this->size_Ex[0] *
+                             this->size_Ex[1] *
+                             this->size_Ex[2];
+    }
     // E_x_eps:
-    if(this->E_x_eps != NULL){delete[] this->E_x_eps;}
+    if(this->E_x_eps != NULL){
+        delete[] this->E_x_eps;
+        totalFreedMemory += 8* this->size_Ex[0] *
+                             this->size_Ex[1] *
+                             this->size_Ex[2];
+    }
     // E_x_electrical_cond
-    if(this->E_x_electrical_cond != NULL){delete[] this->E_x_electrical_cond;}
-
+    if(this->E_x_electrical_cond != NULL){
+        delete[] this->E_x_electrical_cond;
+        totalFreedMemory += 8* this->size_Ex[0] *
+                             this->size_Ex[1] *
+                             this->size_Ex[2];
+    }
+    
     // E_y:
-    if(this->E_y != NULL){delete[] this->E_y;}
+    if(this->E_y != NULL){
+        delete[] this->E_y;
+        totalFreedMemory += 8* this->size_Ey[0] *
+                             this->size_Ey[1] *
+                             this->size_Ey[2];
+    }
     // E_y_material:
-    if(this->E_y_material != NULL){delete[] this->E_y_material;}
+    if(this->E_y_material != NULL){
+        delete[] this->E_y_material;
+        totalFreedMemory += 1* this->size_Ey[0] *
+                             this->size_Ey[1] *
+                             this->size_Ey[2];
+    }
     // E_y_eps:
-    if(this->E_y_eps != NULL){delete[] this->E_y_eps;}
+    if(this->E_y_eps != NULL){
+        delete[] this->E_y_eps;
+        totalFreedMemory += 8* this->size_Ey[0] *
+                             this->size_Ey[1] *
+                             this->size_Ey[2];
+    }
     // E_y_electrical_cond
-    if(this->E_y_electrical_cond != NULL){delete[] this->E_y_electrical_cond;}
+    if(this->E_y_electrical_cond != NULL){
+        delete[] this->E_y_electrical_cond;
+        totalFreedMemory += 8* this->size_Ey[0] *
+                             this->size_Ey[1] *
+                             this->size_Ey[2];
+    }
 
     // E_z:
-    if(this->E_z != NULL){delete[] this->E_z;}
+    if(this->E_z != NULL){
+        delete[] this->E_z;
+        totalFreedMemory += 8* this->size_Ez[0] *
+                             this->size_Ez[1] *
+                             this->size_Ez[2];
+    }
     // E_z_material:
-    if(this->E_z_material != NULL){delete[] this->E_z_material;}
+    if(this->E_z_material != NULL){
+        delete[] this->E_z_material;
+        totalFreedMemory += 1* this->size_Ez[0] *
+                             this->size_Ez[1] *
+                             this->size_Ez[2];
+    }
     // E_z_eps:
-    if(this->E_z_eps != NULL){delete[] this->E_z_eps;}
+    if(this->E_z_eps != NULL){
+        delete[] this->E_z_eps;
+        totalFreedMemory += 8* this->size_Ez[0] *
+                             this->size_Ez[1] *
+                             this->size_Ez[2];
+    }
     // E_z_electrical_cond
-    if(this->E_z_electrical_cond != NULL){delete[] this->E_z_electrical_cond;}
+    if(this->E_z_electrical_cond != NULL){
+        delete[] this->E_z_electrical_cond;
+        totalFreedMemory += 8* this->size_Ez[0] *
+                             this->size_Ez[1] *
+                             this->size_Ez[2];
+    }
 
     // H_x:
-    if(this->H_x != NULL){delete[] this->H_x;}
+    if(this->H_x != NULL){
+        delete[] this->H_x;
+        totalFreedMemory += 8* this->size_Hx[0] *
+                             this->size_Hx[1] *
+                             this->size_Hx[2];
+    }
     // H_x_material:
-    if(this->H_x_material!= NULL){delete[] this->H_x_material;}
+    if(this->H_x_material!= NULL){
+        delete[] this->H_x_material;
+        totalFreedMemory += 1* this->size_Hx[0] *
+                             this->size_Hx[1] *
+                             this->size_Hx[2];
+    }
     // H_x_mu:
-    if(this->H_x_mu != NULL){delete[] this->H_x_mu;}
+    if(this->H_x_mu != NULL){
+        delete[] this->H_x_mu;
+        totalFreedMemory += 8* this->size_Hx[0] *
+                             this->size_Hx[1] *
+                             this->size_Hx[2];
+    }
     // H_x_magnetic_cond:
-    if(this->H_x_magnetic_cond != NULL){delete[] this->H_x_magnetic_cond;}
+    if(this->H_x_magnetic_cond != NULL){
+        delete[] this->H_x_magnetic_cond;
+        totalFreedMemory += 8* this->size_Hx[0] *
+                             this->size_Hx[1] *
+                             this->size_Hx[2];
+    }
 
     // H_y:
-    if(this->H_y != NULL){delete[] this->H_y;}
+    if(this->H_y != NULL){
+        delete[] this->H_y;
+        totalFreedMemory += 8* this->size_Hy[0] *
+                             this->size_Hy[1] *
+                             this->size_Hy[2];
+    }
     // H_y_material:
-    if(this->H_y_material != NULL){delete[] this->H_y_material;}
+    if(this->H_y_material != NULL){
+        delete[] this->H_y_material;
+        totalFreedMemory += 1* this->size_Hy[0] *
+                             this->size_Hy[1] *
+                             this->size_Hy[2];    
+    }
     // H_y_mu:
-    if(this->H_y_mu != NULL){delete[] this->H_y_mu;}
+    if(this->H_y_mu != NULL){
+        delete[] this->H_y_mu;
+        totalFreedMemory += 8* this->size_Hy[0] *
+                             this->size_Hy[1] *
+                             this->size_Hy[2];
+    }
     // H_y_magnetic_cond:
-    if(this->H_y_magnetic_cond != NULL){delete[] this->H_y_magnetic_cond;}
+    if(this->H_y_magnetic_cond != NULL){
+        delete[] this->H_y_magnetic_cond;
+        totalFreedMemory += 8* this->size_Hy[0] *
+                             this->size_Hy[1] *
+                             this->size_Hy[2];
+    }
 
     // H_z:
-    if(this->H_z != NULL){delete[] this->H_z;}
+    if(this->H_z != NULL){
+        delete[] this->H_z;
+        totalFreedMemory += 8* this->size_Hz[0] *
+                             this->size_Hz[1] *
+                             this->size_Hz[2];
+    }
     // H_z_material:
-    if(this->H_z_material != NULL){delete[] this->H_z_material;}
+    if(this->H_z_material != NULL){
+        delete[] this->H_z_material;
+        totalFreedMemory += 1* this->size_Hz[0] *
+                             this->size_Hz[1] *
+                             this->size_Hz[2];
+    }
     // H_z_mu:
-    if(this->H_z_mu != NULL){delete[] this->H_z_mu;}
+    if(this->H_z_mu != NULL){
+        delete[] this->H_z_mu;
+        totalFreedMemory += 8* this->size_Hz[0] *
+                             this->size_Hz[1] *
+                             this->size_Hz[2];
+    }
     // H_z_magnetic_cond:
-    if(this->H_z_magnetic_cond != NULL){delete[] this->H_z_magnetic_cond;}
+    if(this->H_z_magnetic_cond != NULL){
+        delete[] this->H_z_magnetic_cond;
+        totalFreedMemory += 8* this->size_Hz[0] *
+                             this->size_Hz[1] *
+                             this->size_Hz[2];
+    }
 
     // Temperature:
-    if(this->temperature != NULL){delete[] this->temperature;}
+    if(this->temperature != NULL){
+        delete[] this->temperature;
+        totalFreedMemory += 8* this->size_Thermal[0] *
+                            this->size_Thermal[1] *
+                            this->size_Thermal[2];
+        }
     // Temperature_material:
-    if(this->temperature_material != NULL){delete[] this->temperature_material;}
+    if(this->temperature_material != NULL){
+        delete[] this->temperature_material;
+        totalFreedMemory += 1* this->size_Thermal[0] *
+                            this->size_Thermal[1] *
+                            this->size_Thermal[2];
+    }
     // Thermal conductivity:
-    if(this->thermal_conductivity != NULL){delete[] this->thermal_conductivity;}
+    if(this->thermal_conductivity != NULL){
+        delete[] this->thermal_conductivity;
+        totalFreedMemory += 8* this->size_Thermal[0] *
+                            this->size_Thermal[1] *
+                            this->size_Thermal[2];
+    }
     // Thermal diffusivity:
-    if(this->thermal_diffusivity != NULL){delete[] this->thermal_diffusivity;}
+    if(this->thermal_diffusivity != NULL){
+        delete[] this->thermal_diffusivity;
+        totalFreedMemory += 8* this->size_Thermal[0] *
+                            this->size_Thermal[1] *
+                            this->size_Thermal[2];
+    }
 
+    this->profiler.removeMemoryUsage("BYTES",totalFreedMemory,
+            "GridCreator_NEW_Freeing_All");
 
     std::cout << "GridCreator_NEW::~GridCreator_NEW::OUT" << std::endl;
 }
@@ -235,7 +378,7 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing temperature" << std::endl;
     #endif
     // The temperature grid is homogeneous. (this->size_Thermal^3).
-    size_t T = this->size_Thermal * this->size_Thermal * this->size_Thermal;
+    size_t T = this->size_Thermal[0] * this->size_Thermal[1] * this->size_Thermal[2];
 
     if(T == 0){
         fprintf(stderr,"GridCreator_NEW::meshInitialization::ERROR\n");
@@ -282,10 +425,6 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
         nbr_omp_threads = DEFAULT;
     }
 
-    size_t M = this->sizes_EH[0];
-    size_t N = this->sizes_EH[1];
-    size_t P = this->sizes_EH[2];
-    size_t T = this->size_Thermal;
     size_t index;
 
     if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
@@ -301,7 +440,7 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Ex[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
 
-                        index = I + this->size_Ex[1] * ( J + this->size_Ex[0] * K );
+                        index = I + this->size_Ex[0] * ( J + this->size_Ex[1] * K );
                         this->E_x_material[index] = mat;
                         
                     }
@@ -315,7 +454,7 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Ey[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
 
-                        index = I + this->size_Ey[1] * ( J + this->size_Ey[0] * K );
+                        index = I + this->size_Ey[0] * ( J + this->size_Ey[1] * K );
                         this->E_y_material[index] = mat;
                         
                     }
@@ -329,7 +468,7 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Ez[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
 
-                        index = I + this->size_Ez[1] * ( J + this->size_Ez[0] * K );
+                        index = I + this->size_Ez[0] * ( J + this->size_Ez[1] * K );
                         this->E_z_material[index] = mat;
                         
                     }
@@ -343,7 +482,7 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Hx[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
 
-                        index = I + this->size_Hx[1] * ( J + this->size_Hx[0] * K );
+                        index = I + this->size_Hx[0] * ( J + this->size_Hx[1] * K );
                         this->H_x_material[index] = mat;
                         
                     }
@@ -357,7 +496,7 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Hy[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
 
-                        index = I + this->size_Hy[1] * ( J + this->size_Hy[0] * K );
+                        index = I + this->size_Hy[0] * ( J + this->size_Hy[1] * K );
                         this->H_y_material[index] = mat;
                         
                     }
@@ -371,7 +510,7 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Hz[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
 
-                        index = I + this->size_Hz[1] * ( J + this->size_Hz[0] * K );
+                        index = I + this->size_Hz[0] * ( J + this->size_Hz[1] * K );
                         this->H_z_material[index] = mat;
                         
                     }
@@ -380,10 +519,13 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                   
             // Temperature nodes:
             #pragma omp for collapse(3)
-                    for(size_t I = 0 ; I < T ; I++){
-                        for(size_t J = 0 ; J < T ; J ++){
-                            for(size_t K = 0 ; K < T ; K ++){
-                                this->temperature_material[I + T * (J + T * K)] = mat;
+                    for(size_t K = 0 ; K < this->size_Thermal[2] ; K++){
+                        for(size_t J = 0 ; J < this->size_Thermal[1] ; J ++){
+                            for(size_t I = 0 ; I < this->size_Thermal[0] ; I ++){
+
+                                index = I + this->size_Thermal[0] * (J + this->size_Thermal[1] *K);
+                                this->temperature_material[index] = mat;
+
                             }
                         }
                     }
@@ -411,20 +553,22 @@ void GridCreator_NEW::Assign_Init_Temperature_to_Temperature_nodes(void){
         nbr_omp_threads = DEFAULT;
     }
 
-    // Retrieve size of the temperature field:
-    size_t T = this->size_Thermal;
+    size_t index;
 
     if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
 
         double init_air_temp = this->input_parser.GetInitTemp_FromMaterialName["AIR"];
 
-        #pragma omp parallel num_threads(nbr_omp_threads)
+        #pragma omp parallel num_threads(nbr_omp_threads)\
+            private(index)
         {
             #pragma omp for collapse(3)
-                    for(size_t I = 0 ; I < T ; I++){
-                        for(size_t J = 0 ; J < T ; J ++){
-                            for(size_t K = 0 ; K < T ; K ++){
-                                this->temperature[I + T * (J + T * K)] = init_air_temp;
+                    for(size_t I = 0 ; I < this->size_Thermal[0] ; I++){
+                        for(size_t J = 0 ; J < this->size_Thermal[1] ; J ++){
+                            for(size_t K = 0 ; K < this->size_Thermal[2] ; K ++){
+
+                                index = I + this->size_Thermal[0] * (J + this->size_Thermal[1] * K);
+                                this->temperature[index] = init_air_temp;
                             }
                         }
                     }
@@ -457,9 +601,6 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
          * The nodes properties (mu, eps, magn. and elec. cond.) are assigned by assuming initial
          * air temperature.
          */
-        size_t M = this->sizes_EH[0];
-        size_t N = this->sizes_EH[1];
-        size_t P = this->sizes_EH[2];
 
         size_t index;
 
@@ -488,7 +629,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 for(size_t J = 0 ; J < this->size_Ex[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
 
-                        index = I + this->size_Ex[1] * ( J + this->size_Ex[0] * K );
+                        index = I + this->size_Ex[0] * ( J + this->size_Ex[1] * K );
                         this->E_x_eps[index] = eps;
                         this->E_x_electrical_cond[index] = electric_cond;
                         
@@ -503,7 +644,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 for(size_t J = 0 ; J < this->size_Ey[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
 
-                        index = I + this->size_Ey[1] * ( J + this->size_Ey[0] * K );
+                        index = I + this->size_Ey[0] * ( J + this->size_Ey[1] * K );
                         this->E_y_eps[index] = eps;
                         this->E_y_electrical_cond[index] = electric_cond;
                         
@@ -518,7 +659,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 for(size_t J = 0 ; J < this->size_Ez[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
 
-                        index = I + this->size_Ez[1] * ( J + this->size_Ez[0] * K );
+                        index = I + this->size_Ez[0] * ( J + this->size_Ez[1] * K );
                         this->E_z_eps[index] = eps;
                         this->E_z_electrical_cond[index] = electric_cond;
                         
@@ -533,7 +674,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 for(size_t J = 0 ; J < this->size_Hx[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
 
-                        index = I + this->size_Hx[1] * ( J + this->size_Hx[0] * K );
+                        index = I + this->size_Hx[0] * ( J + this->size_Hx[1] * K );
                         this->H_x_mu[index] = mu;
                         this->H_x_magnetic_cond[index] = magnetic_cond;
                         
@@ -548,7 +689,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 for(size_t J = 0 ; J < this->size_Hy[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
 
-                        index = I + this->size_Hy[1] * ( J + this->size_Hy[0] * K );
+                        index = I + this->size_Hy[0] * ( J + this->size_Hy[1] * K );
                         this->H_y_mu[index] = mu;
                         this->H_y_magnetic_cond[index] = magnetic_cond;
                         
@@ -563,7 +704,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 for(size_t J = 0 ; J < this->size_Hz[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
 
-                        index = I + this->size_Hz[1] * ( J + this->size_Hz[0] * K );
+                        index = I + this->size_Hz[0] * ( J + this->size_Hz[1] * K );
                         this->H_z_mu[index] = mu;
                         this->H_z_magnetic_cond[index] = magnetic_cond;
                         
