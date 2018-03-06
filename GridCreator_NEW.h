@@ -82,7 +82,7 @@ class GridCreator_NEW{
         unsigned char *temperature_material = NULL;
         double *thermal_conductivity        = NULL;
         double *thermal_diffusivity         = NULL;
-        size_t size_Thermal = 0;
+        std::vector<size_t> size_Thermal = {0,0,0};
 
         
 
@@ -101,7 +101,8 @@ class GridCreator_NEW{
         ProfilingClass &profiler;
 
         // Origin of the indices of the grid:
-        std::vector<size_t> originIndices = {0,0,0};
+        std::vector<size_t> originIndices_Electro = {0,0,0};
+        std::vector<size_t> originIndices_Thermal = {0,0,0};
 
         /* FUNCTIONS */
 
