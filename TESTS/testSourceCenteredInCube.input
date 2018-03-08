@@ -17,19 +17,22 @@ $INFOS
 $MESH
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=1.5
-		deltaY_Electro=1.5
-		deltaZ_Electro=1.5
+		deltaX_Electro=1.
+		deltaY_Electro=1.
+		deltaZ_Electro=1.
 		delta_Thermal=0.5
-		ratio_EM_TH_delta=3
+		ratio_EM_TH_delta=2
 	$DELTAS
 		
 	// Boundaries of the domain
 	$DOMAIN_SIZE
 		// Length of the domain in each direction
-		L_X=100
-		L_Y=100
-		L_Z=100
+		L_X_ELECTRO=100
+		L_Y_ELECTRO=100
+		L_Z_ELECTRO=100
+		L_X_THERMAL=100
+		L_Y_THERMAL=100
+		L_Z_THERMAL=100
 	$DOMAIN_SIZE
 	
 	// Information on the source
