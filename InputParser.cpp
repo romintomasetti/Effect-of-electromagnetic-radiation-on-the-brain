@@ -455,18 +455,36 @@ void InputParser::readHeader_MESH (ifstream &file){
 					cout << propName + "=" + propGiven << endl;
 					cout << "To compare with " + currentLine << endl;
 
-					if(propName == "L_X"){
-						this->lengthX_WholeDomain = std::stod(propGiven);
-						cout << "ADDED lengthX_WholeDomain is " << this->lengthX_WholeDomain << endl;
-					}else if(propName == "L_Y"){
-						this->lengthY_WholeDomain = std::stod(propGiven);
-						cout << "ADDED lengthY_WholeDomain is " << this->lengthY_WholeDomain << endl;
-					}else if(propName == "L_Z"){
-						this->lengthZ_WholeDomain = std::stod(propGiven);
-						cout << "ADDED lengthZ_WholeDomain is " << this->lengthZ_WholeDomain << endl;
-					}else if(propName != "L_X" 
-							&& propName != "L_Y" 
-							&& propName != "L_Z"){
+					if(propName == "L_X_ELECTRO"){
+						this->lengthX_WholeDomain_Electro = std::stod(propGiven);
+						cout << "ADDED lengthX_WholeDomain_Electro is " << this->lengthX_WholeDomain_Electro << endl;
+
+					}else if(propName == "L_Y_ELECTRO"){
+						this->lengthY_WholeDomain_Electro = std::stod(propGiven);
+						cout << "ADDED lengthY_WholeDomain_Electro is " << this->lengthY_WholeDomain_Electro << endl;
+
+					}else if(propName == "L_Z_ELECTRO"){
+						this->lengthZ_WholeDomain_Electro = std::stod(propGiven);
+						cout << "ADDED lengthZ_WholeDomain_Electro is " << this->lengthZ_WholeDomain_Electro << endl;
+
+					if(propName == "L_X_THERMAL"){
+						this->lengthX_WholeDomain_Thermal = std::stod(propGiven);
+						cout << "ADDED lengthX_WholeDomain_Thermal is " << this->lengthX_WholeDomain_Thermal << endl;
+
+					}else if(propName == "L_Y_THERMAL"){
+						this->lengthY_WholeDomain_Thermal = std::stod(propGiven);
+						cout << "ADDED lengthY_WholeDomain_Thermal is " << this->lengthY_WholeDomain_Thermal << endl;
+
+					}else if(propName == "L_Z_THERMAL"){
+						this->lengthZ_WholeDomain_Thermal = std::stod(propGiven);
+						cout << "ADDED lengthZ_WholeDomain_Thermal is " << this->lengthZ_WholeDomain_Thermal << endl;
+					
+					}else if(propName != "L_X_ELECTRO" 
+							&& propName != "L_Y_ELECTRO" 
+							&& propName != "L_Z_ELECTRO"
+							&& propName != "L_X_THERMAL"
+							&& propName != "L_Y_THERMAL"
+							&& propName != "L_Z_THERMAL"){
 						printf("InputParser::readHeader_MESH:: You didn't provide a ");
 						printf("good member for $MESH$DOMAIN_SIZE.\nAborting.\n");
 						cout << propName << endl;
