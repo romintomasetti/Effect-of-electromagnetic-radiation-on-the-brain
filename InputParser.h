@@ -119,9 +119,12 @@ class InputParser{
 		 * Length of the domain in each direction.
 		 * The length is given in meters.
 		 */
-		double lengthX_WholeDomain = 0.0;
-		double lengthY_WholeDomain = 0.0;
-		double lengthZ_WholeDomain = 0.0;
+		double lengthX_WholeDomain_Electro = 0.0;
+		double lengthY_WholeDomain_Electro = 0.0;
+		double lengthZ_WholeDomain_Electro = 0.0;
+		double lengthX_WholeDomain_Thermal = 0.0;
+		double lengthY_WholeDomain_Thermal = 0.0;
+		double lengthZ_WholeDomain_Thermal = 0.0;
 };
 
 #endif
