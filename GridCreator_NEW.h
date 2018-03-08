@@ -9,6 +9,10 @@
 #include "InputParser.h"
 #include "ProfilingClass.h"
 
+#include "vtl.h"
+#include "vtlVec3.h"
+#include "vtlSPoints.h" 
+
 class MPI_Initializer;
 class GridCreator_NEW{
     public:
@@ -103,6 +107,10 @@ class GridCreator_NEW{
         // Origin of the indices of the grid:
         std::vector<size_t> originIndices_Electro = {0,0,0};
         std::vector<size_t> originIndices_Thermal = {0,0,0};
+
+        // Origin of the whole simulation, for EM and TH grids:
+		vtl::Vec3d originOfWholeSimulation_Electro = vtl::Vec3d(0.0,0.0,0.0);
+        vtl::Vec3d originOfWholeSimulation_Thermal = vtl::Vec3d(0.0,0.0,0.0);
 
         /* FUNCTIONS */
 

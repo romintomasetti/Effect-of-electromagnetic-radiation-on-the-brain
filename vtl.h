@@ -21,6 +21,7 @@
 #include "vtlSPoints.h"
 
 #include "GridCreator.h"
+#include "GridCreator_NEW.h"
 
 namespace vtl
 {
@@ -65,6 +66,51 @@ VTL_API void export_spoints_XML(std::string const &filename,
                                 SPoints const &mygrid,
                                 GridCreator &grid_creator,
                                 Zip zip);
+
+/**
+ * OUR CUSTOM FUNCTIONS
+ */
+
+VTL_API void export_spoints_XMLP_custom_GridCreator(
+    std::string type /* THERMAL or ELECTRO */,
+    std::string outputFileName,
+    size_t currentStep,
+    vtl::SPoints &grid,
+    vtl::SPoints &my_grid;
+    std::vector<vtl::SPoints> &subGrids,
+    GridCreator &grid_Creator
+);
+
+VTL_API void export_spoints_XMLP_custom_GridCreator_NEW(
+    std::string type /* THERMAL or ELECTRO */,
+    std::string outputFileName,
+    size_t currentStep,
+    vtl::SPoints &grid,
+    vtl::SPoints &my_grid;
+    std::vector<vtl::SPoints> &subGrids,
+    GridCreator_NEW &grid_Creator_NEW
+);
+
+VTL_API void export_spoints_XML_custom_GridCreator(
+    std::string type /* THERMAL or ELECTRO */,
+    std::string outputFileName,
+    size_t currentStep,
+    vtl::SPoints &grid,
+    vtl::SPoints &my_grid,
+    GridCreator &grid_creator
+);
+
+VTL_API void export_spoints_XML_custom_GridCreator_NEW(
+    std::string type /* THERMAL or ELECTRO */,
+    std::string outputFileName,
+    size_t currentStep,
+    vtl::SPoints &grid,
+    vtl::SPoints
+);
+
+/**
+ * END OF OUR CUSTOM FUNCTIONS
+ */
 
 VTL_API void export_spoints_XMLP(std::string const &filename,
                                  int step,
