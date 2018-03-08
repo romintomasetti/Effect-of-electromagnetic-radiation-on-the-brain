@@ -58,6 +58,7 @@ void AlgoElectro_NEW::update(GridCreator_NEW &grid){
     // Retrieve the time step:
     double dt = this->Compute_dt(grid);
     double current_time = 0.0;
+    size_t currentIter = 0;
     std::cout << "AlgoElectro_NEW :: dt is " << dt << std::endl;
 
     /*
@@ -348,15 +349,28 @@ void AlgoElectro_NEW::update(GridCreator_NEW &grid){
     double *E_y_tmp = grid.E_y;
     double *E_z_tmp = grid.E_z;
 
-    #pragma omp parallel num_threads(omp_get_num_threads()) default(none)\
-        shared(grid,dt,current_time)\
+    this->check_OMP_DYNAMIC_envVar();
+
+
+    double parallelRegionStartingTime = omp_get_wtime();
+
+    #pragma omp parallel num_threads(omp_get_max_threads()) default(none)\
+        shared(grid,dt,current_time,currentIter)\
+        shared(parallelRegionStartingTime)\
         shared(H_x_tmp,H_y_tmp,H_z_tmp)\
         shared(E_x_tmp,E_y_tmp,E_z_tmp)\
         shared(C_hxh,C_hxe_1,C_hxe_2)\
         shared(C_hyh,C_hye_1,C_hye_2)\
+        shared(C_hzh,C_hze_1,C_hze_2)\
+        shared(C_exe,C_exh_1,C_exh_2)\
+        shared(C_eye,C_eyh_1,C_eyh_2)\
+        shared(C_eze,C_ezh_1,C_ezh_2)\
         shared(size_x,size_y)\
         shared(size_x_1,size_y_1)\
-        shared(size_x_2,size_y_2)
+        shared(size_x_2,size_y_2)\
+        private(index)\
+        private(index_1Plus,index_1Moins)\
+        private(index_2Plus,index_2Moins)
     {
 
         while(current_time < grid.input_parser.get_stopTime()){
@@ -372,10 +386,7 @@ void AlgoElectro_NEW::update(GridCreator_NEW &grid){
             size_x_2 = grid.size_Ez[0];
             size_y_2 = grid.size_Ez[1];
 
-            #pragma omp for collapse(3) nowait\
-                private(index)\
-                private(index_1Plus,index_1Moins)\
-                private(index_2Plus,index_2Moins)
+            #pragma omp for collapse(3) nowait
             for (size_t K = 1; K < grid.size_Hx[2]-1 ; K++){
                 for(size_t J = 1 ; J < grid.size_Hx[1]-1 ; J ++){
                     for(size_t I = 1 ; I < grid.size_Hx[0]-1 ; I++){
@@ -411,23 +422,20 @@ void AlgoElectro_NEW::update(GridCreator_NEW &grid){
             size_x_2 = grid.size_Ex[0];
             size_y_2 = grid.size_Ex[1];
 
-            #pragma omp for collapse(3) nowait\
-                private(index)\
-                private(index_1Plus,index_1Moins)\
-                private(index_2Plus,index_2Moins)
+            #pragma omp for collapse(3) nowait
             for(size_t K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
                 for(size_t J = 1 ; J < grid.size_Hy[1]-1 ; J ++){
                     for(size_t I = 1 ; I < grid.size_Hy[0]-1 ; I ++){
 
-                        index = 0;
+                        index        = I   + size_x   * ( J  + size_y   * K);
                         // Ez(mm + 1, nn, pp):
-                        index_1Plus = 0;
+                        index_1Plus  = I+1 + size_x_1 * ( J  + size_y_1 * K);
                         // Ez(mm, nn, pp)
-                        index_1Moins = 0;
+                        index_1Moins = I   + size_x_1 * ( J  + size_y_1 * K);
                         // Ex(mm, nn, pp + 1):
-                        index_2Plus = 0;
+                        index_2Plus  = I   + size_x_2 * ( J  + size_y_2 * (K+1));
                         // Ex(mm, nn, pp):
-                        index_2Moins = 0;
+                        index_2Moins = I   + size_x_2 * ( J  + size_y_2 * K);
 
                         H_y_tmp[index] = C_hyh[index] * H_y_tmp[index]
                                 + C_hye_1[index] * (E_z_tmp[index_1Plus] - E_z_tmp[index_1Moins])
@@ -437,9 +445,155 @@ void AlgoElectro_NEW::update(GridCreator_NEW &grid){
                 }
             }
 
+            // Updating the magnetic field Hz.
+            // Don't update neighboors ! Start at 1. Go to size-1.
+
+            size_x = grid.size_Hz[0];
+            size_y = grid.size_Hz[1];
+
+            size_x_1 = grid.size_Ex[0];
+            size_y_1 = grid.size_Ex[1];
+
+            size_x_2 = grid.size_Ey[0];
+            size_y_2 = grid.size_Ey[1];
+
+            #pragma omp for collapse(3) nowait
+            for(size_t K = 1 ; K < grid.size_Hz[2]-1 ; K ++){
+                for(size_t J = 1 ; J < grid.size_Hz[1]-1 ; J ++){
+                    for(size_t I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
+
+                        index        = I   + size_x   * ( J     + size_y   * K);
+                        // Ex(mm, nn + 1, pp)
+                        index_1Plus  = I   + size_x_1 * ( (J+1) + size_y_1 * K);
+                        // Ex(mm, nn, pp)
+                        index_1Moins = I   + size_x_1 * ( J     + size_y_1 * K);
+                        // Ey(mm + 1, nn, pp)
+                        index_2Plus  = I+1 + size_x_2 * ( J     + size_y_2 * K);
+                        // Ey(mm, nn, pp)
+                        index_2Moins = I   + size_x_2 * ( J     + size_y_2 * K);
+
+                        H_z_tmp[index] = C_hzh[index] * H_z_tmp[index]
+                                + C_hze_1[index] * (E_x_tmp[index_1Plus] - E_x_tmp[index_1Moins])
+                                - C_hze_2[index] * (E_y_tmp[index_2Plus] - E_y_tmp[index_2Moins]);
+
+                    }
+                }
+            }
+
+            // Updating the electric field Ex.
+            // Don't update neighboors ! Start at 1. Go to size-1.
+
+            size_x = grid.size_Ex[0];
+            size_y = grid.size_Ex[1];
+
+            size_x_1 = grid.size_Hz[0];
+            size_y_1 = grid.size_Hz[1];
+
+            size_x_2 = grid.size_Hy[0];
+            size_y_2 = grid.size_Hy[1];
+
+            #pragma omp for collapse(3) nowait
+            for(size_t K = 1 ; K < grid.size_Ex[2]-1 ; K ++){
+                for(size_t J = 1 ; J < grid.size_Ex[1]-1 ; J ++){
+                    for(size_t I = 1 ; I < grid.size_Ex[0]-1 ; I ++){
+
+                        index        = I   + size_x   * ( J     + size_y   * K);
+                        // Hz(mm, nn, pp)
+                        index_1Plus  = I   + size_x_1 * ( J     + size_y_1 * K);
+                        // Hz(mm, nn - 1, pp)
+                        index_1Moins = I   + size_x_1 * ( J-1   + size_y_1 * K);
+                        // Hy(mm, nn, pp)
+                        index_2Plus  = I   + size_x_2 * ( J     + size_y_2 * K);
+                        // Hy(mm, nn, pp - 1)
+                        index_2Moins = I   + size_x_2 * ( J     + size_y_2 * (K-1));
+
+                        E_x_tmp[index] = C_exe[index] * E_x_tmp[index]
+                                + C_exh_1[index] * (H_z_tmp[index_1Plus] - H_z_tmp[index_1Moins])
+                                - C_exh_2[index] * (H_y_tmp[index_2Plus] - H_y_tmp[index_2Moins]);
+
+                    }
+                }
+            }
+
+            // Updating the electric field Ey.
+            // Don't update neighboors ! Start at 1. Go to size-1.
+
+            size_x = grid.size_Ey[0];
+            size_y = grid.size_Ey[1];
+
+            size_x_1 = grid.size_Hx[0];
+            size_y_1 = grid.size_Hx[1];
+
+            size_x_2 = grid.size_Hz[0];
+            size_y_2 = grid.size_Hz[1];
+
+            #pragma omp for collapse(3) nowait
+            for(size_t K = 1 ; K < grid.size_Ey[2]-1 ; K ++){
+                for(size_t J = 1 ; J < grid.size_Ey[1]-1 ; J ++){
+                    for(size_t I = 1 ; I < grid.size_Ey[0]-1 ; I ++){
+
+                        index        = I   + size_x   * ( J     + size_y   * K);
+                        // Hx(mm, nn, pp)
+                        index_1Plus  = I   + size_x_1 * ( J     + size_y_1 * K);
+                        // Hx(mm, nn, pp - 1)
+                        index_1Moins = I   + size_x_1 * ( J     + size_y_1 * (K-1));
+                        // Hz(mm, nn, pp)
+                        index_2Plus  = I   + size_x_2 * ( J     + size_y_2 * K);
+                        // Hz(mm - 1, nn, pp)
+                        index_2Moins = I-1 + size_x_2 * ( J     + size_y_2 * K);
+
+                        E_y_tmp[index] = C_eye[index] * E_y_tmp[index]
+                                + C_eyh_1[index] * (H_x_tmp[index_1Plus] - H_x_tmp[index_1Moins])
+                                - C_eyh_2[index] * (H_z_tmp[index_2Plus] - H_z_tmp[index_2Moins]);
+
+                    }
+                }
+            }
+
+            // Updating the electric field Ez.
+            // Don't update neighboors ! Start at 1. Go to size-1.
+
+            size_x = grid.size_Ez[0];
+            size_y = grid.size_Ez[1];
+
+            size_x_1 = grid.size_Hy[0];
+            size_y_1 = grid.size_Hy[1];
+
+            size_x_2 = grid.size_Hx[0];
+            size_y_2 = grid.size_Hx[1];
+
+            #pragma omp for collapse(3) nowait
+            for(size_t K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
+                for(size_t J = 1 ; J < grid.size_Ez[1]-1 ; J ++){
+                    for(size_t I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
+
+                        index        = I   + size_x   * ( J     + size_y   * K);
+                        // Hy(mm, nn, pp)
+                        index_1Plus  = I   + size_x_1 * ( J     + size_y_1 * K);
+                        // Hy(mm - 1, nn, pp)
+                        index_1Moins = I-1 + size_x_1 * ( J     + size_y_1 * K);
+                        // Hx(mm, nn, pp)
+                        index_2Plus  = I   + size_x_2 * ( J     + size_y_2 * K);
+                        // Hx(mm, nn - 1, pp)
+                        index_2Moins = I   + size_x_2 * ( J-1   + size_y_2 * K);
+
+                        E_z_tmp[index] = C_eze[index] * E_z_tmp[index]
+                                + C_ezh_1[index] * (H_y_tmp[index_1Plus] - H_y_tmp[index_1Moins])
+                                - C_ezh_2[index] * (H_x_tmp[index_2Plus] - H_x_tmp[index_2Moins]);
+
+                    }
+                }
+            }
+
             #pragma omp master
             {
                 current_time += 1000000*dt;
+                currentIter ++;
+
+                double elapsedTot = omp_get_wtime() - parallelRegionStartingTime;
+
+                printf("AlgoElectro_NEW : iter %zu, time %.10f, time per iter : %.10f.\n",
+                        currentIter,current_time,elapsedTot/currentIter);
             }
         } /* END OF WHILE */
     }/* END OF PARALLEL REGION */
@@ -507,4 +661,23 @@ void AlgoElectro_NEW::update(GridCreator_NEW &grid){
     double elapsedTimeSec = end___algo_update - start_algo_update;
     grid.profiler.incrementTimingInput("AlgoElectro_NEW_UPDATE_omp_get_wtime",elapsedTimeSec);
     std::cout << "AlgoElectro_NEW_UPDATE => Time: " << elapsedTimeSec << " s" << std::endl;
+}
+
+void AlgoElectro_NEW::check_OMP_DYNAMIC_envVar(void){
+    /* SET OMP_DYNAMIC to false */
+	if(const char *omp_dynamic_env = std::getenv("OMP_DYNAMIC")){
+		// Already declared. Check it is false.
+		if(std::strcmp(omp_dynamic_env,"false") == 0){
+			printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
+		}else{
+			std::string set_env = "OMP_DYNAMIC=false";
+			putenv(&set_env[0]);
+			printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
+		}
+	}else{
+		// OMP_DYNAMIC was not declared. Declare it.
+		std::string set_env = "OMP_DYNAMIC=false";
+		putenv(&set_env[0]);
+		printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
+	}
 }

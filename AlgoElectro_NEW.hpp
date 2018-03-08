@@ -21,6 +21,9 @@ class AlgoElectro_NEW{
 
         /* Update function */
         void update(GridCreator_NEW &);
+
+        // Check that OMP_DYNAMIC is set to false:
+        void check_OMP_DYNAMIC_envVar(void);
 };
 
 #endif
