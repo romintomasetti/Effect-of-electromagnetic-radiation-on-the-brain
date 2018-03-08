@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <stdio.h>
+#include <cstdlib>
 #include <stdlib.h>
 #include <vector>
 #include <climits>
@@ -25,6 +26,7 @@
 #include "InterfaceToParaviewer.h"
 
 #include "GridCreator_NEW.h"
+#include "AlgoElectro_NEW.hpp"
 
 #define PARALLELISM_OMP_ENABLED 1
 
@@ -49,6 +51,23 @@ using namespace std;
 
 
 int main(int argc, char *argv[]){
+
+	/* SET OMP_DYNAMIC */
+	if(const char *omp_dynamic_env = std::getenv("OMP_DYNAMIC")){
+		// Already declared. Check it is false.
+		if(std::strcmp(omp_dynamic_env,"false") == 0){
+			printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
+		}else{
+			std::string set_env = "OMP_DYNAMIC=false";
+			putenv(&set_env[0]);
+			printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
+		}
+	}else{
+		// OMP_DYNAMIC was not declared. Declare it.
+		std::string set_env = "OMP_DYNAMIC=false";
+		putenv(&set_env[0]);
+		printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
+	}
 
 	ProfilingClass profiler;
 
@@ -96,23 +115,25 @@ int main(int argc, char *argv[]){
 	cout << test222["output"] << test222["error"] << test222["profile"] << endl;
 
 	//cout << "Calling GridCreator constructor" << endl;
-	//GridCreator mesher(input_parser,allMat,MPI_communicator);
-	//mesher.meshInitialization();
+	GridCreator mesher(input_parser,allMat,MPI_communicator);
 	
-	//InterfaceToParaviewer interfaceToWriteOutput(mesher,MPI_communicator);
-	//interfaceToWriteOutput.convertAndWriteData(0);
+	
 	MPI_Barrier(MPI_COMM_WORLD);
 	
 
 	GridCreator_NEW gridTest(input_parser,allMat,MPI_communicator,profiler);
 	gridTest.meshInitialization();
 
+	InterfaceToParaviewer interfaceToWriteOutput(mesher,MPI_communicator,gridTest);
+	interfaceToWriteOutput.convertAndWriteData(0);
+
 
 	//AlgoElectro algoElectromagn;
 	
 	//algoElectromagn.update(mesher,interfaceToWriteOutput);
 	
-	
+	AlgoElectro_NEW algoElectro_newTst;
+	algoElectro_newTst.update(gridTest);
 	
 	cout << "Calling all the destructors.\n";
 	
