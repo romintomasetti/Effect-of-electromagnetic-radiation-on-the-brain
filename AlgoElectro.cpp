@@ -797,7 +797,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
             #pragma omp master
             {
                 MPI_Barrier(MPI_COMM_WORLD);
-                interfaceForOutput.convertAndWriteData(this->currentStep);
+                interfaceForOutput.convertAndWriteData(this->currentStep,"ELECTRO");
                 
                 t_current=t_current+dt;
                 this->currentStep ++;

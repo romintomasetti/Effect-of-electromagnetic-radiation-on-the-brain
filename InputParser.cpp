@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cctype>
 
+#include <cstring>
+
 
 // Small enums for the dollar strings (see InputParser::readHeader)
 stringDollar_Header1 InputParser::hashit_Header1 (std::string const& inString) {
@@ -30,17 +32,36 @@ stringDollar_Header2 InputParser::hashit_Header2 (std::string const& inString) {
 }
 
 // Get lengths
-double InputParser::get_length_WholeDomain(unsigned int direction){
-	// Direction = 0 gives along X, 1 along Y, 2 along Z:
-	if(direction == 0){
-		return this->lengthX_WholeDomain;
-	}else if(direction == 1){
-		return this->lengthY_WholeDomain;
-	}else if(direction == 2){
-		return this->lengthZ_WholeDomain;
+double InputParser::get_length_WholeDomain(unsigned int direction,std::string type){
+	if(strcmp(type.c_str(),"ELECTRO") == 0){
+		// Direction = 0 gives along X, 1 along Y, 2 along Z:
+		if(direction == 0){
+			return this->lengthX_WholeDomain_Electro;
+		}else if(direction == 1){
+			return this->lengthY_WholeDomain_Electro;
+		}else if(direction == 2){
+			return this->lengthZ_WholeDomain_Electro;
+		}else{
+			printf("InputParser::get_length::ERROR:\n\tDirection should be between 0 and 2.");
+			printf("Aborting (file %s at %d).\n",__FILE__,__LINE__);
+			abort();
+		}
+	}else if(strcmp(type.c_str(),"THERMAL") == 0){
+			// Direction = 0 gives along X, 1 along Y, 2 along Z:
+		if(direction == 0){
+			return this->lengthX_WholeDomain_Thermal;
+		}else if(direction == 1){
+			return this->lengthY_WholeDomain_Thermal;
+		}else if(direction == 2){
+			return this->lengthZ_WholeDomain_Thermal;
+		}else{
+			printf("InputParser::get_length::ERROR:\n\tDirection should be between 0 and 2.");
+			printf("Aborting (file %s at %d).\n",__FILE__,__LINE__);
+			abort();
+		}
 	}else{
-		printf("InputParser::get_length::ERROR:\n\tDirection should be between 0 and 2.");
-		printf("Aborting (file %s at %d).\n",__FILE__,__LINE__);
+		fprintf(stderr,"InputParser::get_length_WholeDomain::ERROR\n");
+		fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
 		abort();
 	}
 }
@@ -467,7 +488,7 @@ void InputParser::readHeader_MESH (ifstream &file){
 						this->lengthZ_WholeDomain_Electro = std::stod(propGiven);
 						cout << "ADDED lengthZ_WholeDomain_Electro is " << this->lengthZ_WholeDomain_Electro << endl;
 
-					if(propName == "L_X_THERMAL"){
+					}else if(propName == "L_X_THERMAL"){
 						this->lengthX_WholeDomain_Thermal = std::stod(propGiven);
 						cout << "ADDED lengthX_WholeDomain_Thermal is " << this->lengthX_WholeDomain_Thermal << endl;
 

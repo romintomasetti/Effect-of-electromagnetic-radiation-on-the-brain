@@ -246,7 +246,220 @@ size_t write_vectorXML(std::ofstream &f, std::vector<double> const &pos, bool us
     return written;
 }
 
-size_t write_vectorXML_custom(std::ofstream &f, GridCreator &grid, std::string fieldName, char vecORsca, bool usez)
+size_t write_vectorXML_custom_GridCreatorNew(
+    std::ofstream &f, 
+    GridCreator_NEW &grid, 
+    std::string fieldName, 
+    char vecORsca, 
+    bool usez)
+{
+    // Size written in file:
+    size_t written = 0;
+
+    // Buffer of floats:
+    std::vector<float> buffer;
+
+    // Size of the written field:
+    size_t size_field = 0;
+    
+    if(vecORsca == 's'){
+        // Example: temperature field or coordinates x y z.
+        if(fieldName == "Temperature"){
+
+            std::vector<size_t> size = grid.size_Thermal;
+
+            printf("MPI %d :: Has field Temperature and size(%ld,,%ld,%ld)\n",
+                grid.MPI_communicator.getRank(),size[0],size[1],size[2]);
+
+            size_field = size[0]*size[1]*size[2];
+            buffer.resize(size_field);
+
+            size_t counter = 0 ;
+            size_t index   = 0;
+
+            for(size_t K = 0 ; K < size[2] ; K ++){
+                for(size_t J = 0 ; J < size[1] ; J ++){
+                    for(size_t I = 0 ; I < size[0] ; I ++){
+
+                        index = I + size[0] * (J + K * size[1]);
+
+                        buffer[counter++] = (float)grid.temperature[index];
+                        
+                    }
+                }
+            }
+
+        }else{
+            printf("vtl::write_vectorXML_custom::ERROR in scalar field name. Has %s\n",fieldName.c_str());
+            std::abort();
+        }
+    }else if(vecORsca == 'v'){
+        // Example: electric and magnetic fields:
+        if(fieldName == "ElectricField"){
+
+            // Get size M, N, P:
+            std::vector<size_t> size = grid.sizes_EH;
+            
+            // Get the sizes:
+            // Ex of size (M − 1) × N × P
+            // Ey of size M × (N − 1) × P
+            // Ez of size M × N × (P − 1)
+
+            size_field = (size[0]*size[1]*size[2])*3;
+            
+            buffer.resize(size_field);
+
+            size_t counter = 0;
+            size_t index   = 0;
+
+            for(size_t K = 1 ; K < size[2]-1 ; K ++){
+                for(size_t J = 1 ; J < size[1]-1 ; J ++){
+                    for(size_t I = 1 ; I < size[0]-1 ; I ++){
+
+                        // Electric field Ex:
+                        if(I < size[0]-2){
+                            index = I + grid.size_Ex[0] * (J + K * grid.size_Ex[1]);
+                            buffer[counter++] = (float)grid.E_x[index];
+                        }else{
+                            buffer[counter++] = (float)0.0;
+                        }
+
+                        // Electric field Ey:
+                        if(J < size[1] - 2){
+                            index = I + grid.size_Ey[0] * (J + K * grid.size_Ey[1]);
+                            buffer[counter++] = (float)grid.E_y[index];
+                        }else{
+                            buffer[counter++] = (float)0.0;
+                        }
+
+                        // Electric field Ez:
+                        if(K < size[2]-2){
+                            index = I + grid.size_Ez[0] * (J + K * grid.size_Ez[1]);
+                            buffer[counter++] = (float)grid.E_z[index];
+                        }else{
+                            buffer[counter++] = (float)0.0;
+                        }
+                    }
+                }
+            }
+
+        }else if(fieldName == "MagneticField"){
+
+            std::vector<size_t> size = grid.sizes_EH;
+
+            // Get the sizes:
+            // Hx of size M × (N − 1) × (P − 1)
+            // Hy of size (M − 1) × N × (P − 1)
+            // Hz of size (M − 1) × (N − 1) × P
+
+            size_field = (size[0])*(size[1])*(size[2])*3;
+
+            buffer.resize(size_field);
+
+            size_t counter = 0;
+            size_t index   = 0;
+
+            for(size_t K = 1 ; K < size[2]-1 ; K ++){
+                for(size_t J = 1 ; J < size[1]-1 ; J ++){
+                    for(size_t I = 1 ; I < size[0]-1 ; I ++){
+                        
+                        // Magnetic field Hx:
+                        if(J < size[1]-2 && K < size[2]-2){
+                            index = I + grid.size_Hx[0] * (J + K * grid.size_Hx[1]);
+                            buffer[counter++] = (float)grid.H_x[index];
+                        }else{
+                            buffer[counter++] = (float)0.0;
+                        }
+
+                        // Magnetic field Hy:
+                        if(I < size[0] - 2 && K < size[0] - 2){
+                            index = I + grid.size_Hy[0] * (J + K * grid.size_Hy[1]);
+                            buffer[counter++] = (float)grid.H_y[index];
+                        }else{
+                            buffer[counter++] = (float)0.0;
+                        }
+
+                        // Magnetic field Hz:
+                        if(I < size[0]-2 && J < size[1] - 2){
+                            index = I + grid.size_Hz[0] * (J + K * grid.size_Hz[1]);
+                            buffer[counter++] = (float)grid.H_z[index];
+                        }else{
+                            buffer[counter++] = (float)0.0;
+                        }
+
+                    }
+                }
+            }
+
+        }else{
+            printf("vtl::write_vectorXML_custom::ERROR in vector field name. Has %s\n",fieldName.c_str());
+            std::abort();
+        }
+    }else{
+        printf("vtl::write_vectorXML_custom::ERROR on vecORsca\n");
+        std::abort();
+    }
+
+    if (!usez)
+    {
+        // data block size
+        //uint32_t sz = (uint32_t)pos.size() * sizeof(float);
+        uint32_t sz = (uint32_t)size_field * sizeof(float);
+        f.write((char *)&sz, sizeof(uint32_t));
+        written += sizeof(uint32_t);
+        // data
+        f.write((char *)&buffer[0], sz);
+        written += sz;
+    }
+    else
+    {
+        //uLong sourcelen = (uLong)pos.size() * sizeof(float);
+        uLong sourcelen = (uLong) size_field * sizeof(float);
+        uLongf destlen = uLongf(sourcelen * 1.001) + 12; // see doc
+        char *destbuffer = new char[destlen];
+#ifdef USE_ZLIB
+        int status = compress2((Bytef *)destbuffer, &destlen,
+                               (Bytef *)&(buffer[0]), sourcelen, Z_DEFAULT_COMPRESSION);
+#else
+        int status = Z_OK + 1;
+#endif
+        if (status != Z_OK)
+        {
+            std::cout << "ERROR: zlib Error status=" << zlibstatus(status) << "\n";
+        }
+        else
+        {
+            //std::cout << "block of size " << sourcelen << " compressed to " << destlen << '\n';
+            // blocks description
+            uint32_t nblocks = 1;
+            f.write((char *)&nblocks, sizeof(uint32_t));
+            written += sizeof(uint32_t);
+            uint32_t srclen = (uint32_t)sourcelen;
+            f.write((char *)&srclen, sizeof(uint32_t));
+            written += sizeof(uint32_t);
+            uint32_t lastblocklen = 0;
+            f.write((char *)&lastblocklen, sizeof(uint32_t));
+            written += sizeof(uint32_t);
+            uint32_t szblocki = (uint32_t)destlen;
+            f.write((char *)&szblocki, sizeof(uint32_t));
+            written += sizeof(uint32_t);
+            // data
+            f.write(destbuffer, destlen);
+            written += destlen;
+        }
+
+        delete[] destbuffer;
+    }
+
+    return written;
+}
+
+size_t write_vectorXML_custom(
+    std::ofstream &f, 
+    GridCreator &grid, 
+    std::string fieldName, 
+    char vecORsca, 
+    bool usez)
 {
     size_t written = 0;
 
@@ -755,7 +968,8 @@ VTL_API void vtl::export_spoints_LEGACY(std::string const &filename,
 
 VTL_API void vtl::export_spoints_XML(std::string const &filename,
                                 int step,
-                                SPoints const &grid, SPoints const &mygrid,
+                                SPoints const &grid, 
+                                SPoints const &mygrid,
 							 	GridCreator &grid_creatorObj,
                                 Zip zip)
 {
@@ -923,17 +1137,32 @@ VTL_API void vtl::export_spoints_XMLP(std::string const &filename,
     // ------------------------------------------------------------------------------------
     f << "      <PCellData>\n";
     // scalar fields
-    for (auto it = mygrid.scalars.begin(); it != mygrid.scalars.end(); ++it)
-    {
-        f << "        <PDataArray type=\"Float32\" ";
-        f << " Name=\"" << it->first << "\" />\n";
-    }
-    // vector fields
-    for (auto it = mygrid.vectors.begin(); it != mygrid.vectors.end(); ++it)
-    {
-        f << "        <PDataArray type=\"Float32\" ";
-        f << " Name=\"" << it->first << "\" ";
-        f << " NumberOfComponents=\"3\" />\n";
+    if(filename.find("THERMAL") != std::string::npos){
+        std::cout << ">>> PVTI :: THERMAL :: IN" << std::endl;
+        if(mygrid.scalars.size() == 0){
+            fprintf(stderr,"mygrid.vectors.size() == %d\n",mygrid.vectors.size());
+            fprintf(stderr,"mygrid.scalars.size() == 0 :: ABORTING\n");
+            fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+            abort();
+        }
+        for (auto it = mygrid.scalars.begin(); it != mygrid.scalars.end(); ++it)
+        {
+            std::cout << "COUCOU " << it->first << std::endl;
+            f << "        <PDataArray type=\"Float32\" ";
+            f << " Name=\"" << it->first << "\" />\n";
+        }
+    }else if(filename.find("ELECTRO") != std::string::npos){
+        // vector fields
+        for (auto it = mygrid.vectors.begin(); it != mygrid.vectors.end(); ++it)
+        {
+            std::cout << "COUCOU " << it->first << std::endl;
+            f << "        <PDataArray type=\"Float32\" ";
+            f << " Name=\"" << it->first << "\" ";
+            f << " NumberOfComponents=\"3\" />\n";
+        }
+    }else{
+        fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+        abort();
     }
     f << "      </PCellData>\n";
 
@@ -962,6 +1191,305 @@ VTL_API void vtl::export_spoints_XMLP(std::string const &filename,
     // ------------------------------------------------------------------------------------
     f << "  </PImageData>\n";
 
+    f << "</VTKFile>\n";
+
+    f.close();
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// CUSTOM FUNCTIONS
+
+/**
+ * @brief This function is called by the root MPI process, with GridCreator type.
+ */
+VTL_API void vtl::export_spoints_XMLP_custom_GridCreator(
+    std::string type /* THERMAL or ELECTRO */,
+    std::string outputFileName,
+    size_t currentStep,
+    vtl::SPoints &grid,
+    vtl::SPoints &my_grid,
+    std::vector<vtl::SPoints> &subGrids,
+    GridCreator &grid_Creator,
+    Zip zip
+){
+    if(strcmp(type.c_str(),"ELECTRO") == 0){
+        /**
+         * @brief The root MPI writes the file for EM grid.
+         */
+        outputFileName.append("_ELECTRO");
+        export_spoints_XMLP(
+            outputFileName,
+            currentStep,
+            grid,
+            my_grid,
+            subGrids, 
+            zip);
+    }else if(strcmp(type.c_str(),"THERMAL") == 0){
+        /**
+         * @brief The root MPI writes the file for the thermal grid.
+         */
+        outputFileName.append("_THERMAL");
+        export_spoints_XMLP(
+            outputFileName,
+            currentStep,
+            grid,
+            my_grid,
+            subGrids, 
+            zip);
+    }else{
+        fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+}
+
+/**
+ * @brief This function is called by the root MPI process, with GridCreator_NEW type.
+ */
+VTL_API void vtl::export_spoints_XMLP_custom_GridCreator_NEW(
+    std::string type /* THERMAL or ELECTRO */,
+    std::string outputFileName,
+    size_t currentStep,
+    vtl::SPoints &grid,
+    vtl::SPoints &my_grid,
+    std::vector<vtl::SPoints> &subGrids,
+    GridCreator_NEW &grid_Creator_NEW,
+    Zip zip
+){
+    if(strcmp(type.c_str(),"ELECTRO") == 0){
+        /**
+         * @brief The root MPI writes the file for EM grid.
+         */
+        outputFileName.append("_ELECTRO");
+        export_spoints_XMLP(
+            outputFileName,
+            currentStep,
+            grid,
+            my_grid,
+            subGrids, 
+            zip);
+    }else if(strcmp(type.c_str(),"THERMAL") == 0){
+        /**
+         * @brief The root MPI writes the file for the thermal grid.
+         */
+        outputFileName.append("_THERMAL");
+        std::cout << "Call::export_spoints_XMLP::GridCreator_NEW::IN" << std::endl;
+        export_spoints_XMLP(
+            outputFileName,
+            currentStep,
+            grid,
+            my_grid,
+            subGrids, 
+            zip);
+    }else{
+        fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+}
+
+/**
+ * @brief This function is called by all MPI process, with GridCreator type.
+ */
+VTL_API void vtl::export_spoints_XML_custom_GridCreator(
+    std::string type /* THERMAL or ELECTRO */,
+    std::string outputFileName,
+    size_t currentStep,
+    vtl::SPoints &grid,
+    vtl::SPoints &my_grid,
+    GridCreator &grid_creator,
+    Zip zip
+){
+    if(strcmp(type.c_str(),"ELECTRO") == 0){
+        /**
+         * @brief The MPI process writes its electromagnetic grid.
+         */
+    }else if(strcmp(type.c_str(),"THERMAL") == 0){
+        /**
+         * @brief The MPI process writes its thermal grid.
+         */
+    }else{
+        fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+}
+
+/**
+ * @brief This function is called by all MPI process, with GridCreator type.
+ * 
+ */
+VTL_API void vtl::export_spoints_XML_custom_GridCreator_NEW(
+    std::string type /* THERMAL or ELECTRO */,
+    std::string outputFileName,
+    size_t currentStep,
+    vtl::SPoints &grid,
+    vtl::SPoints &my_grid,
+    GridCreator_NEW &grid_Creator_NEW,
+    Zip zip
+){
+    if(strcmp(type.c_str(),"ELECTRO") == 0){
+        /**
+         * @brief The MPI process writes its electromagnetic grid.
+         */
+        outputFileName.append("_ELECTRO");
+        export_spoints_XML_GridCreatorNew(
+            outputFileName,
+            currentStep,
+            grid, 
+            my_grid,
+            grid_Creator_NEW,
+            zip);
+    }else if(strcmp(type.c_str(),"THERMAL") == 0){
+        /**
+         * @brief The MPI process writes its thermal grid.
+         */
+        outputFileName.append("_THERMAL");
+        export_spoints_XML_GridCreatorNew(
+            outputFileName,
+            currentStep,
+            grid, 
+            my_grid,
+            grid_Creator_NEW,
+            zip);
+    }else{
+        fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+}
+
+VTL_API void vtl::export_spoints_XML_GridCreatorNew(
+    std::string const &filename,
+    size_t step,
+    SPoints const &grid, 
+    SPoints const &mygrid,
+    GridCreator_NEW &grid_creatorObj,
+    Zip zip)
+{
+#if !defined(USE_ZLIB)
+    if (zip==ZIPPED)
+    {
+        std::cout << "INFO: zlib not present - vtk file will not be compressed!\n";
+        zip = UNZIPPED;
+    }
+#endif
+
+    // build file name (+rankno) + stepno + vtk extension
+    std::stringstream s;
+    s << filename;
+    if (mygrid.id >= 0)
+        s << "_r" << mygrid.id;
+    else{
+        printf("vtl::export_spoints_XML::ERROR\n");
+        printf("\tmygrid.id=%d is smaller than 0. Aborting.\n",mygrid.id);
+        abort();
+    }
+    s << '_' << std::setw(8) << std::setfill('0') << step << ".vti";
+    std::stringstream s2;
+    s2 << filename;
+    if (mygrid.id >= 0)
+        s2 << "r_" << mygrid.id;
+    s2 << '_' << std::setw(8) << std::setfill('0') << step << ".vti.tmp";
+
+    // open file
+    std::cout << "writing results to " << s.str() << '\n';
+    std::ofstream f(s.str().c_str(), std::ios::binary | std::ios::out);
+    std::ofstream f2(s2.str().c_str(), std::ios::binary | std::ios::out); // temp binary file
+    f << std::scientific;
+
+    size_t offset = 0;
+    // header
+    f << "<?xml version=\"1.0\"?>\n";
+
+    f << "<VTKFile type=\"ImageData\" version=\"0.1\" byte_order=\"";
+    f << (isCpuLittleEndian ? "LittleEndian" : "BigEndian") << "\" ";
+    f << "header_type=\"UInt32\" "; // UInt64 could be better (?)
+    if (zip==ZIPPED)
+        f << "compressor=\"vtkZLibDataCompressor\" ";
+    f << ">\n";
+
+    f << "  <ImageData ";
+    f << "WholeExtent=\""
+      << grid.np1[0] << ' ' << grid.np2[0] << ' '
+      << grid.np1[1] << ' ' << grid.np2[1] << ' '
+      << grid.np1[2] << ' ' << grid.np2[2] << "\" ";
+    f << "Origin=\"" << grid.o[0] << ' ' << grid.o[1] << ' ' << grid.o[2] << "\" ";
+    f << "Spacing=\"" << grid.dx[0] << ' ' << grid.dx[1] << ' ' << grid.dx[2] << "\">\n";
+
+    f << "    <Piece ";
+    f << "Extent=\""
+      << mygrid.np1[0] << ' ' << mygrid.np2[0] << ' '
+      << mygrid.np1[1] << ' ' << mygrid.np2[1] << ' '
+      << mygrid.np1[2] << ' ' << mygrid.np2[2] << "\">\n";
+
+    // ------------------------------------------------------------------------------------
+    f << "      <CellData>\n";
+
+    //////////////////////////////////////////////////////////
+    //////         OVERWRITTING BOMAN FUNCTION          //////
+    //////////////////////////////////////////////////////////
+    ////// USING GRIDCREATOR OBJECT INSTREAD OF SPOINTS //////
+    // scalar fields
+    if(filename.find("THERMAL") != std::string::npos){
+        for (auto it = mygrid.scalars.begin(); it != mygrid.scalars.end(); ++it)
+        {
+            //assert(it->second->size() == nbp); // TODO
+            f << "        <DataArray type=\"Float32\" ";
+            f << " Name=\"" << it->first << "\" ";
+            f << " format=\"appended\" ";
+            f << " RangeMin=\"0\" ";
+            f << " RangeMax=\"1\" ";
+            f << " offset=\"" << offset << "\" />\n";
+            offset += write_vectorXML_custom_GridCreatorNew(
+                f2, grid_creatorObj, it->first ,'s', (zip==ZIPPED));
+        }
+    }else if(filename.find("ELECTRO") != std::string::npos){
+
+        // vector fields
+        for (auto it = mygrid.vectors.begin(); it != mygrid.vectors.end(); ++it)
+        {
+            //assert(it->second->size() == 3 * nbp); // TODO
+            f << "        <DataArray type=\"Float32\" ";
+            f << " Name=\"" << it->first << "\" ";
+            f << " NumberOfComponents=\"3\" ";
+            f << " format=\"appended\" ";
+            f << " RangeMin=\"0\" ";
+            f << " RangeMax=\"1\" ";
+            f << " offset=\"" << offset << "\" />\n";
+            offset += write_vectorXML_custom_GridCreatorNew(f2, 
+                        grid_creatorObj, 
+                        it->first, 'v', 
+                        (zip==ZIPPED));
+        }
+    }else{
+        fprintf(stderr,"Cannot find thermal or electro in the filename (has %s)\n",
+            filename.c_str());
+        fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+
+    f << "      </CellData>\n";
+
+    // ------------------------------------------------------------------------------------
+    f << "      <PointData>\n";
+    f << "      </PointData>\n";
+
+    f2.close();
+
+    // ------------------------------------------------------------------------------------
+    f << "    </Piece>\n";
+    f << "  </ImageData>\n";
+    // ------------------------------------------------------------------------------------
+    f << "  <AppendedData encoding=\"raw\">\n";
+    f << "    _";
+
+    // copy temp binary file as "appended" data
+    std::ifstream f3(s2.str().c_str(), std::ios::binary | std::ios::in);
+    f << f3.rdbuf();
+    f3.close();
+    // remove temp file
+    std::remove(s2.str().c_str());
+
+    f << "  </AppendedData>\n";
     f << "</VTKFile>\n";
 
     f.close();

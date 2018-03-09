@@ -124,8 +124,13 @@ int main(int argc, char *argv[]){
 	GridCreator_NEW gridTest(input_parser,allMat,MPI_communicator,profiler);
 	gridTest.meshInitialization();
 
-	InterfaceToParaviewer interfaceToWriteOutput(mesher,MPI_communicator,gridTest);
-	interfaceToWriteOutput.convertAndWriteData(0);
+	InterfaceToParaviewer interfaceToWriteOutput(
+			mesher,
+			MPI_communicator,
+			gridTest,true /*is_grid_creator_new*/);
+	interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
+
+	abort();
 
 
 	//AlgoElectro algoElectromagn;
@@ -133,7 +138,7 @@ int main(int argc, char *argv[]){
 	//algoElectromagn.update(mesher,interfaceToWriteOutput);
 	
 	AlgoElectro_NEW algoElectro_newTst;
-	algoElectro_newTst.update(gridTest);
+	algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
 	
 	cout << "Calling all the destructors.\n";
 	

@@ -91,7 +91,9 @@ class InputParser{
 		// Parser:
 		void defaultParsingFromFile(string filename);
 		// Get lengths
-		double get_length_WholeDomain(unsigned int /*DIRECTION 0, 1 or 2*/);
+		double get_length_WholeDomain(
+			unsigned int /*DIRECTION 0, 1 or 2*/,
+			std::string /*type: "Electro" or "Thermal"*/);
 
 		stringDollar_Header1 hashit_Header1 (std::string const& inString);
 		stringDollar_Header2 hashit_Header2 (std::string const& inString);

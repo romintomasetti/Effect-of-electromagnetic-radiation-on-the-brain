@@ -2,6 +2,9 @@
 #define ALGOELECTRO_NEW_HPP
 
 #include "GridCreator_NEW.h"
+
+#include "InterfaceToParaviewer.h"
+
 class AlgoElectro_NEW{
     private:
         /* MEMBERS */
@@ -20,7 +23,7 @@ class AlgoElectro_NEW{
         ~AlgoElectro_NEW(void){}
 
         /* Update function */
-        void update(GridCreator_NEW &);
+        void update(GridCreator_NEW &,InterfaceToParaviewer &);
 
         // Check that OMP_DYNAMIC is set to false:
         void check_OMP_DYNAMIC_envVar(void);

@@ -572,6 +572,27 @@ void GridCreator_NEW::Assign_Init_Temperature_to_Temperature_nodes(void){
                         }
                     }
         }
+    }else if(this->input_parser.get_SimulationType() == "TEST_PARAVIEW"){
+        /**
+         * @brief In the case of "TEST_PARAVIEW", fill in with I.
+         */
+        #pragma omp parallel num_threads(nbr_omp_threads)\
+            private(index)
+        {
+            #pragma omp for collapse(3)
+                    for(size_t K = 0 ; K < this->size_Thermal[2] ; K++){
+                        for(size_t J = 0 ; J < this->size_Thermal[1] ; J ++){
+                            for(size_t I = 0 ; I < this->size_Thermal[0] ; I ++){
+
+                                index = I + this->size_Thermal[0] *
+                                         (J + this->size_Thermal[1] * K);;
+
+                                this->temperature[index] = I;
+
+                            }
+                        }
+                    }
+        }
     }else{
         fprintf(stderr,"GridCreator_NEW::Assign_Temperature_to_Temperature_nodes::ERROR\n");
         fprintf(stderr,"\t>>> Simulation type doesn't correspond to any known type. Aborting.\n");

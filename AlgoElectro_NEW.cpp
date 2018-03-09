@@ -47,7 +47,9 @@ double AlgoElectro_NEW::Compute_dt(GridCreator_NEW &mesh){
     return dt;
 }
 
-void AlgoElectro_NEW::update(GridCreator_NEW &grid){
+void AlgoElectro_NEW::update(
+    GridCreator_NEW &grid,
+    InterfaceToParaviewer &interfaceParaview){
 
     // Start clock for monitoring CPU time:
     double start_algo_update;
@@ -58,7 +60,7 @@ void AlgoElectro_NEW::update(GridCreator_NEW &grid){
     // Retrieve the time step:
     double dt = this->Compute_dt(grid);
     double current_time = 0.0;
-    size_t currentIter = 0;
+    size_t currentStep = 0;
     std::cout << "AlgoElectro_NEW :: dt is " << dt << std::endl;
 
     /*
@@ -355,7 +357,8 @@ void AlgoElectro_NEW::update(GridCreator_NEW &grid){
     double parallelRegionStartingTime = omp_get_wtime();
 
     #pragma omp parallel num_threads(omp_get_max_threads()) default(none)\
-        shared(grid,dt,current_time,currentIter)\
+        shared(grid,dt,current_time,currentStep)\
+        shared(interfaceParaview)\
         shared(parallelRegionStartingTime)\
         shared(H_x_tmp,H_y_tmp,H_z_tmp)\
         shared(E_x_tmp,E_y_tmp,E_z_tmp)\
@@ -587,14 +590,31 @@ void AlgoElectro_NEW::update(GridCreator_NEW &grid){
 
             #pragma omp master
             {
+                if(currentStep == 0){
+                    grid.profiler.addTimingInputToDictionnary("ELECTRO_WRITING_OUTPUTS");
+                }
+                // Monitor time spent in writing !
+                double timeWriting = omp_get_wtime();
+                interfaceParaview.convertAndWriteData(
+                    currentStep,
+                    "ELECTRO"
+                );
+                double time_taken_writing = omp_get_wtime()-timeWriting;
+                
+                // Add time for writing:
+                grid.profiler.incrementTimingInput("ELECTRO_WRITING_OUTPUTS",time_taken_writing);
+
                 current_time += 1000000*dt;
-                currentIter ++;
+                currentStep ++;
 
                 double elapsedTot = omp_get_wtime() - parallelRegionStartingTime;
 
                 printf("AlgoElectro_NEW : iter %zu, time %.10f, time per iter : %.10f.\n",
-                        currentIter,current_time,elapsedTot/currentIter);
+                        currentStep,current_time,elapsedTot/currentStep);
+                printf("Time for writing : %f seconds.\n",time_taken_writing);
             }
+
+            #pragma omp barrier
         } /* END OF WHILE */
     }/* END OF PARALLEL REGION */
 

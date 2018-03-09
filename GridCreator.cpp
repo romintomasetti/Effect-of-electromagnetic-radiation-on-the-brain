@@ -56,13 +56,14 @@ void GridCreator::meshInitialization(){
 
 	/* Initialize source */
 	for(unsigned int I = 0 ; I < this->input_parser.source.get_number_of_sources() ; I ++){
-		this->input_parser.source.computeNodesInsideSource(this->input_parser.lengthX_WholeDomain,
-													this->input_parser.lengthY_WholeDomain,
-													this->input_parser.lengthZ_WholeDomain,
-													this->input_parser.deltaX_Electro,
-													this->input_parser.deltaY_Electro,
-													this->input_parser.deltaZ_Electro,
-													I);
+		this->input_parser.source.computeNodesInsideSource(
+				this->input_parser.lengthX_WholeDomain_Electro,
+				this->input_parser.lengthY_WholeDomain_Electro,
+				this->input_parser.lengthZ_WholeDomain_Electro,
+				this->input_parser.deltaX_Electro,
+				this->input_parser.deltaY_Electro,
+				this->input_parser.deltaZ_Electro,
+				I);
 	}
 
 	// Missing also: initializtion of the heat mesh.

@@ -108,6 +108,10 @@ void InterfaceToParaviewer::initializeAll(void){
         printf("\t> Initializing the subgrids (EM and TH) of class-type SPoints with %d processes.\n",
                     nb_MPI);
 
+        // Allocating space:
+        this->sgrids_Electro.resize(nb_MPI);
+        this->sgrids_Thermal.resize(nb_MPI);
+
         // Loop over each grid and get the starting/ending indices:
         for(unsigned char I = 0 ; I < nb_MPI ; I ++){
 
@@ -301,8 +305,9 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
     cout << "Output VTK files will be named by " + outputName << endl;
 
     /* DETERMINE WHICH GRID TO SAVE */
-    if(strcmp(type.c_str(),"thermal") == 0){
+    if(strcmp(type.c_str(),"THERMAL") == 0){
         /* SAVE THERMAL GRID */
+        cout << ">>> MPI  WRITING XML (THERMAL GRID)" << endl;
         try{
             if(this->is_grid_creator_new == false){
                 export_spoints_XML_custom_GridCreator(
@@ -321,7 +326,7 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
                                 this->grid_Thermal, 
                                 this->mygrid_Thermal,
                                 this->grid_Creator_NEW, 
-                                vtl::ZIPPED)
+                                vtl::ZIPPED);
             }
         }catch(...){
             fprintf(stderr,"InterfaceToParaviewer::convertAndWriteData::ERROR\n");
@@ -347,19 +352,19 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
                                     vtl::ZIPPED);
             }else{
                 export_spoints_XMLP_custom_GridCreator_NEW(
-                                    "ELECTRO",
+                                    "THERMAL",
                                     outputName, 
                                     currentStep, 
-                                    this->grid_Electro, 
-                                    this->mygrid_Electro, 
-                                    this->sgrids_Electro, 
+                                    this->grid_Thermal, 
+                                    this->mygrid_Thermal, 
+                                    this->sgrids_Thermal, 
                                     this->grid_Creator_NEW,
                                     vtl::ZIPPED);
             }
         }
 
         /* END OF THERMAL GRID SAVING */
-    }else if(strcmp(type.c_str(),"electro") == 0){
+    }else if(strcmp(type.c_str(),"ELECTRO") == 0){
         /* SAVE ELECTROMAGNETIC GRID */
         try{
             if(this->is_grid_creator_new == false){
@@ -379,7 +384,7 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
                                 this->grid_Electro, 
                                 this->mygrid_Electro,
                                 this->grid_Creator_NEW, 
-                                vtl::ZIPPED)
+                                vtl::ZIPPED);
             }
         }catch(...){
             fprintf(stderr,"InterfaceToParaviewer::convertAndWriteData::ERROR\n");

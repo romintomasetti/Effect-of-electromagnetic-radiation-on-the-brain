@@ -93,9 +93,9 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 	int myRank = this->ID_MPI_Process.get();
 
 	// Retrieve the length of the whole domain along each direction:
-	double Lx = subGrid.input_parser.lengthX_WholeDomain;
-	double Ly = subGrid.input_parser.lengthY_WholeDomain;
-	double Lz = subGrid.input_parser.lengthZ_WholeDomain;
+	double Lx = subGrid.input_parser.lengthX_WholeDomain_Electro;
+	double Ly = subGrid.input_parser.lengthY_WholeDomain_Electro;
+	double Lz = subGrid.input_parser.lengthZ_WholeDomain_Electro;
 
 	// Retrieve the spatial step of the electromagnetic grid:
 	double deltaX = subGrid.input_parser.deltaX_Electro;
@@ -439,10 +439,10 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 	int nbProc = this->number_of_MPI_Processes.get();
 	int myRank = this->ID_MPI_Process.get();
 
-	// Retrieve the length of the whole domain along each direction:
-	double Lx = subGrid.input_parser.lengthX_WholeDomain;
-	double Ly = subGrid.input_parser.lengthY_WholeDomain;
-	double Lz = subGrid.input_parser.lengthZ_WholeDomain;
+	// Retrieve the length of the whole domain along each direction, EM grid:
+	double Lx = subGrid.input_parser.lengthX_WholeDomain_Electro;
+	double Ly = subGrid.input_parser.lengthY_WholeDomain_Electro;
+	double Lz = subGrid.input_parser.lengthZ_WholeDomain_Electro;
 
 	// Retrieve the spatial step of the electromagnetic grid:
 	double deltaX = subGrid.input_parser.deltaX_Electro;
