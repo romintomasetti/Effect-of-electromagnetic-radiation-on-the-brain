@@ -136,6 +136,17 @@ class GridCreator_NEW{
         void Initialize_Electromagnetic_Properties(std::string whatToDo = string());
 
         // Get the global node number from the local node number, EM grid:
-        void get_Global_from_Local_Electro(size_t *local,size_t global);
+        void get_Global_from_Local_Electro(size_t *local,size_t* global);
+
+        // Get the global node number from the local node number, Thermal grid:
+        void get_Global_from_Local_Thermal(size_t *local,size_t* global);
+
+        void Compute_nodes_inside_sources(
+                std::vector<size_t>        &local_nodes_inside_source_NUMBER,
+                std::vector<unsigned char> &ID_Source,
+                std::vector<double>        &local_nodes_inside_source_FREQ,
+                size_t                     *nbr_nodes_inside_source,
+                const std::string          &TYPE_OF_FIELD
+            );
 };
 #endif

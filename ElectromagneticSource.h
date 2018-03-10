@@ -4,6 +4,9 @@
 
 #include <vector>
 #include "SetOnceVariable_Template.h"
+
+#include <climits>
+
 //#include "GridCreator.h"
 
 using namespace std;
@@ -116,6 +119,28 @@ class ElectromagneticSource{
 		bool isInsideAirGap(const size_t i_global, 
 											const size_t j_global, 
 											const size_t k_global);
+
+		/**
+		 * @brief Returns true if the node is located inside or on the source.
+		 * 
+		 * Argments are: 1) Global indices of the node.
+		 * 				 2) Spatial step along each direction.
+		 *               3) Type of the node. Accepted types are:
+		 * 						Ex, Ey, Ez, Hx, Hy, Hz
+		 * 					Default is "Not_given", which leads to aborting.
+		 *               4) Source ID. Default is UCHAR_MAX (~255), which leads to aborting.
+		 *               5) Origin of the whole grid (EM), in coordinates.
+		 *                  By default, the origin is (0,0,0).
+		 * 
+		 */
+		bool is_inside_source_Romin(
+			const size_t I_gl, 
+			const size_t J_gl, 
+			const size_t K_gl,
+			const std::vector<double> &deltas_Electro,
+			const std::string &type = "Not_given",
+			const unsigned char ID_Source = UCHAR_MAX,
+			const std::vector<double> &origin_whole_grid = {0.0,0.0,0.0});
 };
 
 #endif

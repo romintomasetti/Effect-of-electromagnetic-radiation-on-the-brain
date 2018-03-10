@@ -833,5 +833,232 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
 
 }
 
-// Get the global node number from the local node number, EM grid:
-void get_Global_from_Local_Electro(size_t *local,size_t global);
+/**
+ * @brief Get the global node number from the local node number, EM grid.
+ */
+void GridCreator_NEW::get_Global_from_Local_Electro(size_t *local,size_t* global){
+
+    global[0] = local[0] + this->originIndices_Electro[0];
+    global[1] = local[1] + this->originIndices_Electro[1];
+    global[2] = local[2] + this->originIndices_Electro[2];
+
+}
+
+/**
+ *  @brief Get the global node number from the local node number, Thermal grid.
+ */
+void GridCreator_NEW::get_Global_from_Local_Thermal(size_t *local,size_t* global){
+
+    global[0] = local[0] + this->originIndices_Thermal[0];
+    global[1] = local[1] + this->originIndices_Thermal[1];
+    global[2] = local[2] + this->originIndices_Thermal[2];
+
+}
+
+/**
+ * @brief Compute nodes that are inside the sources
+ * 
+ * Arguments are: 1) local_nodes_inside_source_NUMBER:
+ *                      Gives the local number of the nodes which are inside the sources.
+ *                      The number is the result of I + size_FIELD[0] * ( J + size_FIELD[1] * K).
+ *                      Has the size [nbr_nodes_inside_source].
+ *                2) ID_Source:
+ *                      Contains the ID of the source in which the node is.
+ *                      Has the size [nbr_nodes_inside_source].
+ *                3) local_nodes_inside_source_FREQ:
+ *                      Contains the frequency of each source.
+ *                      Has the same size as the number of sources.
+ *                4) nbr_nodes_inside_source:
+ *                      Number of nodes inside the source.
+ *                      Pointer to a single 'size_t'.
+ * 
+ */
+
+class ReducerForOMP{
+    public:
+        template<typename T>
+        void reduce_custom(std::vector<T> *v, int begin, int end){
+            std::cout << "Welcome in reduce_custom !" << std::endl;
+
+            // Master cannot reduce.
+            if(end - begin == 1){
+                fprintf(stderr,"%s :: cannot reduce ! Return.\n",__FUNCTION__);
+                return;
+            }
+
+            int pivot = (begin+end)/2;
+
+            #pragma omp task
+                reduce_custom(v,begin,pivot);
+            #pragma omp task
+                reduce_custom(v,pivot,end);
+            #pragma omp taskwait
+
+            v[begin].insert(v[begin].end(),v[pivot].begin(),v[pivot].end());
+
+        }
+};
+
+void GridCreator_NEW::Compute_nodes_inside_sources(
+        std::vector<size_t>        &local_nodes_inside_source_NUMBER,
+        std::vector<unsigned char> &ID_Source,
+        std::vector<double>        &local_nodes_inside_source_FREQ,
+        size_t                     *nbr_nodes_inside_source,
+        const std::string          &TYPE_OF_FIELD
+    )
+{
+    fprintf(stdout,"Coucou, tu entres dans %s.\n",__FUNCTION__);
+    /// Check inputs:
+    if(local_nodes_inside_source_NUMBER.size() != 0){
+        // Means the array is possibly already allocated. Abort.
+        fprintf(stderr,"In %s, 'local_nodes_inside_source_NUMBER' is not empty. Aborting.\n",
+            __FUNCTION__);
+        fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+    if(local_nodes_inside_source_FREQ.size() != 0){
+        // Means the array is possibly already allocated. Abort.
+        fprintf(stderr,"In %s, 'local_nodes_inside_source_FREQ' is not empty. Aborting.\n",__FUNCTION__);
+        fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+    if(ID_Source.size() != 0){
+        // Means the array is possibly already allocated. Abort.
+        fprintf(stderr,"In %s :: 'ID_Source' is not empty. Aborting.\n",__FUNCTION__);
+        fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+    if(TYPE_OF_FIELD == std::string() 
+        && TYPE_OF_FIELD != "Ex"
+        && TYPE_OF_FIELD != "Ey"
+        && TYPE_OF_FIELD != "Ez"
+        && TYPE_OF_FIELD != "Hx"
+        && TYPE_OF_FIELD != "Hy"
+        && TYPE_OF_FIELD != "Hz"){
+        fprintf(stderr,"In %s :: empty or wrong 'TYPE_OF_FIELD'. Aborting.\n",__FUNCTION__);
+        abort();
+    }
+
+    std::vector<size_t>        *numbers_for_nodes;
+    std::vector<unsigned char> *ID_for_nodes;
+    std::vector<double>        *freq;
+
+    std::vector<size_t> SIZES;
+
+    fprintf(stdout,"Assignin SIZES...");
+
+    if(TYPE_OF_FIELD == "Ex"){
+        SIZES = this->size_Ex;
+
+    }else if(TYPE_OF_FIELD == "Ey"){
+        SIZES = this->size_Ey;
+
+    }else if(TYPE_OF_FIELD == "Ez"){
+        SIZES = this->size_Ez;
+
+    }else if(TYPE_OF_FIELD == "Hx"){
+        SIZES = this->size_Hx;
+
+    }else if(TYPE_OF_FIELD == "Hy"){
+        SIZES = this->size_Hy;
+        
+    }else if(TYPE_OF_FIELD == "Hz"){
+        SIZES = this->size_Hz;
+
+    }else{
+        fprintf(stderr,"In %s :: wrong TYPE_OF_FIELD (has %s) ! Aborting.\n",__FUNCTION__,TYPE_OF_FIELD.c_str());
+        fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+
+    fprintf(stdout,"Done :: %s :: (%zu,%zu,%zu)\n",TYPE_OF_FIELD.c_str(),SIZES[0],SIZES[1],SIZES[2]);
+
+
+    std::string type = TYPE_OF_FIELD;
+
+    #pragma omp parallel default(none)\
+        shared(numbers_for_nodes)\
+        shared(freq)\
+        shared(ID_for_nodes)\
+        shared(local_nodes_inside_source_NUMBER)\
+        shared(ID_Source)\
+        shared(SIZES,type)
+    {
+        std::vector<size_t> SIZES_PRIVATE = SIZES;
+
+        printf("Done (OMP %d) :: %s :: (%zu,%zu,%zu)\n",
+            omp_get_thread_num(),type.c_str(),SIZES[0],SIZES[1],SIZES[2]);
+        // Allocate:
+        #pragma omp single
+        {
+            numbers_for_nodes = new std::vector<size_t>       [omp_get_num_threads()];
+            ID_for_nodes      = new std::vector<unsigned char>[omp_get_num_threads()];
+            freq              = new std::vector<double>       [omp_get_num_threads()];
+            printf("Allocate bizarre ok\n");
+        }
+
+        size_t I,J,K;
+
+        size_t local[3];
+        size_t global[3];
+
+        printf("Just before the pragma ( OMP %d )\n",omp_get_thread_num());
+        // Check for the nodes Ez:
+        #pragma omp for schedule(static)
+        for(K = 1 ; K < SIZES_PRIVATE[2]-1 ; K ++){
+            for(J = 1 ; J < SIZES_PRIVATE[1]-1 ; J ++){
+                for(I = 1 ; I < SIZES_PRIVATE[0]-1 ; I ++){
+
+                    // Convert to global node numbering:
+                    // Shift of 1 because we start the loop at 1:
+                    local[0] = I-1;
+                    local[1] = J-1;
+                    local[2] = K-1;
+                    this->get_Global_from_Local_Electro(local,global);
+
+                    // Loop over all the sources:
+                    for(unsigned char id = 0 ; id < this->input_parser.source.get_number_of_sources() ; id ++){
+                        if(this->input_parser.source.is_inside_source_Romin(
+                            global[0],
+                            global[1],
+                            global[2],
+                            this->delta_Electromagn,
+                            type,
+                            id,
+                            this->input_parser.origin_Electro_grid
+                        ) == true)
+                        {
+                            // The node is inside the source !!!
+                            // 0 corresponds to Ex.
+                            numbers_for_nodes[omp_get_thread_num()].push_back(
+                                I + SIZES_PRIVATE[0] * ( J + SIZES_PRIVATE[1] * K)
+                            );
+                            ID_for_nodes[omp_get_thread_num()].push_back((unsigned char)id);
+                        }
+                    }
+                }
+            }
+        } /* END OF EX */
+        // Assemble all the results in one vector:
+        #pragma omp single nowait
+        {
+            ReducerForOMP reducer;
+            reducer.reduce_custom(numbers_for_nodes,0,omp_get_num_threads());
+        }
+        #pragma omp single
+        {
+            ReducerForOMP reducer;
+            reducer.reduce_custom(ID_for_nodes,0,omp_get_num_threads());
+        }
+
+    }
+
+    local_nodes_inside_source_NUMBER = numbers_for_nodes[0];
+    ID_Source = ID_for_nodes[0];
+
+    delete[] numbers_for_nodes;
+    delete[] ID_for_nodes;
+    delete[] freq;
+
+    fprintf(stderr,"\n\t>>> Going out of %s.\n\n",__FUNCTION__);
+}

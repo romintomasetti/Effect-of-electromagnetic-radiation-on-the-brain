@@ -8,6 +8,8 @@
 #include <map>
 #include <vector>
 #include <sstream>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "SetOnceVariable_Template.h"
 #include "ElectromagneticSource.h"
@@ -26,7 +28,8 @@ enum stringDollar_Header2{
 	SOURCE,
 	STOP_SIMUL_AFTER,
 	TEMP_INIT,
-	MATERIALS
+	MATERIALS,
+	ORIGINS
 };
 
 class InputParser{
@@ -42,7 +45,15 @@ class InputParser{
 		// Read header 1:
 		void readHeader(ifstream &,std::string &);
 
-		std::vector<double> determineVectorFromStr(std::string);
+		/**
+		 * @brief Determine a vector of double from a string.
+		 * 
+		 * The size of the final vector should be provided.
+		 * 
+		 */
+		std::vector<double> determineVectorFromStr(
+			std::string,
+			size_t size_to_verify_for = 0 );
 
 		void readHeader_INFOS(ifstream &file);
 		void readHeader_MESH (ifstream &file);
@@ -64,6 +75,11 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
+
+		// Origin of the grids:
+		std::vector<double> origin_Electro_grid = {0,0,0};
+		std::vector<double> origin_Thermal_grid = {0,0,0};
+
 		// Map that contains, for each material, the initial temperature:
 		map<std::string,double> GetInitTemp_FromMaterialName;
 

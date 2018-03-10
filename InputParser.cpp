@@ -24,6 +24,7 @@ stringDollar_Header2 InputParser::hashit_Header2 (std::string const& inString) {
 	if (inString == "STOP_SIMUL_AFTER") return STOP_SIMUL_AFTER;
 	if (inString == "TEMP_INIT") return TEMP_INIT;
 	if (inString == "MATERIALS") return MATERIALS;
+	if (inString == "ORIGINS")   return ORIGINS;
 	else {
 		printf("In file %s at %d. Complain to Romin. Abort().\n",__FILE__,__LINE__);
 		cout << "Faulty string is ::" + inString + "::" << endl;
@@ -160,6 +161,7 @@ void InputParser::basicParsing(const string filename){
 					this->readHeader(inputFile,currentLine);
 				}
 			}
+			cout << "INPUT FILE TERMINATED" << endl;
 		}else{
 			cout << "InputParser::basicParsing::Should not end up here !";
 			cout << " Complain to the developer.\n";
@@ -203,9 +205,7 @@ void InputParser::readHeader(ifstream &file,std::string &currentLine){
 			break;
 		case RUN_INFOS: 
 			this->readHeader_RUN_INFOS(file);
-			#if DEBUG > 4
 			cout << "EXITING SECTION RUN_INFOS WITH currentLine=" + currentLine << endl;
-			#endif
 			break;
 		default:
 			printf("Should not end up here. Complain to Romin. Abort.");
@@ -448,6 +448,7 @@ void InputParser::readHeader_MESH (ifstream &file){
 				}
 				break;
 			
+			
 			case DOMAIN_SIZE:
 				cout << "Entering case DOMAIN_SIZE\n";
 				while(!file.eof()){
@@ -515,6 +516,7 @@ void InputParser::readHeader_MESH (ifstream &file){
 				}
 				break;
 
+			
 			case SOURCE:
 				{
 					bool nbr_Sources_Defined = false;
@@ -557,42 +559,66 @@ void InputParser::readHeader_MESH (ifstream &file){
 							nbr_Sources_Defined = true;
 
 						}else if(propName == "L_X"){
-							std::vector<double> temp = this->determineVectorFromStr(propGiven);
+							std::vector<double> temp = 
+								this->determineVectorFromStr(
+									propGiven,
+									this->source.get_number_of_sources());
 							cout << "Values are : " << temp[0] << temp[1] << endl;
 							this->source.setLengthAlongOneDir(0,temp);
 
 						}else if(propName == "L_Y"){
-							std::vector<double> temp = this->determineVectorFromStr(propGiven);
+							std::vector<double> temp = 
+								this->determineVectorFromStr(
+									propGiven,
+									this->source.get_number_of_sources());
 							cout << temp[0] << temp[1] << endl;
 							this->source.setLengthAlongOneDir(1,temp);
 
 						}else if(propName == "L_Z"){
-							std::vector<double> temp = this->determineVectorFromStr(propGiven);
+							std::vector<double> temp = 
+								this->determineVectorFromStr(
+									propGiven,
+									this->source.get_number_of_sources());
 							cout << temp[0] << temp[1] << endl;
 							this->source.setLengthAlongOneDir(2,temp);
 
 						}else if(propName == "C_X"){
-							std::vector<double> temp = this->determineVectorFromStr(propGiven);
+							std::vector<double> temp = 
+								this->determineVectorFromStr(
+									propGiven,
+									this->source.get_number_of_sources());
 							cout << temp[0] << temp[1] << endl;
 							this->source.setCenterAlongOneDir(0,temp);
 
 						}else if(propName == "C_Y"){
-							std::vector<double> temp = this->determineVectorFromStr(propGiven);
+							std::vector<double> temp = 
+								this->determineVectorFromStr(
+									propGiven,
+									this->source.get_number_of_sources());
 							cout << temp[0] << temp[1] << endl;
 							this->source.setCenterAlongOneDir(1,temp);
 
 						}else if(propName == "C_Z"){
-							std::vector<double> temp = this->determineVectorFromStr(propGiven);
+							std::vector<double> temp = 
+								this->determineVectorFromStr(
+									propGiven,
+									this->source.get_number_of_sources());
 							cout << temp[0] << temp[1] << endl;
 							this->source.setCenterAlongOneDir(2,temp);
 
 						}else if(propName == "FRQCY"){
-							std::vector<double> temp = this->determineVectorFromStr(propGiven);
+							std::vector<double> temp = 
+								this->determineVectorFromStr(
+									propGiven,
+									this->source.get_number_of_sources());
 							cout << temp[0] << temp[1] << endl;
 							this->source.setAllFrequencies(temp);
 
 						}else if(propName == "AIR_GAP"){
-							std::vector<double> airgaps = this->determineVectorFromStr(propGiven);
+							std::vector<double> airgaps = 
+								this->determineVectorFromStr(
+									propGiven,
+									this->source.get_number_of_sources());
 							cout << airgaps[0] << airgaps[1] << endl;
 							cout << "Setting AriGaps...";
 							this->source.set_airGaps(airgaps);
@@ -685,6 +711,62 @@ void InputParser::readHeader_MESH (ifstream &file){
 				}
 				break;
 
+			case ORIGINS:
+				cout << "Entering case ORIGINS\n";
+				while(!file.eof()){
+					// Note: sections are ended by $the-section-name.
+					// Read line:
+					getline(file,currentLine);
+					// Get rid of comments:
+					this->checkLineISNotComment(file,currentLine);
+					// Remove any blank in the string:
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+					cout << currentLine << endl;
+					// If the string is "$DELTAS" it means the section ends.
+					if(currentLine == "$ORIGINS"){
+						cout << "EXITING ORIGINS\n";
+						
+						break;
+					}
+					// If the string is empty, it was just a white space. Continue.
+					if(currentLine == string()){continue;}
+					// Find the position of the equal sign:
+					std::size_t posEqual  = currentLine.find("=");
+					// The property we want to set:
+					std::string propName  = currentLine.substr(0,posEqual);
+					// The property name the user gave:
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+
+					cout << propName + "=" + propGiven << endl;
+					cout << "To compare with " + currentLine << endl;
+
+					if(propName == "ORIGIN_ELECTRO_X"){
+						this->origin_Electro_grid[0]= std::stod(propGiven);
+						
+					}else if(propName == "ORIGIN_ELECTRO_Y"){
+						this->origin_Electro_grid[1] = std::stod(propGiven);
+					
+					}else if(propName == "ORIGIN_ELECTRO_Z"){
+						this->origin_Electro_grid[2] = std::stod(propGiven);
+
+					}else if(propName == "ORIGIN_THERMAL_X"){
+						this->origin_Thermal_grid[0] = std::stod(propGiven);
+
+					}else if(propName == "ORIGIN_THERMAL_Y"){
+						this->origin_Thermal_grid[1] = std::stod(propGiven);
+
+					}else if(propName == "ORIGIN_THERMAL_Z"){
+						this->origin_Thermal_grid[2] = std::stod(propGiven);
+
+					}else{
+						fprintf(stderr,"In %s (%d) :: Cannot associate %s to any property. Aborting.\n",
+							__FUNCTION__,__LINE__,propName.c_str());
+						fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+						abort();
+					}
+				}
+				break;
+
 			default:
 				printf("Should not end up here. Complain to Romin. Abort.");
 				printf("(in file %s at %d)\n",__FILE__,__LINE__);
@@ -706,7 +788,9 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 		// Remove Dollar sign:
 		currentLine = currentLine.substr(currentLine.find("$")+1);
 		cout << "BEFORE THE SWITCH : " + currentLine << endl;
-		if(currentLine == "RUN_INFOS"){break;}
+		if(currentLine == "RUN_INFOS"){
+			cout << "BREAKING FROM RUN_INFOS" << endl;
+			break;}
 		switch(this->hashit_Header2(currentLine)){
 			case STOP_SIMUL_AFTER:
 				cout << "Entering case STOP_SIMUL_AFTER\n";
@@ -809,17 +893,23 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 	}
 }
 
-std::vector<double> InputParser::determineVectorFromStr(std::string str){
+std::vector<double> InputParser::determineVectorFromStr(
+	std::string str,
+	size_t size_to_verify_for /* = 0 */){
 	std::stringstream stream(str);
 	std::string word;
 	std::vector<double> tempVec;
-	cout << "STRING IS " + str << endl;
 	while( getline(stream, word, ';') ){
-		std::cout << word << "\n";
 		tempVec.push_back(std::stod(word));
 	}
-		
-	cout << "END\n";
 
+	if(tempVec.size() > size_to_verify_for){
+		fprintf(stderr,"In %s :: The vector from the string contains more elements than annouced.\n",
+			__FUNCTION__);
+		fprintf(stderr,"Received %s, annouced %zu elements but has %zu elements. Aborting.\n",
+			str.c_str(),size_to_verify_for,tempVec.size());
+		abort();
+	}
+		
 	return tempVec;
 }

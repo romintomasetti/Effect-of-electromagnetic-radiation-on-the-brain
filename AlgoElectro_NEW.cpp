@@ -324,6 +324,39 @@ void AlgoElectro_NEW::update(
     }
     // END OF #pragma omp parallel num_threads(6)
 
+    /////////////////////////////////////////////////////
+    // COMPUTE NODES INSIDE THE SOURCE:                //
+    //      1) Call GridCreator_NEW                    //
+    //      2) GridCreator_NEW calls its source object //
+    /////////////////////////////////////////////////////
+    
+    // Size 6 because 3 E and 3 H components:
+    std::vector<size_t>        *local_nodes_inside_source_NUMBER ;
+    local_nodes_inside_source_NUMBER = new std::vector<size_t>[6];
+
+    // Size 6 because 3 E and 3 H components:
+    std::vector<unsigned char> *ID_Source                         ;
+    ID_Source = new std::vector<unsigned char>[6];
+
+    std::vector<double>        local_nodes_inside_source_FREQ    ;
+
+    // Size is 6 because 3 E et 3 H components:
+    std::vector<size_t>        nbr_nodes_inside_source = {0,0,0,0,0,0};
+
+    std::vector<std::string> TYPE = {"Ex","Ey","Ez","Hx","Hy","Hz"};
+
+    for(int i = 0 ; i < TYPE.size() ; i ++){
+        grid.Compute_nodes_inside_sources(
+            local_nodes_inside_source_NUMBER[i],
+            ID_Source[i],
+            local_nodes_inside_source_FREQ,
+            &nbr_nodes_inside_source[i],
+            TYPE[i]
+        );
+    }
+
+    fprintf(stderr,"\n\t>>> Ready to compute sa mère !!!\n\n");
+
     ///////////////////////////////////////////////
     // UPDATE WHILE LOOP - PARALLELIZED WITH     //
     // OPENMP THREADS    - MINIMUM 6 OPENMP      //
@@ -346,6 +379,7 @@ void AlgoElectro_NEW::update(
 
     #pragma omp parallel num_threads(omp_get_max_threads()) default(none)\
         shared(grid,dt,current_time,currentStep)\
+        shared(local_nodes_inside_source_NUMBER)\
         shared(interfaceParaview)\
         shared(parallelRegionStartingTime)\
         shared(H_x_tmp,H_y_tmp,H_z_tmp)\
@@ -595,34 +629,52 @@ void AlgoElectro_NEW::update(
             ////////////////////////////
             /*#pragma omp for collapse(3)\
                 private(index)*/
-            #pragma omp master
+            /*#pragma omp master
             {
                 size_t counter = 0;
-            for(K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
-                for(J = 1 ; J < grid.size_Ez[1]-1 ; J ++){
-                    for(I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
+                for(K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
+                    for(J = 1 ; J < grid.size_Ez[1]-1 ; J ++){
+                        for(I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
 
-                        int A = 53;
-                        int B = 62;
-                        if(I >= A && I <= B 
-                           && J >= A && J <= B
-                           && K >= A && K <= B)
-                        {
-                            counter++;
-                            index        = I   + size_x   * ( J     + size_y   * K);
-                            E_z_tmp[index] = sin(2*3.14*900E6*current_time);
-                            /*printf("Imposing (%zu,%zu,%zu) = %.20f | grid.E_z=%.20f\n",
-                                I,J,K,E_z_tmp[index],grid.E_z[index]);*/
-                            //E_x_tmp[I + grid.size_Ex[0]*(J+grid.size_Ex[1]*K)] = 0.0;
-                            //E_y_tmp[I + grid.size_Ey[0]*(J+grid.size_Ey[1]*K)] = 0.0;
+                            int A = 53;
+                            int B = 62;
+                            if(I >= A && I <= B 
+                            && J >= A && J <= B
+                            && K >= A && K <= B)
+                            {
+                                counter++;
+                                index        = I   + size_x   * ( J     + size_y   * K);
+                                E_z_tmp[index] = sin(2*3.14*900E6*current_time);
+                            }
+
                         }
-
                     }
-                }
+                }            
+            }*/
+
+            
+            #pragma omp for schedule(static)
+            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[2].size() ; it ++){
+
+                index = local_nodes_inside_source_NUMBER[2][it];
+
+                E_z_tmp[index] = sin(2*M_PI*9000E6*current_time);
             }
-            printf("Had increment %zu electric Z field !\n",counter);
-            
-            
+
+            #pragma omp for schedule(static)
+            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[1].size() ; it ++){
+
+                index = local_nodes_inside_source_NUMBER[1][it];
+
+                E_y_tmp[index] = 2;
+            }
+
+            #pragma omp for schedule(static)
+            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[0].size() ; it ++){
+
+                index = local_nodes_inside_source_NUMBER[0][it];
+
+                E_x_tmp[index] = 2;
             }
             
             #pragma omp barrier
@@ -657,8 +709,10 @@ void AlgoElectro_NEW::update(
                         currentStep,current_time,elapsedTot/currentStep);
                 printf("Time for writing : %f seconds.\n",time_taken_writing);
             }
-
             #pragma omp barrier
+
+            abort();
+
         } /* END OF WHILE */
     }/* END OF PARALLEL REGION */
 

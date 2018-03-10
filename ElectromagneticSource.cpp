@@ -384,3 +384,98 @@ int ElectromagneticSource::DetermineInWhichSourceWeAre(const size_t i_global,
 	// By default we return -1, meaning we are not in a source.
 	return -1;
 }
+
+/////////////////////////////
+bool ElectromagneticSource::is_inside_source_Romin(
+			const size_t I_gl, 
+			const size_t J_gl, 
+			const size_t K_gl,
+			const std::vector<double> &deltas_Electro,
+			const std::string &type /*= "Not_given"*/,
+			const unsigned char ID_Source/* = UCHAR_MAX*/,
+			const std::vector<double> &origin_whole_grid/* = {0.0,0.0,0.0}*/)
+{
+	/// Verify arguments:
+	if(ID_Source == UCHAR_MAX){
+		fprintf(stderr,"%s::ID_Source is equal to UCHAR_MAX. Aborting\n",__FUNCTION__);
+		fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+		abort();
+	}
+	if(type == "Not_given"){
+		fprintf(stderr,"%s:: you didn't specify the type of the node. Abortin.\n",__FUNCTION__);
+		fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+		abort();
+	}
+	/// As a function of the type of node, the spatial shift is different.
+
+	double shift_X = 0.0;
+	double shift_Y = 0.0;
+	double shift_Z = 0.0;
+
+	double X_coord = -1.0;
+	double Y_coord = -1.0;
+	double Z_coord = -1.0;
+
+	if(type == "Ex"){
+		// The node is of part of the electric field's X component.
+		// Shift for this type of node is deltaX along X.
+		shift_X = deltas_Electro[0];
+
+	}else if (type == "Ey"){
+		// The node is of part of the electric field's Y component.
+		// Shift for this type of node is deltaY along Y.
+		shift_Y = deltas_Electro[1];
+
+	}else if (type == "Ez"){
+		// The node is of part of the electric field's Z component.
+		// Shift for this type of node is deltaZ along Z.
+		shift_Z = deltas_Electro[2];
+
+	}else if (type == "Hx"){
+		// The node is of part of the magnetic field's X component.
+		// Shift for this type of node is deltaY along Y and deltaZ along Z.
+		shift_Y = deltas_Electro[1];
+		shift_Z = deltas_Electro[2];
+
+	}else if (type == "Hy"){
+		// The node is of part of the magnetic field's Y component.
+		// Shift for this type of node is deltaX along X and deltaZ along Z.
+		shift_X = deltas_Electro[0];
+		shift_Z = deltas_Electro[2];
+
+	}else if (type == "Hz"){
+		// The node is of part of the magnetic field's Z component.
+		// Shift for this type of node is deltaX along X and deltaY along Y.
+		shift_X = deltas_Electro[0];
+		shift_Y = deltas_Electro[1];
+
+	}else{
+		fprintf(stderr,"In %s :: invalid type (has %s). Aborting.\n",
+			__FUNCTION__,type.c_str());
+		fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+	}
+
+	/// Compute the coordinates of the node w.r.t. the origin of the whole grid:
+	X_coord = origin_whole_grid[0] + I_gl * deltas_Electro[0] + shift_X;
+	Y_coord = origin_whole_grid[1] + J_gl * deltas_Electro[1] + shift_Y;
+	Z_coord = origin_whole_grid[2] + K_gl * deltas_Electro[2] + shift_Z;
+
+	/// Determine if it is inside the source:
+	double EPS = 1E-8;
+	if(    X_coord >= (this->centerX[ID_Source] - this->lengthX[ID_Source]/2)-EPS
+		&& X_coord <= (this->centerX[ID_Source] + this->lengthX[ID_Source]/2)+EPS
+		&& Y_coord >= (this->centerY[ID_Source] - this->lengthY[ID_Source]/2)-EPS
+		&& Y_coord <= (this->centerY[ID_Source] + this->lengthY[ID_Source]/2)+EPS
+		&& Z_coord >= (this->centerZ[ID_Source] - this->lengthZ[ID_Source]/2)-EPS
+		&& Z_coord <= (this->centerZ[ID_Source] + this->lengthZ[ID_Source]/2)+EPS)
+	{
+		// The node is inside the source, return true.
+		if(I_gl == 6 && J_gl == 4){
+			printf("(%zu,%zu,%zu)=(%f,%f,%f)\n",I_gl,J_gl,K_gl,X_coord,Y_coord,Z_coord);
+		}
+		return true;
+	}
+	
+	/// By default, return false.
+	return false;
+}

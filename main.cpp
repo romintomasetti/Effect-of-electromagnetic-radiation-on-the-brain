@@ -1,3 +1,18 @@
+/*! \mainpage My Personal Index Page
+ *
+ * \section intro_sec Introduction
+ *
+ * This is the introduction.
+ *
+ * \section install_sec Installation
+ *
+ * \subsection step1 Step 1: Opening the box
+ *  
+ * etc...
+ */
+
+
+
 #include <new>
 #include <iostream>
 #include <string>
@@ -52,6 +67,13 @@ using namespace std;
 
 int main(int argc, char *argv[]){
 
+	//////////////////
+	/**
+	 * Super important for speed of output writing !
+	 */
+	omp_set_nested(1);
+	//////////////////
+
 	/* SET OMP_DYNAMIC */
 	if(const char *omp_dynamic_env = std::getenv("OMP_DYNAMIC")){
 		// Already declared. Check it is false.
@@ -97,9 +119,10 @@ int main(int argc, char *argv[]){
 	string filenameInput = "TESTS/testSourceCenteredInCube.input";
 	InputParser input_parser;
 	input_parser.defaultParsingFromFile(filenameInput);
+	cout << "INPUT PARSER HAS FINISHED HIS JOBS." << endl;
 
 	
-	std::string profilingName = string();
+	std::string profilingName;
 	profilingName = input_parser.get_outputNames()["profile"];
 	profilingName.append("_RANK");
 	profilingName.append(std::to_string(MPI_communicator.getRank()));
@@ -129,8 +152,10 @@ int main(int argc, char *argv[]){
 			MPI_communicator,
 			gridTest,true /*is_grid_creator_new*/);
 	interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
+	//interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
 
-	abort();
+	/*printf("\n\nMAIN :: ABORTING\n\n");
+	abort();	*/
 
 
 	//AlgoElectro algoElectromagn;
