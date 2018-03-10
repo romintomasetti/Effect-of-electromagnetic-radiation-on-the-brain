@@ -15,6 +15,16 @@ $INFOS
 $INFOS
 
 $MESH
+	// Origins of the thermal and electromagnetic grids (in coordinates)
+	$ORIGINS
+		ORIGIN_ELECTRO_X=0.0
+		ORIGIN_ELECTRO_Y=0.0
+		ORIGIN_ELECTRO_Z=0.0
+		ORIGIN_THERMAL_X=0.0
+		ORIGIN_THERMAL_Y=0.0
+		ORIGIN_THERMAL_Z=0.0
+	$ORIGINS
+
 	// Size of the elements of the mesh:
 	$DELTAS
 		deltaX_Electro=1.
