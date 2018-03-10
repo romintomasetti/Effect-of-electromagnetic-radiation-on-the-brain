@@ -368,6 +368,7 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
         /* SAVE ELECTROMAGNETIC GRID */
         try{
             if(this->is_grid_creator_new == false){
+                std::cout << "Calling XML pas new (electro)" << std::endl;
                 export_spoints_XML_custom_GridCreator(
                                 "ELECTRO",
                                 outputName,
@@ -377,6 +378,7 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
                                 this->grid_Creator, 
                                 vtl::ZIPPED);
             }else{
+                std::cout << "Calling XML NEW" << std::endl;
                 export_spoints_XML_custom_GridCreator_NEW(
                                 "ELECTRO",
                                 outputName,
