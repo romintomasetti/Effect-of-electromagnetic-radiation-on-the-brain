@@ -16,6 +16,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "omp.h"
+
 using namespace vtl;
 
 #ifdef USE_ZLIB
@@ -28,6 +30,32 @@ using namespace vtl;
 
 const int __one__ = 1;
 const bool isCpuLittleEndian = 1 == *(char *)(&__one__); // CPU endianness
+
+/**
+ * @brief Check that nested omp region is enabled to speed up the buffer filling during writing.
+ * 
+ * Custom function to ensure that nested parallel regions are enabled.
+ * 
+ */
+void check_omp_nested_enabled(void){
+    
+	if(const char *omp_dynamic_env = std::getenv("OMP_NESTED")){
+		// Already declared. Check it is false.
+		if(std::strcmp(omp_dynamic_env,"true") == 0){
+			printf("OMP_NESTED=%s.\n",std::getenv("OMP_NESTED"));
+		}else{
+			std::string set_env = "OMP_NESTED=true";
+			putenv(&set_env[0]);
+			printf("OMP_NESTED=%s.\n",std::getenv("OMP_NESTED"));
+		}
+	}else{
+		// OMP_DYNAMIC was not declared. Declare it.
+		std::string set_env = "OMP_NESTED=true";
+		putenv(&set_env[0]);
+		printf("OMP_NESTED=%s.\n",std::getenv("OMP_NESTED"));
+	}
+}
+
 
 // this routine writes a vector of double as a vector of float to a legacy VTK file f.
 //  the vector is converted to float (32bits) and to "big endian" format
@@ -253,6 +281,7 @@ size_t write_vectorXML_custom_GridCreatorNew(
     char vecORsca, 
     bool usez)
 {
+    check_omp_nested_enabled();
     // Size written in file:
     size_t written = 0;
 
@@ -277,13 +306,16 @@ size_t write_vectorXML_custom_GridCreatorNew(
             size_t counter = 0 ;
             size_t index   = 0;
 
-            for(size_t K = 0 ; K < size[2] ; K ++){
-                for(size_t J = 0 ; J < size[1] ; J ++){
-                    for(size_t I = 0 ; I < size[0] ; I ++){
+            size_t I,J,K;
+
+            #pragma omp private(index,I,J,K) shared(buffer,grid) for schedule(static) 
+            for(K = 0 ; K < size[2] ; K ++){
+                for(J = 0 ; J < size[1] ; J ++){
+                    for(I = 0 ; I < size[0] ; I ++){
 
                         index = I + size[0] * (J + K * size[1]);
 
-                        buffer[counter++] = (float)grid.temperature[index];
+                        buffer[index] = (float)grid.temperature[index];
                         
                     }
                 }
@@ -297,6 +329,8 @@ size_t write_vectorXML_custom_GridCreatorNew(
         // Example: electric and magnetic fields:
         if(fieldName == "ElectricField"){
 
+            std::cout << "\n\t>>> Writing VTI electric field...\n";
+
             // Get size M, N, P:
             std::vector<size_t> size = grid.sizes_EH;
             
@@ -309,39 +343,59 @@ size_t write_vectorXML_custom_GridCreatorNew(
             
             buffer.resize(size_field);
 
-            size_t counter = 0;
             size_t index   = 0;
+            size_t buff_index = 0;
 
-            for(size_t K = 1 ; K < size[2]-1 ; K ++){
-                for(size_t J = 1 ; J < size[1]-1 ; J ++){
-                    for(size_t I = 1 ; I < size[0]-1 ; I ++){
+            size_t I,J,K;
 
-                        // Electric field Ex:
-                        if(I < size[0]-2){
-                            index = I + grid.size_Ex[0] * (J + K * grid.size_Ex[1]);
-                            buffer[counter++] = (float)grid.E_x[index];
-                        }else{
-                            buffer[counter++] = (float)0.0;
-                        }
+            // EX field:
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
+            for(K = 1 ; K < grid.size_Ex[2]-1 ; K ++){
+                for(J = 1 ; J < grid.size_Ex[1]-1 ; J ++ ){
+                    for(I = 1 ; I < grid.size_Ex[0]-1 ; I ++){
 
-                        // Electric field Ey:
-                        if(J < size[1] - 2){
-                            index = I + grid.size_Ey[0] * (J + K * grid.size_Ey[1]);
-                            buffer[counter++] = (float)grid.E_y[index];
-                        }else{
-                            buffer[counter++] = (float)0.0;
-                        }
+                        index = I + grid.size_Ex[0] * ( J + grid.size_Ex[1] * K );
 
-                        // Electric field Ez:
-                        if(K < size[2]-2){
-                            index = I + grid.size_Ez[0] * (J + K * grid.size_Ez[1]);
-                            buffer[counter++] = (float)grid.E_z[index];
-                        }else{
-                            buffer[counter++] = (float)0.0;
-                        }
+                        buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+
+                        buffer[3*buff_index] = grid.E_x[index];
+                        
                     }
                 }
             }
+
+            // EY field:
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
+            for(size_t K = 1 ; K < grid.size_Ey[2]-1 ; K ++){
+                for(size_t J = 1 ; J < grid.size_Ey[1]-1 ; J ++ ){
+                    for(size_t I = 1 ; I < grid.size_Ey[0]-1 ; I ++){
+
+                        index = I + grid.size_Ey[0] * ( J + grid.size_Ey[1] * K );
+
+                        buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+
+                        buffer[3*buff_index+1] = grid.E_y[index];
+                        
+                    }
+                }
+            }
+
+            // EZ field:
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
+            for(size_t K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
+                for(size_t J = 1 ; J < grid.size_Ez[1]-1 ; J ++ ){
+                    for(size_t I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
+                        index = I + grid.size_Ez[0] * ( J + grid.size_Ez[1] * K );
+
+                        buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+
+                        buffer[3*buff_index+2] = grid.E_z[index];
+                
+                    }
+                }
+            }
+
+            // END OF ELECTRIC FIELD
 
         }else if(fieldName == "MagneticField"){
 
@@ -356,40 +410,60 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
             buffer.resize(size_field);
 
-            size_t counter = 0;
             size_t index   = 0;
+            size_t buff_index = 0;
 
-            for(size_t K = 1 ; K < size[2]-1 ; K ++){
-                for(size_t J = 1 ; J < size[1]-1 ; J ++){
-                    for(size_t I = 1 ; I < size[0]-1 ; I ++){
+            size_t I,J,K;
+
+            // HX field:
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
+            for(K = 1 ; K < grid.size_Hx[2]-1 ; K ++){
+                for(J = 1 ; J < grid.size_Hx[1]-1 ; J ++ ){
+                    for(I = 1 ; I < grid.size_Hx[0]-1 ; I ++){
+
+                        index = I + grid.size_Hx[0] * ( J + grid.size_Hx[1] * K );
+
+                        buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+
+                        buffer[3*buff_index] = grid.H_x[index];
                         
-                        // Magnetic field Hx:
-                        if(J < size[1]-2 && K < size[2]-2){
-                            index = I + grid.size_Hx[0] * (J + K * grid.size_Hx[1]);
-                            buffer[counter++] = (float)grid.H_x[index];
-                        }else{
-                            buffer[counter++] = (float)0.0;
-                        }
-
-                        // Magnetic field Hy:
-                        if(I < size[0] - 2 && K < size[0] - 2){
-                            index = I + grid.size_Hy[0] * (J + K * grid.size_Hy[1]);
-                            buffer[counter++] = (float)grid.H_y[index];
-                        }else{
-                            buffer[counter++] = (float)0.0;
-                        }
-
-                        // Magnetic field Hz:
-                        if(I < size[0]-2 && J < size[1] - 2){
-                            index = I + grid.size_Hz[0] * (J + K * grid.size_Hz[1]);
-                            buffer[counter++] = (float)grid.H_z[index];
-                        }else{
-                            buffer[counter++] = (float)0.0;
-                        }
-
                     }
                 }
             }
+
+            // HY field:
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
+            for(K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
+                for(J = 1 ; J < grid.size_Hy[1]-1 ; J ++ ){
+                    for(I = 1 ; I < grid.size_Hy[0]-1 ; I ++){
+
+                        index = I + grid.size_Hy[0] * ( J + grid.size_Hy[1] * K );
+
+                        buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+
+                        buffer[3*buff_index+1] = grid.H_y[index];
+                        
+                    }
+                }
+            }
+
+            // HZ field:
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
+            for(size_t K = 1 ; K < grid.size_Hz[2]-1 ; K ++){
+                for(size_t J = 1 ; J < grid.size_Hz[1]-1 ; J ++ ){
+                    for(size_t I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
+
+                        index = I + grid.size_Hz[0] * ( J + grid.size_Hz[1] * K );
+
+                        buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+
+                        buffer[3*buff_index+2] = grid.H_z[index];
+                        
+                    }
+                }
+            }
+
+            /* END OF MAGNETIC FIELD */
 
         }else{
             printf("vtl::write_vectorXML_custom::ERROR in vector field name. Has %s\n",fieldName.c_str());
@@ -1494,3 +1568,4 @@ VTL_API void vtl::export_spoints_XML_GridCreatorNew(
 
     f.close();
 }
+
