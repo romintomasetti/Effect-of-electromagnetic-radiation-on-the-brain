@@ -153,11 +153,10 @@ void AlgoElectro_NEW::update(
             abort();
         }
     }
-    #pragma omp barrier
 
     size_t index;
 
-    #pragma omp parallel num_threads(omp_get_num_threads())
+    #pragma omp parallel num_threads(1)
     {
         /* Coefficients for Ex */
         // Ex of size (M − 1) × N × P
@@ -332,17 +331,6 @@ void AlgoElectro_NEW::update(
     // TO WORK.                                  //
     ///////////////////////////////////////////////
 
-    size_t index_1Plus;
-    size_t index_1Moins;
-    size_t index_2Plus;
-    size_t index_2Moins;
-    size_t size_x;
-    size_t size_y;
-    size_t size_x_1;
-    size_t size_y_1;
-    size_t size_x_2;
-    size_t size_y_2;
-
     // Temporary pointers, to avoid doing grid.sthg !
     double *H_x_tmp = grid.H_x;
     double *H_y_tmp = grid.H_y;
@@ -367,16 +355,24 @@ void AlgoElectro_NEW::update(
         shared(C_hzh,C_hze_1,C_hze_2)\
         shared(C_exe,C_exh_1,C_exh_2)\
         shared(C_eye,C_eyh_1,C_eyh_2)\
-        shared(C_eze,C_ezh_1,C_ezh_2)\
-        shared(size_x,size_y)\
-        shared(size_x_1,size_y_1)\
-        shared(size_x_2,size_y_2)\
-        private(index)\
-        private(index_1Plus,index_1Moins)\
-        private(index_2Plus,index_2Moins)
+        shared(C_eze,C_ezh_1,C_ezh_2)
     {
+        size_t index;
+        size_t index_1Plus;
+        size_t index_1Moins;
+        size_t index_2Plus;
+        size_t index_2Moins;
+        size_t size_x;
+        size_t size_y;
+        size_t size_x_1;
+        size_t size_y_1;
+        size_t size_x_2;
+        size_t size_y_2;
+
+        size_t I,J,K;
 
         while(current_time < grid.input_parser.get_stopTime()){
+            
             // Updating the magnetic field Hx.
             // Don't update neighboors ! Start at 1. Go to size-1.
 
@@ -389,10 +385,10 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ez[0];
             size_y_2 = grid.size_Ez[1];
 
-            #pragma omp for collapse(3) nowait
-            for (size_t K = 1; K < grid.size_Hx[2]-1 ; K++){
-                for(size_t J = 1 ; J < grid.size_Hx[1]-1 ; J ++){
-                    for(size_t I = 1 ; I < grid.size_Hx[0]-1 ; I++){
+            #pragma omp for schedule(static)
+            for (K = 1; K < grid.size_Hx[2]-1 ; K++){
+                for(J = 1 ; J < grid.size_Hx[1]-1 ; J ++){
+                    for(I = 1 ; I < grid.size_Hx[0]-1 ; I++){
 
                         // Hx(mm, nn, pp):
                         index        = I + size_x   * ( J     + size_y   * K);
@@ -425,10 +421,10 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ex[0];
             size_y_2 = grid.size_Ex[1];
 
-            #pragma omp for collapse(3) nowait
-            for(size_t K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
-                for(size_t J = 1 ; J < grid.size_Hy[1]-1 ; J ++){
-                    for(size_t I = 1 ; I < grid.size_Hy[0]-1 ; I ++){
+            #pragma omp for schedule(static)
+            for(K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
+                for(J = 1 ; J < grid.size_Hy[1]-1 ; J ++){
+                    for(I = 1 ; I < grid.size_Hy[0]-1 ; I ++){
 
                         index        = I   + size_x   * ( J  + size_y   * K);
                         // Ez(mm + 1, nn, pp):
@@ -460,10 +456,10 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ey[0];
             size_y_2 = grid.size_Ey[1];
 
-            #pragma omp for collapse(3) nowait
-            for(size_t K = 1 ; K < grid.size_Hz[2]-1 ; K ++){
-                for(size_t J = 1 ; J < grid.size_Hz[1]-1 ; J ++){
-                    for(size_t I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
+            #pragma omp for schedule(static)
+            for(K = 1 ; K < grid.size_Hz[2]-1 ; K ++){
+                for(J = 1 ; J < grid.size_Hz[1]-1 ; J ++){
+                    for(I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Ex(mm, nn + 1, pp)
@@ -483,6 +479,12 @@ void AlgoElectro_NEW::update(
                 }
             }
 
+            /////////////////////////////////////////////////////
+            /// OPENMP barrier because we must ensure all the ///
+            /// magnetic fields have been updated.            ///
+            /////////////////////////////////////////////////////
+            #pragma omp barrier
+
             // Updating the electric field Ex.
             // Don't update neighboors ! Start at 1. Go to size-1.
 
@@ -495,10 +497,10 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hy[0];
             size_y_2 = grid.size_Hy[1];
 
-            #pragma omp for collapse(3) nowait
-            for(size_t K = 1 ; K < grid.size_Ex[2]-1 ; K ++){
-                for(size_t J = 1 ; J < grid.size_Ex[1]-1 ; J ++){
-                    for(size_t I = 1 ; I < grid.size_Ex[0]-1 ; I ++){
+            #pragma omp for schedule(static)
+            for(K = 1 ; K < grid.size_Ex[2]-1 ; K ++){
+                for(J = 1 ; J < grid.size_Ex[1]-1 ; J ++){
+                    for(I = 1 ; I < grid.size_Ex[0]-1 ; I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Hz(mm, nn, pp)
@@ -530,10 +532,10 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hz[0];
             size_y_2 = grid.size_Hz[1];
 
-            #pragma omp for collapse(3) nowait
-            for(size_t K = 1 ; K < grid.size_Ey[2]-1 ; K ++){
-                for(size_t J = 1 ; J < grid.size_Ey[1]-1 ; J ++){
-                    for(size_t I = 1 ; I < grid.size_Ey[0]-1 ; I ++){
+            #pragma omp for schedule(static)
+            for(K = 1 ; K < grid.size_Ey[2]-1 ; K ++){
+                for(J = 1 ; J < grid.size_Ey[1]-1 ; J ++){
+                    for(I = 1 ; I < grid.size_Ey[0]-1 ; I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Hx(mm, nn, pp)
@@ -565,10 +567,10 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hx[0];
             size_y_2 = grid.size_Hx[1];
 
-            #pragma omp for collapse(3) nowait
-            for(size_t K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
-                for(size_t J = 1 ; J < grid.size_Ez[1]-1 ; J ++){
-                    for(size_t I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
+            #pragma omp for schedule(static)
+            for(K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
+                for(J = 1 ; J < grid.size_Ez[1]-1 ; J ++){
+                    for(I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Hy(mm, nn, pp)
@@ -583,16 +585,53 @@ void AlgoElectro_NEW::update(
                         E_z_tmp[index] = C_eze[index] * E_z_tmp[index]
                                 + C_ezh_1[index] * (H_y_tmp[index_1Plus] - H_y_tmp[index_1Moins])
                                 - C_ezh_2[index] * (H_x_tmp[index_2Plus] - H_x_tmp[index_2Moins]);
+                    }
+                }
+            }
+            #pragma omp barrier
+
+            ////////////////////////////
+            /// IMPOSING THE SOURCES ///
+            ////////////////////////////
+            /*#pragma omp for collapse(3)\
+                private(index)*/
+            #pragma omp master
+            {
+                size_t counter = 0;
+            for(K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
+                for(J = 1 ; J < grid.size_Ez[1]-1 ; J ++){
+                    for(I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
+
+                        int A = 53;
+                        int B = 62;
+                        if(I >= A && I <= B 
+                           && J >= A && J <= B
+                           && K >= A && K <= B)
+                        {
+                            counter++;
+                            index        = I   + size_x   * ( J     + size_y   * K);
+                            E_z_tmp[index] = sin(2*3.14*900E6*current_time);
+                            /*printf("Imposing (%zu,%zu,%zu) = %.20f | grid.E_z=%.20f\n",
+                                I,J,K,E_z_tmp[index],grid.E_z[index]);*/
+                            //E_x_tmp[I + grid.size_Ex[0]*(J+grid.size_Ex[1]*K)] = 0.0;
+                            //E_y_tmp[I + grid.size_Ey[0]*(J+grid.size_Ey[1]*K)] = 0.0;
+                        }
 
                     }
                 }
             }
-
+            printf("Had increment %zu electric Z field !\n",counter);
+            
+            
+            }
+            
+            #pragma omp barrier
             #pragma omp master
             {
                 if(currentStep == 0){
                     grid.profiler.addTimingInputToDictionnary("ELECTRO_WRITING_OUTPUTS");
                 }
+
                 // Monitor time spent in writing !
                 double timeWriting = omp_get_wtime();
                 interfaceParaview.convertAndWriteData(
@@ -604,8 +643,13 @@ void AlgoElectro_NEW::update(
                 // Add time for writing:
                 grid.profiler.incrementTimingInput("ELECTRO_WRITING_OUTPUTS",time_taken_writing);
 
-                current_time += 1000000*dt;
+                current_time += dt;
                 currentStep ++;
+
+                if(currentStep > 100){
+                    printf("\n\t%zu ITER ABORTING\n\n",currentStep);
+                    abort();
+                }
 
                 double elapsedTot = omp_get_wtime() - parallelRegionStartingTime;
 
