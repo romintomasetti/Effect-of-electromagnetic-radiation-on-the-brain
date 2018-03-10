@@ -115,7 +115,7 @@ class InputParser{
 		double delta_Thermal = 0.0;
 
 		// Ratio between thermal and electromagnetic spatial steps:
-		unsigned int ratio_EM_TH_delta = 0;
+		double ratio_EM_TH_delta = 0;
 		
 		/*
 		 * Length of the domain in each direction.

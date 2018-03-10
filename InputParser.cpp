@@ -432,7 +432,7 @@ void InputParser::readHeader_MESH (ifstream &file){
 					// Ratio between the spatial and thermal grids
 					// If deltaElectro = 4 and deltaThermal = 2, the ratio is 0.5.
 					}else if(propName == "ratio_EM_TH_delta"){
-						this->ratio_EM_TH_delta = (unsigned)std::stoi(propGiven);
+						this->ratio_EM_TH_delta = std::stod(propGiven);
 						cout << "ADDED ratio_EM_TH_delta is " << this->ratio_EM_TH_delta << std::endl;
 
 					}else if(propName != "deltaX_electro" 
