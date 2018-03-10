@@ -134,5 +134,8 @@ class GridCreator_NEW{
 
         // Assign to each electromagnetic node its properties as a function of the temperature:
         void Initialize_Electromagnetic_Properties(std::string whatToDo = string());
+
+        // Get the global node number from the local node number, EM grid:
+        void get_Global_from_Local_Electro(size_t *local,size_t global);
 };
 #endif

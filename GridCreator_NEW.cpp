@@ -533,6 +533,96 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
     /* END OF     if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE") */
     else if(this->input_parser.get_SimulationType() == "TEST_PARAVIEW"){
 
+        /**
+         * @brief Just for testing purpose, put I, J, K in the electric and magn. fields.
+         */
+        #pragma omp parallel num_threads(nbr_omp_threads)
+        {
+            // EX field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Ex[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Ex[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
+
+                        index = I + this->size_Ex[0] * ( J + this->size_Ex[1] * K );
+                        this->E_x[index] = I;
+                        
+                    }
+                }
+            }
+
+            // EY field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Ey[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Ey[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
+
+                        index = I + this->size_Ey[0] * ( J + this->size_Ey[1] * K );
+                        this->E_y[index] = J;
+                        
+                    }
+                }
+            }
+
+            // EZ field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Ez[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Ez[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
+
+                        index = I + this->size_Ez[0] * ( J + this->size_Ez[1] * K );
+                        this->E_z[index] = K;
+                        
+                    }
+                }
+            }
+
+            // HX field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Hx[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Hx[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
+
+                        index = I + this->size_Hx[0] * ( J + this->size_Hx[1] * K );
+                        this->H_x[index] = I;
+                        
+                    }
+                }
+            }
+
+            // HY field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Hy[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Hy[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
+
+                        index = I + this->size_Hy[0] * ( J + this->size_Hy[1] * K );
+                        this->H_y[index] = J;
+                        
+                    }
+                }
+            }
+
+            // HZ field:
+            #pragma omp for collapse(3) nowait\
+                private(index)
+            for(size_t K = 0 ; K < this->size_Hz[2] ; K ++){
+                for(size_t J = 0 ; J < this->size_Hz[1] ; J ++ ){
+                    for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
+
+                        index = I + this->size_Hz[0] * ( J + this->size_Hz[1] * K );
+                        this->H_z[index] = K;
+                        
+                    }
+                }
+            }
+        }/* END OF PARALLEL REGION */
+
     }else{
         fprintf(stderr,"GridCreator_NEW::Assign_A_Material_To_Each_Node()::ERROR\n");
         fprintf(stderr,"\t>>> Simulation type doesn't correspond to any known type. Aborting.\n");
@@ -742,3 +832,6 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
     }
 
 }
+
+// Get the global node number from the local node number, EM grid:
+void get_Global_from_Local_Electro(size_t *local,size_t global);
