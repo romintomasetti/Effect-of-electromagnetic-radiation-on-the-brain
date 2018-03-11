@@ -275,6 +275,31 @@ void GridCreator_NEW::meshInitialization(void){
         abort();
     }
 
+    ///////////////////////////////////
+    /// IMPORTANT NOTE ON THE SIZES OF EACH FIELD
+    /**
+     * Because each field has its own size in each direction, we can't do 
+     * very simple things. After the MPI division performed by the 
+     * MPI_DIVISION function, we only have M, N and P.
+     * If we (for example) have 3 MPI processes, we 'cut' along the X direction.
+     * Let's imagine the mesh has 11 nodes in each direction, that is M = N = P = 11.
+     * Then: -  MPI 0 has 3 usefull Ex nodes
+     *       -  MPI 1 has 3 usefull Ex nodes
+     *       -  MPI 2 has 4 usefull Ex nodes and 1 useless Ex nodes
+     * such that the sum is 3 + 3 + 4 + 1 = 11.
+     * 
+     * Followed algorithm:
+     *      1) In MPI_DIVISION, a (X,Y,Z) position of the current MPI process has
+     *          been assigned. The total number of MPI processes along each direction is 
+     *          also known.
+     *      2) For the electric field components, we only have problems for the 
+     *          field in the direction of the cut(s) (for determining which MPI is where),
+     *          because the size is reduced by one (w.r.t. M, N and P) only in the direction
+     *          of the field component (i.e. M-1 for Ex, N-1 for Ey and P-1 for Ez).
+     *      3) For the magnetic ield components, it is the contrary. We have problems in the directions
+     *          along which no 'cut' was performed for the MPI division.
+     */
+
     /* ALLOCATE SPACE FOR THE ELECTRIC FIELDS */
     #if DEBUG > 2
     std::cout << "GridCreator_New::initializing E_x" << std::endl;
@@ -416,6 +441,18 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
     /*
      * This function fills in the vectors of material.
      */
+    /// Verify the simulation type:
+    if( this->input_parser.get_SimulationType() != "USE_AIR_EVERYWHERE"
+        && this->input_parser.get_SimulationType() != "TEST_PARAVIEW"
+        && this->input_parser.get_SimulationType() != "TEST_PARAVIEW_MPI")
+    {
+        fprintf(stderr,"GridCreator_NEW::Assign_A_Material_To_Each_Node()::ERROR\n");
+        fprintf(stderr,"\t>>> Simulation type (%s) doesn't correspond to any known type. Aborting.\n",
+            this->input_parser.get_SimulationType().c_str());
+        fprintf(stderr,"\tFile %s:%d\n",__FILE__,__LINE__);
+        abort();
+    }
+
     // Assign material as a function of the simulation type.
 
     unsigned int DEFAULT = 4;
@@ -428,12 +465,50 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
 
     size_t index;
 
-    if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
-        
-        unsigned char mat = this->materials.materialID_FromMaterialName["AIR"];
-
-        #pragma omp parallel num_threads(nbr_omp_threads)
+    /////////////////////////////////////////
+    /// FILL IN WITH PARALLEL OMP THREADS ///
+    /////////////////////////////////////////
+    #pragma omp parallel num_threads(nbr_omp_threads)
         {
+            bool is_USE_AIR_EVERYWHERE       = false;
+            bool is_TEST_PARAVIEW            = false;
+            bool is_TEST_PARAVIEW_MPI        = false;
+            bool is_GLOBAL_TEST_PARAVIEW_MPI_ELECTRIC = false;
+            bool is_GLOBAL_TEST_PARAVIEW_MPI_MAGNETIC = false;
+            bool is_RANK_TEST_PARAVIEW_MPI_TEMP       = false;
+            bool is_RANK_TEST_PARAVIEW_MPI_ELECTRIC   = false;
+            bool is_RANK_TEST_PARAVIEW_MPI_MAGNETIC   = false;
+            int  RANK_MPI                             = this->MPI_communicator.getRank() + 1;
+
+            if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
+                is_USE_AIR_EVERYWHERE = true;
+
+            }else if(this->input_parser.get_SimulationType() == "TEST_PARAVIEW"){
+                is_TEST_PARAVIEW      = true;
+
+            }else if(this->input_parser.get_SimulationType() == "TEST_PARAVIEW_MPI"){
+                is_TEST_PARAVIEW_MPI  = true;
+
+                if(this->input_parser.TEST_PARAVIEW_MPI_ARGS["E"] == "GLOBAL"){
+                    is_GLOBAL_TEST_PARAVIEW_MPI_ELECTRIC = true;
+                }else if(this->input_parser.TEST_PARAVIEW_MPI_ARGS["E"] == "RANK"){
+                    is_RANK_TEST_PARAVIEW_MPI_ELECTRIC   = true;
+                }
+
+                if(this->input_parser.TEST_PARAVIEW_MPI_ARGS["H"] == "GLOBAL"){
+                    is_GLOBAL_TEST_PARAVIEW_MPI_MAGNETIC = true;
+                }else if(this->input_parser.TEST_PARAVIEW_MPI_ARGS["H"] == "RANK"){
+                    is_RANK_TEST_PARAVIEW_MPI_MAGNETIC   = true;
+                }
+
+                if(this->input_parser.TEST_PARAVIEW_MPI_ARGS["TEMP"] == "RANK"){
+                    is_RANK_TEST_PARAVIEW_MPI_TEMP = true;
+                }
+
+            }else{
+                printf("FATAL ERROR. SORRY.\n");
+                abort();
+            }
             // EX field:
             #pragma omp for collapse(3) nowait\
                 private(index)
@@ -441,8 +516,35 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Ex[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
 
+                        /// Compute the index:
                         index = I + this->size_Ex[0] * ( J + this->size_Ex[1] * K );
-                        this->E_x_material[index] = mat;
+
+                        /// Determine the initial condition to impose.
+
+                        if(is_USE_AIR_EVERYWHERE){
+                                unsigned char mat = this->materials.materialID_FromMaterialName["AIR"];
+                                this->E_x_material[index] = mat;
+                        }else if(is_TEST_PARAVIEW){
+                            this->E_x[index] = I;
+                        }else if(is_TEST_PARAVIEW_MPI){
+                            if(is_GLOBAL_TEST_PARAVIEW_MPI_ELECTRIC){
+                                /// Put the global index:
+                                size_t local[3];
+                                local[0] = I;
+                                local[1] = J;
+                                local[2] = K;
+                                size_t global[3];
+                                this->get_Global_from_Local_Electro(local,global);
+                                this->E_x[index] = global[0];
+                            }else if(is_RANK_TEST_PARAVIEW_MPI_ELECTRIC){
+                                this->E_x[index] = RANK_MPI;
+                            }else{
+                                /// Put the local index:
+                                this->E_x[index] = I;
+                            }
+                        }else{
+                            abort();
+                        }
                         
                     }
                 }
@@ -455,8 +557,38 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Ey[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
 
+                        /// Determine the index:
+
                         index = I + this->size_Ey[0] * ( J + this->size_Ey[1] * K );
-                        this->E_y_material[index] = mat;
+
+                        /// Determine the initial condition to impose.
+
+                        if(is_USE_AIR_EVERYWHERE){
+
+                            unsigned char mat = this->materials.materialID_FromMaterialName["AIR"];
+                            this->E_y_material[index] = mat;
+
+                        }else if(is_TEST_PARAVIEW){
+                            this->E_y[index] = J;
+                        }else if(is_TEST_PARAVIEW_MPI){
+                            if(is_GLOBAL_TEST_PARAVIEW_MPI_ELECTRIC){
+                                /// Put the global index:
+                                size_t local[3];
+                                local[0] = I;
+                                local[1] = J;
+                                local[2] = K;
+                                size_t global[3];
+                                this->get_Global_from_Local_Electro(local,global);
+                                this->E_y[index] = global[1];
+                            }else if(is_RANK_TEST_PARAVIEW_MPI_ELECTRIC){
+                                this->E_y[index] = RANK_MPI;
+                            }else{
+                                /// Put the local index:
+                                this->E_y[index] = J;
+                            }
+                        }else{
+                            abort();
+                        }
                         
                     }
                 }
@@ -469,8 +601,37 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Ez[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
 
+                        /// Determine the index:
                         index = I + this->size_Ez[0] * ( J + this->size_Ez[1] * K );
-                        this->E_z_material[index] = mat;
+
+                        /// Determine the initial condition to impose.
+
+                        if(is_USE_AIR_EVERYWHERE){
+
+                            unsigned char mat = this->materials.materialID_FromMaterialName["AIR"];
+                            this->E_z_material[index] = mat;
+
+                        }else if(is_TEST_PARAVIEW){
+                            this->E_y[index] = K;
+                        }else if(is_TEST_PARAVIEW_MPI){
+                            if(is_GLOBAL_TEST_PARAVIEW_MPI_ELECTRIC){
+                                /// Put the global index:
+                                size_t local[3];
+                                local[0] = I;
+                                local[1] = J;
+                                local[2] = K;
+                                size_t global[3];
+                                this->get_Global_from_Local_Electro(local,global);
+                                this->E_z[index] = global[2];
+                            }else if(is_RANK_TEST_PARAVIEW_MPI_ELECTRIC){
+                                this->E_z[index] = RANK_MPI;
+                            }else{
+                                /// Put the local index:
+                                this->E_z[index] = K;
+                            }
+                        }else{
+                            abort();
+                        }
                         
                     }
                 }
@@ -483,8 +644,37 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Hx[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
 
+                        /// Determine the index:
                         index = I + this->size_Hx[0] * ( J + this->size_Hx[1] * K );
-                        this->H_x_material[index] = mat;
+
+                        /// Determine the initial condition to impose.
+
+                        if(is_USE_AIR_EVERYWHERE){
+
+                            unsigned char mat = this->materials.materialID_FromMaterialName["AIR"];
+                            this->H_x_material[index] = mat;
+
+                        }else if(is_TEST_PARAVIEW){
+                            this->H_x[index] = I;
+                        }else if(is_TEST_PARAVIEW_MPI){
+                            if(is_GLOBAL_TEST_PARAVIEW_MPI_MAGNETIC){
+                                /// Put the global index:
+                                size_t local[3];
+                                local[0] = I;
+                                local[1] = J;
+                                local[2] = K;
+                                size_t global[3];
+                                this->get_Global_from_Local_Electro(local,global);
+                                this->H_x[index] = global[0];
+                            }else if(is_RANK_TEST_PARAVIEW_MPI_MAGNETIC){
+                                this->H_x[index] = RANK_MPI;
+                            }else{
+                                /// Put the local index:
+                                this->H_x[index] = I;
+                            }
+                        }else{
+                            abort();
+                        }
                         
                     }
                 }
@@ -497,8 +687,37 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Hy[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
 
+                        /// Determine the index:
                         index = I + this->size_Hy[0] * ( J + this->size_Hy[1] * K );
-                        this->H_y_material[index] = mat;
+
+                        /// Determine the initial condition to impose.
+
+                        if(is_USE_AIR_EVERYWHERE){
+
+                            unsigned char mat = this->materials.materialID_FromMaterialName["AIR"];
+                            this->H_y_material[index] = mat;
+
+                        }else if(is_TEST_PARAVIEW){
+                            this->H_y[index] = J;
+                        }else if(is_TEST_PARAVIEW_MPI){
+                            if(is_GLOBAL_TEST_PARAVIEW_MPI_MAGNETIC){
+                                /// Put the global index:
+                                size_t local[3];
+                                local[0] = I;
+                                local[1] = J;
+                                local[2] = K;
+                                size_t global[3];
+                                this->get_Global_from_Local_Electro(local,global);
+                                this->H_y[index] = global[1];
+                            }else if(is_RANK_TEST_PARAVIEW_MPI_MAGNETIC){
+                                this->H_y[index] = RANK_MPI;
+                            }else{
+                                /// Put the local index:
+                                this->H_y[index] = J;
+                            }
+                        }else{
+                            abort();
+                        }
                         
                     }
                 }
@@ -511,8 +730,39 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 for(size_t J = 0 ; J < this->size_Hz[1] ; J ++ ){
                     for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
 
+                        /// Determine the index:
                         index = I + this->size_Hz[0] * ( J + this->size_Hz[1] * K );
-                        this->H_z_material[index] = mat;
+
+                        /// Determine the initial condition to impose.
+
+                        if(is_USE_AIR_EVERYWHERE){
+
+                            unsigned char mat = this->materials.materialID_FromMaterialName["AIR"];
+                            this->H_z_material[index] = mat;
+
+                        }else if(is_TEST_PARAVIEW){
+                            this->H_z[index] = K;
+
+                        }else if(is_TEST_PARAVIEW_MPI){
+
+                            if(is_GLOBAL_TEST_PARAVIEW_MPI_MAGNETIC){
+                                /// Put the global index:
+                                size_t local[3];
+                                local[0] = I;
+                                local[1] = J;
+                                local[2] = K;
+                                size_t global[3];
+                                this->get_Global_from_Local_Electro(local,global);
+                                this->H_z[index] = global[2];
+                            }else if(is_RANK_TEST_PARAVIEW_MPI_MAGNETIC){
+                                this->H_z[index] = RANK_MPI;
+                            }else{
+                                /// Put the local index:
+                                this->H_z[index] = K;
+                            }
+                        }else{
+                            abort();
+                        }
                         
                     }
                 }
@@ -523,114 +773,34 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                     for(size_t K = 0 ; K < this->size_Thermal[2] ; K++){
                         for(size_t J = 0 ; J < this->size_Thermal[1] ; J ++){
                             for(size_t I = 0 ; I < this->size_Thermal[0] ; I ++){
-
+                                
+                                /// Determine the index:
                                 index = I + this->size_Thermal[0] * (J + this->size_Thermal[1] *K);
-                                this->temperature_material[index] = mat;
+
+                                /// Determine the initial condition to impose.
+
+                                if(is_USE_AIR_EVERYWHERE){
+
+                                    unsigned char mat = this->materials.materialID_FromMaterialName["AIR"];
+                                    this->temperature_material[index] = mat;
+                                }else if(is_TEST_PARAVIEW){
+                                    this->temperature[index] = -1;
+                                }else if(is_TEST_PARAVIEW_MPI){
+                                    if(is_RANK_TEST_PARAVIEW_MPI_TEMP){
+                                        /// Put the MPI rank:
+                                        this->temperature[index] = RANK_MPI;
+                                    }else{
+                                        /// Put -1:
+                                        this->temperature[index] = -1;
+                                    }
+                                }else{
+                                    abort();
+                                }
 
                             }
                         }
                     }
-        }
-    }
-    /* END OF     if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE") */
-    else if(this->input_parser.get_SimulationType() == "TEST_PARAVIEW"){
-
-        /**
-         * @brief Just for testing purpose, put I, J, K in the electric and magn. fields.
-         */
-        #pragma omp parallel num_threads(nbr_omp_threads)
-        {
-            // EX field:
-            #pragma omp for collapse(3) nowait\
-                private(index)
-            for(size_t K = 0 ; K < this->size_Ex[2] ; K ++){
-                for(size_t J = 0 ; J < this->size_Ex[1] ; J ++ ){
-                    for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
-
-                        index = I + this->size_Ex[0] * ( J + this->size_Ex[1] * K );
-                        this->E_x[index] = I;
-                        
-                    }
-                }
-            }
-
-            // EY field:
-            #pragma omp for collapse(3) nowait\
-                private(index)
-            for(size_t K = 0 ; K < this->size_Ey[2] ; K ++){
-                for(size_t J = 0 ; J < this->size_Ey[1] ; J ++ ){
-                    for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
-
-                        index = I + this->size_Ey[0] * ( J + this->size_Ey[1] * K );
-                        this->E_y[index] = J;
-                        
-                    }
-                }
-            }
-
-            // EZ field:
-            #pragma omp for collapse(3) nowait\
-                private(index)
-            for(size_t K = 0 ; K < this->size_Ez[2] ; K ++){
-                for(size_t J = 0 ; J < this->size_Ez[1] ; J ++ ){
-                    for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
-
-                        index = I + this->size_Ez[0] * ( J + this->size_Ez[1] * K );
-                        this->E_z[index] = K;
-                        
-                    }
-                }
-            }
-
-            // HX field:
-            #pragma omp for collapse(3) nowait\
-                private(index)
-            for(size_t K = 0 ; K < this->size_Hx[2] ; K ++){
-                for(size_t J = 0 ; J < this->size_Hx[1] ; J ++ ){
-                    for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
-
-                        index = I + this->size_Hx[0] * ( J + this->size_Hx[1] * K );
-                        this->H_x[index] = I;
-                        
-                    }
-                }
-            }
-
-            // HY field:
-            #pragma omp for collapse(3) nowait\
-                private(index)
-            for(size_t K = 0 ; K < this->size_Hy[2] ; K ++){
-                for(size_t J = 0 ; J < this->size_Hy[1] ; J ++ ){
-                    for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
-
-                        index = I + this->size_Hy[0] * ( J + this->size_Hy[1] * K );
-                        this->H_y[index] = J;
-                        
-                    }
-                }
-            }
-
-            // HZ field:
-            #pragma omp for collapse(3) nowait\
-                private(index)
-            for(size_t K = 0 ; K < this->size_Hz[2] ; K ++){
-                for(size_t J = 0 ; J < this->size_Hz[1] ; J ++ ){
-                    for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
-
-                        index = I + this->size_Hz[0] * ( J + this->size_Hz[1] * K );
-                        this->H_z[index] = K;
-                        
-                    }
-                }
-            }
-        }/* END OF PARALLEL REGION */
-
-    }else{
-        fprintf(stderr,"GridCreator_NEW::Assign_A_Material_To_Each_Node()::ERROR\n");
-        fprintf(stderr,"\t>>> Simulation type doesn't correspond to any known type. Aborting.\n");
-        fprintf(stderr,"\tFile %s:%d\n",__FILE__,__LINE__);
-        abort();
-    }
+        } /* END OF PARALLEL REGION */
 }
 
 // Assign to each node of the temperature field an initial temperature:
@@ -680,6 +850,28 @@ void GridCreator_NEW::Assign_Init_Temperature_to_Temperature_nodes(void){
                                          (J + this->size_Thermal[1] * K);;
 
                                 this->temperature[index] = I;
+
+                            }
+                        }
+                    }
+        }
+    }else if(this->input_parser.get_SimulationType() == "TEST_PARAVIEW_MPI"){
+        /**
+         * We put the rank of the current MPI process inside the temperature field.
+         */
+        int rank_mpi = this->MPI_communicator.getRank();
+        #pragma omp parallel num_threads(nbr_omp_threads)\
+            private(index)
+        {
+            #pragma omp for collapse(3)
+                    for(size_t K = 0 ; K < this->size_Thermal[2] ; K++){
+                        for(size_t J = 0 ; J < this->size_Thermal[1] ; J ++){
+                            for(size_t I = 0 ; I < this->size_Thermal[0] ; I ++){
+
+                                index = I + this->size_Thermal[0] *
+                                         (J + this->size_Thermal[1] * K);;
+
+                                this->temperature[index] = (double)rank_mpi;
 
                             }
                         }
