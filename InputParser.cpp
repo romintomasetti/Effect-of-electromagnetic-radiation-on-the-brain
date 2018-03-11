@@ -823,6 +823,28 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					if(propName == "stopTime"){
 						this->stopTime = std::stod(propGiven);
 						cout << "ADDED stopTime is " << this->stopTime << endl;
+
+					}else if(propName == "maxStepsForOneCycleOfElectro"){
+						/**
+						 * This property is usefull to impose a maximum number of steps
+						 * for the electromagnetic solver before stopping.
+						 */
+						/// Transform the string in a size_t with std::stold and a cast:
+						this->maxStepsForOneCycleOfElectro = (size_t) std::stold(propGiven);;
+						printf("Max electro steps is : %zu (from %s)....\n",
+							this->maxStepsForOneCycleOfElectro,
+							propGiven.c_str());
+						if(this->maxStepsForOneCycleOfElectro == 0){
+							fprintf(stderr,"In %s ::maxStepsForOneCycleOfElectro has been set to zero. Aborting.\n",
+								__FUNCTION__);
+							fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+							#ifdef MPI_COMM_WORLD
+							MPI_Abort(MPI_COMM_WORLD,-1);
+							#else
+							abort();
+							#endif
+						}
+						
 					}else if(propName != "stopTime"){
 						printf("InputParser::readHeader_RUN_INFOS:: You didn't provide a ");
 						printf("good member for $RUN_INFOS$STOP_SIMUL_AFTER.\nAborting.\n");

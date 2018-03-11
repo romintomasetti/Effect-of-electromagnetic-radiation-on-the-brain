@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include "omp.h"
 
+#include <algorithm>
+
 /*
  * Defines for the column number of the properties:
  */
@@ -878,11 +880,8 @@ class ReducerForOMP{
     public:
         template<typename T>
         void reduce_custom(std::vector<T> *v, int begin, int end){
-            std::cout << "Welcome in reduce_custom !" << std::endl;
 
-            // Master cannot reduce.
             if(end - begin == 1){
-                fprintf(stderr,"%s :: cannot reduce ! Return.\n",__FUNCTION__);
                 return;
             }
 
@@ -945,8 +944,6 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
 
     std::vector<size_t> SIZES;
 
-    fprintf(stdout,"Assignin SIZES...");
-
     if(TYPE_OF_FIELD == "Ex"){
         SIZES = this->size_Ex;
 
@@ -971,10 +968,23 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
         abort();
     }
 
-    fprintf(stdout,"Done :: %s :: (%zu,%zu,%zu)\n",TYPE_OF_FIELD.c_str(),SIZES[0],SIZES[1],SIZES[2]);
-
-
     std::string type = TYPE_OF_FIELD;
+
+    std::vector<size_t> I_max(omp_get_max_threads());
+    for(size_t it = 0 ; it < I_max.size() ; it++ )
+        I_max[it] = 0;
+
+    std::vector<size_t> J_max(omp_get_max_threads());
+    for(size_t it = 0 ; it < J_max.size() ; it++ )
+        J_max[it] = 0;
+
+    std::vector<size_t> I_min(omp_get_max_threads());
+    for(size_t it = 0 ; it < I_min.size() ; it++ )
+        I_min[it] = 5E5;
+
+    std::vector<size_t> J_min(omp_get_max_threads());
+    for(size_t it = 0 ; it < J_min.size() ; it++ )
+        J_min[it] = 5E5;
 
     #pragma omp parallel default(none)\
         shared(numbers_for_nodes)\
@@ -982,19 +992,17 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
         shared(ID_for_nodes)\
         shared(local_nodes_inside_source_NUMBER)\
         shared(ID_Source)\
-        shared(SIZES,type)
+        shared(SIZES,type)\
+        shared(I_min,I_max,J_min,J_max)
     {
         std::vector<size_t> SIZES_PRIVATE = SIZES;
 
-        printf("Done (OMP %d) :: %s :: (%zu,%zu,%zu)\n",
-            omp_get_thread_num(),type.c_str(),SIZES[0],SIZES[1],SIZES[2]);
         // Allocate:
         #pragma omp single
         {
             numbers_for_nodes = new std::vector<size_t>       [omp_get_num_threads()];
             ID_for_nodes      = new std::vector<unsigned char>[omp_get_num_threads()];
             freq              = new std::vector<double>       [omp_get_num_threads()];
-            printf("Allocate bizarre ok\n");
         }
 
         size_t I,J,K;
@@ -1002,7 +1010,9 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
         size_t local[3];
         size_t global[3];
 
-        printf("Just before the pragma ( OMP %d )\n",omp_get_thread_num());
+        
+        
+
         // Check for the nodes Ez:
         #pragma omp for schedule(static)
         for(K = 1 ; K < SIZES_PRIVATE[2]-1 ; K ++){
@@ -1028,6 +1038,19 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
                             this->input_parser.origin_Electro_grid
                         ) == true)
                         {
+                            /// Record min max
+                            if(J > J_max[omp_get_thread_num()]){
+                                J_max[omp_get_thread_num()] = J;
+                            }
+                            if(I > I_max[omp_get_thread_num()]){ 
+                                I_max[omp_get_thread_num()] = I;
+                            }
+                            if(J < J_min[omp_get_thread_num()]){
+                                J_min[omp_get_thread_num()] = J;
+                            }
+                            if(I_min[omp_get_thread_num()] > I){
+                                I_min[omp_get_thread_num()] = I;
+                            }
                             // The node is inside the source !!!
                             // 0 corresponds to Ex.
                             numbers_for_nodes[omp_get_thread_num()].push_back(
@@ -1039,6 +1062,17 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
                 }
             }
         } /* END OF EX */
+        #pragma omp barrier
+        #pragma omp single nowait
+        {
+            printf("\n\n>>> FOR %s :: Index goes from (%zu,%zu) to (%zu,%zu)\n\n",
+                type.c_str(),
+                I_min[std::distance(I_min.begin(),std::min_element(I_min.begin(), I_min.end()))],
+                J_min[std::distance(J_min.begin(),std::min_element(J_min.begin(), J_min.end()))],
+                I_max[std::distance(I_max.begin(),std::max_element(I_max.begin(), I_max.end()))],
+                J_max[std::distance(J_max.begin(),std::max_element(J_max.begin(), J_max.end()))]);
+        }
+        
         // Assemble all the results in one vector:
         #pragma omp single nowait
         {
@@ -1060,5 +1094,4 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
     delete[] ID_for_nodes;
     delete[] freq;
 
-    fprintf(stderr,"\n\t>>> Going out of %s.\n\n",__FUNCTION__);
 }

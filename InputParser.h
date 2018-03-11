@@ -143,6 +143,8 @@ class InputParser{
 		double lengthX_WholeDomain_Thermal = 0.0;
 		double lengthY_WholeDomain_Thermal = 0.0;
 		double lengthZ_WholeDomain_Thermal = 0.0;
+
+		size_t maxStepsForOneCycleOfElectro = 0;
 };
 
 #endif
