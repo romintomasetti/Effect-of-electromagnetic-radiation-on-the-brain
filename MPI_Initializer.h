@@ -57,6 +57,14 @@ class MPI_Initializer{
 
 		bool SendDataToNeighboor(double *,size_t,unsigned char);
 
+		//////////////////////////////////////////////////////
+		/// TO WRITE OUTPUT FILES, WE'LL NEED MPI POSITION ///
+		/// IN THE GRID OF MPI PROCESSES...                ///
+		//////////////////////////////////////////////////////
+		std::vector<char> MPI_POSITION = {-1,-1,-1};
+		/// Store the number of MPI processes along each direction:
+		std::vector<char> MPI_MAX_POSI = {-1,-1,-1};
+
 };
 
 #endif

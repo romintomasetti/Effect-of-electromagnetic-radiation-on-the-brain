@@ -444,6 +444,11 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 	double Ly = subGrid.input_parser.lengthY_WholeDomain_Electro;
 	double Lz = subGrid.input_parser.lengthZ_WholeDomain_Electro;
 
+	// Retrieve the length of the whole domain along each direction, THERMAL grid:
+	double Lx_thermal = subGrid.input_parser.lengthX_WholeDomain_Thermal;
+	double Ly_thermal = subGrid.input_parser.lengthY_WholeDomain_Thermal;
+	double Lz_thermal = subGrid.input_parser.lengthZ_WholeDomain_Thermal;
+
 	// Retrieve the spatial step of the electromagnetic grid:
 	double deltaX = subGrid.input_parser.deltaX_Electro;
 	double deltaY = subGrid.input_parser.deltaY_Electro;
@@ -456,9 +461,9 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 	size_t nbr_nodes_Y =  Ly / deltaY + 1;
 	size_t nbr_nodes_Z =  Lz / deltaZ + 1;
 
-	size_t nbr_nodes_thermal_X = Lx / delta_thermal + 1;
-	size_t nbr_nodes_thermal_Y = Ly / delta_thermal + 1;
-	size_t nbr_nodes_thermal_Z = Lz / delta_thermal + 1;
+	size_t nbr_nodes_thermal_X = Lx_thermal / delta_thermal + 1;
+	size_t nbr_nodes_thermal_Y = Ly_thermal / delta_thermal + 1;
+	size_t nbr_nodes_thermal_Z = Lz_thermal / delta_thermal + 1;
 
 
 	int N = (int) pow(nbProc, 1.0/3.0);
@@ -484,12 +489,22 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		int PositionOnY = (((int)(myRank/N) - (int) (myRank/(N*N))*N ));
 		int PositionOnZ = myRank/ (N*N);
 
+		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnX;
+		subGrid.MPI_communicator.MPI_POSITION[1] = (char) PositionOnY;
+		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnZ;
+
+		subGrid.MPI_communicator.MPI_MAX_POSI[0] = (char) nbProc%N;
+		subGrid.MPI_communicator.MPI_MAX_POSI[1] = (char) ( (int) (nbProc/N) - (int) (nbProc/(N*N))*N );
+		subGrid.MPI_communicator.MPI_MAX_POSI[2] = 0;
+
 		size_t nbr_nodes_local_X         = nbr_nodes_X / N;
 		size_t nbr_nodes_local_thermal_X = nbr_nodes_thermal_X / N;
 
 		if(nbr_nodes_local_X * N != nbr_nodes_X){
+			/// If I am the last MPI, I take the remainder of the 'not perfect' division.
 			if(PositionOnX == N-1){
-				subGrid.sizes_EH[0] = nbr_nodes_local_X + (-nbr_nodes_local_X * N + nbr_nodes_X);
+				subGrid.sizes_EH[0] = nbr_nodes_local_X + 
+					(-nbr_nodes_local_X * N + nbr_nodes_X);
 			}else{
 				subGrid.sizes_EH[0] = nbr_nodes_local_X;
 			}
@@ -513,7 +528,8 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 
 		if(nbr_nodes_local_Y * N != nbr_nodes_Y){
 			if(PositionOnY == N-1){
-				subGrid.sizes_EH[1] = nbr_nodes_local_Y + (-nbr_nodes_local_Y * N + nbr_nodes_Y);
+				subGrid.sizes_EH[1] = nbr_nodes_local_Y + 
+					(-nbr_nodes_local_Y * N + nbr_nodes_Y);
 			}else{
 				subGrid.sizes_EH[1] = nbr_nodes_local_Y;
 			}
@@ -537,7 +553,8 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 
 		if(nbr_nodes_local_Z * N != nbr_nodes_Z){
 			if(PositionOnZ == N-1){
-				subGrid.sizes_EH[2] = nbr_nodes_local_Z + (-nbr_nodes_local_Z * N + nbr_nodes_Z);
+				subGrid.sizes_EH[2] = nbr_nodes_local_Z + 
+					(-nbr_nodes_local_Z * N + nbr_nodes_Z);
 			}else{
 				subGrid.sizes_EH[2] = nbr_nodes_local_Z;
 			}
@@ -638,12 +655,21 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		int PositionOnY = 0;
 		int PositionOnZ = 0;
 
+		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnX;
+		subGrid.MPI_communicator.MPI_POSITION[1] = (char) PositionOnY;
+		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnZ;
+
+		subGrid.MPI_communicator.MPI_MAX_POSI[0] = nbProc;
+		subGrid.MPI_communicator.MPI_MAX_POSI[1] = 0;
+		subGrid.MPI_communicator.MPI_MAX_POSI[2] = 0;
+
 		size_t nbr_nodes_local_X         = nbr_nodes_X / nbProc;
 		size_t nbr_nodes_local_thermal_X = nbr_nodes_thermal_X / nbProc;
 
 		if(nbr_nodes_local_X * nbProc != nbr_nodes_X){
 			if(PositionOnX == nbProc-1){
-				subGrid.sizes_EH[0] = nbr_nodes_local_X + nbr_nodes_X - nbr_nodes_local_X*nbProc;
+				subGrid.sizes_EH[0] = nbr_nodes_local_X + 
+					nbr_nodes_X - nbr_nodes_local_X*nbProc;
 			}else{
 				subGrid.sizes_EH[0] = nbr_nodes_local_X;
 			}
@@ -651,7 +677,7 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			subGrid.sizes_EH[0] = nbr_nodes_local_X;
 		}
 
-		if(nbr_nodes_local_thermal_X * nbProc != nbr_nodes_X){
+		if(nbr_nodes_local_thermal_X * nbProc != nbr_nodes_thermal_X){
 			if(PositionOnX == nbProc-1){
 				subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X
 						+ nbr_nodes_thermal_X - nbr_nodes_local_thermal_X * nbProc;
@@ -710,6 +736,14 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		int PositionOnY = ((int)(2*myRank/nbProc));
 		int PositionOnZ = 0;
 
+		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnX;
+		subGrid.MPI_communicator.MPI_POSITION[1] = (char) PositionOnY;
+		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnZ;
+
+		subGrid.MPI_communicator.MPI_MAX_POSI[0] = (char) nbProc%(nbProc/2);
+		subGrid.MPI_communicator.MPI_MAX_POSI[1] = (char) ((int)(2*nbProc/nbProc));
+		subGrid.MPI_communicator.MPI_MAX_POSI[2] = 0;
+
 		size_t nbr_nodes_local_X = 2*nbr_nodes_X / (nbProc);
 		size_t nbr_nodes_local_Y = nbr_nodes_Y / 2;
 		size_t nbr_nodes_local_Z = nbr_nodes_Z;
@@ -720,7 +754,8 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 
 		if(nbr_nodes_local_X * (nbProc/2) != nbr_nodes_X){
 			if(PositionOnX == nbProc/2 - 1){
-				subGrid.sizes_EH[0] = nbr_nodes_local_X + nbr_nodes_X - nbr_nodes_local_X * (nbProc/2);
+				subGrid.sizes_EH[0] = nbr_nodes_local_X + 
+					nbr_nodes_X - nbr_nodes_local_X * (nbProc/2);
 			}else{
 				subGrid.sizes_EH[0] = nbr_nodes_local_X;
 			}
@@ -728,7 +763,7 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			subGrid.sizes_EH[0] = nbr_nodes_local_X;
 		}
 
-		if(nbr_nodes_local_thermal_X * (nbProc/2) != nbr_nodes_X){
+		if(nbr_nodes_local_thermal_X * (nbProc/2) != nbr_nodes_thermal_X){
 			if(PositionOnX == nbProc/2 - 1){
 				subGrid.size_Thermal[0] = nbr_nodes_local_thermal_X +
 						nbr_nodes_thermal_X - nbr_nodes_local_thermal_X * (nbProc/2);
@@ -741,7 +776,8 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 
 		if(nbr_nodes_local_Y * 2 != nbr_nodes_X){
 			if(PositionOnY == 1){
-				subGrid.sizes_EH[1] = nbr_nodes_local_Y + nbr_nodes_Y - nbr_nodes_local_Y * 2;
+				subGrid.sizes_EH[1] = nbr_nodes_local_Y + nbr_nodes_Y 
+					- nbr_nodes_local_Y * 2;
 			}else{
 				subGrid.sizes_EH[1] = nbr_nodes_local_Y;
 			}
