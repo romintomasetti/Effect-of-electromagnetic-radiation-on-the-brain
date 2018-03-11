@@ -401,6 +401,8 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
             std::vector<size_t> size = grid.sizes_EH;
 
+            std::cout << "\n\t>>> Writing VTI electric field...\n";
+
             // Get the sizes:
             // Hx of size M × (N − 1) × (P − 1)
             // Hy of size (M − 1) × N × (P − 1)
