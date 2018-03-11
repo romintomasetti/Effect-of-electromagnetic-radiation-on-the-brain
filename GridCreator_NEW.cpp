@@ -296,9 +296,21 @@ void GridCreator_NEW::meshInitialization(void){
      *          field in the direction of the cut(s) (for determining which MPI is where),
      *          because the size is reduced by one (w.r.t. M, N and P) only in the direction
      *          of the field component (i.e. M-1 for Ex, N-1 for Ey and P-1 for Ez).
-     *      3) For the magnetic ield components, it is the contrary. We have problems in the directions
+     *      3) For the magnetic field components, it is the contrary. We have problems in the directions
      *          along which no 'cut' was performed for the MPI division.
+     * 
+     * Solution proposed to tackle this problem:
+     *      1) In the class MPI_Initializer, add the following properties:
+     *              a) must_add_one_to_E_X/Y/Z_along_X/Y/Z
+     *                  Tells if the MPI process should add a node in the X/Y/Z direction
+     *                  for the electric field X/Y/Z.
+     *                  If this is true, the MPI process must *NOT* write the line of 0
+     *                  when being inside the vtl writer. Only the last MPI process in he 
+     *                  direction of the cut can write this line of zeros.
+     *              b) must_add_one_to_H_X/Y/Z_along_X/Y/Z
+     *                  Same as for the electric field (see above).
      */
+
 
     /* ALLOCATE SPACE FOR THE ELECTRIC FIELDS */
     #if DEBUG > 2
