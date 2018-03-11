@@ -3,6 +3,7 @@
 #include <ctime>
 #include <new>
 #include "omp.h"
+#include <algorithm>
 
 double AlgoElectro_NEW::Compute_dt(GridCreator_NEW &mesh){
     // Retrieve the spatial step in each direction:
@@ -84,9 +85,9 @@ void AlgoElectro_NEW::update(
     size_t size;
     size_t memory;
     
-    size_t M = grid.sizes_EH[0];
-    size_t N = grid.sizes_EH[1];
-    size_t P = grid.sizes_EH[2];
+    //size_t M = grid.sizes_EH[0];
+    //size_t N = grid.sizes_EH[1];
+    //size_t P = grid.sizes_EH[2];
 
     // Magnetic field Hx of size M × (N − 1) × (P − 1):
     size = grid.size_Hx[0] * grid.size_Hx[1] * grid.size_Hx[2];
@@ -345,7 +346,7 @@ void AlgoElectro_NEW::update(
 
     std::vector<std::string> TYPE = {"Ex","Ey","Ez","Hx","Hy","Hz"};
 
-    for(int i = 0 ; i < TYPE.size() ; i ++){
+    for(unsigned int i = 0 ; i < TYPE.size() ; i ++){
         grid.Compute_nodes_inside_sources(
             local_nodes_inside_source_NUMBER[i],
             ID_Source[i],
@@ -353,6 +354,20 @@ void AlgoElectro_NEW::update(
             &nbr_nodes_inside_source[i],
             TYPE[i]
         );
+        if(local_nodes_inside_source_NUMBER[i].size() != ID_Source[i].size()){
+            fprintf(stderr,"In function %s :: wrong sizes !\n",__FUNCTION__);
+            fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+            #ifdef MPI_COMM_WORLD
+            MPI_Abort(MPI_COMM_WORLD,-1);
+            #else
+            abort();
+            #endif
+        }
+        grid.profiler.addMemoryUsage("BYTES",sizeof(size_t)*local_nodes_inside_source_NUMBER[i].size());
+        grid.profiler.addMemoryUsage("BYTES",sizeof(unsigned char)*ID_Source[i].size());
+
+        printf("For %s, found %zu nodess !\n",TYPE[i].c_str(),ID_Source[i].size());
+
     }
 
     fprintf(stderr,"\n\t>>> Ready to compute sa mère !!!\n\n");
@@ -405,7 +420,42 @@ void AlgoElectro_NEW::update(
 
         size_t I,J,K;
 
-        while(current_time < grid.input_parser.get_stopTime()){
+        ////////////////////////
+        // MPI INITIALIZATION //
+        ////////////////////////
+        bool OMP_thread_has_neighboor = false;
+        char direction = '\n';
+
+        /// Put all the electric field sizes inside one vector for convenience.
+        std::vector<size_t> omp_sizes = {
+            grid.size_Ex[0],
+            grid.size_Ex[1],
+            grid.size_Ex[2],
+            grid.size_Ey[0],
+            grid.size_Ey[1],
+            grid.size_Ey[2],
+            grid.size_Ez[0],
+            grid.size_Ez[1],
+            grid.size_Ez[2]
+        };
+
+        /// Vectors to store data to be sent or received when communicating with
+        /// other MPI processes.
+        double *ElectricFieldToSend = NULL;
+        double *ElectricFieldToRecv = NULL;
+
+        this->determine_OMP_thred_role_in_MPI_communication(
+            omp_get_thread_num(),
+            &OMP_thread_has_neighboor,
+            &direction,
+            grid,
+            omp_sizes,
+            &ElectricFieldToSend,
+            &ElectricFieldToRecv
+        );
+
+        while(current_time < grid.input_parser.get_stopTime()
+                && currentStep < grid.input_parser.maxStepsForOneCycleOfElectro){
             
             // Updating the magnetic field Hx.
             // Don't update neighboors ! Start at 1. Go to size-1.
@@ -627,32 +677,6 @@ void AlgoElectro_NEW::update(
             ////////////////////////////
             /// IMPOSING THE SOURCES ///
             ////////////////////////////
-            /*#pragma omp for collapse(3)\
-                private(index)*/
-            /*#pragma omp master
-            {
-                size_t counter = 0;
-                for(K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
-                    for(J = 1 ; J < grid.size_Ez[1]-1 ; J ++){
-                        for(I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
-
-                            int A = 53;
-                            int B = 62;
-                            if(I >= A && I <= B 
-                            && J >= A && J <= B
-                            && K >= A && K <= B)
-                            {
-                                counter++;
-                                index        = I   + size_x   * ( J     + size_y   * K);
-                                E_z_tmp[index] = sin(2*3.14*900E6*current_time);
-                            }
-
-                        }
-                    }
-                }            
-            }*/
-
-            
             #pragma omp for schedule(static)
             for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[2].size() ; it ++){
 
@@ -666,7 +690,7 @@ void AlgoElectro_NEW::update(
 
                 index = local_nodes_inside_source_NUMBER[1][it];
 
-                E_y_tmp[index] = 2;
+                E_y_tmp[index] = 0;
             }
 
             #pragma omp for schedule(static)
@@ -674,11 +698,17 @@ void AlgoElectro_NEW::update(
 
                 index = local_nodes_inside_source_NUMBER[0][it];
 
-                E_x_tmp[index] = 2;
+                E_x_tmp[index] = 0;
             }
-            
+
             #pragma omp barrier
-            #pragma omp master
+
+            /////////////////////////
+            /// MPI COMMUNICATION ///
+            /////////////////////////
+            
+            
+            #pragma omp single
             {
                 if(currentStep == 0){
                     grid.profiler.addTimingInputToDictionnary("ELECTRO_WRITING_OUTPUTS");
@@ -711,13 +741,26 @@ void AlgoElectro_NEW::update(
             }
             #pragma omp barrier
 
-            abort();
-
         } /* END OF WHILE */
     }/* END OF PARALLEL REGION */
 
 
     /* FREE MEMORY */
+
+    for(int i = 0 ; i < 6 ; i ++){
+        grid.profiler.removeMemoryUsage(
+            "BYTES",
+            sizeof(size_t)*local_nodes_inside_source_NUMBER[i].size(),
+            "Free_nodes_inside_source_NUMBER[]");
+        grid.profiler.removeMemoryUsage(
+            "BYTES",
+            sizeof(unsigned char)*ID_Source[i].size(),
+            "Free_ID_Source[]"
+        );
+    }
+    
+    delete[] local_nodes_inside_source_NUMBER;
+    delete[] ID_Source;
     
     // Free H_x coefficients:
     size = grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2];
@@ -798,4 +841,59 @@ void AlgoElectro_NEW::check_OMP_DYNAMIC_envVar(void){
 		putenv(&set_env[0]);
 		printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
 	}
+}
+
+/**
+ * @brief This function initialize some usefull variables for each OMP thread, in order to set MPI comminucation.
+ */
+void AlgoElectro_NEW::determine_OMP_thred_role_in_MPI_communication(
+            int omp_thread_id /* omp_get_thread_num()*/,
+            bool *OMP_thread_has_neighboor,
+            char *direction,
+            GridCreator_NEW &grid,
+            std::vector<size_t> &omp_sizes,
+            double **ElectricFieldToSend,
+            double **ElectricFieldToRecv
+        )
+{
+    /// We only need 6 OMP threads to handle the communication.
+    if(omp_thread_id >= 0 && omp_thread_id <= 5){
+        /// The omp thread is needed for MPI communication.
+
+        /// Set the direction of communication.
+        std::vector<char> DIRECTIONS = {'S','N','W','E','D','U'};
+
+        *direction = DIRECTIONS[omp_thread_id];
+
+        /// Determine if the MPI process has a neighboor is the direction:
+        /////////////////////////////////////////////////
+        /// CONVENTION FOR COMMUNICATION              ///
+        /// 1) OMP thread(0) communicates with SOUTH. ///
+        /// 2) OMP thread(1) communicates with NORTH. ///
+        /// 3) OMP thread(2) communicates with WEST.  ///
+        /// 3) OMP thread(3) communicates with EAST.  ///
+        /// 4) OMP thread(4) communicates with DOWN.  ///
+        /// 5) OMP thread(5) communicates with UP.    ///
+        /////////////////////////////////////////////////
+        if(grid.MPI_communicator.RankNeighbour[omp_thread_id] != -1){
+            *OMP_thread_has_neighboor = true;
+        }
+
+        /// If the OMP thread has an associated neighboor, initialize
+        /// the vectors used for sending and recieving.
+        if(*OMP_thread_has_neighboor){
+
+            /// Use omp_sizes to determine the size of those vectors:
+
+            /// Increment memory usage, omp safe:
+            #pragma omp critical
+            {
+
+            }
+        }
+
+    }else{
+        /// The thread has an ID larger than 5, just do nothing.
+        return;
+    }
 }

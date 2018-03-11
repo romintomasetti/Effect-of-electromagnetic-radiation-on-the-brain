@@ -27,6 +27,16 @@ class AlgoElectro_NEW{
 
         // Check that OMP_DYNAMIC is set to false:
         void check_OMP_DYNAMIC_envVar(void);
+
+        void determine_OMP_thred_role_in_MPI_communication(
+            int omp_thread_id /* omp_get_thread_num()*/,
+            bool *OMP_thread_has_neighboor,
+            char *direction,
+            GridCreator_NEW &grid,
+            std::vector<size_t> &,
+            double **,
+            double **
+        );
 };
 
 #endif
