@@ -172,7 +172,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
         private(local,global)\
         private(T,mu_material,epsilon_material)\
         private(elec_conduct_mat)
-    {
+    { 
         // Boolean to know whether there is a neighboor or not for the OMP thread
         bool hasNeighboor = false;
 

@@ -416,38 +416,44 @@ bool ElectromagneticSource::is_inside_source_Romin(
 	double Y_coord = -1.0;
 	double Z_coord = -1.0;
 
+	size_t I_shift = 0;
+	size_t J_shift = 0;
+
 	if(type == "Ex"){
 		// The node is of part of the electric field's X component.
 		// Shift for this type of node is deltaX along X.
-		shift_X = deltas_Electro[0];
+		//shift_X = deltas_Electro[0];
+		//I_shift++;
+
 
 	}else if (type == "Ey"){
 		// The node is of part of the electric field's Y component.
 		// Shift for this type of node is deltaY along Y.
-		shift_Y = deltas_Electro[1];
+		//shift_Y = deltas_Electro[1];
+		//J_shift++;
 
 	}else if (type == "Ez"){
 		// The node is of part of the electric field's Z component.
 		// Shift for this type of node is deltaZ along Z.
-		shift_Z = deltas_Electro[2];
+		//shift_Z = deltas_Electro[2];
 
 	}else if (type == "Hx"){
 		// The node is of part of the magnetic field's X component.
 		// Shift for this type of node is deltaY along Y and deltaZ along Z.
-		shift_Y = deltas_Electro[1];
-		shift_Z = deltas_Electro[2];
+		//shift_Y = deltas_Electro[1];
+		//shift_Z = deltas_Electro[2];
 
 	}else if (type == "Hy"){
 		// The node is of part of the magnetic field's Y component.
 		// Shift for this type of node is deltaX along X and deltaZ along Z.
-		shift_X = deltas_Electro[0];
-		shift_Z = deltas_Electro[2];
+		//shift_X = deltas_Electro[0];
+		//shift_Z = deltas_Electro[2];
 
 	}else if (type == "Hz"){
 		// The node is of part of the magnetic field's Z component.
 		// Shift for this type of node is deltaX along X and deltaY along Y.
-		shift_X = deltas_Electro[0];
-		shift_Y = deltas_Electro[1];
+		//shift_X = deltas_Electro[0];
+		//shift_Y = deltas_Electro[1];
 
 	}else{
 		fprintf(stderr,"In %s :: invalid type (has %s). Aborting.\n",
@@ -461,18 +467,46 @@ bool ElectromagneticSource::is_inside_source_Romin(
 	Z_coord = origin_whole_grid[2] + K_gl * deltas_Electro[2] + shift_Z;
 
 	/// Determine if it is inside the source:
-	double EPS = 1E-8;
-	if(    X_coord >= (this->centerX[ID_Source] - this->lengthX[ID_Source]/2)-EPS
-		&& X_coord <= (this->centerX[ID_Source] + this->lengthX[ID_Source]/2)+EPS
-		&& Y_coord >= (this->centerY[ID_Source] - this->lengthY[ID_Source]/2)-EPS
-		&& Y_coord <= (this->centerY[ID_Source] + this->lengthY[ID_Source]/2)+EPS
-		&& Z_coord >= (this->centerZ[ID_Source] - this->lengthZ[ID_Source]/2)-EPS
-		&& Z_coord <= (this->centerZ[ID_Source] + this->lengthZ[ID_Source]/2)+EPS)
+	double EPS = deltas_Electro[0]*1E-5;
+	if(    X_coord >= (this->centerX[ID_Source] - this->lengthX[ID_Source]/2.)-EPS
+		&& X_coord <= (this->centerX[ID_Source] + this->lengthX[ID_Source]/2.)+EPS
+		&& Y_coord >= (this->centerY[ID_Source] - this->lengthY[ID_Source]/2.)-EPS
+		&& Y_coord <= (this->centerY[ID_Source] + this->lengthY[ID_Source]/2.)+EPS
+		&& Z_coord >= (this->centerZ[ID_Source] - this->lengthZ[ID_Source]/2.)-EPS
+		&& Z_coord <= (this->centerZ[ID_Source] + this->lengthZ[ID_Source]/2.)+EPS)
 	{
-		// The node is inside the source, return true.
-		if(I_gl == 6 && J_gl == 4){
-			printf("(%zu,%zu,%zu)=(%f,%f,%f)\n",I_gl,J_gl,K_gl,X_coord,Y_coord,Z_coord);
+		/// The node is inside the source.
+		bool isOnFace_e_x = false;
+		bool isOnFace_e_y = false;
+
+		if(X_coord + deltas_Electro[0] >= (this->centerX[ID_Source] + this->lengthX[ID_Source]/2)+EPS){
+			isOnFace_e_x = true;
 		}
+
+		if(Y_coord + deltas_Electro[1] >= (this->centerY[ID_Source] + this->lengthY[ID_Source]/2)+EPS){
+			isOnFace_e_y = true;
+		}
+
+		if(isOnFace_e_x == true && isOnFace_e_y == true){
+			// Impose none of Ex and Ey, return false:
+			if( type == "Ex" || type == "Ey" ){
+				printf("Sur l'arête : (%zu,%zu,%zu)\n",I_gl,J_gl,K_gl);
+				return false;
+			}
+		}else if(isOnFace_e_x == true){
+			if(type == "Ex"){
+				return false;
+			}else if(type == "Ey"){
+				return true;
+			}
+		}else if(isOnFace_e_y == true){
+			if(type == "Ex"){
+				return true;
+			}else if(type == "Ey"){
+				return false;
+			}
+		}
+
 		return true;
 	}
 	

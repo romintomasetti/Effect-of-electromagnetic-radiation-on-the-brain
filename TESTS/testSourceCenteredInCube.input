@@ -27,39 +27,39 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=1.
-		deltaY_Electro=1.
-		deltaZ_Electro=1.
+		deltaX_Electro=0.01
+		deltaY_Electro=0.01
+		deltaZ_Electro=0.01
 		delta_Thermal=0.5
-		ratio_EM_TH_delta=2
+		ratio_EM_TH_delta=0.02
 	$DELTAS
 		
 	// Boundaries of the domain
 	$DOMAIN_SIZE
 		// Length of the domain in each direction
-		L_X_ELECTRO=100
-		L_Y_ELECTRO=100
-		L_Z_ELECTRO=100
-		L_X_THERMAL=100
-		L_Y_THERMAL=100
-		L_Z_THERMAL=100
+		L_X_ELECTRO=1
+		L_Y_ELECTRO=1
+		L_Z_ELECTRO=1
+		L_X_THERMAL=1
+		L_Y_THERMAL=1
+		L_Z_THERMAL=1
 	$DOMAIN_SIZE
 	
 	// Information on the source
 	$SOURCE
 		NBR_SOURCES=1
 		// Length of the source in each direction
-		L_X=10
-		L_Y=10
-		L_Z=10
+		L_X=0.1
+		L_Y=0.1
+		L_Z=0.1
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=200
-		C_Y=200
-		C_Z=200
+		C_X=0.5
+		C_Y=0.5
+		C_Z=0.5
 		// Frequency [Hz]
 		FRQCY=900E6
 		// Air gap (in meter)
-		AIR_GAP=1;2
+		AIR_GAP=1
 	$SOURCE
 	
 	$MATERIALS
@@ -72,6 +72,8 @@ $RUN_INFOS
 	$STOP_SIMUL_AFTER
 	// The simulation will stop after... (in sec)
 	stopTime=10
+	// The electromagnetic solver stops after this max number of steps parameter:
+	maxStepsForOneCycleOfElectro=5E5
 	$STOP_SIMUL_AFTER
 	
 	// Initial temperatures:

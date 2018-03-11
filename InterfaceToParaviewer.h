@@ -47,8 +47,9 @@ class InterfaceToParaviewer{
                             GridCreator_NEW &grid_Creator_NEW,
                             bool is_grid_creator_new):
                             grid_Creator(grid_Creator),
-                            MPI_communicator(MPI_communicator),
-                            grid_Creator_NEW(grid_Creator_NEW){
+                            grid_Creator_NEW(grid_Creator_NEW),
+                            MPI_communicator(MPI_communicator)
+                            {
                                 this->initializeAll();
                                 printf("InterfaceToParaviewer::constructor::OUT\n");
                                 this->is_grid_creator_new = is_grid_creator_new;
