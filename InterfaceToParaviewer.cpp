@@ -89,15 +89,15 @@ void InterfaceToParaviewer::initializeAll(void){
         length_z_whole_dom_thermal = this->grid_Creator_NEW.input_parser.lengthZ_WholeDomain_Thermal;
     }
 
-    size_t nodesWholeDom_X_Electro = (size_t) length_X_whole_dom_electro / dx_Electro +1;
-    size_t nodesWholeDom_Y_Electro = (size_t) length_Y_whole_dom_electro / dy_Electro +1;
-    size_t nodesWholeDom_Z_Electro = (size_t) length_Z_whole_dom_electro / dz_Electro +1;
+    size_t nodesWholeDom_X_Electro = length_X_whole_dom_electro / dx_Electro +1;
+    size_t nodesWholeDom_Y_Electro = length_Y_whole_dom_electro / dy_Electro +1;
+    size_t nodesWholeDom_Z_Electro = length_Z_whole_dom_electro / dz_Electro +1;
 
     this->grid_Electro.np2 = vtl::Vec3i(nodesWholeDom_X_Electro,nodesWholeDom_Y_Electro,nodesWholeDom_Z_Electro);
 
-    size_t nodesWholeDom_X_Thermal = (size_t) length_x_whole_dom_thermal / delta_thermal +1;
-    size_t nodesWholeDom_Y_Thermal = (size_t) length_y_whole_dom_thermal / delta_thermal +1;
-    size_t nodesWholeDom_Z_Thermal = (size_t) length_z_whole_dom_thermal / delta_thermal +1;
+    size_t nodesWholeDom_X_Thermal = length_x_whole_dom_thermal / delta_thermal +1;
+    size_t nodesWholeDom_Y_Thermal = length_y_whole_dom_thermal / delta_thermal +1;
+    size_t nodesWholeDom_Z_Thermal = length_z_whole_dom_thermal / delta_thermal +1;
     
     this->grid_Thermal.np2 = vtl::Vec3i(nodesWholeDom_X_Thermal,nodesWholeDom_Y_Thermal,nodesWholeDom_Z_Thermal);
 
@@ -172,7 +172,7 @@ void InterfaceToParaviewer::initializeAll(void){
                                 + this->mygrid_Electro.np2[k];
 
                         this->sgrids_Thermal[I].np2[k] = this->mygrid_Thermal.np1[k]
-                                + this->mygrid_Electro.np2[k];
+                                + this->mygrid_Thermal.np2[k];
                     }
                 }
             }else{
