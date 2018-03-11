@@ -145,6 +145,8 @@ class InputParser{
 		double lengthZ_WholeDomain_Thermal = 0.0;
 
 		size_t maxStepsForOneCycleOfElectro = 0;
+
+		std::map<std::string,std::string> TEST_PARAVIEW_MPI_ARGS;
 };
 
 #endif

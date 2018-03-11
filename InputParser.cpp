@@ -5,6 +5,8 @@
 
 #include <cstring>
 
+#include <cmath>
+
 
 // Small enums for the dollar strings (see InputParser::readHeader)
 stringDollar_Header1 InputParser::hashit_Header1 (std::string const& inString) {
@@ -146,22 +148,15 @@ void InputParser::basicParsing(const string filename){
 
 				// Get line:
 				getline(inputFile,currentLine);
+				
 				// Check that the line is not a comment:
-				if(this->checkLineISNotComment(inputFile,currentLine)){
-					// The line was a comment, ignoring it.
-				}
-				#if DEBUG > 4
-				cout << "Current line is " + currentLine << endl;
-				#endif
+				this->checkLineISNotComment(inputFile,currentLine);
+
 				if(currentLine.find("$") != std::string::npos){
 					// If there is a dollar, we begin a section:
-					#if DEBUG > 4
-					cout << "There is a dollor in ::" + currentLine + "::\n";
-					#endif
 					this->readHeader(inputFile,currentLine);
 				}
 			}
-			cout << "INPUT FILE TERMINATED" << endl;
 		}else{
 			cout << "InputParser::basicParsing::Should not end up here !";
 			cout << " Complain to the developer.\n";
@@ -186,27 +181,22 @@ void InputParser::readHeader(ifstream &file,std::string &currentLine){
 	strHeader1.erase(std::remove_if(strHeader1.begin(),
 			 strHeader1.end(), [](unsigned char x){return std::isspace(x);}),
 			 strHeader1.end());
-	#if DEBUG > 4
-	cout << "String analyzed is " + strHeader1 << endl;
-	#endif
+	
 	// Go with the switch:
 	switch(hashit_Header1(strHeader1)){
+
 		case INFOS    : 
 			this->readHeader_INFOS(file);
-			#if DEBUG > 4
-			cout << "EXITING SECTION INFOS WITH currentLine=" + currentLine << endl;
-			#endif
 			break;
+
 		case MESH     : 
 			this->readHeader_MESH (file);
-			#if DEBUG > 4
-			cout << "EXITING SECTION MESH WITH currentLine=" + currentLine << endl;
-			#endif
 			break;
+
 		case RUN_INFOS: 
 			this->readHeader_RUN_INFOS(file);
-			cout << "EXITING SECTION RUN_INFOS WITH currentLine=" + currentLine << endl;
 			break;
+
 		default:
 			printf("Should not end up here. Complain to Romin. Abort.");
 			printf("(in file %s at %d)\n",__FILE__,__LINE__);
@@ -217,59 +207,39 @@ void InputParser::readHeader(ifstream &file,std::string &currentLine){
 // Check that the line is not a comment:
 bool InputParser::checkLineISNotComment(ifstream &file, string &currentLine){
 	/* Check for line(s) being comments or blank */
-	std::string str = currentLine;
-	this->RemoveAnyBlankSpaceInStr(str);
-	if(str == string()){
+	this->RemoveAnyBlankSpaceInStr(currentLine);
+	while(currentLine == string() && !file.eof()){
 		#if DEBUG > 4
 		cout << "It is a blank line !" << endl;
 		#endif
 		getline(file,currentLine);
+		this->RemoveAnyBlankSpaceInStr(currentLine);
 	}
 
-	string comment1_beg = "/*";
-	string comment1_end = "*/";
-	string comment2 = "//";
-
-	#if DEBUG > 4
-	cout << "check received " + currentLine << endl;
-	#endif
+	const std::string comment1_beg = "/*";
+	const std::string comment1_end = "*/";
+	const std::string comment2 = "//";
 
 	if(currentLine.find(comment1_beg) != std::string::npos){
 		// We have multiple lines comment ! Read all the comment before exiting.
-		#if DEBUG > 4
-		cout << "Multiple line comment:\n";
-		#endif
 		while(!file.eof()){
 			if(currentLine.find(comment1_end) != std::string::npos){
-				#if DEBUG > 4
-				cout << "\t|" + currentLine << "|\n" << endl;
-				#endif
+				getline(file,currentLine);
+				printf("Stuck in multiple !\n");
+				this->checkLineISNotComment(file,currentLine);
 				break;
 			}
-			#if DEBUG > 4
-			cout << "\t|" + currentLine << "|\n" << endl;
-			#endif
 			getline(file,currentLine);
 		}
 		return true;
 	}else if(currentLine.find(comment2) != std::string::npos){
 		// We have one line comment !
-		#if DEBUG > 4
-		cout << "This is a one line comment : " + currentLine << endl;
-		#endif
 		while(!file.eof()){
-			#if DEBUG > 3
-			cout << "Comment 2 entering while\n" << endl;
-			#endif
 			if(currentLine.find(comment2) == std::string::npos){
-				#if DEBUG > 2
-				cout << "\t|" + currentLine << "|\n" << endl;
-				#endif
+				printf("Stuck in single ! \n");
+				this->checkLineISNotComment(file,currentLine);
 				break;
 			}
-			#if DEBUG > 2
-			cout << "\t|" + currentLine << "|\n" << endl;
-			#endif
 			getline(file,currentLine);
 		}
 	}else{
@@ -384,11 +354,14 @@ void InputParser::readHeader_MESH (ifstream &file){
 						{
 							// Check the ratio:
 							double ratio = this->deltaX_Electro / this->delta_Thermal;
-							if(ratio - this->ratio_EM_TH_delta != 0){
+
+							// Use absolute value to keep rounding error away.
+
+							if(abs(ratio - this->ratio_EM_TH_delta) > ratio*1E-8){
 								fprintf(stderr,"InputParser::Wrong spatial steps\n");
 								fprintf(stderr,"Spatial step EM is %f.",this->deltaX_Electro);
 								fprintf(stderr,"Spatial step TH is %f.",this->delta_Thermal);
-								fprintf(stderr,"Announced ratio is %d but has %f.\n",
+								fprintf(stderr,"Announced ratio is %f but has %f.\n",
 									this->ratio_EM_TH_delta,ratio);
 								fprintf(stderr,"Aborting.\nFile %s:%d\n",__FILE__,__LINE__);
 								std::abort();
@@ -684,17 +657,100 @@ void InputParser::readHeader_MESH (ifstream &file){
 							std::abort();
 						}
 
-					}else if(propName == "DEBUG_MPI_COMM"){
-						if(propGiven == "true"){
-							this->simulationType = "DEBUG_MPI_COMM";
-							std::cout << "SET simulationType to DEBUG_MPI_COMM" << std::endl;
+					}else if(propName == "TEST_PARAVIEW_MPI"){
+						// Assign the simulation type:
+						this->simulationType = "TEST_PARAVIEW_MPI";
+						std::cout << "SET simulationType to TEST_PARAVIEW_MPI" << std::endl;
+						// Parse the propGiven:
+						/**
+						 * The 'propGiven' must be (A,B,C), i.e. comma-separated
+						 * and surrounded with brackets.
+						 */
+						/// Remove the brackets:
+						if(propGiven.c_str()[0] == '('){
+							printf("Have parenthesis: ok\n");
+							/// Check the last character is a bracket:
+							if(propGiven.c_str()[propGiven.size()-1] == ')'){
+								printf("Have closing parenthesis ok\n");
+								/// Erase the two parenthesis from the 'propGiven' string:
+								propGiven = propGiven.substr(1, propGiven.size() -2);
+							}else{
+								fprintf(stderr,"In %s :: while parsing the arguments of 'TEST_PARAVIEW_MPI.\n",
+									__FUNCTION__);
+								fprintf(stderr,"You miss the closing parenthesis !\n");
+								fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+								#ifdef MPI_COMM_WORLD
+								MPI_Abort(MPI_COMM_WORLD,-1);
+								#else
+								abort();
+								#endif
+							}
 						}else{
-							printf("You set DEBUG_MPI_COMM to false. Aborting.\n");
-							std::abort();
+							fprintf(stderr,"In %s :: while parsing the arguments of 'TEST_PARAVIEW_MPI.\n",
+									__FUNCTION__);
+								fprintf(stderr,"You miss the opening parenthesis !\n");
+								fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+								#ifdef MPI_COMM_WORLD
+								MPI_Abort(MPI_COMM_WORLD,-1);
+								#else
+								abort();
+								#endif
+						}
+						std::vector<std::string> args;
+						std::stringstream ss(propGiven);
+						while(ss.good()){
+							std::string substr;
+							getline(ss,substr,',');
+							args.push_back(substr);
+							std::cout << substr << std::endl;
+						}
+						/// If there is more than 3 args, abort:
+						if(args.size() > 3){
+							fprintf(stderr,"In %s :: while parsing the arguments of 'TEST_PARAVIEW_MPI.\n",
+									__FUNCTION__);
+							fprintf(stderr,"You must given 3 args: TEMP=sthg,E=sthgElse,H=sthg !\n");
+							fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+							#ifdef MPI_COMM_WORLD
+							MPI_Abort(MPI_COMM_WORLD,-1);
+							#else
+							abort();
+							#endif
+						}
+						std::vector<std::string> ARGS_ORDER = {"TEMP","E","H"};
+						for(size_t i = 0 ; i < 3 ; i ++ ){
+							if(args[i].find(ARGS_ORDER[i]) == std::string::npos){
+								/// Cannot find the argument TEMP that should come first. Aborting.
+								fprintf(stderr,"In %s :: while parsing the arguments of 'TEST_PARAVIEW_MPI.\n",
+										__FUNCTION__);
+								fprintf(stderr,"You must provide %s !\n",ARGS_ORDER[i].c_str());
+								fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+								#ifdef MPI_COMM_WORLD
+								MPI_Abort(MPI_COMM_WORLD,-1);
+								#else
+								abort();
+								#endif
+							}else{
+								std::size_t posEqual   = args[i].find("=");
+								std::string prop_name  = args[i].substr(0,posEqual);
+								if(prop_name != ARGS_ORDER[i]){
+									fprintf(stderr,"FATAL ERROR\n");
+									fprintf(stderr,"FILE %s:%d\n",__FILE__,__LINE__);
+									abort();
+								}
+								std::string prop_given = args[i].substr(posEqual+1,args[i].length());
+								printf("%s has been set to %s.\n",prop_name.c_str(),prop_given.c_str());
+								this->TEST_PARAVIEW_MPI_ARGS.insert(
+									std::pair<std::string,std::string>(
+										prop_name,
+										prop_given
+									));
+							}
 						}
 
+						/* END OF TEST_PARAVIEW_MPI */
+						
 
-					}else if(propName != "USE_AIR_EVERYWHERE"){
+					}else{
 						printf("InputParser::readHeader_MESH:: You didn't provide a ");
 						printf("good member for $MESH$MATERIALS.\nAborting.\n");
 						cout << propName << endl;
