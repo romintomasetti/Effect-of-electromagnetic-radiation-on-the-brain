@@ -317,9 +317,17 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing E_x" << std::endl;
     #endif
     // Size of E_x is  (M − 1) × N × P. Add 2 nodes in each direction for the neighboors.
-    this->size_Ex[0] = M - 1 + 2;
+    if(this->MPI_communicator.must_add_one_to_E_X_along_XYZ[0] == true){
+        this->size_Ex[0] = M - 1 + 2 + 1;
+    }else{
+        this->size_Ex[0] = M - 1 + 2;
+    }
     this->size_Ex[1] = N + 2;
-    this->size_Ex[2] = P + 2;
+    if(this->MPI_communicator.must_add_one_to_E_X_along_XYZ[2] == true){
+        this->size_Ex[2] = P + 2 + 1;
+    }else{
+        this->size_Ex[2] = P + 2;
+    }
     size = this->size_Ex[0] * this->size_Ex[1] * this->size_Ex[2];
     this->E_x                 = new double[size];
     this->E_x_material        = new unsigned char[size];
@@ -329,12 +337,13 @@ void GridCreator_NEW::meshInitialization(void){
     memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
-    #if DEBUG > 2
-    std::cout << "GridCreator_New::initializing E_y" << std::endl;
-    #endif
     // Size of E_y is  M × (N − 1) × P. Add 2 nodes in each direction for the neighboors.
     this->size_Ey[0] = M + 2;
-    this->size_Ey[1] = N - 1 + 2;
+    if(this->MPI_communicator.must_add_one_to_E_Y_along_XYZ[1] == false){
+        this->size_Ey[1] = N - 1 + 2;
+    }else{
+        this->size_Ey[1] = N - 1 + 2 + 1;
+    }
     this->size_Ey[2] = P + 2;
     size = this->size_Ey[0] * this->size_Ey[1] * this->size_Ey[2];
     this->E_y                 = new double[size];
@@ -351,7 +360,11 @@ void GridCreator_NEW::meshInitialization(void){
     // Size of E_z is  M × N × (P − 1). Add 2 nodes in each direction for the neighboors.
     this->size_Ez[0] = M + 2;
     this->size_Ez[1] = N + 2;
-    this->size_Ez[2] = P - 1 + 2;
+    if(this->MPI_communicator.must_add_one_to_E_Z_along_XYZ[2] == true){
+        this->size_Ez[2] = P - 1 + 2 + 1;
+    }else{
+        this->size_Ez[2] = P - 1 + 2;
+    }
     size = this->size_Ez[0] * this->size_Ez[1] * this->size_Ez[2];
     this->E_z                 = new double[size];
     this->E_z_material        = new unsigned char[size];
@@ -367,9 +380,21 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing H_x" << std::endl;
     #endif
     // Size of H_x is  M × (N − 1) × (P − 1). Add 2 nodes in each direction for the neighboors.
-    this->size_Hx[0] = M + 2;
-    this->size_Hx[1] = N - 1 + 2;
-    this->size_Hx[2] = P - 1 + 2;
+    if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[0] == true){
+        this->size_Hx[0] = M + 2 + 1;
+    }else{
+        this->size_Hx[0] = M + 2;
+    }
+    if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[1] == true){
+        this->size_Hx[1] = N - 1 + 2 + 1;
+    }else{
+        this->size_Hx[1] = N - 1 + 2;
+    }
+    if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[2] == true){
+        this->size_Hx[2] = P - 1 + 2 + 1;
+    }else{
+        this->size_Hx[2] = P - 1 + 2;
+    }
     size = this->size_Hx[0] * this->size_Hx[1] * this->size_Hx[2];
     this->H_x               = new double[size];
     this->H_x_material      = new unsigned char[size];
@@ -383,9 +408,17 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing H_y" << std::endl;
     #endif
     // Size of H_y is  (M − 1) × N × (P − 1). Add 2 nodes in each direction for the neighboors.
-    this->size_Hy[0] = M - 1 + 2;
+    if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] == true){
+        this->size_Hy[0] = M - 1 + 2 + 1;
+    }else{
+        this->size_Hy[0] = M - 1 + 2;
+    }
     this->size_Hy[1] = N + 2;
-    this->size_Hy[2] = P - 1 + 2;
+    if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[2] == true){
+        this->size_Hy[2] = P - 1 + 2 + 1;
+    }else{
+        this->size_Hy[2] = P - 1 + 2;
+    }
     size = this->size_Hy[0] * this->size_Hy[1] * this->size_Hy[2];
     this->H_y               = new double[size];
     this->H_y_material      = new unsigned char[size];
@@ -395,12 +428,17 @@ void GridCreator_NEW::meshInitialization(void){
     memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
-    #if DEBUG > 2
-    std::cout << "GridCreator_New::initializing H_z" << std::endl;
-    #endif
     // Size of H_z is  (M − 1) × (N − 1) × P. Add 2 nodes in each direction for the nieghboors.
-    this->size_Hz[0] = M - 1 + 2;
-    this->size_Hz[1] = N - 1 + 2;
+    if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] == true){
+        this->size_Hz[0] = M - 1 + 2 + 1;
+    }else{
+        this->size_Hz[0] = M - 1 + 2;
+    }
+    if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[1] == true){
+        this->size_Hz[1] = N - 1 + 2 + 1;
+    }else{
+        this->size_Hz[1] = N - 1 + 2;
+    }
     this->size_Hz[2] = P + 2;
     size = this->size_Hz[0] * this->size_Hz[1] * this->size_Hz[2];
     this->H_z               = new double[size];
