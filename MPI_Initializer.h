@@ -64,6 +64,19 @@ class MPI_Initializer{
 		std::vector<char> MPI_POSITION = {-1,-1,-1};
 		/// Store the number of MPI processes along each direction:
 		std::vector<char> MPI_MAX_POSI = {-1,-1,-1};
+		/// Some usefull boolean variables:
+		std::vector<bool> must_add_one_to_E_X_along_XYZ 
+			= {false,false,false};
+		std::vector<bool> must_add_one_to_E_Y_along_XYZ
+			= {false,false,false};
+		std::vector<bool> must_add_one_to_E_Z_along_XYZ
+			= {false,false,false};
+		std::vector<bool> must_add_one_to_H_X_along_XYZ
+			= {false,false,false};
+		std::vector<bool> must_add_one_to_H_Y_along_XYZ
+			= {false,false,false};
+		std::vector<bool> must_add_one_to_H_Z_along_XYZ
+			= {false,false,false};
 
 };
 

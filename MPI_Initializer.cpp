@@ -436,8 +436,8 @@ bool MPI_Initializer::SendDataToNeighboor(double *vectorToSend,
 void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 	
 	// Retrieve the number of MPI proceses and the ID of the current MPI process:
-	int nbProc = this->number_of_MPI_Processes.get();
-	int myRank = this->ID_MPI_Process.get();
+	int nbProc = subGrid.MPI_communicator.number_of_MPI_Processes.get();
+	int myRank = subGrid.MPI_communicator.ID_MPI_Process.get();
 
 	// Retrieve the length of the whole domain along each direction, EM grid:
 	double Lx = subGrid.input_parser.lengthX_WholeDomain_Electro;
@@ -481,6 +481,21 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 	// Cubic case
 	if(N*N*N == nbProc){
 
+		/**
+		 * 1) For the X component of the electric field, if I am not the last MPI process along the 
+		 * 		X direction, add one node to E_x in the X direction.
+		 * 2) For the Y component of the electric field, add one node in the Y direction if I am
+		 * 		*NOT* the last MPI process in the Y direction.
+		 * 3) For the Z component of the electric field, if I am not the last MPI process along the
+		 * 		Z direction, add one node to E_z along Z.
+		 * 4) For the X component of the magnetic field, add one node along Y and Z if the MPI process
+		 * 		is not the last one along Y or Z, respectively.
+		 * 5) For the Y component of the magnetic field, if I am not the last MPI process in the 
+		 * 		X or Z direction, add one node in the X or Z direction, respectively.
+		 * 6) For the Z component of the magnetic field, if I am not the last MPI process in the
+		 * 		X or Y direction, add one node in the X or Y direction, respectively.
+		 */
+
 		/* myRank%N gives the current position on the x-axis */
 		/* (((int)(myRank/N) - (int) (myRank/(N*N))*N )) gives the current position on the y-axis */
 		/* myRank/ (N*N) gives the current position on the z-axis */
@@ -491,11 +506,61 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 
 		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnX;
 		subGrid.MPI_communicator.MPI_POSITION[1] = (char) PositionOnY;
-		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnZ;
+		subGrid.MPI_communicator.MPI_POSITION[2] = (char) PositionOnZ;
 
-		subGrid.MPI_communicator.MPI_MAX_POSI[0] = (char) nbProc%N;
-		subGrid.MPI_communicator.MPI_MAX_POSI[1] = (char) ( (int) (nbProc/N) - (int) (nbProc/(N*N))*N );
-		subGrid.MPI_communicator.MPI_MAX_POSI[2] = 0;
+		/// In the following, you must do (nbProc-1) because MPI rank starts at zero !
+		subGrid.MPI_communicator.MPI_MAX_POSI[0] = (char) ( (nbProc-1) % N );
+		subGrid.MPI_communicator.MPI_MAX_POSI[1] = (char) ( (int) ( (nbProc-1) / N) 
+																- (int) ( (nbProc-1) / (N*N) ) * N );
+		subGrid.MPI_communicator.MPI_MAX_POSI[2] = (char) ( (nbProc-1) / (N*N));
+
+		if(subGrid.MPI_communicator.MPI_POSITION[0] == subGrid.MPI_communicator.MPI_MAX_POSI[0]){
+			/// I am the last MPI process along the X direction. Don't add a node to E_x in X direction:
+			subGrid.MPI_communicator.must_add_one_to_E_X_along_XYZ[0] = false;
+			/// I am the last MPI process along the X direction. Don't add a node to H_Y in the X direction:
+			subGrid.MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] = false;
+			/// I am the last MPI process along the X direction. Don't add a node to H_Z in the X direction:
+			subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] = false;
+		}else{
+			/// I am *NOT* the last MPI process along the X direction. *ADD* a node to E_x in X direction:
+			subGrid.MPI_communicator.must_add_one_to_E_X_along_XYZ[0] = true;
+			/// I am *NOT* the last MPI process along the X direction. *ADD* a node to H_Y in the X direction:
+			subGrid.MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] = true;
+			/// I am *NOT* the last MPI process along the X direction. *ADD* a node to H_Z in the X direction:
+			subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] = true;
+		}
+
+		if(subGrid.MPI_communicator.MPI_POSITION[1] == subGrid.MPI_communicator.MPI_MAX_POSI[1]){
+			/// I am the last MPI process along the Y direction. Don't add a node to E_y along Y:
+			subGrid.MPI_communicator.must_add_one_to_E_Y_along_XYZ[1] = false;
+			/// I am the last MPI process along the Y direction. Don't add a node to H_X along Y:
+			subGrid.MPI_communicator.must_add_one_to_H_X_along_XYZ[1] = false;
+			/// I am the last MPI process along the Y direction. Don't add a node to H_Z along Y:
+			subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[1] = false;
+		}else{
+			/// I am *NOT* the last MPI process along the Y direction. *ADD* a node to E_y along Y:
+			subGrid.MPI_communicator.must_add_one_to_E_Y_along_XYZ[1] = true;
+			/// I am *NOT* the last MPI process along the Y direction. *ADD* a node to H_X along Y:
+			subGrid.MPI_communicator.must_add_one_to_H_X_along_XYZ[1] = true;
+			/// I am *NOT* the last MPI process along the Y direction. *ADD* a node to H_Z along Y:
+			subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[1] = true;
+		}
+
+		if(subGrid.MPI_communicator.MPI_POSITION[2] == subGrid.MPI_communicator.MPI_MAX_POSI[2]){
+			/// I am the last MPI process along the Z direction. Don't add a node to E_z along Z:
+			subGrid.MPI_communicator.must_add_one_to_E_Z_along_XYZ[2] = false;
+			/// I am the last MPI process along the Z direction. Don't add a node to H_x along Z:
+			subGrid.MPI_communicator.must_add_one_to_H_X_along_XYZ[2] = false;
+			/// I am the last MPI process along the Z direction. Don't add a node to H_Y along Z:
+			subGrid.MPI_communicator.must_add_one_to_H_Y_along_XYZ[2] = false;
+		}else{
+			/// I am *NOT* the last MPI process along the Z direction. *ADD* a node to E_z along Z:
+			subGrid.MPI_communicator.must_add_one_to_E_Z_along_XYZ[2] = true;
+			/// I am *NOT* the last MPI process along the Z direction. *ADD* a node to H_x along Z:
+			subGrid.MPI_communicator.must_add_one_to_H_X_along_XYZ[2] = true;
+			/// I am *NOT* the last MPI process along the Z direction. *ADD* a node to H_Y along Z:
+			subGrid.MPI_communicator.must_add_one_to_H_Y_along_XYZ[2] = true;
+		}
 
 		size_t nbr_nodes_local_X         = nbr_nodes_X / N;
 		size_t nbr_nodes_local_thermal_X = nbr_nodes_thermal_X / N;
@@ -651,17 +716,44 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 	// ODD case
 	else if(nbProc %2 != 0){
 
+		/**
+		 *  If the number of MPI process is odd, 'cut' along the X direction.
+		 *  All MPI processes *MUST* add one node to the electric field along X.
+		 *  *ONLY* the last MPI process writes the line of zeros.
+		 *  For all MPI *BUT* the last one: 
+		 * 		subGrid.MPI_communicator.must_add_one_E_X_along_XYZ[0] = true;
+		 *  For the last MPI process:
+		 * 		subGrid.MPI_communicator.must_add_one_E_X_along_XYZ[0] = false; (default value)
+		 *  Regarding the magnetic field:
+		 * 			1) For the X magnetic field, nothing to do.
+		 * 			2) For the Y magnetic field, must add one in the X direction 
+		 * 				for all *BUT* the last MPI process.
+		 * 			3) For the Z magnetic field, must add one in the X direction
+		 * 				for all *BUT* the last MPI process.
+		 */
+
 		int PositionOnX = myRank;
 		int PositionOnY = 0;
 		int PositionOnZ = 0;
 
 		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnX;
 		subGrid.MPI_communicator.MPI_POSITION[1] = (char) PositionOnY;
-		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnZ;
+		subGrid.MPI_communicator.MPI_POSITION[2] = (char) PositionOnZ;
 
-		subGrid.MPI_communicator.MPI_MAX_POSI[0] = nbProc;
+		subGrid.MPI_communicator.MPI_MAX_POSI[0] = nbProc-1;
 		subGrid.MPI_communicator.MPI_MAX_POSI[1] = 0;
 		subGrid.MPI_communicator.MPI_MAX_POSI[2] = 0;
+
+		if(subGrid.MPI_communicator.MPI_POSITION[0] == subGrid.MPI_communicator.MPI_MAX_POSI[0]){
+			/// I am the 'last' MPI process.
+			subGrid.MPI_communicator.must_add_one_to_E_X_along_XYZ[0] = false;
+			subGrid.MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] = false;
+			subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] = false;
+		}else{
+			subGrid.MPI_communicator.must_add_one_to_E_X_along_XYZ[0] = true;
+			subGrid.MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] = true;
+			subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] = true;
+		}
 
 		size_t nbr_nodes_local_X         = nbr_nodes_X / nbProc;
 		size_t nbr_nodes_local_thermal_X = nbr_nodes_thermal_X / nbProc;
@@ -732,17 +824,72 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 	// EVEN case
 	else{
 
+		/**
+		 * 1) For the Y electric field, we must add one node for each *BUT* the last 
+		 * 		MPI process in the Y direction.
+		 * 2) For the X component of the magnetic field, must add one node
+		 * 		to the H_x in the Y direction, except for the *LAST* MPI process in the 
+		 * 		Y direction.
+		 * 3) For the Z component of the magnetic field, add one node in the Y direction to
+		 * 		all *BUT* the last MPI in the Y direction.
+		 * 4) For the X componenet of the electric field, if I am *NOT* the last MPI process
+		 * 		in the X direction, add a node in the X direction for the E_x field.
+		 * 5) For the Y component of the magnetic field, if the MPI process is *NOT* the
+		 * 		last one in the X direction, add a node to H_y along X.
+		 * 6) For the Z component of the magnetic field, if I am not the last MPI process
+		 * 		along the X direction, add a node to H_z in the X direction.
+		 */
+
 		int PositionOnX = myRank%(nbProc/2);
 		int PositionOnY = ((int)(2*myRank/nbProc));
 		int PositionOnZ = 0;
 
 		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnX;
 		subGrid.MPI_communicator.MPI_POSITION[1] = (char) PositionOnY;
-		subGrid.MPI_communicator.MPI_POSITION[0] = (char) PositionOnZ;
+		subGrid.MPI_communicator.MPI_POSITION[2] = (char) PositionOnZ;
 
-		subGrid.MPI_communicator.MPI_MAX_POSI[0] = (char) nbProc%(nbProc/2);
-		subGrid.MPI_communicator.MPI_MAX_POSI[1] = (char) ((int)(2*nbProc/nbProc));
+		subGrid.MPI_communicator.MPI_MAX_POSI[0] = (char) (nbProc-1)%(nbProc/2);
+		subGrid.MPI_communicator.MPI_MAX_POSI[1] = (char) ((int)(2*(nbProc-1)/nbProc));
 		subGrid.MPI_communicator.MPI_MAX_POSI[2] = 0;
+
+		if(subGrid.MPI_communicator.MPI_POSITION[0] == subGrid.MPI_communicator.MPI_MAX_POSI[0]){
+			/// I am the last MPI process in the X direction, don't add a node to the X cirection of E_x:
+			subGrid.MPI_communicator.must_add_one_to_E_X_along_XYZ[0] = false;
+			/// I am the last MPI process in the X direction, don't add a node to H_y in the X direction:
+			subGrid.MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] = false;
+			/// I am the last MPI process in the X direction, don't add a node to H_z in the X direction:
+			subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] = false;
+		}else{
+			/// I am *NOT* the last MPI process in the X direction, *ADD* a node to the X cirection of E_x:
+			subGrid.MPI_communicator.must_add_one_to_E_X_along_XYZ[0] = true;
+			/// I am *NOT* the last MPI process in the X direction, *ADD* a node to H_y in the X direction:
+			subGrid.MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] = true;
+			/// I am *NOT* the last MPI process in the X direction, *ADD* add a node to H_z in the X direction:
+			subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] = true;
+		}
+
+		if(subGrid.MPI_communicator.MPI_POSITION[1] == subGrid.MPI_communicator.MPI_MAX_POSI[1]){
+			/**
+			 * I am the last MPI process (in the Y direction).
+			 * I don't add any node to the Y direction of the Y electric
+			 * field component.
+			 */
+			subGrid.MPI_communicator.must_add_one_to_E_Y_along_XYZ[1] = false;
+			/// I am the last MPI along the Y direction. Don't add a node to the H_x field in the Y direction.
+			subGrid.MPI_communicator.must_add_one_to_H_X_along_XYZ[1] = false;
+			/// I am the last MPI along the Y direction. Don't add a node to the H_z field in the Y direction.
+			subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[1] = false;
+		}else{
+			/**
+			 * I am not the last MPI process along the Y direction. I add a node
+			 * to the Y component of the electric field.
+			 */
+			subGrid.MPI_communicator.must_add_one_to_E_Y_along_XYZ[1] = true;
+			/// I am not the last MPI process along the Y direction. I add a node to the H_x field in Y direction.
+			subGrid.MPI_communicator.must_add_one_to_H_X_along_XYZ[1] = true;
+			/// I am not the last MPI process along the Y direction. I add a node to the H_Z field in Y direction.
+			subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[1] = true;
+		}
 
 		size_t nbr_nodes_local_X = 2*nbr_nodes_X / (nbProc);
 		size_t nbr_nodes_local_Y = nbr_nodes_Y / 2;
@@ -864,11 +1011,11 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 
 	}
 
-	printf("MPI %d ->  originIndices_Electro (%ld,%ld,%ld)\n",myRank,
+	printf("MPI %d ->  originIndices_Electro (%zu,%zu,%zu)\n",myRank,
 		subGrid.originIndices_Electro[0],
 		subGrid.originIndices_Electro[1],
 		subGrid.originIndices_Electro[2]);
-	printf("MPI %d ->  originInices_thermal  (%ld,%ld,%ld)\n",myRank,
+	printf("MPI %d ->  originInices_thermal  (%zu,%zu,%zu)\n",myRank,
 		subGrid.originIndices_Thermal[0],
 		subGrid.originIndices_Thermal[1],
 		subGrid.originIndices_Thermal[2]);
