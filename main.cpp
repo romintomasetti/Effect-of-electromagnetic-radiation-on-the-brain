@@ -145,14 +145,19 @@ int main(int argc, char *argv[]){
 	
 
 	GridCreator_NEW gridTest(input_parser,allMat,MPI_communicator,profiler);
+	cout << "Mesh init\n";
 	gridTest.meshInitialization();
 
 	InterfaceToParaviewer interfaceToWriteOutput(
 			mesher,
 			MPI_communicator,
 			gridTest,true /*is_grid_creator_new*/);
-	interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
-	//interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
+	/*interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
+	interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
+
+	printf("ABORTING IN MAIN LINE 157\n");
+	MPI_Barrier(MPI_COMM_WORLD);
+	abort();*/
 
 	/*printf("\n\nMAIN :: ABORTING\n\n");
 	abort();	*/

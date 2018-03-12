@@ -3,7 +3,23 @@
 #include <ctime>
 #include <new>
 #include "omp.h"
+#include "mpi.h"
 #include <algorithm>
+
+
+void MPI_communication_with_neighboors(
+    int  omp_thread_id,
+    char direction,
+    double *ElectricFieldToSend,
+    size_t size_to_send,
+    double *ElectricFieldToRecv,
+    size_t size_to_recv,
+    double *E_x,
+    double *E_y,
+    double *E_z,
+    std::vector<size_t> &omp_sizes
+);
+
 
 double AlgoElectro_NEW::Compute_dt(GridCreator_NEW &mesh){
     // Retrieve the spatial step in each direction:
@@ -144,7 +160,9 @@ void AlgoElectro_NEW::update(
     grid.profiler.addMemoryUsage("BYTES",memory);
 
     /* COMPUTING COEFFICIENTS */
-    omp_set_num_threads(6);
+    if(omp_get_max_threads() < 6 ){
+        omp_set_num_threads(6);
+    }
     #pragma omp parallel
     {
         if(omp_get_num_threads() < 6){
@@ -155,14 +173,12 @@ void AlgoElectro_NEW::update(
         }
     }
 
-    size_t index;
-
     #pragma omp parallel num_threads(1)
     {
+        size_t index;
         /* Coefficients for Ex */
         // Ex of size (M − 1) × N × P
-        #pragma omp for collapse(3) nowait\
-            private(index)
+        #pragma omp for collapse(3) nowait
             for(size_t K = 0 ; K < grid.size_Ex[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Ex[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Ex[0] ; I ++){
@@ -189,8 +205,7 @@ void AlgoElectro_NEW::update(
 
         /* Coefficients of Ey */
         // Ey is of size M × (N − 1) × P.
-        #pragma omp for collapse(3) nowait\
-            private(index)
+        #pragma omp for collapse(3) nowait
             for(size_t K = 0 ; K < grid.size_Ey[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Ey[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Ey[0] ; I ++){
@@ -216,8 +231,7 @@ void AlgoElectro_NEW::update(
 
         /* Coefficients of Ez */
         // Ez is of size  M × N × (P − 1)
-        #pragma omp for collapse(3) nowait\
-            private(index)
+        #pragma omp for collapse(3) nowait
             for(size_t K = 0 ; K < grid.size_Ez[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Ez[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Ez[0] ; I ++){
@@ -243,8 +257,7 @@ void AlgoElectro_NEW::update(
 
         /* Coefficients of Hx */
         // Hx is of size M × (N − 1) × (P − 1):
-        #pragma omp for collapse(3) nowait\
-            private(index)
+        #pragma omp for collapse(3) nowait
             for(size_t K = 0 ; K < grid.size_Hx[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Hx[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Hx[0] ; I ++){
@@ -270,8 +283,7 @@ void AlgoElectro_NEW::update(
 
         /* Coefficients of Hy */
         // Hy is of size (M − 1) × N × (P − 1)
-        #pragma omp for collapse(3) nowait\
-            private(index)
+        #pragma omp for collapse(3) nowait
             for(size_t K = 0 ; K < grid.size_Hy[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Hy[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Hy[0] ; I ++){
@@ -297,8 +309,7 @@ void AlgoElectro_NEW::update(
 
         /* Coefficients of Hz */
         // Hz is of size (M − 1) × (N − 1) × P
-        #pragma omp for collapse(3) nowait\
-            private(index)
+        #pragma omp for collapse(3) nowait
             for(size_t K = 0 ; K < grid.size_Hz[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Hz[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Hz[0] ; I ++){
@@ -387,6 +398,7 @@ void AlgoElectro_NEW::update(
     double *E_y_tmp = grid.E_y;
     double *E_z_tmp = grid.E_z;
 
+    /// Set OMP_DYNAMIC=false:
     this->check_OMP_DYNAMIC_envVar();
 
 
@@ -404,7 +416,8 @@ void AlgoElectro_NEW::update(
         shared(C_hzh,C_hze_1,C_hze_2)\
         shared(C_exe,C_exh_1,C_exh_2)\
         shared(C_eye,C_eyh_1,C_eyh_2)\
-        shared(C_eze,C_ezh_1,C_ezh_2)
+        shared(C_eze,C_ezh_1,C_ezh_2)\
+        shared(ompi_mpi_comm_world,ompi_mpi_int)
     {
         size_t index;
         size_t index_1Plus;
@@ -441,17 +454,22 @@ void AlgoElectro_NEW::update(
 
         /// Vectors to store data to be sent or received when communicating with
         /// other MPI processes.
+        size_t size_to_be_sent = 0;
+        size_t size_to_recv    = 0;
         double *ElectricFieldToSend = NULL;
         double *ElectricFieldToRecv = NULL;
 
-        this->determine_OMP_thred_role_in_MPI_communication(
+        /// Determine therole of each OMP thread in the MPI communication process:
+        this->determine_OMP_thread_role_in_MPI_communication(
             omp_get_thread_num(),
             &OMP_thread_has_neighboor,
             &direction,
             grid,
             omp_sizes,
             &ElectricFieldToSend,
-            &ElectricFieldToRecv
+            &ElectricFieldToRecv,
+            &size_to_be_sent,
+            &size_to_recv
         );
 
         while(current_time < grid.input_parser.get_stopTime()
@@ -469,7 +487,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ez[0];
             size_y_2 = grid.size_Ez[1];
 
-            #pragma omp for schedule(static)
+            #pragma omp for schedule(static) collapse(3) nowait
             for (K = 1; K < grid.size_Hx[2]-1 ; K++){
                 for(J = 1 ; J < grid.size_Hx[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Hx[0]-1 ; I++){
@@ -505,7 +523,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ex[0];
             size_y_2 = grid.size_Ex[1];
 
-            #pragma omp for schedule(static)
+            #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
                 for(J = 1 ; J < grid.size_Hy[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Hy[0]-1 ; I ++){
@@ -540,7 +558,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ey[0];
             size_y_2 = grid.size_Ey[1];
 
-            #pragma omp for schedule(static)
+            #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1 ; K < grid.size_Hz[2]-1 ; K ++){
                 for(J = 1 ; J < grid.size_Hz[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
@@ -581,7 +599,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hy[0];
             size_y_2 = grid.size_Hy[1];
 
-            #pragma omp for schedule(static)
+            #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1 ; K < grid.size_Ex[2]-1 ; K ++){
                 for(J = 1 ; J < grid.size_Ex[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Ex[0]-1 ; I ++){
@@ -616,7 +634,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hz[0];
             size_y_2 = grid.size_Hz[1];
 
-            #pragma omp for schedule(static)
+            #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1 ; K < grid.size_Ey[2]-1 ; K ++){
                 for(J = 1 ; J < grid.size_Ey[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Ey[0]-1 ; I ++){
@@ -651,7 +669,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hx[0];
             size_y_2 = grid.size_Hx[1];
 
-            #pragma omp for schedule(static)
+            #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
                 for(J = 1 ; J < grid.size_Ez[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
@@ -706,6 +724,29 @@ void AlgoElectro_NEW::update(
             /////////////////////////
             /// MPI COMMUNICATION ///
             /////////////////////////
+            if(omp_get_thread_num() >=0 
+                && omp_get_thread_num() <= 5
+                && OMP_thread_has_neighboor == true
+                && false)
+            {
+                /// Call the MPI communication function:
+                MPI_communication_with_neighboors(
+                    omp_get_thread_num(), /*int  omp_thread_id,*/
+                    direction, /*char direction,*/
+                    ElectricFieldToSend, /*double *ElectricFieldToSend,*/
+                    size_to_be_sent, /*size_t size_to_send,*/
+                    ElectricFieldToRecv, /*double *ElectricFieldToRecv,*/
+                    size_to_recv, /*size_t size_to_recv,*/
+                    E_x_tmp, /*double *E_x,*/
+                    E_y_tmp, /*double *E_y,*/
+                    E_z_tmp, /*double *E_z,*/
+                    omp_sizes /*std::vector<size_t> &omp_sizes*/
+                );
+            }
+            /////////////////////////
+            ///      END OF       ///
+            /// MPI COMMUNICATION ///
+            /////////////////////////
             
             
             #pragma omp single
@@ -735,13 +776,31 @@ void AlgoElectro_NEW::update(
 
                 double elapsedTot = omp_get_wtime() - parallelRegionStartingTime;
 
-                printf("AlgoElectro_NEW : iter %zu, time %.10f, time per iter : %.10f.\n",
-                        currentStep,current_time,elapsedTot/currentStep);
+                printf("AlgoElectro_NEW : iter %zu, time %.10f, time per iter : %.10f (using %d OMP and %d MPI / on MPI %d).\n",
+                        currentStep,current_time,elapsedTot/currentStep,omp_get_num_threads(),
+                        grid.MPI_communicator.getNumberOfMPIProcesses(),
+                        grid.MPI_communicator.getRank());
                 printf("Time for writing : %f seconds.\n",time_taken_writing);
             }
             #pragma omp barrier
+            #pragma omp master
+            {
+                /*if(currentStep > 6){
+                    MPI_Barrier(MPI_COMM_WORLD);
+                    MPI_Abort(MPI_COMM_WORLD,-1);
+                }*/
+            }
 
         } /* END OF WHILE */
+
+        /// Free memory of each thread:
+        if(ElectricFieldToRecv != NULL){
+            delete[] ElectricFieldToRecv;
+        }
+        if(ElectricFieldToSend != NULL){
+            delete[] ElectricFieldToSend;
+        }
+
     }/* END OF PARALLEL REGION */
 
 
@@ -846,14 +905,16 @@ void AlgoElectro_NEW::check_OMP_DYNAMIC_envVar(void){
 /**
  * @brief This function initialize some usefull variables for each OMP thread, in order to set MPI comminucation.
  */
-void AlgoElectro_NEW::determine_OMP_thred_role_in_MPI_communication(
+void AlgoElectro_NEW::determine_OMP_thread_role_in_MPI_communication(
             int omp_thread_id /* omp_get_thread_num()*/,
             bool *OMP_thread_has_neighboor,
             char *direction,
             GridCreator_NEW &grid,
             std::vector<size_t> &omp_sizes,
             double **ElectricFieldToSend,
-            double **ElectricFieldToRecv
+            double **ElectricFieldToRecv,
+            size_t *size_of_sent_vector,
+            size_t *size_of_recv_vector
         )
 {
     /// We only need 6 OMP threads to handle the communication.
@@ -885,10 +946,64 @@ void AlgoElectro_NEW::determine_OMP_thred_role_in_MPI_communication(
 
             /// Use omp_sizes to determine the size of those vectors:
 
+            if(*direction == 'S' || *direction == 'N'){
+
+                /// Determine the total size to be sent:
+                *size_of_sent_vector  = 0;
+                /// size += size_ex[1]*size_ex[2]:
+                *size_of_sent_vector += omp_sizes[1]*omp_sizes[2];
+                /// size += size_ey[1]*size_ey[2]:
+                *size_of_sent_vector += omp_sizes[4]*omp_sizes[5];
+                /// size += size_ez[1]*size_ez[2]:
+                *size_of_sent_vector += omp_sizes[7]*omp_sizes[8];
+
+            }else if(*direction == 'W' || *direction == 'E'){
+
+                /// Determine the total size to be sent:
+                *size_of_sent_vector  = 0;
+                /// size += size_ex[0]*size_ex[2]:
+                *size_of_sent_vector += omp_sizes[0]*omp_sizes[2];
+                /// size += size_ey[0]*size_ey[2]:
+                *size_of_sent_vector += omp_sizes[3]*omp_sizes[5];
+                /// size += size_ez[0]*size_ez[2]:
+                *size_of_sent_vector += omp_sizes[6]*omp_sizes[8];
+
+            }else if(*direction == 'U' || *direction == 'D'){
+
+                /// Determine the total size to be sent:
+                *size_of_recv_vector  = 0;
+                /// size += size_ex[0]*size_ex[1]:
+                *size_of_sent_vector += omp_sizes[0]*omp_sizes[1];
+                /// size += size_ey[0]*size_ey[1]:
+                *size_of_sent_vector += omp_sizes[3]*omp_sizes[4];
+                /// size += size_ez[0]*size_ez[1]:
+                *size_of_sent_vector += omp_sizes[6]*omp_sizes[7];
+
+            }else{
+
+                fprintf(stderr,"In %s :: fatal error. Direction is %c, unknow to the system.\n",
+                    __FUNCTION__,*direction);
+                fprintf(stderr,"In file %s:%d\n",__FILE__,__LINE__);
+                #ifdef MPI_COMM_WORLD
+                MPI_Abort(MPI_COMM_WORLD,-1);
+                #else
+                abort();
+                #endif
+
+            }
+
             /// Increment memory usage, omp safe:
+            *size_of_recv_vector = *size_of_sent_vector;
+            
+            *ElectricFieldToSend = new double[*size_of_sent_vector];
+            *ElectricFieldToRecv = new double[*size_of_recv_vector];
+
             #pragma omp critical
             {
-
+                grid.profiler.addMemoryUsage(
+                    "BYTES",
+                    sizeof(double)* (*size_of_sent_vector) * (*size_of_recv_vector)
+                );
             }
         }
 
@@ -896,4 +1011,114 @@ void AlgoElectro_NEW::determine_OMP_thred_role_in_MPI_communication(
         /// The thread has an ID larger than 5, just do nothing.
         return;
     }
+}
+
+/**
+ * @brief Fills the electric field vectors with the received vector.
+ */
+void fill_electric_field_with_recv_vector(
+        double *E_x,
+        double *E_y,
+        double *E_z,
+        double *ElectricFieldToRecv,
+        size_t size_to_recv,
+        char   direction,
+        std::vector<size_t> &omp_sizes
+){
+
+}
+
+/**
+ * @brief Fills the vector to send with the electric field vectors:
+ */
+void fill_vector_to_send(
+        double *E_x,
+        double *E_y,
+        double *E_z,
+        double * ElectricFieldToSend,
+        size_t size_to_send,
+        char   direction,
+        std::vector<size_t> &omp_sizes
+){
+
+}
+
+void MPI_communication_with_neighboors(
+    int  omp_thread_id,
+    char direction,
+    double *ElectricFieldToSend,
+    size_t size_to_send,
+    double *ElectricFieldToRecv,
+    size_t size_to_recv,
+    double *E_x,
+    double *E_y,
+    double *E_z,
+    std::vector<size_t> &omp_sizes
+){
+    /// Check that the OMP thread ID is in the good range [0-5]:
+    if(omp_thread_id < 0 || omp_thread_id > 5){
+        fprintf(stderr,"In %s :: an OMP thread with ID not "
+            "inside the range [0-5] should not end up here (has %d). Aborting.\n",
+            __FUNCTION__,omp_thread_id);
+        fprintf(stderr,"In file %s:%d\n",__FILE__,__LINE__);
+        #ifdef MPI_COMM_WORLD
+        MPI_Abort(MPI_COMM_WORLD,-1);
+        #else
+        abort();
+        #endif
+    }
+
+    /// Verify the vectors send/recv are not null pointers:
+    if( ElectricFieldToRecv == NULL || ElectricFieldToSend == NULL){
+        fprintf(stderr,"In %s :: The vector to recv/send is a NULL pointer. Aborting.\n",
+            __FUNCTION__);
+        fprintf(stderr,"In file %s:%d\n",__FILE__,__LINE__);
+        #ifdef MPI_COMM_WORLD
+        MPI_Abort(MPI_COMM_WORLD,-1);
+        #else
+        abort();
+        #endif
+    }
+
+    /// Verify the electric field pointers:
+    if( E_x == NULL || E_y == NULL || E_z == NULL){
+        fprintf(stderr,"In %s :: The electric field vectors are NULL. Aborting.\n",
+            __FUNCTION__);
+        fprintf(stderr,"In file %s:%d\n",__FILE__,__LINE__);
+        #ifdef MPI_COMM_WORLD
+        MPI_Abort(MPI_COMM_WORLD,-1);
+        #else
+        abort();
+        #endif
+    }
+
+    /// Fill in the vector to send:
+    fill_vector_to_send(
+        E_x,
+        E_y,
+        E_z,
+        ElectricFieldToSend,
+        size_to_send,
+        direction,
+        omp_sizes);
+
+    /// Perform the communication:
+
+    /// Fill in the electric field vectors with the received vector:
+    fill_electric_field_with_recv_vector(
+        E_x,
+        E_y,
+        E_z,
+        ElectricFieldToRecv,
+        size_to_recv,
+        direction,
+        omp_sizes
+    );
+
+    /// By default, if the OMP thread reads this, abort:
+    #ifdef MPI_COMM_WORLD
+    MPI_Abort(MPI_COMM_WORLD,-1);
+    #else
+    abort();
+    #endif
 }

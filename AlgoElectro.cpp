@@ -184,7 +184,7 @@ void AlgoElectro::update(GridCreator &mesh, InterfaceToParaviewer& interfaceForO
         
 
         // Each thread has its direction:
-        char direction;
+        char direction; 
         
 
         // If there is a neighboor at Down, we must send to and receive from Down.

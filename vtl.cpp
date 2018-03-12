@@ -339,7 +339,7 @@ size_t write_vectorXML_custom_GridCreatorNew(
             // Ey of size M × (N − 1) × P
             // Ez of size M × N × (P − 1)
 
-            size_field = (size[0]*size[1]*size[2])*3;
+            size_field = ( size[0] * size[1] * size[2] ) * 3;
             
             buffer.resize(size_field);
 
@@ -347,6 +347,7 @@ size_t write_vectorXML_custom_GridCreatorNew(
             size_t buff_index = 0;
 
             size_t I,J,K;
+
 
             // EX field:
             #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
@@ -1380,10 +1381,24 @@ VTL_API void vtl::export_spoints_XML_custom_GridCreator(
         /**
          * @brief The MPI process writes its electromagnetic grid.
          */
+        fprintf(stderr,"In %s: not yet coded. We don't need that any more !\n",__FUNCTION__);
+        fprintf(stderr,"In file %s:%d\n",__FILE__,__LINE__);
+        #ifdef MPI_COMM_WORLD
+        MPI_Abort(MPI_COMM_WORLD,-1);
+        #else
+        abort();
+        #endif
     }else if(strcmp(type.c_str(),"THERMAL") == 0){
         /**
          * @brief The MPI process writes its thermal grid.
          */
+        fprintf(stderr,"In %s: not yet coded. We don't need that any more !\n",__FUNCTION__);
+        fprintf(stderr,"In file %s:%d\n",__FILE__,__LINE__);
+        #ifdef MPI_COMM_WORLD
+        MPI_Abort(MPI_COMM_WORLD,-1);
+        #else
+        abort();
+        #endif
     }else{
         fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
         abort();
