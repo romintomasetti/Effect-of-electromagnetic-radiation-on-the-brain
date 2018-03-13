@@ -152,18 +152,40 @@ int main(int argc, char *argv[]){
 			mesher,
 			MPI_communicator,
 			gridTest,true /*is_grid_creator_new*/);
-	/*interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
+	interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
 	interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
 
 	printf("ABORTING IN MAIN LINE 157\n");
 	MPI_Barrier(MPI_COMM_WORLD);
-	abort();*/
 
-	/*printf("\n\nMAIN :: ABORTING\n\n");
-	abort();	*/
+	printf("\n\nMPI %d : Ex(%zu,%zu,%zu) | Ey(%zu,%zu,%zu) | Ez(%zu,%zu,%zu)"
+					"Hx(%zu,%zu,%zu) | Hy(%zu,%zu,%zu) | Hz(%zu,%zu,%zu)\n\n",
+			MPI_communicator.getRank(),
+			gridTest.size_Ex[0],
+			gridTest.size_Ex[1],
+			gridTest.size_Ex[2],
+			gridTest.size_Ey[0],
+			gridTest.size_Ey[1],
+			gridTest.size_Ey[2],
+			gridTest.size_Ez[0],
+			gridTest.size_Ez[1],
+			gridTest.size_Ez[2],
+			gridTest.size_Hx[0],
+			gridTest.size_Hx[1],
+			gridTest.size_Hx[2],
+			gridTest.size_Hy[0],
+			gridTest.size_Hy[1],
+			gridTest.size_Hy[2],
+			gridTest.size_Hz[0],
+			gridTest.size_Hz[1],
+			gridTest.size_Hz[2]
+			);
+
+	MPI_Barrier(MPI_COMM_WORLD);
+	//MPI_Abort(MPI_COMM_WORLD,-1);
 
 
-	//AlgoElectro algoElectromagn;
+	//AlgoElectro algoElectromagn; 
 	
 	//algoElectromagn.update(mesher,interfaceToWriteOutput);
 	

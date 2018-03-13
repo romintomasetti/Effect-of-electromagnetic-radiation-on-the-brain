@@ -9,6 +9,8 @@
 
 void MPI_communication_with_neighboors(
     int  omp_thread_id,
+    int  mpi_me,
+    int  mpi_from_to_who,
     char direction,
     double *ElectricFieldToSend,
     size_t size_to_send,
@@ -474,7 +476,8 @@ void AlgoElectro_NEW::update(
 
         while(current_time < grid.input_parser.get_stopTime()
                 && currentStep < grid.input_parser.maxStepsForOneCycleOfElectro){
-            
+
+
             // Updating the magnetic field Hx.
             // Don't update neighboors ! Start at 1. Go to size-1.
 
@@ -487,10 +490,12 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ez[0];
             size_y_2 = grid.size_Ez[1];
 
+            const size_t DECALAGE_A_LA_MAIN = -1;
+
             #pragma omp for schedule(static) collapse(3) nowait
-            for (K = 1; K < grid.size_Hx[2]-1 ; K++){
-                for(J = 1 ; J < grid.size_Hx[1]-1 ; J ++){
-                    for(I = 1 ; I < grid.size_Hx[0]-1 ; I++){
+            for (K = 0; K < grid.size_Hx[2] -DECALAGE_A_LA_MAIN ; K++){
+                for(J = 0; J < grid.size_Hx[1] -DECALAGE_A_LA_MAIN ; J ++){
+                    for(I = 0; I < grid.size_Hx[0] -DECALAGE_A_LA_MAIN ; I++){
 
                         // Hx(mm, nn, pp):
                         index        = I + size_x   * ( J     + size_y   * K);
@@ -524,9 +529,9 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Ex[1];
 
             #pragma omp for schedule(static) collapse(3) nowait
-            for(K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
-                for(J = 1 ; J < grid.size_Hy[1]-1 ; J ++){
-                    for(I = 1 ; I < grid.size_Hy[0]-1 ; I ++){
+            for(K = 0 ; K < grid.size_Hy[2] -DECALAGE_A_LA_MAIN ; K ++){
+                for(J = 0 ; J < grid.size_Hy[1] -DECALAGE_A_LA_MAIN ; J ++){
+                    for(I = 0; I < grid.size_Hy[0] -DECALAGE_A_LA_MAIN ; I ++){
 
                         index        = I   + size_x   * ( J  + size_y   * K);
                         // Ez(mm + 1, nn, pp):
@@ -559,9 +564,9 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Ey[1];
 
             #pragma omp for schedule(static) collapse(3) nowait
-            for(K = 1 ; K < grid.size_Hz[2]-1 ; K ++){
-                for(J = 1 ; J < grid.size_Hz[1]-1 ; J ++){
-                    for(I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
+            for(K = 0 ; K < grid.size_Hz[2] -DECALAGE_A_LA_MAIN  ; K ++){
+                for(J = 0 ; J < grid.size_Hz[1]  -DECALAGE_A_LA_MAIN ; J ++){
+                    for(I = 0 ; I < grid.size_Hz[0]  -DECALAGE_A_LA_MAIN ; I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Ex(mm, nn + 1, pp)
@@ -600,19 +605,27 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Hy[1];
 
             #pragma omp for schedule(static) collapse(3) nowait
-            for(K = 1 ; K < grid.size_Ex[2]-1 ; K ++){
-                for(J = 1 ; J < grid.size_Ex[1]-1 ; J ++){
+            for(K = 1  ; K < grid.size_Ex[2]-1 ; K ++){
+                for(J = 1  ; J < grid.size_Ex[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Ex[0]-1 ; I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Hz(mm, nn, pp)
-                        index_1Plus  = I   + size_x_1 * ( J     + size_y_1 * K);
+                        index_1Plus  = I
+                                   + size_x_1 * ( J
+                                        + size_y_1 * (K));
                         // Hz(mm, nn - 1, pp)
-                        index_1Moins = I   + size_x_1 * ( J-1   + size_y_1 * K);
+                        index_1Moins = I
+                                   + size_x_1 * ( J-1
+                                      + size_y_1 * (K));
                         // Hy(mm, nn, pp)
-                        index_2Plus  = I   + size_x_2 * ( J     + size_y_2 * K);
+                        index_2Plus  = I 
+                                   + size_x_2 * ( J
+                                        + size_y_2 * (K));
                         // Hy(mm, nn, pp - 1)
-                        index_2Moins = I   + size_x_2 * ( J     + size_y_2 * (K-1));
+                        index_2Moins = I 
+                                   + size_x_2 * ( J 
+                                        + size_y_2 * (K-1 ));
 
                         E_x_tmp[index] = C_exe[index] * E_x_tmp[index]
                                 + C_exh_1[index] * (H_z_tmp[index_1Plus] - H_z_tmp[index_1Moins])
@@ -635,19 +648,27 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Hz[1];
 
             #pragma omp for schedule(static) collapse(3) nowait
-            for(K = 1 ; K < grid.size_Ey[2]-1 ; K ++){
+            for(K = 1  ; K < grid.size_Ey[2]-1 ; K ++){
                 for(J = 1 ; J < grid.size_Ey[1]-1 ; J ++){
-                    for(I = 1 ; I < grid.size_Ey[0]-1 ; I ++){
+                    for(I = 1  ; I < grid.size_Ey[0]-1 ; I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Hx(mm, nn, pp)
-                        index_1Plus  = I   + size_x_1 * ( J     + size_y_1 * K);
+                        index_1Plus  = I 
+                               + size_x_1 * ( J 
+                                    + size_y_1 * (K ));
                         // Hx(mm, nn, pp - 1)
-                        index_1Moins = I   + size_x_1 * ( J     + size_y_1 * (K-1));
+                        index_1Moins = I 
+                                    + size_x_1 * ( J 
+                                         + size_y_1 * (K-1 ));
                         // Hz(mm, nn, pp)
-                        index_2Plus  = I   + size_x_2 * ( J     + size_y_2 * K);
+                        index_2Plus  = I/*-DECALAGE_H_in_E   */
+                                    + size_x_2 * ( J 
+                                         + size_y_2 * (K ));
                         // Hz(mm - 1, nn, pp)
-                        index_2Moins = I-1 + size_x_2 * ( J     + size_y_2 * K);
+                        index_2Moins = I-1 
+                                    + size_x_2 * ( J 
+                                         + size_y_2 * (K ));
 
                         E_y_tmp[index] = C_eye[index] * E_y_tmp[index]
                                 + C_eyh_1[index] * (H_x_tmp[index_1Plus] - H_x_tmp[index_1Moins])
@@ -671,18 +692,26 @@ void AlgoElectro_NEW::update(
 
             #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
-                for(J = 1 ; J < grid.size_Ez[1]-1 ; J ++){
-                    for(I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
+                for(J = 1  ; J < grid.size_Ez[1]-1 ; J ++){
+                    for(I = 1  ; I < grid.size_Ez[0]-1 ; I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Hy(mm, nn, pp)
-                        index_1Plus  = I   + size_x_1 * ( J     + size_y_1 * K);
+                        index_1Plus  = I 
+                                + size_x_1 * ( J 
+                                        + size_y_1 * (K ));
                         // Hy(mm - 1, nn, pp)
-                        index_1Moins = I-1 + size_x_1 * ( J     + size_y_1 * K);
+                        index_1Moins = I-1 
+                                + size_x_1 * ( J 
+                                        + size_y_1 * (K ));
                         // Hx(mm, nn, pp)
-                        index_2Plus  = I   + size_x_2 * ( J     + size_y_2 * K);
+                        index_2Plus  = I 
+                                + size_x_2 * ( J 
+                                        + size_y_2 * (K));
                         // Hx(mm, nn - 1, pp)
-                        index_2Moins = I   + size_x_2 * ( J-1   + size_y_2 * K);
+                        index_2Moins = I 
+                                + size_x_2 * ( J-1 
+                                        + size_y_2 * (K ));
 
                         E_z_tmp[index] = C_eze[index] * E_z_tmp[index]
                                 + C_ezh_1[index] * (H_y_tmp[index_1Plus] - H_y_tmp[index_1Moins])
@@ -700,7 +729,7 @@ void AlgoElectro_NEW::update(
 
                 index = local_nodes_inside_source_NUMBER[2][it];
 
-                E_z_tmp[index] = sin(2*M_PI*9000E6*current_time);
+                E_z_tmp[index] = sin(2*M_PI*900E6*current_time);
             }
 
             #pragma omp for schedule(static)
@@ -708,7 +737,7 @@ void AlgoElectro_NEW::update(
 
                 index = local_nodes_inside_source_NUMBER[1][it];
 
-                E_y_tmp[index] = 0;
+                //E_y_tmp[index] = 0;
             }
 
             #pragma omp for schedule(static)
@@ -716,7 +745,7 @@ void AlgoElectro_NEW::update(
 
                 index = local_nodes_inside_source_NUMBER[0][it];
 
-                E_x_tmp[index] = 0;
+                //E_x_tmp[index] = 0;
             }
 
             #pragma omp barrier
@@ -724,14 +753,21 @@ void AlgoElectro_NEW::update(
             /////////////////////////
             /// MPI COMMUNICATION ///
             /////////////////////////
+            #pragma omp single
+            {
+                /// Synchronize MPI processes:
+                MPI_Barrier(MPI_COMM_WORLD);
+            }
             if(omp_get_thread_num() >=0 
                 && omp_get_thread_num() <= 5
                 && OMP_thread_has_neighboor == true
-                && false)
+                && true)
             {
                 /// Call the MPI communication function:
                 MPI_communication_with_neighboors(
                     omp_get_thread_num(), /*int  omp_thread_id,*/
+                    grid.MPI_communicator.getRank(),
+                    grid.MPI_communicator.RankNeighbour[omp_get_thread_num()],
                     direction, /*char direction,*/
                     ElectricFieldToSend, /*double *ElectricFieldToSend,*/
                     size_to_be_sent, /*size_t size_to_send,*/
@@ -755,6 +791,9 @@ void AlgoElectro_NEW::update(
                     grid.profiler.addTimingInputToDictionnary("ELECTRO_WRITING_OUTPUTS");
                 }
 
+                current_time += dt;
+                currentStep ++;
+
                 // Monitor time spent in writing !
                 double timeWriting = omp_get_wtime();
                 interfaceParaview.convertAndWriteData(
@@ -766,10 +805,8 @@ void AlgoElectro_NEW::update(
                 // Add time for writing:
                 grid.profiler.incrementTimingInput("ELECTRO_WRITING_OUTPUTS",time_taken_writing);
 
-                current_time += dt;
-                currentStep ++;
 
-                if(currentStep > 100){
+                if(currentStep > 10){
                     printf("\n\t%zu ITER ABORTING\n\n",currentStep);
                     abort();
                 }
@@ -951,33 +988,33 @@ void AlgoElectro_NEW::determine_OMP_thread_role_in_MPI_communication(
                 /// Determine the total size to be sent:
                 *size_of_sent_vector  = 0;
                 /// size += size_ex[1]*size_ex[2]:
-                *size_of_sent_vector += omp_sizes[1]*omp_sizes[2];
+                *size_of_sent_vector += (omp_sizes[1]-2)*(omp_sizes[2]-2);
                 /// size += size_ey[1]*size_ey[2]:
-                *size_of_sent_vector += omp_sizes[4]*omp_sizes[5];
+                *size_of_sent_vector += (omp_sizes[4]-2)*(omp_sizes[5]-2);
                 /// size += size_ez[1]*size_ez[2]:
-                *size_of_sent_vector += omp_sizes[7]*omp_sizes[8];
+                *size_of_sent_vector += (omp_sizes[7]-2)*(omp_sizes[8]-2);
 
             }else if(*direction == 'W' || *direction == 'E'){
 
                 /// Determine the total size to be sent:
                 *size_of_sent_vector  = 0;
-                /// size += size_ex[0]*size_ex[2]:
-                *size_of_sent_vector += omp_sizes[0]*omp_sizes[2];
-                /// size += size_ey[0]*size_ey[2]:
-                *size_of_sent_vector += omp_sizes[3]*omp_sizes[5];
-                /// size += size_ez[0]*size_ez[2]:
-                *size_of_sent_vector += omp_sizes[6]*omp_sizes[8];
+                /// size += size_ex[0]*size_ex[2] (without neighboors)
+                *size_of_sent_vector += (omp_sizes[0]-2)*(omp_sizes[2]-2);
+                /// size += size_ey[0]*size_ey[2] (without neighboors)
+                *size_of_sent_vector += (omp_sizes[3]-2)*(omp_sizes[5]-2);
+                /// size += size_ez[0]*size_ez[2] (without neighboors)
+                *size_of_sent_vector += (omp_sizes[6]-2)*(omp_sizes[8]-2);
 
             }else if(*direction == 'U' || *direction == 'D'){
 
                 /// Determine the total size to be sent:
                 *size_of_recv_vector  = 0;
                 /// size += size_ex[0]*size_ex[1]:
-                *size_of_sent_vector += omp_sizes[0]*omp_sizes[1];
+                *size_of_sent_vector += (omp_sizes[0]-2)*(omp_sizes[1]-2);
                 /// size += size_ey[0]*size_ey[1]:
-                *size_of_sent_vector += omp_sizes[3]*omp_sizes[4];
+                *size_of_sent_vector += (omp_sizes[3]-2)*(omp_sizes[4]-2);
                 /// size += size_ez[0]*size_ez[1]:
-                *size_of_sent_vector += omp_sizes[6]*omp_sizes[7];
+                *size_of_sent_vector += (omp_sizes[6]-2)*(omp_sizes[7]-2);
 
             }else{
 
@@ -1023,9 +1060,129 @@ void fill_electric_field_with_recv_vector(
         double *ElectricFieldToRecv,
         size_t size_to_recv,
         char   direction,
-        std::vector<size_t> &omp_sizes
+        std::vector<size_t> &omp_sizes,
+        int mpi_me
 ){
+    /**
+     * This function takes the received vector and place it at the suited indices
+     * of the electric field.
+     */
 
+    /// Depending on the direction:
+    if(direction == 'W'){
+        size_t index   = 0;
+        size_t counter = 0;
+
+        /// Put E_x:
+        for(size_t k = 1 ; k < omp_sizes[2]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0]-1 ; i++){
+                index      = i + omp_sizes[0] * ( 0 + omp_sizes[1] * k );
+                
+                E_x[index] = ElectricFieldToRecv[3*counter];
+
+                counter++;
+            }
+        }
+        /// Put E_y:
+        counter = 0;
+        for(size_t k = 1 ; k < omp_sizes[2+3]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0+3]-1 ; i++){
+                index = i + omp_sizes[0+3] * ( 0 + omp_sizes[1+3] * k );
+
+                E_y[index] = ElectricFieldToRecv[3*counter+1];
+
+                printf("Recv : E_y(%zu,%zu,%zu) = %f (MPI %d)\n",
+                    i,omp_sizes[1+3],k,
+                    E_y[index],mpi_me);
+
+                counter++;
+            }
+        }
+        /// Put E_z:
+        counter = 0;
+        for(size_t k = 1 ; k < omp_sizes[2+2*3]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0+2*3]-1 ; i++){
+                index = i + omp_sizes[0+2*3] * ( 0 + omp_sizes[1+2*3] * k);
+
+                E_z[index] = ElectricFieldToRecv[3*counter+2];
+
+                counter++;
+            }
+        }
+        return;
+    }
+    if(direction == 'E'){
+        size_t index   = 0;
+        size_t counter = 0;
+
+        /// Put E_x:
+        for(size_t k = 1 ; k < omp_sizes[2]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0]-1 ; i++){
+                /**
+                 * Attention, il faut absolument faire omp_sizes[1+3]-1 !!!!!
+                 * En fait, si on avait itéré sur les j, on aurait fait:
+                 *      for(j = 1 ; j < omp_sizes[1+3] ; j ++)
+                 *  donc j va de 1 à OMP_SIZES[1+3]-1 !!!
+                 */
+                index      = i + omp_sizes[0] * ( omp_sizes[1]-1 + omp_sizes[1] * k );
+                
+                E_x[index] = ElectricFieldToRecv[3*counter];
+
+                counter++;
+            }
+        }
+        /// Put E_y:
+        counter = 0;
+        for(size_t k = 1 ; k < omp_sizes[2+3]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0+3]-1 ; i++){
+                /**
+                 * Attention, il faut absolument faire omp_sizes[1+3]-1 !!!!!
+                 * En fait, si on avait itéré sur les j, on aurait fait:
+                 *      for(j = 1 ; j < omp_sizes[1+3] ; j ++)
+                 *  donc j va de 1 à OMP_SIZES[1+3]-1 !!!
+                 */
+                index = i + omp_sizes[0+3] * ( omp_sizes[1+3]-1 + omp_sizes[1+3] * k );
+
+                E_y[index] = ElectricFieldToRecv[3*counter+1];
+
+                printf("Recv : E_y(%zu,%zu,%zu) = %f (MPI %d)\n",
+                    i,omp_sizes[1+3],k,
+                    E_y[index],mpi_me);
+
+                counter++;
+            }
+        }
+        /// Put E_z:
+        counter = 0;
+        for(size_t k = 1 ; k < omp_sizes[2+2*3]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0+2*3]-1 ; i++){
+                /**
+                 * Attention, il faut absolument faire omp_sizes[1+3]-1 !!!!!
+                 * En fait, si on avait itéré sur les j, on aurait fait:
+                 *      for(j = 1 ; j < omp_sizes[1+3] ; j ++)
+                 *  donc j va de 1 à OMP_SIZES[1+3]-1 !!!
+                 */
+                index = i + omp_sizes[0+2*3] * ( omp_sizes[1+2*3]-1 + omp_sizes[1+2*3] * k);
+
+                E_z[index] = ElectricFieldToRecv[3*counter+2];
+
+                counter ++;
+            }
+        }
+        return;
+    }
+    if(direction == 'S'){
+        return;
+    }
+    if(direction == 'N'){
+        return;
+    }
+    if(direction == 'U'){
+        return;
+    }
+    if(direction == 'D'){
+        return;
+    }
 }
 
 /**
@@ -1035,16 +1192,298 @@ void fill_vector_to_send(
         double *E_x,
         double *E_y,
         double *E_z,
-        double * ElectricFieldToSend,
+        double *ElectricFieldToSend,
         size_t size_to_send,
         char   direction,
-        std::vector<size_t> &omp_sizes
+        std::vector<size_t> &omp_sizes,
+        int  mpi_me
 ){
+    /**
+     * This function takes the suited electric field components and put them inside the 
+     * vector to be sent to the neighboors.
+     */
+
+    /// Depending on the direction:
+    if(direction == 'W'){
+        size_t index   = 0;
+        size_t counter = 0;
+
+        /// Put E_x:
+        for(size_t k = 1 ; k < omp_sizes[2]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0]-1 ; i++){
+                index      = i + omp_sizes[0] * ( 1 + omp_sizes[1] * k );
+                
+                ElectricFieldToSend[3*counter] = E_x[index];
+
+                counter++;
+            }
+        }
+        /// Put E_y:
+        counter = 0;
+        for(size_t k = 1 ; k < omp_sizes[2+3]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0+3]-1 ; i++){
+                index = i + omp_sizes[0+3] * ( 1 + omp_sizes[1+3] * k );
+
+                ElectricFieldToSend[3*counter+1] = E_y[index];
+
+                printf("Send : E_y(%zu,%zu,%zu) = %f (MPI %d)\n",
+                    i,(size_t)1,k,E_y[index],mpi_me);
+
+                counter++;
+            }
+        }
+        /// Put E_z:
+        counter = 0;
+        for(size_t k = 1 ; k < omp_sizes[2+2*3]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0+2*3]-1 ; i++){
+                index = i + omp_sizes[0+2*3] * ( 1 + omp_sizes[1+2*3] * k);
+
+                ElectricFieldToSend[3*counter+2] = E_z[index];
+
+                counter++;
+            }
+        }
+        return;
+    }
+    if(direction == 'E'){
+        size_t index   = 0;
+        size_t counter = 0;
+
+        /// Put E_x:
+        for(size_t k = 1 ; k < omp_sizes[2]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0]-1 ; i++){
+                /**
+                 * Attention, il faut absolument faire omp_sizes[1+3]-2 !!!!!
+                 * En fait, si on avait itér sur les j, on aurait fait:
+                 *      for(j = 1 ; j < omp_sizes[1+3]-1 ; j ++)
+                 *  donc j va de 1 à OMP_SIZES[1+3]-2 !!!
+                 */
+                index      = i + omp_sizes[0] * ( omp_sizes[1]-2 + omp_sizes[1] * k );
+                
+                ElectricFieldToSend[3*counter] = E_x[index];
+
+                counter++;
+            }
+        }
+        /// Put E_y:
+        counter = 0;
+        for(size_t k = 1 ; k < omp_sizes[2+3]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0+3]-1 ; i++){
+                /**
+                 * Attention, il faut absolument faire omp_sizes[1+3]-2 !!!!!
+                 * En fait, si on avait itér sur les j, on aurait fait:
+                 *      for(j = 1 ; j < omp_sizes[1+3]-1 ; j ++)
+                 *  donc j va de 1 à OMP_SIZES[1+3]-2 !!!
+                 */
+                index = i + omp_sizes[0+3] * ( omp_sizes[1+3]-2 + omp_sizes[1+3] * k );
+
+                ElectricFieldToSend[3*counter+1] = E_y[index];
+
+                printf("SEND : E_y(%zu,%zu,%zu) = %f (MPI %d) - OMP_SIZES(1+3) = %zu\n",
+                    i,omp_sizes[1+3],k,
+                    E_y[index],mpi_me,
+                    omp_sizes[1+3]);
+
+                counter++;
+            }
+        }
+        /// Put E_z:
+        counter = 0;
+        for(size_t k = 1 ; k < omp_sizes[2+2*3]-1 ; k++){
+            for(size_t i = 1 ; i < omp_sizes[0+2*3]-1 ; i++){
+                /**
+                 * Attention, il faut absolument faire omp_sizes[1+3]-2 !!!!!
+                 * En fait, si on avait itér sur les j, on aurait fait:
+                 *      for(j = 1 ; j < omp_sizes[1+3]-1 ; j ++)
+                 *  donc j va de 1 à OMP_SIZES[1+3]-2 !!!
+                 */
+                index = i + omp_sizes[0+2*3] * ( omp_sizes[1+2*3]-2 + omp_sizes[1+2*3] * k);
+
+                ElectricFieldToSend[3*counter+2] = E_z[index];
+
+                counter ++;
+            }
+        }
+        return;
+    }
+    if(direction == 'S'){
+        return;
+    }
+    if(direction == 'N'){
+        return;
+    }
+    if(direction == 'U'){
+        return;
+    }
+    if(direction == 'D'){
+        return;
+    }
+
+}
+
+void MPI_communication_custom_function(
+        size_t size_to_send,
+        double *ElectricFieldToSend,
+        size_t size_to_recv,
+        double *ElectricFieldToRecv,
+        int    mpi_from_to_who,
+        int    mpi_me,
+        int    omp_thread_id
+    )
+{
+    /// Determine the omp thread ID with which we'll communicate:
+    int omp_Neighboor = INT_MIN;
+
+    if(omp_thread_id == 0){
+		omp_Neighboor=1;
+
+	}else if(omp_thread_id == 1){
+		omp_Neighboor = 0;
+
+	}else if(omp_thread_id == 2){
+		omp_Neighboor =3;
+
+	}else if(omp_thread_id == 3){
+		omp_Neighboor = 2;
+
+	}else if(omp_thread_id == 4){
+		omp_Neighboor = 5;
+
+	}else if(omp_thread_id == 5){
+		omp_Neighboor = 4;
+
+	}else{
+		printf("In %s ::ERROR\n",__FUNCTION__);
+		printf("\tIn MPI %d, at line %d, in file %s\n",mpi_me,
+			__LINE__,__FILE__);
+		std::abort();
+	}
+
+    /// Do som MPI send/recv in a logic order:
+
+    /* NEIGHBOOR IS EVEN, I AM ODD */
+	if(( mpi_from_to_who%2 ) == 0 &&
+	   ( mpi_me%2          ) != 0){
+		   	printf(">>>>>>>>>>>>>>>>>>>NeigEven :: OMP"
+               " %d , RANK(%d)=%d, MYRANK=%d\n",
+                omp_thread_id,omp_thread_id,
+				mpi_from_to_who,
+				mpi_me);
+
+			/* We first send and then receive */
+			MPI_Send(
+                ElectricFieldToSend,
+                size_to_send,
+				MPI_DOUBLE,
+				mpi_from_to_who,
+                omp_thread_id,
+				MPI_COMM_WORLD);
+
+			MPI_Recv(
+                ElectricFieldToRecv,
+                size_to_recv,
+				MPI_DOUBLE,
+                mpi_from_to_who,
+				omp_Neighboor,
+                MPI_COMM_WORLD,
+                MPI_STATUS_IGNORE);
+
+	/* NEIGHBOOR IS ODD, I AM EVEN */
+	}else if( 
+        ( mpi_from_to_who%2 ) != 0 &&
+		( mpi_me%2 )          == 0)
+    {
+			printf(">>>>>>>>>>>>>>>>>>>NeighOdd :: OMP"
+            " %d , RANK(%d)=%d, MYRANK=%d \n",
+                omp_thread_id,
+                omp_thread_id,
+				mpi_from_to_who,
+				mpi_me);
+                		
+        	/* We first receive and then send */
+
+			MPI_Recv(
+                ElectricFieldToRecv,
+                size_to_recv,
+				MPI_DOUBLE,
+                mpi_from_to_who,
+				omp_Neighboor,
+                MPI_COMM_WORLD,
+                MPI_STATUS_IGNORE);
+
+			MPI_Send(
+                ElectricFieldToSend,
+                size_to_send,
+                MPI_DOUBLE,
+				mpi_from_to_who,
+                omp_thread_id,
+				MPI_COMM_WORLD);
+
+	/* NEIGHBOOR LARGER THAN ME */
+	}else if(
+        mpi_from_to_who > mpi_me){
+
+			printf("Larger :: OMP %d , RANK(%d)=%d, MYRANK=%d\n",
+                omp_thread_id,omp_thread_id,
+				mpi_from_to_who,
+				mpi_me);
+
+			/* First receive and then send */
+			
+			MPI_Recv(
+                ElectricFieldToRecv,
+                size_to_recv,
+				MPI_DOUBLE,
+                mpi_from_to_who,
+				omp_Neighboor,
+                MPI_COMM_WORLD,
+                MPI_STATUS_IGNORE);
+
+			MPI_Send(
+                ElectricFieldToSend,
+                size_to_send,
+				MPI_DOUBLE,
+				mpi_from_to_who,
+                omp_thread_id,
+				MPI_COMM_WORLD);
+
+	/* NEIGHBOOR SMALLER THAN ME */
+	}else if( mpi_from_to_who < mpi_me ){
+
+			printf("Smaller :: OMP %d , RANK(%d)=%d, MYRANK=%d\n",
+                omp_thread_id,omp_thread_id,
+				mpi_from_to_who,
+				mpi_me);
+			/* First send and then receive */
+			
+			MPI_Send(
+                ElectricFieldToSend,
+                size_to_send,
+                MPI_DOUBLE,
+				mpi_from_to_who,
+                omp_thread_id,
+				MPI_COMM_WORLD);
+
+			MPI_Recv(
+                ElectricFieldToRecv,
+                size_to_recv,
+				MPI_DOUBLE,
+                mpi_from_to_who,
+				omp_Neighboor,
+                MPI_COMM_WORLD,
+                MPI_STATUS_IGNORE);
+
+	}else{
+		printf("comminucateWithNeighboor not yet implemented, abort!\n");
+		std::abort();
+	}
 
 }
 
 void MPI_communication_with_neighboors(
     int  omp_thread_id,
+    int  mpi_me,
+    int  mpi_from_to_who,
     char direction,
     double *ElectricFieldToSend,
     size_t size_to_send,
@@ -1093,6 +1532,12 @@ void MPI_communication_with_neighboors(
     }
 
     /// Fill in the vector to send:
+    printf("\n\n>>> MPI %d sends to %c (MPI %d)\n\n",
+        mpi_me,direction,mpi_from_to_who);
+
+    
+    
+
     fill_vector_to_send(
         E_x,
         E_y,
@@ -1100,9 +1545,19 @@ void MPI_communication_with_neighboors(
         ElectricFieldToSend,
         size_to_send,
         direction,
-        omp_sizes);
+        omp_sizes,
+        mpi_me);
 
     /// Perform the communication:
+    MPI_communication_custom_function(
+        size_to_send,
+        ElectricFieldToSend,
+        size_to_recv,
+        ElectricFieldToRecv,
+        mpi_from_to_who,
+        mpi_me,
+        omp_thread_id
+    );
 
     /// Fill in the electric field vectors with the received vector:
     fill_electric_field_with_recv_vector(
@@ -1112,13 +1567,8 @@ void MPI_communication_with_neighboors(
         ElectricFieldToRecv,
         size_to_recv,
         direction,
-        omp_sizes
+        omp_sizes,
+        mpi_me
     );
 
-    /// By default, if the OMP thread reads this, abort:
-    #ifdef MPI_COMM_WORLD
-    MPI_Abort(MPI_COMM_WORLD,-1);
-    #else
-    abort();
-    #endif
 }

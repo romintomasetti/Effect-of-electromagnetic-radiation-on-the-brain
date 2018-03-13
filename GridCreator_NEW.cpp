@@ -276,7 +276,7 @@ void GridCreator_NEW::meshInitialization(void){
     }
 
     ///////////////////////////////////
-    /// IMPORTANT NOTE ON THE SIZES OF EACH FIELD
+    /// IMPORTANT NOTE ON THE SIZES OF EACH FIELD - A REVOIR
     /**
      * Because each field has its own size in each direction, we can't do 
      * very simple things. After the MPI division performed by the 
@@ -313,22 +313,35 @@ void GridCreator_NEW::meshInitialization(void){
 
 
     /* ALLOCATE SPACE FOR THE ELECTRIC FIELDS */
-    #if DEBUG > 2
-    std::cout << "GridCreator_New::initializing E_x" << std::endl;
-    #endif
+
     // Size of E_x is  (M − 1) × N × P. Add 2 nodes in each direction for the neighboors.
+
     if(this->MPI_communicator.must_add_one_to_E_X_along_XYZ[0] == true){
-        this->size_Ex[0] = M - 1 + 2 + 1;
+        this->size_Ex[0] = M + 2 - 1;
     }else{
-        this->size_Ex[0] = M - 1 + 2;
+        this->size_Ex[0] = M + 2;
     }
-    this->size_Ex[1] = N + 2;
+    if(this->MPI_communicator.must_add_one_to_E_X_along_XYZ[1] == true){
+        this->size_Ex[1] = N + 2 - 1;
+        if(this->MPI_communicator.getRank() == 1){
+            printf("\n\n******************TA MEREEEEEEEE***************\n\n");
+            abort();
+        }
+    }else{
+        this->size_Ex[1] = N + 2;
+        
+        printf("\n\n******************TA MEREEEEEEEE (MPI %d, N = %zu)***************\n\n",
+                this->MPI_communicator.getRank(),N);
+        
+    }
     if(this->MPI_communicator.must_add_one_to_E_X_along_XYZ[2] == true){
-        this->size_Ex[2] = P + 2 + 1;
+        this->size_Ex[2] = P + 2 - 1;
     }else{
         this->size_Ex[2] = P + 2;
     }
+    
     size = this->size_Ex[0] * this->size_Ex[1] * this->size_Ex[2];
+
     this->E_x                 = new double[size];
     this->E_x_material        = new unsigned char[size];
     this->E_x_eps             = new double[size];
@@ -338,14 +351,26 @@ void GridCreator_NEW::meshInitialization(void){
     this->profiler.addMemoryUsage("BYTES",memory);
 
     // Size of E_y is  M × (N − 1) × P. Add 2 nodes in each direction for the neighboors.
-    this->size_Ey[0] = M + 2;
-    if(this->MPI_communicator.must_add_one_to_E_Y_along_XYZ[1] == false){
-        this->size_Ey[1] = N - 1 + 2;
+    if(this->MPI_communicator.must_add_one_to_E_Y_along_XYZ[0] == true){
+        this->size_Ey[0] = M + 2 - 1;
     }else{
-        this->size_Ey[1] = N - 1 + 2 + 1;
+        this->size_Ey[0] = M + 2;
     }
-    this->size_Ey[2] = P + 2;
+
+    if(this->MPI_communicator.must_add_one_to_E_Y_along_XYZ[1] == true){
+        this->size_Ey[1] = N + 2 - 1;
+    }else{
+        this->size_Ey[1] = N + 2;
+    }
+
+    if(this->MPI_communicator.must_add_one_to_E_Y_along_XYZ[2] == true){
+        this->size_Ey[2] = P + 2 - 1;
+    }else{
+        this->size_Ey[2] = P + 2;
+    }
+
     size = this->size_Ey[0] * this->size_Ey[1] * this->size_Ey[2];
+
     this->E_y                 = new double[size];
     this->E_y_material        = new unsigned char[size];
     this->E_y_eps             = new double[size];
@@ -358,14 +383,27 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing E_y" << std::endl;
     #endif
     // Size of E_z is  M × N × (P − 1). Add 2 nodes in each direction for the neighboors.
-    this->size_Ez[0] = M + 2;
-    this->size_Ez[1] = N + 2;
-    if(this->MPI_communicator.must_add_one_to_E_Z_along_XYZ[2] == true){
-        this->size_Ez[2] = P - 1 + 2 + 1;
+
+    if(this->MPI_communicator.must_add_one_to_E_Z_along_XYZ[0] == true){
+        this->size_Ez[0] = M + 2 - 1;
     }else{
-        this->size_Ez[2] = P - 1 + 2;
+        this->size_Ez[0] = M + 2;
     }
+
+    if(this->MPI_communicator.must_add_one_to_E_Z_along_XYZ[1] == true){
+        this->size_Ez[1] = N + 2 - 1;
+    }else{
+        this->size_Ez[1] = N + 2;
+    }
+
+    if(this->MPI_communicator.must_add_one_to_E_Z_along_XYZ[2] == true){
+        this->size_Ez[2] = P + 2 - 1;
+    }else{
+        this->size_Ez[2] = P + 2;
+    }
+
     size = this->size_Ez[0] * this->size_Ez[1] * this->size_Ez[2];
+
     this->E_z                 = new double[size];
     this->E_z_material        = new unsigned char[size];
     this->E_z_eps             = new double[size];
@@ -376,26 +414,30 @@ void GridCreator_NEW::meshInitialization(void){
 
     /* ALLOCATE SPACE FOR THE MAGNETIC FIELDS */
 
-    #if DEBUG > 2
-    std::cout << "GridCreator_New::initializing H_x" << std::endl;
-    #endif
     // Size of H_x is  M × (N − 1) × (P − 1). Add 2 nodes in each direction for the neighboors.
+
     if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[0] == true){
-        this->size_Hx[0] = M + 2 + 1;
+        this->size_Hx[0] = M - 1;
     }else{
-        this->size_Hx[0] = M + 2;
+        this->size_Hx[0] = M ;
     }
+
     if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[1] == true){
-        this->size_Hx[1] = N - 1 + 2 + 1;
+        this->size_Hx[1] = N - 1;
     }else{
-        this->size_Hx[1] = N - 1 + 2;
+        this->size_Hx[1] = N ;
     }
+
     if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[2] == true){
-        this->size_Hx[2] = P - 1 + 2 + 1;
+        this->size_Hx[2] = P - 1;
     }else{
-        this->size_Hx[2] = P - 1 + 2;
+        this->size_Hx[2] = P;
     }
-    size = this->size_Hx[0] * this->size_Hx[1] * this->size_Hx[2];
+
+    size = this->size_Hx[0] * 
+            this->size_Hx[1] * 
+            this->size_Hx[2];
+
     this->H_x               = new double[size];
     this->H_x_material      = new unsigned char[size];
     this->H_x_magnetic_cond = new double[size];
@@ -408,18 +450,29 @@ void GridCreator_NEW::meshInitialization(void){
     std::cout << "GridCreator_New::initializing H_y" << std::endl;
     #endif
     // Size of H_y is  (M − 1) × N × (P − 1). Add 2 nodes in each direction for the neighboors.
+
     if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] == true){
-        this->size_Hy[0] = M - 1 + 2 + 1;
+        this->size_Hy[0] = M - 1;
     }else{
-        this->size_Hy[0] = M - 1 + 2;
+        this->size_Hy[0] = M ;
     }
-    this->size_Hy[1] = N + 2;
+
+    if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[1] == true){
+        this->size_Hy[1] = N - 1;
+    }else{
+        this->size_Hy[1] = N;
+    }
+
     if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[2] == true){
-        this->size_Hy[2] = P - 1 + 2 + 1;
+        this->size_Hy[2] = P - 1;
     }else{
-        this->size_Hy[2] = P - 1 + 2;
+        this->size_Hy[2] = P;
     }
-    size = this->size_Hy[0] * this->size_Hy[1] * this->size_Hy[2];
+
+    size = this->size_Hy[0]
+             * this->size_Hy[1]
+             * this->size_Hy[2];
+
     this->H_y               = new double[size];
     this->H_y_material      = new unsigned char[size];
     this->H_y_mu            = new double[size];
@@ -430,17 +483,27 @@ void GridCreator_NEW::meshInitialization(void){
 
     // Size of H_z is  (M − 1) × (N − 1) × P. Add 2 nodes in each direction for the nieghboors.
     if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] == true){
-        this->size_Hz[0] = M - 1 + 2 + 1;
+        this->size_Hz[0] = M - 1;
     }else{
-        this->size_Hz[0] = M - 1 + 2;
+        this->size_Hz[0] = M ;
     }
+
     if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[1] == true){
-        this->size_Hz[1] = N - 1 + 2 + 1;
+        this->size_Hz[1] = N -1;
     }else{
-        this->size_Hz[1] = N - 1 + 2;
+        this->size_Hz[1] = N;
     }
-    this->size_Hz[2] = P + 2;
-    size = this->size_Hz[0] * this->size_Hz[1] * this->size_Hz[2];
+
+    if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[2] == true){
+        this->size_Hz[2] = P - 1;
+    }else{
+        this->size_Hz[2] = P;
+    }
+
+    size = this->size_Hz[0]
+             * this->size_Hz[1]
+             * this->size_Hz[2];
+
     this->H_z               = new double[size];
     this->H_z_material      = new unsigned char[size];
     this->H_z_mu            = new double[size];
@@ -529,6 +592,7 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
             bool is_RANK_TEST_PARAVIEW_MPI_ELECTRIC   = false;
             bool is_RANK_TEST_PARAVIEW_MPI_MAGNETIC   = false;
             int  RANK_MPI                             = this->MPI_communicator.getRank() + 1;
+            bool is_LOCAL_TEST_PARAVIEW_MPI_ELECTRIC  = false;
 
             if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
                 is_USE_AIR_EVERYWHERE = true;
@@ -543,6 +607,10 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                     is_GLOBAL_TEST_PARAVIEW_MPI_ELECTRIC = true;
                 }else if(this->input_parser.TEST_PARAVIEW_MPI_ARGS["E"] == "RANK"){
                     is_RANK_TEST_PARAVIEW_MPI_ELECTRIC   = true;
+                }else if(this->input_parser.TEST_PARAVIEW_MPI_ARGS["E"] == "LOCAL"){
+                    is_LOCAL_TEST_PARAVIEW_MPI_ELECTRIC = true;
+                }else{
+                    abort();
                 }
 
                 if(this->input_parser.TEST_PARAVIEW_MPI_ARGS["H"] == "GLOBAL"){
@@ -588,6 +656,8 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                                 this->E_x[index] = global[0];
                             }else if(is_RANK_TEST_PARAVIEW_MPI_ELECTRIC){
                                 this->E_x[index] = RANK_MPI;
+                            }else if(is_LOCAL_TEST_PARAVIEW_MPI_ELECTRIC){
+                                this->E_x[index] = I;
                             }else{
                                 /// Put the local index:
                                 this->E_x[index] = I;
@@ -632,6 +702,8 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                                 this->E_y[index] = global[1];
                             }else if(is_RANK_TEST_PARAVIEW_MPI_ELECTRIC){
                                 this->E_y[index] = RANK_MPI;
+                            }else if(is_LOCAL_TEST_PARAVIEW_MPI_ELECTRIC){
+                                this->E_y[index] = J;
                             }else{
                                 /// Put the local index:
                                 this->E_y[index] = J;
@@ -675,6 +747,8 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                                 this->E_z[index] = global[2];
                             }else if(is_RANK_TEST_PARAVIEW_MPI_ELECTRIC){
                                 this->E_z[index] = RANK_MPI;
+                            }else if(is_LOCAL_TEST_PARAVIEW_MPI_ELECTRIC){
+                                this->E_z[index] = K;
                             }else{
                                 /// Put the local index:
                                 this->E_z[index] = K;

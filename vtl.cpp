@@ -400,6 +400,8 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
         }else if(fieldName == "MagneticField"){
 
+            const size_t DECALAGE_H = 0;
+
             std::vector<size_t> size = grid.sizes_EH;
 
             std::cout << "\n\t>>> Writing VTI electric field...\n";
@@ -420,13 +422,15 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
             // HX field:
             #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
-            for(K = 1 ; K < grid.size_Hx[2]-1 ; K ++){
-                for(J = 1 ; J < grid.size_Hx[1]-1 ; J ++ ){
-                    for(I = 1 ; I < grid.size_Hx[0]-1 ; I ++){
+            for(K = 0 ; K < grid.size_Hx[2]-DECALAGE_H ; K ++){
+                for(J = 0 ; J < grid.size_Hx[1]-DECALAGE_H ; J ++ ){
+                    for(I = 0 ; I < grid.size_Hx[0]-DECALAGE_H ; I ++){
 
                         index = I + grid.size_Hx[0] * ( J + grid.size_Hx[1] * K );
 
-                        buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+                        buff_index = I-DECALAGE_H 
+                                + grid.sizes_EH[0] * ( J-DECALAGE_H 
+                                    + grid.sizes_EH[1] * (K-DECALAGE_H) );
 
                         buffer[3*buff_index] = grid.H_x[index];
                         
@@ -436,13 +440,15 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
             // HY field:
             #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
-            for(K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
-                for(J = 1 ; J < grid.size_Hy[1]-1 ; J ++ ){
-                    for(I = 1 ; I < grid.size_Hy[0]-1 ; I ++){
+            for(K = 0 ; K < grid.size_Hy[2]-DECALAGE_H ; K ++){
+                for(J = 0 ; J < grid.size_Hy[1]-DECALAGE_H ; J ++ ){
+                    for(I = 0 ; I < grid.size_Hy[0]-DECALAGE_H ; I ++){
 
                         index = I + grid.size_Hy[0] * ( J + grid.size_Hy[1] * K );
 
-                        buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+                        buff_index = I-DECALAGE_H 
+                                + grid.sizes_EH[0] * ( J-DECALAGE_H
+                                     + grid.sizes_EH[1] * (K-DECALAGE_H) );
 
                         buffer[3*buff_index+1] = grid.H_y[index];
                         
@@ -452,13 +458,15 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
             // HZ field:
             #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
-            for(size_t K = 1 ; K < grid.size_Hz[2]-1 ; K ++){
-                for(size_t J = 1 ; J < grid.size_Hz[1]-1 ; J ++ ){
-                    for(size_t I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
+            for(size_t K = 0 ; K < grid.size_Hz[2]-DECALAGE_H ; K ++){
+                for(size_t J = 0 ; J < grid.size_Hz[1]-DECALAGE_H ; J ++ ){
+                    for(size_t I = 0 ; I < grid.size_Hz[0]-DECALAGE_H ; I ++){
 
                         index = I + grid.size_Hz[0] * ( J + grid.size_Hz[1] * K );
 
-                        buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+                        buff_index = I-DECALAGE_H
+                                + grid.sizes_EH[0] * ( J-DECALAGE_H
+                                     + grid.sizes_EH[1] * (K-DECALAGE_H) );
 
                         buffer[3*buff_index+2] = grid.H_z[index];
                         
