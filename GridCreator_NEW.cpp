@@ -416,11 +416,14 @@ void GridCreator_NEW::meshInitialization(void){
 
     // Size of H_x is  M × (N − 1) × (P − 1). Add 2 nodes in each direction for the neighboors.
 
+
     if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[0] == true){
         this->size_Hx[0] = M - 1;
     }else{
         this->size_Hx[0] = M ;
     }
+
+    this->size_Hx[0] ++;
 
     if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[1] == true){
         this->size_Hx[1] = N - 1;
@@ -428,11 +431,15 @@ void GridCreator_NEW::meshInitialization(void){
         this->size_Hx[1] = N ;
     }
 
+    this->size_Hx[1] ++;
+
     if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[2] == true){
         this->size_Hx[2] = P - 1;
     }else{
         this->size_Hx[2] = P;
     }
+
+    this->size_Hx[2] ++;
 
     size = this->size_Hx[0] * 
             this->size_Hx[1] * 
@@ -457,17 +464,23 @@ void GridCreator_NEW::meshInitialization(void){
         this->size_Hy[0] = M ;
     }
 
+    this->size_Hy[0] ++;
+
     if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[1] == true){
         this->size_Hy[1] = N - 1;
     }else{
         this->size_Hy[1] = N;
     }
 
+    this->size_Hy[1] ++;
+
     if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[2] == true){
         this->size_Hy[2] = P - 1;
     }else{
         this->size_Hy[2] = P;
     }
+
+    this->size_Hy[2] ++;
 
     size = this->size_Hy[0]
              * this->size_Hy[1]
@@ -488,17 +501,23 @@ void GridCreator_NEW::meshInitialization(void){
         this->size_Hz[0] = M ;
     }
 
+    this->size_Hz[0] ++;
+
     if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[1] == true){
         this->size_Hz[1] = N -1;
     }else{
         this->size_Hz[1] = N;
     }
 
+    this->size_Hz[1] ++;
+
     if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[2] == true){
         this->size_Hz[2] = P - 1;
     }else{
         this->size_Hz[2] = P;
     }
+
+    this->size_Hz[2] ++;
 
     size = this->size_Hz[0]
              * this->size_Hz[1]

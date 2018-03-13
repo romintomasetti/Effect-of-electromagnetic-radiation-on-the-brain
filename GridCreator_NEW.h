@@ -16,6 +16,9 @@
 class MPI_Initializer;
 class GridCreator_NEW{
     public:
+
+        const size_t DECALAGE_A_LA_MAIN = 0;
+
         /* VARIABLES */
 
         /* ELECTRIC AND MAGNETIC FIELDS - SIZES
