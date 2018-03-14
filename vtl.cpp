@@ -400,7 +400,7 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
         }else if(fieldName == "MagneticField"){
 
-            const size_t DECALAGE_H = -1;
+            const size_t DECALAGE_H = 1;
 
             std::vector<size_t> size = grid.sizes_EH;
 
@@ -411,8 +411,8 @@ size_t write_vectorXML_custom_GridCreatorNew(
             // Hy of size (M − 1) × N × (P − 1)
             // Hz of size (M − 1) × (N − 1) × P
 
-            size_field = (size[0]-DECALAGE_H)*
-                    (size[1]-DECALAGE_H)*(size[2]-DECALAGE_H)*3;
+            size_field = (size[0])*
+                    (size[1])*(size[2])*3;
 
             buffer.resize(size_field);
 
@@ -447,9 +447,9 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
                         index = I + grid.size_Hy[0] * ( J + grid.size_Hy[1] * K );
 
-                        buff_index = I-DECALAGE_H 
-                                + grid.sizes_EH[0] * ( J-DECALAGE_H
-                                     + grid.sizes_EH[1] * (K-DECALAGE_H) );
+                        buff_index = I
+                                + grid.sizes_EH[0] * ( J
+                                     + grid.sizes_EH[1] * (K) );
 
                         buffer[3*buff_index+1] = grid.H_y[index];
                         
@@ -465,9 +465,9 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
                         index = I + grid.size_Hz[0] * ( J + grid.size_Hz[1] * K );
 
-                        buff_index = I-DECALAGE_H
-                                + grid.sizes_EH[0] * ( J-DECALAGE_H
-                                     + grid.sizes_EH[1] * (K-DECALAGE_H) );
+                        buff_index = I
+                                + grid.sizes_EH[0] * ( J
+                                     + grid.sizes_EH[1] * (K) );
 
                         buffer[3*buff_index+2] = grid.H_z[index];
                         

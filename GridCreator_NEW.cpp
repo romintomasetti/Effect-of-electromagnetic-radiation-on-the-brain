@@ -453,9 +453,7 @@ void GridCreator_NEW::meshInitialization(void){
     memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
-    #if DEBUG > 2
-    std::cout << "GridCreator_New::initializing H_y" << std::endl;
-    #endif
+
     // Size of H_y is  (M − 1) × N × (P − 1). Add 2 nodes in each direction for the neighboors.
 
     if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] == true){
