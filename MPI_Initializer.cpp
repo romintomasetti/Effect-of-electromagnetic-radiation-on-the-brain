@@ -741,18 +741,21 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		/* We do the x component */
 		if(PositionOnX == 0)
 		{
-			this->RankNeighbour[0] = -1;
-			this->RankNeighbour [1] = myRank+1;
+			/// The first is for South neighboor, the second is for North neighboor.
+			this->RankNeighbour[0] = myRank+1;
+			this->RankNeighbour[1] = -1;
 		}
 		else if(PositionOnX == nbProc-1)
 		{
-			this->RankNeighbour[0] = myRank-1;
-			this->RankNeighbour[1] = -1;
+			/// The first is for South neighboor, the second is for North neighboor.
+			this->RankNeighbour[0] = -1;
+			this->RankNeighbour[1] = myRank-1;
 		}
 		else
 		{
-			this->RankNeighbour[0] = myRank-1;
-			this->RankNeighbour[1] = myRank+1;
+			/// The first is for South neighboor, the second is for North neighboor.
+			this->RankNeighbour[0] = myRank+1;
+			this->RankNeighbour[1] = myRank-1;
 		}
 
 		/* We put -1 everywhere because we have only a separation along the x-axis */
