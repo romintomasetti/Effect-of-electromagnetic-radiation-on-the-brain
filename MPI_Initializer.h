@@ -78,6 +78,7 @@ class MPI_Initializer{
 		std::vector<bool> must_add_one_to_H_Z_along_XYZ
 			= {false,false,false};
 
+
 };
 
 #endif

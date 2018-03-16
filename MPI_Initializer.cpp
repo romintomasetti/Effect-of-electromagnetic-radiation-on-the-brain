@@ -514,7 +514,6 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 																- (int) ( (nbProc-1) / (N*N) ) * N );
 		subGrid.MPI_communicator.MPI_MAX_POSI[2] = (char) ( (nbProc-1) / (N*N));
 
-		
 		size_t nbr_nodes_local_X         = nbr_nodes_X / N;
 		size_t nbr_nodes_local_thermal_X = nbr_nodes_thermal_X / N;
 
@@ -696,6 +695,7 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		subGrid.MPI_communicator.MPI_MAX_POSI[0] = nbProc-1;
 		subGrid.MPI_communicator.MPI_MAX_POSI[1] = 0;
 		subGrid.MPI_communicator.MPI_MAX_POSI[2] = 0;
+
 
 		size_t nbr_nodes_local_X         = nbr_nodes_X / nbProc;
 		size_t nbr_nodes_local_thermal_X = nbr_nodes_thermal_X / nbProc;
@@ -951,7 +951,7 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 
 	if(subGrid.MPI_communicator.MPI_POSITION[2] == subGrid.MPI_communicator.MPI_MAX_POSI[2]){
 		/// I am the last along Y.
-
+		
 		/// For E_x:
 		subGrid.MPI_communicator.must_add_one_to_E_X_along_XYZ[2] = false;
 		
