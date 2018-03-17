@@ -851,7 +851,6 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		if(nbProc == 2){
 			this->RankNeighbour[0] = -1;
 			this->RankNeighbour[1] = -1;
-			cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!! NTP !!! RankNeighbour x: " <<this->RankNeighbour[0] << " ; " <<this->RankNeighbour[1] << endl;
 		}
 		else{
 			/// First MPI process along X direction:
@@ -861,7 +860,6 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 				this->RankNeighbour[0] = myRank + 1;
 				this->RankNeighbour[1] = -1;
 				
-				cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!! NTM !!! RankNeighbour x: " <<this->RankNeighbour[0] << " ; " <<this->RankNeighbour[1] << endl;
 
 			}
 			/// Last MPI process along X direction:

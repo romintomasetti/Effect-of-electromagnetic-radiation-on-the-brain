@@ -33,6 +33,16 @@ GridCreator_NEW::GridCreator_NEW(InputParser &input_parser,
     // Call the MPI division function, from the MPI_communicator field.
     // It retrieves the number of nodes for the electromagnetic grid along each direction:
 	this->MPI_communicator.MPI_DIVISION(*this);
+
+    printf("MPI %d : RANK[%d, %d, %d, %d, %d, %d]\n",
+        this->MPI_communicator.getRank(),
+        this->MPI_communicator.RankNeighbour[0],
+        this->MPI_communicator.RankNeighbour[1],
+        this->MPI_communicator.RankNeighbour[2],
+        this->MPI_communicator.RankNeighbour[3],
+        this->MPI_communicator.RankNeighbour[4],
+        this->MPI_communicator.RankNeighbour[5]);
+
 }
 
 /* DESTRUCTOR */

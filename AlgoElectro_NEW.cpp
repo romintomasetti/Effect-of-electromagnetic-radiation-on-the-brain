@@ -8,6 +8,79 @@
 
 #include <assert.h>
 
+#define NBR_FACES_CUBE 6
+
+void prepare_array_to_be_sent(
+                double ** Electric_field_to_send,
+                std::vector<size_t> &electric_field_sizes,
+                double *E_x,
+                double *E_y,
+                double *E_z,
+                int    *mpi_rank_neighboor,
+                std::vector<size_t> &size_faces
+            );
+            
+void use_received_array(
+                double **Electric_field_to_recv,
+                std::vector<size_t> &electric_field_sizes,
+                double *E_x,
+                double *E_y,
+                double *E_z
+            );   
+
+void communicate_single_omp_thread(
+                double **Electric_field_to_send,
+                double **Electric_field_to_recv,
+                std::vector<size_t> &electric_field_sizes,
+                int *mpi_to_who
+);
+
+size_t determine_size_face_based_on_direction(char direction,std::vector<size_t> &electric_field_sizes){
+
+    size_t size_of_sent_vector = 0;
+
+    size_t SEND_ALL = 0;
+
+    if(direction == 'S' || direction == 'N'){
+
+        /// size += size_ex[1]*size_ex[2]:
+        size_of_sent_vector += (electric_field_sizes[1]-SEND_ALL)    *(electric_field_sizes[2]-SEND_ALL);
+        /// size += size_ey[1]*size_ey[2]:
+        size_of_sent_vector += (electric_field_sizes[1+3]-SEND_ALL)  *(electric_field_sizes[2+3]-SEND_ALL);
+        /// size += size_ez[1]*size_ez[2]:
+        size_of_sent_vector += (electric_field_sizes[1+2*3]-SEND_ALL)*(electric_field_sizes[2+2*3]-SEND_ALL);
+
+    }else if(direction == 'W' || direction == 'E'){
+
+        /// size += size_ex[0]*size_ex[2] (without neighboors)
+        size_of_sent_vector += (electric_field_sizes[0]-SEND_ALL)*(electric_field_sizes[2]-SEND_ALL);
+        /// size += size_ey[0]*size_ey[2] (without neighboors)
+        size_of_sent_vector += (electric_field_sizes[3]-SEND_ALL)*(electric_field_sizes[5]-SEND_ALL);
+        /// size += size_ez[0]*size_ez[2] (without neighboors)
+        size_of_sent_vector += (electric_field_sizes[6]-SEND_ALL)*(electric_field_sizes[8]-SEND_ALL);
+
+    }else if(direction == 'U' || direction == 'D'){
+
+        /// size += size_ex[0]*size_ex[1]:
+        size_of_sent_vector += (electric_field_sizes[0]-SEND_ALL)*(electric_field_sizes[1]-SEND_ALL);
+        /// size += size_ey[0]*size_ey[1]:
+        size_of_sent_vector += (electric_field_sizes[3]-SEND_ALL)*(electric_field_sizes[4]-SEND_ALL);
+        /// size += size_ez[0]*size_ez[1]:
+        size_of_sent_vector += (electric_field_sizes[6]-SEND_ALL)*(electric_field_sizes[7]-SEND_ALL);
+
+    }else{
+        fprintf(stderr,"In function %s :: unknown direction ! (has %c) -> ABORTING\n",
+            __FUNCTION__,direction);
+        fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+        #ifdef MPI_COMM_WORLD
+        MPI_Abort(MPI_COMM_WORLD,-1);
+        #else
+        abort();
+        #endif
+    }
+
+    return size_of_sent_vector;
+}
 
 void MPI_communication_with_neighboors(
     int  omp_thread_id,
@@ -178,7 +251,7 @@ void AlgoElectro_NEW::update(
         }
     }
 
-    #pragma omp parallel num_threads(1)
+    #pragma omp parallel
     {
         size_t index;
         /* Coefficients for Ex */
@@ -406,11 +479,65 @@ void AlgoElectro_NEW::update(
     /// Set OMP_DYNAMIC=false:
     this->check_OMP_DYNAMIC_envVar();
 
+    /**
+     * The following arrays contain the electric field nodes to be sent and received.
+     * 6 is for the number of faces.
+     */
+    double **Electric_field_to_send = (double**) malloc(NBR_FACES_CUBE*sizeof(double*));
+    double **Electric_field_to_recv = (double**) malloc(NBR_FACES_CUBE*sizeof(double*));
 
+    /**
+     * Initialize Electric_field_to_send/recv when it is appropriate:
+     */
+    std::vector<char> DIRECTIONS = {'S','N','W','E','D','U'};
+    std::vector<size_t> electric_field_sizes = {
+            grid.size_Ex[0],
+            grid.size_Ex[1],
+            grid.size_Ex[2],
+            grid.size_Ey[0],
+            grid.size_Ey[1],
+            grid.size_Ey[2],
+            grid.size_Ez[0],
+            grid.size_Ez[1],
+            grid.size_Ez[2]
+        };
+
+    std::vector<size_t> size_faces(6);
+
+    for(unsigned int i = 0 ; i < NBR_FACES_CUBE ; i ++){
+        if(grid.MPI_communicator.RankNeighbour[i] != -1){
+            char dir = DIRECTIONS[i];
+
+            size_t size_face = 0;
+
+            size_face = determine_size_face_based_on_direction(dir,electric_field_sizes);
+
+            size_faces[i] = size_face;
+
+            Electric_field_to_send[i] = (double*) malloc(size_face*sizeof(double));
+            Electric_field_to_recv[i] = (double*) malloc(size_face*sizeof(double));
+        }
+    }
+
+    /// Fetch current wall time:
     double parallelRegionStartingTime = omp_get_wtime();
 
+    ////////////////////////////////////
+    /// BEGINNING OF PARALLEL REGION ///
+    ////////////////////////////////////
+    /**
+     * Here is a list of shared and private variables in he following parallel region:
+     *      1) grid         : instance of the class GridCreator_NEW;
+     *      2) dt           : time step of the electromagnetic algorithm;
+     *      3) current_time : current simulation time, including thermal solver;
+     *      4) currentStep  : current step of the electromagnetic solver;
+     *      5) local_nodes_inside_source_NUMBER : index of all nodes inside the sources;
+     *      6) interfaceParaviewer : to write the output..
+     * 
+     *      TO DO
+     */
     #pragma omp parallel num_threads(omp_get_max_threads()) default(none)\
-        shared(grid,dt,current_time,currentStep)\
+        shared(grid,current_time,currentStep)\
         shared(local_nodes_inside_source_NUMBER)\
         shared(interfaceParaview)\
         shared(parallelRegionStartingTime)\
@@ -422,7 +549,10 @@ void AlgoElectro_NEW::update(
         shared(C_exe,C_exh_1,C_exh_2)\
         shared(C_eye,C_eyh_1,C_eyh_2)\
         shared(C_eze,C_ezh_1,C_ezh_2)\
-        shared(ompi_mpi_comm_world,ompi_mpi_int)
+        shared(ompi_mpi_comm_world,ompi_mpi_int)\
+        shared(Electric_field_to_send,Electric_field_to_recv)\
+        shared(electric_field_sizes,dt)\
+        shared(size_faces)
     {
         size_t index;
         size_t index_1Plus;
@@ -460,15 +590,15 @@ void AlgoElectro_NEW::update(
         }
 
         if(grid.MPI_communicator.MPI_POSITION[0] == 0){
-            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 1;
+            //IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 1;
         }
 
         if(grid.MPI_communicator.MPI_POSITION[1] == 0){
-            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 1;
+            //IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 1;
         }
 
         if(grid.MPI_communicator.MPI_POSITION[2] == 0){
-            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
+            //IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
         }
 
 
@@ -796,7 +926,7 @@ void AlgoElectro_NEW::update(
             }
 
             #pragma omp barrier
-
+            double time_spent_in_mpi = omp_get_wtime();
             /////////////////////////
             /// MPI COMMUNICATION ///
             /////////////////////////
@@ -812,25 +942,66 @@ void AlgoElectro_NEW::update(
             {
                 /// Call the MPI communication function:
                 MPI_communication_with_neighboors(
-                    omp_get_thread_num(), /*int  omp_thread_id,*/
+                    omp_get_thread_num(), //int  omp_thread_id,
                     grid.MPI_communicator.getRank(),
                     grid.MPI_communicator.RankNeighbour[omp_get_thread_num()],
-                    direction, /*char direction,*/
-                    ElectricFieldToSend, /*double *ElectricFieldToSend,*/
-                    size_to_be_sent, /*size_t size_to_send,*/
-                    ElectricFieldToRecv, /*double *ElectricFieldToRecv,*/
-                    size_to_recv, /*size_t size_to_recv,*/
-                    E_x_tmp, /*double *E_x,*/
-                    E_y_tmp, /*double *E_y,*/
-                    E_z_tmp, /*double *E_z,*/
-                    omp_sizes, /*std::vector<size_t> &omp_sizes*/
+                    direction, //char direction,
+                    ElectricFieldToSend, //double *ElectricFieldToSend,
+                    size_to_be_sent, //size_t size_to_send,
+                    ElectricFieldToRecv, //double *ElectricFieldToRecv,
+                    size_to_recv, //size_t size_to_recv,
+                    E_x_tmp, //double *E_x,
+                    E_y_tmp, //double *E_y,
+                    E_z_tmp, //double *E_z,
+                    omp_sizes, //std::vector<size_t> &omp_sizes
                     grid.MPI_communicator.get_provided_thread_support() //int MPI_provided_thread_support
                 );
             }
+            #pragma omp single
+            {
+                MPI_Barrier(MPI_COMM_WORLD);
+            }
+            time_spent_in_mpi = omp_get_wtime() - time_spent_in_mpi;
             /////////////////////////
             ///      END OF       ///
             /// MPI COMMUNICATION ///
             /////////////////////////
+
+            /////////
+            /// Comm bis
+            ////
+            #pragma omp barrier
+            prepare_array_to_be_sent(
+                Electric_field_to_send,
+                electric_field_sizes,
+                E_x_tmp,
+                E_y_tmp,
+                E_z_tmp,
+                grid.MPI_communicator.RankNeighbour,
+                size_faces
+            );
+            #pragma omp master
+            {
+                communicate_single_omp_thread(
+                    Electric_field_to_send,
+                    Electric_field_to_recv,
+                    electric_field_sizes,
+                    grid.MPI_communicator.RankNeighbour
+                );
+            }
+            
+            use_received_array(
+                Electric_field_to_recv,
+                electric_field_sizes,
+                E_x_tmp,
+                E_y_tmp,
+                E_z_tmp
+            );           
+
+            ///////
+            /// End Comm bis
+            //////
+
             if(OMP_thread_has_neighboor == true)
                 printf(" <<<< MPI %d | OMP %d :: COMMUNICATION DONE\n",
                     grid.MPI_communicator.getRank(),omp_get_thread_num());
@@ -848,6 +1019,7 @@ void AlgoElectro_NEW::update(
             {
                 if(currentStep == 0){
                     grid.profiler.addTimingInputToDictionnary("ELECTRO_WRITING_OUTPUTS");
+                    grid.profiler.addTimingInputToDictionnary("ELECTRO_MPI_COMM");
                 }
 
                 current_time += dt;
@@ -863,6 +1035,7 @@ void AlgoElectro_NEW::update(
                 
                 // Add time for writing:
                 grid.profiler.incrementTimingInput("ELECTRO_WRITING_OUTPUTS",time_taken_writing);
+                grid.profiler.incrementTimingInput("ELECTRO_MPI_COMM",time_spent_in_mpi);
 
 
                 if(currentStep > 100){
@@ -872,11 +1045,13 @@ void AlgoElectro_NEW::update(
 
                 double elapsedTot = omp_get_wtime() - parallelRegionStartingTime;
 
-                printf("AlgoElectro_NEW : iter %zu, time %.10f, time per iter : %.10f (using %d OMP and %d MPI / on MPI %d).\n",
+                printf("AlgoElectro_NEW : iter %zu, time %.10f, time per iter : %.10f"
+                       " (using %d OMP and %d MPI / on MPI %d).\n",
                         currentStep,current_time,elapsedTot/currentStep,omp_get_num_threads(),
                         grid.MPI_communicator.getNumberOfMPIProcesses(),
                         grid.MPI_communicator.getRank());
                 printf("Time for writing : %f seconds.\n",time_taken_writing);
+                printf("Time spent communicating : %lf seconds.\n",time_spent_in_mpi);
             }
             #pragma omp barrier
             
@@ -965,6 +1140,15 @@ void AlgoElectro_NEW::update(
 
     memory = (8+8+8) * size;
     grid.profiler.removeMemoryUsage("BYTES",memory,"Algo_Free_E_z_coeffs");
+
+    for(unsigned int i = 0 ; i < NBR_FACES_CUBE ; i ++){
+        if(Electric_field_to_send[i] != NULL)
+            free(Electric_field_to_send[i]);
+        if(Electric_field_to_recv[i] != NULL)
+            free(Electric_field_to_recv[i]);
+    }
+    if(Electric_field_to_send != NULL){free(Electric_field_to_send);}
+    if(Electric_field_to_recv != NULL){free(Electric_field_to_recv);}
 
     // End clock for monitoring CPU time
     end___algo_update = omp_get_wtime();
@@ -2031,4 +2215,352 @@ void MPI_communication_with_neighboors(
         mpi_me
     );
 
+}
+
+
+
+void prepare_array_to_be_sent(
+                double ** Electric_field_to_send,
+                std::vector<size_t> &electric_field_sizes,
+                double *E_x,
+                double *E_y,
+                double *E_z,
+                int    *mpi_rank_neighboor,
+                std::vector<size_t> &size_faces
+            )
+{
+    /////////////////////////////////////////////////////////
+    /// CONVENTION FOR COMMUNICATION                      ///
+    /// 1) OMP thread(0) communicates with SOUTH. (face 0)///
+    /// 2) OMP thread(1) communicates with NORTH. (face 1)///
+    /// 3) OMP thread(2) communicates with WEST.  (face 2)///
+    /// 3) OMP thread(3) communicates with EAST.  (face 3)///
+    /// 4) OMP thread(4) communicates with DOWN.  (face 4)///
+    /// 5) OMP thread(5) communicates with UP.    (face 5)///
+    /////////////////////////////////////////////////////////
+
+    //if(direction == 'W'){
+    /// The W direction corresponds to (-y) axis. Denoted by face number 2 (numbering starting from 0).
+    if(mpi_rank_neighboor[2] != -1){
+        size_t index   = 0;
+        size_t counter = 0;
+        size_t counter_prev = 0;
+
+        /// Put E_x:
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2] ; k++){
+            for(size_t i = 0 ; i < electric_field_sizes[0] ; i++){
+                index      = i + electric_field_sizes[0] * ( 1 + electric_field_sizes[1] * k );
+                
+                counter = i + k*electric_field_sizes[0];
+
+                Electric_field_to_send[2][counter] = E_x[index];
+            }
+        }
+        /// Put E_y:
+        /// Offset due to already put inside the face[2]:
+        counter_prev = electric_field_sizes[0] * electric_field_sizes[2];
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2+3] ; k++){
+            for(size_t i = 0 ; i < electric_field_sizes[0+3] ; i++){
+                index = i + electric_field_sizes[0+3] * ( 1 + electric_field_sizes[1+3] * k );
+
+                counter = counter_prev + i + k * electric_field_sizes[0+3];
+
+                Electric_field_to_send[2][counter] = E_y[index];
+
+            }
+        }
+        /// Put E_z:
+        counter_prev += electric_field_sizes[0+3] * electric_field_sizes[2+3];
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2+2*3] ; k++){
+            for(size_t i = 0 ; i < electric_field_sizes[0+2*3] ; i++){
+                index = i + electric_field_sizes[0+2*3] * ( 1 + electric_field_sizes[1+2*3] * k);
+
+                counter = counter_prev + i + k * electric_field_sizes[0+2*3];
+
+                Electric_field_to_send[2][counter] = E_z[index];
+
+            }
+        }
+    }
+    //if(direction == 'E'){
+    /// The E direction corresponds to (+y) axis. Denoted by face number 3 (numbering starting from 0).
+    if(mpi_rank_neighboor[3] != -1){
+        size_t index   = 0;
+        size_t counter = 0;
+        size_t counter_prev = 0;
+
+        /// Put E_x:
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2] ; k++){
+            for(size_t i = 0 ; i < electric_field_sizes[0] ; i++){
+                /**
+                 * Attention, il faut absolument faire omp_sizes[1+3]-2 !!!!!
+                 * En fait, si on avait itér sur les j, on aurait fait:
+                 *      for(j = 1 ; j < omp_sizes[1+3]-1 ; j ++)
+                 *  donc j va de 1 à OMP_SIZES[1+3]-2 !!!
+                 */
+                index      = i + electric_field_sizes[0] * ( electric_field_sizes[1]-2 + electric_field_sizes[1] * k );
+
+                counter = i + k * electric_field_sizes[0];
+
+                Electric_field_to_send[3][counter] = E_x[index];
+
+            }
+        }
+        /// Put E_y:
+        counter_prev = electric_field_sizes[0] * electric_field_sizes[2];
+        #pragma omp for
+        for(size_t k = 0 ; k < electric_field_sizes[2+3] ; k++){
+            for(size_t i = 0 ; i < electric_field_sizes[0+3] ; i++){
+                /**
+                 * Attention, il faut absolument faire omp_sizes[1+3]-2 !!!!!
+                 * En fait, si on avait itér sur les j, on aurait fait:
+                 *      for(j = 1 ; j < omp_sizes[1+3]-1 ; j ++)
+                 *  donc j va de 1 à OMP_SIZES[1+3]-2 !!!
+                 */
+                index = i + electric_field_sizes[0+3] * ( electric_field_sizes[1+3]-2 + electric_field_sizes[1+3] * k );
+
+                counter = counter_prev + i + k * electric_field_sizes[0+3];
+
+                Electric_field_to_send[3][counter] = E_y[index];
+
+            }
+        }
+        /// Put E_z:
+        counter_prev += electric_field_sizes[0+3] * electric_field_sizes[2+3];
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2+2*3] ; k++){
+            for(size_t i = 0 ; i < electric_field_sizes[0+2*3] ; i++){
+                /**
+                 * Attention, il faut absolument faire omp_sizes[1+3]-2 !!!!!
+                 * En fait, si on avait itér sur les j, on aurait fait:
+                 *      for(j = 1 ; j < omp_sizes[1+3]-1 ; j ++)
+                 *  donc j va de 1 à OMP_SIZES[1+3]-2 !!!
+                 */
+                index = i + electric_field_sizes[0+2*3] * ( electric_field_sizes[1+2*3]-2 + electric_field_sizes[1+2*3] * k);
+
+                counter = counter_prev + i + k * electric_field_sizes[0+2*3];
+
+                Electric_field_to_send[3][counter] = E_z[index];
+
+            }
+        }
+    }
+    //if(direction == 'S'){
+    /// The S direction corresponds to (+x) axis. Denoted by face number 0 (numbering starting from 0).
+    if(mpi_rank_neighboor[0] != -1){
+        size_t index   = 0;
+        size_t counter = 0;
+        size_t counter_prev = 0;
+
+        /// Put E_x:
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2] ; k++){
+            for(size_t j = 0 ; j < electric_field_sizes[1] ; j++){
+                index      = electric_field_sizes[0]-2 + electric_field_sizes[0] * ( j + electric_field_sizes[1] * k );
+
+                counter = j + k * electric_field_sizes[1];
+
+                Electric_field_to_send[0][counter] = E_x[index];
+
+            }
+        }
+        /// Put E_y:
+        counter_prev = electric_field_sizes[1]*electric_field_sizes[2];
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2+3] ; k++){
+            for(size_t j = 0 ; j < electric_field_sizes[1+3] ; j++){
+                index = electric_field_sizes[0+3]-2 + electric_field_sizes[0+3] * ( j + electric_field_sizes[1+3] * k );
+
+                counter = counter_prev + j + k * electric_field_sizes[1+3];
+
+                Electric_field_to_send[0][counter] = E_y[index];
+
+            }
+        }
+        /// Put E_z:
+        counter_prev += electric_field_sizes[1+3] * electric_field_sizes[2+3];
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2+2*3] ; k++){
+            for(size_t j = 0 ; j < electric_field_sizes[1+2*3] ; j++){
+                index = electric_field_sizes[0+2*3]-2 + electric_field_sizes[0+2*3] * ( j + electric_field_sizes[1+2*3] * k);
+
+                counter = counter_prev + j + k * electric_field_sizes[1+6];
+
+                Electric_field_to_send[0][counter] = E_z[index];
+
+            }
+        }
+    }
+    //if(direction == 'N'){
+    /// The N direction corresponds to (-x) axis. Denoted by face number 1 (numbering starting from 0).
+    if(mpi_rank_neighboor[1] != -1){
+        size_t index   = 0;
+        size_t counter = 0;
+        size_t counter_prev = 0;
+
+        /// Put E_x:
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2] ; k++){
+            for(size_t j = 0 ; j < electric_field_sizes[1] ; j++){
+                index      = 1 + electric_field_sizes[0] * ( j + electric_field_sizes[1] * k );
+
+                counter = j + k * electric_field_sizes[1];
+                
+                Electric_field_to_send[1][counter] = E_x[index];
+
+            }
+        }
+        /// Put E_y:
+        counter_prev = electric_field_sizes[1] * electric_field_sizes[2];
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2+3] ; k++){
+            for(size_t j = 0 ; j < electric_field_sizes[1+3] ; j++){
+                index = 1 + electric_field_sizes[0+3] * ( j + electric_field_sizes[1+3] * k );
+
+                counter = counter_prev + j + k * electric_field_sizes[1+3];
+
+                Electric_field_to_send[1][counter] = E_y[index];
+
+            }
+        }
+        /// Put E_z:
+        counter_prev += electric_field_sizes[1+3]*electric_field_sizes[2+3];
+        #pragma omp for nowait
+        for(size_t k = 0 ; k < electric_field_sizes[2+2*3] ; k++){
+            for(size_t j = 0 ; j < electric_field_sizes[1+2*3] ; j++){
+                index = 1 + electric_field_sizes[0+2*3] * ( j + electric_field_sizes[1+2*3] * k);
+
+                counter = counter_prev + j + k * electric_field_sizes[1+6];
+
+                Electric_field_to_send[1][counter] = E_z[index];
+
+            }
+        }
+    }
+    //if(direction == 'U'){
+    /// The N direction corresponds to (+z) axis. Denoted by face number 5 (numbering starting from 0).
+    if(mpi_rank_neighboor[5] != -1){
+        size_t index   = 0;
+        size_t counter = 0;
+        size_t counter_prev = 0;
+
+        /// Put E_x:
+        #pragma omp for nowait
+        for(size_t j = 0 ; j < electric_field_sizes[1] ; j++){
+            for(size_t i = 0 ; i < electric_field_sizes[0] ; i++){
+                index      = i + electric_field_sizes[0] * ( j + electric_field_sizes[1] * (electric_field_sizes[2]-2) );
+                
+                counter = i + j * electric_field_sizes[0];
+
+                Electric_field_to_send[5][counter] = E_x[index];
+
+            }
+        }
+        /// Put E_y:
+        counter_prev = electric_field_sizes[0] * electric_field_sizes[1];
+        #pragma omp for nowait
+        for(size_t j = 0 ; j < electric_field_sizes[1+3] ; j++){
+            for(size_t i = 0 ; i < electric_field_sizes[0+3] ; i++){
+                index = i + electric_field_sizes[0+3] * ( j + electric_field_sizes[1+3] * (electric_field_sizes[2+3]-2) );
+
+                counter = counter_prev + i + j * electric_field_sizes[0+3];
+
+                Electric_field_to_send[5][counter] = E_y[index];
+
+            }
+        }
+        /// Put E_z:
+        counter_prev += electric_field_sizes[0+3] * electric_field_sizes[1+3];
+        #pragma omp for nowait
+        for(size_t j = 0 ; j < electric_field_sizes[1+2*3] ; j++){
+            for(size_t i = 0 ; i < electric_field_sizes[0+2*3] ; i++){
+                index = i + electric_field_sizes[0+2*3] * ( j + electric_field_sizes[1+2*3] * (electric_field_sizes[2+2*3]-2) );
+
+                counter = counter_prev + i + j * electric_field_sizes[0+6];
+
+                Electric_field_to_send[5][counter] = E_z[index];
+
+            }
+        }
+    }
+    //if(direction == 'D'){
+    /// The D direction corresponds to (-z) axis. Denoted by face number 4 (numbering starting from 0).
+    if(mpi_rank_neighboor[4] != -1){
+        size_t index   = 0;
+        size_t counter = 0;
+        size_t counter_prev = 0;
+
+        /// Put E_x:
+        #pragma omp for nowait
+        for(size_t j = 0 ; j < electric_field_sizes[1] ; j++){
+            for(size_t i = 0 ; i < electric_field_sizes[0] ; i++){
+                index      = i + electric_field_sizes[0] * ( j + electric_field_sizes[1] * (1) );
+                
+                counter = i + j * electric_field_sizes[0];
+
+                Electric_field_to_send[4][counter] = E_x[index];
+
+            }
+        }
+        /// Put E_y:
+        counter_prev = electric_field_sizes[0] * electric_field_sizes[1];
+        #pragma omp for nowait
+        for(size_t j = 0 ; j < electric_field_sizes[1+3] ; j++){
+            for(size_t i = 0 ; i < electric_field_sizes[0+3] ; i++){
+                index = i + electric_field_sizes[0+3] * ( j + electric_field_sizes[1+3] * (1) );
+
+                counter = counter_prev + i + j * electric_field_sizes[0+3];
+
+                Electric_field_to_send[4][counter] = E_y[index];
+
+            }
+        }
+        /// Put E_z:
+        counter_prev += electric_field_sizes[0+3] * electric_field_sizes[1+3];
+        #pragma omp for nowait
+        for(size_t j = 0 ; j < electric_field_sizes[1+2*3] ; j++){
+            for(size_t i = 0 ; i < electric_field_sizes[0+2*3] ; i++){
+                index = i + electric_field_sizes[0+2*3] * ( j + electric_field_sizes[1+2*3] * (1) );
+
+                counter = counter_prev + i + j * electric_field_sizes[0+6];
+
+                Electric_field_to_send[4][counter] = E_z[index];
+
+            }
+        }
+    }
+}
+            
+void use_received_array(
+                double **Electric_field_to_recv,
+                std::vector<size_t> &electric_field_sizes,
+                double *E_x,
+                double *E_y,
+                double *E_z
+            )
+{
+
+}
+
+void communicate_single_omp_thread(
+                double **Electric_field_to_send,
+                double **Electric_field_to_recv,
+                std::vector<size_t> &electric_field_sizes,
+                int *mpi_to_who
+            )
+{
+    if(omp_get_thread_num() != 0){
+        fprintf(stderr,"In %s :: only the master OMP thread can accessthis function ! Aborting.\n",
+            __FUNCTION__);
+        fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+        #ifdef MPI_COMM_WORLD
+        MPI_Abort(MPI_COMM_WORLD,-1);
+        #else
+        abort();
+        #endif
+    }
 }
