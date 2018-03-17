@@ -4,6 +4,9 @@
 #define SETONCEVARIABLE_TEMPLATE_H
 
 #include <iostream>
+#include <typeinfo>
+#include "stdio.h"
+#include "stdlib.h>"
 
 template<typename T>
 class SetOnceVariable_Template{
@@ -16,9 +19,7 @@ class SetOnceVariable_Template{
 		// Constructor:
 		SetOnceVariable_Template(T init){
 			this->value = init;
-			std::cout << "\n\n\tCoucou ça plante !!!!!\n\n\n";
 			this->alreadySet = true;
-			std::cout << "ça n'a pas planté " << std::endl;
 		};
 		// Destructor:
 		~SetOnceVariable_Template(void){};
@@ -27,6 +28,12 @@ class SetOnceVariable_Template{
 			if(this->alreadySet == false){
 				this->value = value;
 				this->alreadySet = true;
+			}else{
+				fprintf(stderr,"In %s :: %s :: variable has already been set. Aborting.\n",
+					typeid(this).name().c_str(),
+					__FUNCTION__);
+				fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
+				abort();
 			}
 			return *this;
 		}
