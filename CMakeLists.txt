@@ -7,7 +7,7 @@ include(CheckCXXCompilerFlag)
 set(EXEC_NAME main)
 
 IF(NOT CMAKE_BUILD_TYPE)
-    SET( CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+    #SET( CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
 check_cxx_compiler_flag("-std=c++11" STDCXX11)
@@ -18,7 +18,7 @@ check_cxx_compiler_flag("-std=c++11" STDCXX11)
 # ADDING OPTIMIZATION:
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Ofast -Wall -Wextra")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frerun-loop-opt -fexpensive-optimizations")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdelayed-branch -funroll-loops")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -funroll-loops")
 
 # ADDING WARNINGS
 if(MSVC)

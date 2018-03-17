@@ -314,28 +314,22 @@ void GridCreator_NEW::meshInitialization(void){
 
     /* ALLOCATE SPACE FOR THE ELECTRIC FIELDS */
 
+    size_t REMOVE_ONE = 1;
+
     // Size of E_x is  (M − 1) × N × P. Add 2 nodes in each direction for the neighboors.
 
     if(this->MPI_communicator.must_add_one_to_E_X_along_XYZ[0] == true){
-        this->size_Ex[0] = M + 2 - 1;
+        this->size_Ex[0] = M + 2 - REMOVE_ONE;
     }else{
         this->size_Ex[0] = M + 2;
     }
     if(this->MPI_communicator.must_add_one_to_E_X_along_XYZ[1] == true){
-        this->size_Ex[1] = N + 2 - 1;
-        if(this->MPI_communicator.getRank() == 1){
-            printf("\n\n******************TA MEREEEEEEEE***************\n\n");
-            abort();
-        }
+        this->size_Ex[1] = N + 2 - REMOVE_ONE;
     }else{
-        this->size_Ex[1] = N + 2;
-        
-        printf("\n\n******************TA MEREEEEEEEE (MPI %d, N = %zu)***************\n\n",
-                this->MPI_communicator.getRank(),N);
-        
+        this->size_Ex[1] = N + 2;        
     }
     if(this->MPI_communicator.must_add_one_to_E_X_along_XYZ[2] == true){
-        this->size_Ex[2] = P + 2 - 1;
+        this->size_Ex[2] = P + 2 - REMOVE_ONE;
     }else{
         this->size_Ex[2] = P + 2;
     }
@@ -352,19 +346,19 @@ void GridCreator_NEW::meshInitialization(void){
 
     // Size of E_y is  M × (N − 1) × P. Add 2 nodes in each direction for the neighboors.
     if(this->MPI_communicator.must_add_one_to_E_Y_along_XYZ[0] == true){
-        this->size_Ey[0] = M + 2 - 1;
+        this->size_Ey[0] = M + 2 - REMOVE_ONE;
     }else{
         this->size_Ey[0] = M + 2;
     }
 
     if(this->MPI_communicator.must_add_one_to_E_Y_along_XYZ[1] == true){
-        this->size_Ey[1] = N + 2 - 1;
+        this->size_Ey[1] = N + 2 - REMOVE_ONE;
     }else{
         this->size_Ey[1] = N + 2;
     }
 
     if(this->MPI_communicator.must_add_one_to_E_Y_along_XYZ[2] == true){
-        this->size_Ey[2] = P + 2 - 1;
+        this->size_Ey[2] = P + 2 - REMOVE_ONE;
     }else{
         this->size_Ey[2] = P + 2;
     }
@@ -385,19 +379,19 @@ void GridCreator_NEW::meshInitialization(void){
     // Size of E_z is  M × N × (P − 1). Add 2 nodes in each direction for the neighboors.
 
     if(this->MPI_communicator.must_add_one_to_E_Z_along_XYZ[0] == true){
-        this->size_Ez[0] = M + 2 - 1;
+        this->size_Ez[0] = M + 2 - REMOVE_ONE;
     }else{
         this->size_Ez[0] = M + 2;
     }
 
     if(this->MPI_communicator.must_add_one_to_E_Z_along_XYZ[1] == true){
-        this->size_Ez[1] = N + 2 - 1;
+        this->size_Ez[1] = N + 2 - REMOVE_ONE;
     }else{
         this->size_Ez[1] = N + 2;
     }
 
     if(this->MPI_communicator.must_add_one_to_E_Z_along_XYZ[2] == true){
-        this->size_Ez[2] = P + 2 - 1;
+        this->size_Ez[2] = P + 2 - REMOVE_ONE;
     }else{
         this->size_Ez[2] = P + 2;
     }
@@ -415,8 +409,6 @@ void GridCreator_NEW::meshInitialization(void){
     /* ALLOCATE SPACE FOR THE MAGNETIC FIELDS */
 
     // Size of H_x is  M × (N − 1) × (P − 1). Add 2 nodes in each direction for the neighboors.
-
-    size_t REMOVE_ONE = 1 ;
 
     if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[0] == true){
         this->size_Hx[0] = M - REMOVE_ONE;

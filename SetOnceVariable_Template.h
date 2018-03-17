@@ -5,8 +5,8 @@
 
 #include <iostream>
 #include <typeinfo>
-#include "stdio.h"
-#include "stdlib.h>"
+#include <stdio.h>
+#include <stdlib.h>
 
 template<typename T>
 class SetOnceVariable_Template{
@@ -30,7 +30,7 @@ class SetOnceVariable_Template{
 				this->alreadySet = true;
 			}else{
 				fprintf(stderr,"In %s :: %s :: variable has already been set. Aborting.\n",
-					typeid(this).name().c_str(),
+					typeid(this).name(),
 					__FUNCTION__);
 				fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
 				abort();

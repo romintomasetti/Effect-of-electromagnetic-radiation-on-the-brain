@@ -27,6 +27,11 @@ class MPI_Initializer{
 		// Number of MPI processes:
 		SetOnceVariable_Template<int> number_of_MPI_Processes;
 	public:
+		/// Get provided thread support:
+		int get_provided_thread_support(void){
+			return this->provided.get();
+		}
+		/// Definition of the root process rank:
 		const int rootProcess = ROOT_PROCESSOR;
 		// Rank of the MPI neighboors:
 		int RankNeighbour[6];

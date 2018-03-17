@@ -854,18 +854,21 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!! NTP !!! RankNeighbour x: " <<this->RankNeighbour[0] << " ; " <<this->RankNeighbour[1] << endl;
 		}
 		else{
+			/// First MPI process along X direction:
 			if(PositionOnX == 0)
 			{
-				this->RankNeighbour[0] = -1;
-				this->RankNeighbour[1] = myRank + 1;
+				/// South neighboor:
+				this->RankNeighbour[0] = myRank + 1;
+				this->RankNeighbour[1] = -1;
 				
 				cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!! NTM !!! RankNeighbour x: " <<this->RankNeighbour[0] << " ; " <<this->RankNeighbour[1] << endl;
 
 			}
+			/// Last MPI process along X direction:
 			else if(PositionOnX == nbProc/2 -1)
 			{
-				this->RankNeighbour[0] = myRank-1;
-				this->RankNeighbour[1] = -1;
+				this->RankNeighbour[0] = -1;
+				this->RankNeighbour[1] =  myRank-1;
 				cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!!RankNeighbour x: " <<this->RankNeighbour[0] << " ; "<<this->RankNeighbour[1] << endl;	
 			}
 			else

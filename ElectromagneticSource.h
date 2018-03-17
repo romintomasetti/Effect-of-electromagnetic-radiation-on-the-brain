@@ -51,7 +51,7 @@ class ElectromagneticSource{
 		std::vector<double> centerZ;
 		std::vector<double> frequency;
 
-		std::vector< SetOnceVariable_Template<double> > airgap;
+		std::vector<double> airgap;
 
 
 		void set_number_of_sources(const unsigned int);

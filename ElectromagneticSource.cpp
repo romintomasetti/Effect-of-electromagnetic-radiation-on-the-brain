@@ -184,11 +184,11 @@ void ElectromagneticSource::computeNodesInsideSource(const double L_dom_X,
 
 	this->nbrNodeCorner1_Airgap_X[i] = (size_t) (this->centerX[i] - this->lengthX[i] / 2) / deltaX +1;
 	this->nbrNodeCorner1_Airgap_Y[i] = (size_t) (this->centerY[i] - this->lengthY[i] / 2) / deltaY +1;
-	this->nbrNodeCorner1_Airgap_Z[i] = (size_t) (this->centerZ[i] - this->airgap[i].get() / 2) / deltaZ +1;
+	this->nbrNodeCorner1_Airgap_Z[i] = (size_t) (this->centerZ[i] - this->airgap[i] / 2) / deltaZ +1;
 
 	this->nodesInsideAlong_Airgap_X[i] = (size_t) this->lengthX[i] / deltaX + 1;
 	this->nodesInsideAlong_Airgap_Y[i] = (size_t) this->lengthY[i] / deltaY + 1;
-	this->nodesInsideAlong_Airgap_Z[i] = (size_t) this->airgap[i].get() / deltaZ + 1;
+	this->nodesInsideAlong_Airgap_Z[i] = (size_t) this->airgap[i] / deltaZ + 1;
 
 
 
