@@ -1386,10 +1386,14 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
                             }
                             // The node is inside the source !!!
                             // 0 corresponds to Ex.
+
                             numbers_for_nodes[omp_get_thread_num()].push_back(
                                 I + SIZES_PRIVATE[0] * ( J + SIZES_PRIVATE[1] * K)
                             );
+
                             ID_for_nodes[omp_get_thread_num()].push_back((unsigned char)id);
+
+                            
                         }
                     }
                 }

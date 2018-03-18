@@ -42,17 +42,17 @@ void check_omp_nested_enabled(void){
 	if(const char *omp_dynamic_env = std::getenv("OMP_NESTED")){
 		// Already declared. Check it is false.
 		if(std::strcmp(omp_dynamic_env,"true") == 0){
-			printf("OMP_NESTED=%s.\n",std::getenv("OMP_NESTED"));
+			//printf("OMP_NESTED=%s.\n",std::getenv("OMP_NESTED"));
 		}else{
 			std::string set_env = "OMP_NESTED=true";
 			putenv(&set_env[0]);
-			printf("OMP_NESTED=%s.\n",std::getenv("OMP_NESTED"));
+			//printf("OMP_NESTED=%s.\n",std::getenv("OMP_NESTED"));
 		}
 	}else{
 		// OMP_DYNAMIC was not declared. Declare it.
 		std::string set_env = "OMP_NESTED=true";
 		putenv(&set_env[0]);
-		printf("OMP_NESTED=%s.\n",std::getenv("OMP_NESTED"));
+		//printf("OMP_NESTED=%s.\n",std::getenv("OMP_NESTED"));
 	}
 }
 
