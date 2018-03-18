@@ -148,7 +148,6 @@ class GridCreator_NEW{
                 std::vector<size_t>        &local_nodes_inside_source_NUMBER,
                 std::vector<unsigned char> &ID_Source,
                 std::vector<double>        &local_nodes_inside_source_FREQ,
-                size_t                     *nbr_nodes_inside_source,
                 const std::string          &TYPE_OF_FIELD
             );
 };

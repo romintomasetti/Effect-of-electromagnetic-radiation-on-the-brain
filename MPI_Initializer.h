@@ -60,7 +60,6 @@ class MPI_Initializer{
 
 		void MPI_DIVISION(GridCreator_NEW & /*subgrid*/);
 
-		bool SendDataToNeighboor(double *,size_t,unsigned char);
 
 		//////////////////////////////////////////////////////
 		/// TO WRITE OUTPUT FILES, WE'LL NEED MPI POSITION ///

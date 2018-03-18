@@ -55,41 +55,13 @@
 
 using namespace std;
 
-/*
- * Questions pour Boman:
- * 	1) Utiliser double *values ou vector<double>
- * 	2) Utiliser get_value ou bien passer values en public pour faire values[...] -> Rapidité ??
- */
-
-
-
 
 
 int main(int argc, char *argv[]){
 
-	//////////////////
-	/**
-	 * Super important for speed of output writing !
-	 */
 	omp_set_nested(1);
-	//////////////////
-
-	/* SET OMP_DYNAMIC */
-	if(const char *omp_dynamic_env = std::getenv("OMP_DYNAMIC")){
-		// Already declared. Check it is false.
-		if(std::strcmp(omp_dynamic_env,"false") == 0){
-			printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
-		}else{
-			std::string set_env = "OMP_DYNAMIC=false";
-			putenv(&set_env[0]);
-			printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
-		}
-	}else{
-		// OMP_DYNAMIC was not declared. Declare it.
-		std::string set_env = "OMP_DYNAMIC=false";
-		putenv(&set_env[0]);
-		printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
-	}
+	omp_set_dynamic(0);
+	
 
 	ProfilingClass profiler;
 
@@ -109,16 +81,11 @@ int main(int argc, char *argv[]){
 	cout << allMat.getProperty(25.,0,1) << endl;
 
 	
-	/* Small OPENMP example */
-	if(PARALLELISM_OMP_ENABLED)
-		cout << "OMP enabled.\n";
-	
-	omp_set_num_threads(6);
-	
 	cout << "Calling input file parser...\n";
 	string filenameInput = "TESTS/testSourceCenteredInCube.input";
 	InputParser input_parser;
-	input_parser.defaultParsingFromFile(filenameInput);
+	int MPI_RANK = MPI_communicator.getRank();
+	input_parser.defaultParsingFromFile(filenameInput,MPI_RANK);
 	cout << "INPUT PARSER HAS FINISHED HIS JOBS." << endl;
 
 	

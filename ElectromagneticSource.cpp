@@ -416,9 +416,6 @@ bool ElectromagneticSource::is_inside_source_Romin(
 	double Y_coord = -1.0;
 	double Z_coord = -1.0;
 
-	size_t I_shift = 0;
-	size_t J_shift = 0;
-
 	if(type == "Ex"){
 		// The node is of part of the electric field's X component.
 		// Shift for this type of node is deltaX along X.

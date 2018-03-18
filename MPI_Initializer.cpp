@@ -424,14 +424,6 @@ void MPI_Initializer::MpiDivision(GridCreator &subGrid){
 
 }
 
-bool MPI_Initializer::SendDataToNeighboor(double *vectorToSend,
-										  size_t lengthToSend,
-										  unsigned char direction){
-	// We can communicate in 6 directions
-	// By default, it is assumed that everything worked fine.
-	// Thus, return true.
-	return true;
-}
 
 void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 	
@@ -480,21 +472,6 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 
 	// Cubic case
 	if(N*N*N == nbProc){
-
-		/**
-		 * 1) For the X component of the electric field, if I am not the last MPI process along the 
-		 * 		X direction, add one node to E_x in the X direction.
-		 * 2) For the Y component of the electric field, add one node in the Y direction if I am
-		 * 		*NOT* the last MPI process in the Y direction.
-		 * 3) For the Z component of the electric field, if I am not the last MPI process along the
-		 * 		Z direction, add one node to E_z along Z.
-		 * 4) For the X component of the magnetic field, add one node along Y and Z if the MPI process
-		 * 		is not the last one along Y or Z, respectively.
-		 * 5) For the Y component of the magnetic field, if I am not the last MPI process in the 
-		 * 		X or Z direction, add one node in the X or Z direction, respectively.
-		 * 6) For the Z component of the magnetic field, if I am not the last MPI process in the
-		 * 		X or Y direction, add one node in the X or Y direction, respectively.
-		 */
 
 		/* myRank%N gives the current position on the x-axis */
 		/* (((int)(myRank/N) - (int) (myRank/(N*N))*N )) gives the current position on the y-axis */
@@ -614,18 +591,18 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		/* We do the x component */
 			if(PositionOnX == 0)
 			{
-				this->RankNeighbour[0] = -1;
-				this->RankNeighbour[1] = myRank+1;
+				this->RankNeighbour[0] = myRank+1;
+				this->RankNeighbour[1] = -1;
 			}
 			else if(PositionOnX == N-1)
 			{
-				this->RankNeighbour[0] = myRank-1;
-				this->RankNeighbour[1] = -1;
+				this->RankNeighbour[0] = -1;
+				this->RankNeighbour[1] = myRank-1;
 			}
 			else
 			{
-				this->RankNeighbour[0] = myRank-1;
-				this->RankNeighbour[1] = myRank+1;
+				this->RankNeighbour[0] = myRank+1;
+				this->RankNeighbour[1] = myRank-1;
 			}
 
 			/* We do the y component */
