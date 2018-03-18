@@ -6,12 +6,18 @@
 $INFOS
 	$NAME
 		// Output file for fields:
-		output=OUTPUT_FILES
+		output=RESULTS/OUTPUT_FILES
 		// Error log file:
 		error=ERROR_LOG
 		// Profiling (cpu time, memory, etc):
 		profile=PROFILING
 	$NAME
+
+	$REMOVE_EXISTING_FILES
+		// Specify if old .pvti and .vti files must be deleted prior to any computation:
+		remove_vti=true
+		remove_pvti=true
+	$REMOVE_EXISTING_FILES
 $INFOS
 
 $MESH
@@ -30,8 +36,8 @@ $MESH
 		deltaX_Electro=0.01
 		deltaY_Electro=0.01
 		deltaZ_Electro=0.01
-		delta_Thermal=0.1
-		ratio_EM_TH_delta=0.1
+		delta_Thermal=0.01
+		ratio_EM_TH_delta=1
 	$DELTAS
 		
 	// Boundaries of the domain
@@ -49,11 +55,11 @@ $MESH
 	$SOURCE
 		NBR_SOURCES=1
 		// Length of the source in each direction
-		L_X=0.2
-		L_Y=0.2
-		L_Z=0.2
+		L_X=0.1
+		L_Y=0.1
+		L_Z=0.1
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=0.5
+		C_X=0.3
 		C_Y=0.5
 		C_Z=0.5
 		// Frequency [Hz]
@@ -75,7 +81,7 @@ $MESH
 					in each components of the electric field
 				    3) H=GLOBAL puts the indices I J K globals
 					in each components of the magnetic field*/
-		//TEST_PARAVIEW_MPI=(TEMP=RANK,E=GLOBAL,H=GLOBAL)
+		//TEST_PARAVIEW_MPI=(TEMP=RANK,E=RANK,H=RANK)
 	$MATERIALS
 	
 $MESH
