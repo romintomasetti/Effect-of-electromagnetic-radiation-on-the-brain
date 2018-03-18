@@ -871,8 +871,8 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			}
 			else
 			{
-				this->RankNeighbour[0] = myRank-1;
-				this->RankNeighbour[1] = myRank+1;
+				this->RankNeighbour[0] = myRank+1;
+				this->RankNeighbour[1] = myRank-1;
 				cout << myRank<< "!!!!!!!!!!!!!!!!!!!!!!RankNeighbour x: " <<this->RankNeighbour[0] << " ; "<<this->RankNeighbour[1] << endl;
 			}
 		}
