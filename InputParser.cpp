@@ -20,6 +20,7 @@ stringDollar_Header1 InputParser::hashit_Header1 (std::string const& inString) {
 }
 stringDollar_Header2 InputParser::hashit_Header2 (std::string const& inString) {
     if (inString == "NAME") return NAME;
+	if (inString == "REMOVE_EXISTING_FILES") return REMOVE_EXISTING_FILES;
     if (inString == "DELTAS") return DELTAS;
     if (inString == "DOMAIN_SIZE") return DOMAIN_SIZE;
 	if (inString == "SOURCE") return SOURCE;
@@ -303,6 +304,47 @@ void InputParser::readHeader_INFOS(ifstream &file){
 					this->outputNames[propName] = propGiven;
 				}
 				break;
+
+			case REMOVE_EXISTING_FILES:
+				cout << "Entering case REMOVE_EXISTING_FILES\n";
+				while(!file.eof()){
+					// Note: sections are ended by $the-section-name.
+					getline(file,currentLine);
+					this->checkLineISNotComment(file,currentLine);
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+					cout << currentLine << endl;
+					if(currentLine == "$REMOVE_EXISTING_FILES"){
+						cout << "EXITING REMOVE_EXISTING_FILES\n";
+						break;
+					}
+					if(currentLine == string()){continue;}
+					std::size_t posEqual  = currentLine.find("=");
+					std::string propName  = currentLine.substr(0,posEqual); 
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+					
+					if(propName == "remove_vti" || propName == "remove_pvti"){
+						bool propGiven_bool = false;
+						(propGiven == "true") ? propGiven_bool = true : propGiven_bool = false;
+
+						this->removeWhat_dico.insert(
+							 std::pair<std::string,bool>(propName,propGiven_bool)
+						);
+
+					}else{
+						fprintf(stderr,"In %s :: REMOVE_EXISTING_FILES :: wrong property name. Aborting.\n",
+							__FUNCTION__);
+						fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+						#ifdef MPI_COMM_WORLD
+						MPI_Abort(MPI_COMM_WORLD,-1);
+						#else
+						abort();
+						#endif
+					}
+
+					this->outputNames[propName] = propGiven;
+				}
+				break;
+
 			default:
 				printf("Should not end up here. Complain to Romin. Abort.");
 				printf("(in file %s at %d)\n",__FILE__,__LINE__);

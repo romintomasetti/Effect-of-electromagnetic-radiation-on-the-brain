@@ -23,6 +23,7 @@ enum stringDollar_Header1{
 };
 enum stringDollar_Header2{
 	NAME,
+	REMOVE_EXISTING_FILES,
 	DELTAS,
 	DOMAIN_SIZE,
 	SOURCE,
@@ -75,6 +76,9 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
+
+		// Dictionary for delete operations before computing anything:
+		map<std::string,bool> removeWhat_dico;
 
 		// Origin of the grids:
 		std::vector<double> origin_Electro_grid = {0,0,0};
