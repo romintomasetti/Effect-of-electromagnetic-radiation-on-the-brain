@@ -13,6 +13,20 @@
 #define TAG_NP1_THERMAL 22
 #define TAG_NP2_THERMAL 23
 
+// Include some libraries for directory support:
+#ifdef _WIN32
+#include <direct.h>
+// MSDN recommends against using getcwd & chdir names
+#define cwd _getcwd
+#define cd _chdir
+#else
+#include "unistd.h"
+#define cwd getcwd
+#define cd chdir
+#endif
+
+#include<sys/stat.h>
+
 /**
  * 
  * @brief Initialize all the grid fields via MPI communication.
@@ -280,6 +294,69 @@ void InterfaceToParaviewer::initializeAll(void){
 }
 
 /**
+ * @brief This function returns a folder name contained inside a string and the output file's name.
+ */
+std::vector<std::string> get_folder_from_name(std::string outputName){
+    
+    // First element is the folder name, second is the file name.
+    std::vector<std::string> returned_folder_name = {string(),outputName};
+
+    if(outputName.find('/') != std::string::npos){
+        /* The output name specifies an output folder name */
+
+        // Folder name:
+        returned_folder_name[0] = outputName.substr(0,outputName.find('/'));
+
+        // File name:
+        returned_folder_name[1] = outputName.substr(outputName.find('/')+1);
+    }
+
+    return returned_folder_name;
+}
+
+/**
+ * @brief This function creates the gien folder and goes into it (changes the current working directory).
+ * 
+ *  It also returns the parent folder's name.
+ */
+std::string create_folder_and_go_in(std::string folderName){
+
+    char buf[4096];
+
+    // Get current working directory:
+    std::string currentWorkingDir = cwd(buf, sizeof buf);
+
+    printf("Current working directory is %s.\n",currentWorkingDir.c_str());
+
+    // Try to go into 'folderName' directory:
+    if (0 == cd(folderName.c_str())) {
+      std::cout << "CWD changed to: " << cwd(buf, sizeof buf) << std::endl;
+    }else{
+        printf("Must create the directory %s...\n",folderName.c_str());
+        #if defined(_WIN32)
+            _mkdir(folderName.c_str());
+        #else 
+            mkdir(folderName.c_str(), 0700); 
+        #endif
+        if(0 == cd(folderName.c_str())){
+            std::cout << "CWD changed to: " << cwd(buf, sizeof(buf)) << std::endl;
+        }else{
+            fprintf(stderr,"In %s :: Cannot create/change directory %s !\n",__FUNCTION__,folderName.c_str());
+            fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+            #ifdef MPI_COMM_WORLD
+                MPI_Abort(MPI_COMM_WORLD,-1);
+            #else
+                abort();
+            #endif
+        }
+	}
+
+    return currentWorkingDir;
+
+}
+
+
+/**
  * 
  * @brief Write the desired data to ouput files via vtl.
  * 
@@ -302,7 +379,18 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
         outputName = outputFileNames["output"];
     }
 
-    cout << "Output VTK files will be named by " + outputName << endl;
+    /// Determine if the output files should be stored in a folder:
+    std::vector<std::string> folderAndFileNames = get_folder_from_name(outputName);
+
+    outputName = folderAndFileNames[1];
+
+    // Will contain the current folder:
+    std::string parentFolder = string();
+
+    if(folderAndFileNames[0] != std::string()){
+        /* A folder name was specified, go into it !*/
+        parentFolder = create_folder_and_go_in(folderAndFileNames[0]);
+    }
 
     /* DETERMINE WHICH GRID TO SAVE */
     if(strcmp(type.c_str(),"THERMAL") == 0){
@@ -434,4 +522,16 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
     }
 
     cout << "WRITING DONE (MPI " << this->MPI_communicator.getRank() << endl;
+
+    /// Revert to parent working directory:
+    if( 0 != cd(parentFolder.c_str())){
+        fprintf(stderr,"In %s :: could not revert to parent directory %s. Aborting.\n",
+            __FUNCTION__,parentFolder.c_str());
+        fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+        #ifdef MPI_COMM_WORLD
+            MPI_Abort(MPI_COMM_WORLD,-1);
+        #else
+            abort();
+        #endif
+    }
 }
