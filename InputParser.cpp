@@ -7,6 +7,84 @@
 
 #include <cmath>
 
+#include <dirent.h>
+#include <fstream>
+
+void removeFilesOfDirectory(std::string directoryOutputFiles, std::string extension){
+
+	DIR *dir;
+	struct dirent *ent;
+
+	if(directoryOutputFiles != std::string()){
+		if ((dir = opendir (directoryOutputFiles.c_str())) != NULL) {
+			while ((ent = readdir (dir)) != NULL) {
+				std::string fileName = ent->d_name;
+				std::string fileExt  = fileName.substr(fileName.find('.')+1);
+				if(fileExt == extension){
+					printf ("%s has extension %s (will be deleted)\n", 
+						ent->d_name,
+						fileExt.c_str());
+					std::remove( (directoryOutputFiles + "/" + fileName).c_str() );
+				}else{
+					printf ("%s has extension %s (will *NOT* be deleted)\n", 
+						ent->d_name,
+						fileExt.c_str());
+				}
+  			}
+			closedir (dir);
+		} else {
+			fprintf(stderr,"In %s :: could not open directory (%s) to delete %s files. Aborting.\n",
+				__FUNCTION__,directoryOutputFiles.c_str(),extension.c_str());
+			fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+			#ifdef MPI_COMM_WORLD
+				MPI_Abort(MPI_COMM_WORLD,-1);
+			#else
+				abort();
+			#endif
+		}
+	}
+}
+
+/**
+ * @brief This function returns a folder name contained inside a string and the output file's name.
+ */
+std::vector<std::string> get_folder_from_name_parser(std::string outputName){
+    
+    // First element is the folder name, second is the file name.
+    std::vector<std::string> returned_folder_name = {std::string(),outputName};
+
+    if(outputName.find('/') != std::string::npos){
+        /* The output name specifies an output folder name */
+
+        // Folder name:
+        returned_folder_name[0] = outputName.substr(0,outputName.find('/'));
+
+        // File name:
+        returned_folder_name[1] = outputName.substr(outputName.find('/')+1);
+    }
+
+    return returned_folder_name;
+}
+
+/// Check if we must delete the output files (vti and pvti):
+void InputParser::deleteFiles(void){
+	std::vector<std::string> to_be_removed = {"remove_pvti","remove_vti"};
+	for(size_t it = 0 ; it < to_be_removed.size() ; it++){
+		if ( this->removeWhat_dico.find(to_be_removed[it]) == this->removeWhat_dico.end() ) {
+			// Not found, meaning not specified, do nothing.
+		} else {
+			if(this->removeWhat_dico[to_be_removed[it]] == true){
+				std::string extension = to_be_removed[it];
+				extension = extension.substr(extension.find('_')+1);
+				std::string directoryOutputFiles 
+					= get_folder_from_name_parser(this->outputNames["output"])[0];
+				removeFilesOfDirectory(directoryOutputFiles,extension);
+			}
+		}
+	}
+	abort();
+}
+
 
 // Small enums for the dollar strings (see InputParser::readHeader)
 stringDollar_Header1 InputParser::hashit_Header1 (std::string const& inString) {
@@ -98,6 +176,8 @@ void InputParser::defaultParsingFromFile(void){
 		// Go to the parsing function:
 		this->basicParsing(this->filename);
 	}
+
+	this->deleteFiles();
 }
 
 void InputParser::defaultParsingFromFile(string filename){
@@ -113,6 +193,8 @@ void InputParser::defaultParsingFromFile(string filename){
 	}
 	// Go to the parsing function:
 	this->basicParsing(filename);
+
+	this->deleteFiles();
 }
 
 bool InputParser::is_file_exist(const string fileName){
