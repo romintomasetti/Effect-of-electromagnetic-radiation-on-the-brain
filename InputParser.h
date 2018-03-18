@@ -38,9 +38,9 @@ class InputParser{
 		// File name of the input file. Should be a .input file.
 		string filename;
 		// Check a file exists:
-		bool is_file_exist(const string filename);
+		bool is_file_exist(const string &filename);
 		// Parsing function:
-		void basicParsing(const string filename);
+		void basicParsing(const string &filename);
 		// Check that the line is not a comment:
 		bool checkLineISNotComment(ifstream &, string &);
 		// Read header 1:
@@ -107,9 +107,9 @@ class InputParser{
 		~InputParser(void){};
 		
 		// Default parser, using the field 'filename' of the class:
-		void defaultParsingFromFile(void);
+		void defaultParsingFromFile(int MPI_RANK = 0);
 		// Parser:
-		void defaultParsingFromFile(string filename);
+		void defaultParsingFromFile(std::string &filename,int MPI_RANK = 0);
 		// Get lengths
 		double get_length_WholeDomain(
 			unsigned int /*DIRECTION 0, 1 or 2*/,
@@ -152,7 +152,7 @@ class InputParser{
 
 		std::map<std::string,std::string> TEST_PARAVIEW_MPI_ARGS;
 
-		void deleteFiles(void);
+		void deleteFiles(int MPI_RANK = 0);
 };
 
 #endif
