@@ -82,7 +82,6 @@ void InputParser::deleteFiles(void){
 			}
 		}
 	}
-	abort();
 }
 
 
