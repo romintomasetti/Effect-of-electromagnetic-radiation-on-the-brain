@@ -15,9 +15,6 @@
 
 using namespace std;
 
-/**
- * @brief This function reads the geometry file provided as an argument.
- */
 unsigned int* read_input_geometry_file(std::string filename){
 
 	ifstream geoFile(filename.c_str());
@@ -42,15 +39,21 @@ unsigned int* read_input_geometry_file(std::string filename){
 			/// Read the line and add the numbers:
 			stringstream iss( line );
 			unsigned int number;
-			while ( iss >> number )
+			while ( iss >> number ){
   				vector.push_back( number );
+			}
 		}		
 	}
 
 	
-	geoFile.close();	
+	geoFile.close();
 
-	return &vector[0];
+
+	unsigned int* vector_to_return = (unsigned int*) calloc(vector.size(),sizeof(unsigned int));
+	for(size_t K = 0 ; K < vector.size() ; K++)
+		vector_to_return[K] = vector[K];
+
+	return vector_to_return;
 }
 
 #endif

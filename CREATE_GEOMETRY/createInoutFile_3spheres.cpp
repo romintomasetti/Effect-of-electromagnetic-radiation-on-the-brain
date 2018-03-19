@@ -127,7 +127,7 @@ int main(int argc, char *argv[]){
 					value = 0;
 				}
 
-				fprintf(output,"%d",value);
+				fprintf(output,"%d ",value);
 
 			}
 			fprintf(output,"\n");
@@ -138,6 +138,23 @@ int main(int argc, char *argv[]){
 	/// Close the file:
 	fclose(output);
 	printf(">>> File %s is now closed... You can use your new geometry input file !\n",output_name.c_str());
+
+	/// Read the file and put it inside a vector:
+	unsigned int* material_at_nodes = read_input_geometry_file(output_name);
+	printf(">>> DONE!\n");
+
+	size_t counter = 0;
+
+	for(size_t K = 0 ; K < nodes_Z ; K ++){
+		for(size_t J = 0 ; J < nodes_Y ; J ++){
+			for(size_t I = 0 ; I < nodes_X ; I ++){
+				printf("%d ",material_at_nodes[counter]);
+				counter++;
+			}
+			printf("\n");
+		}
+		printf("\n");
+	}
 
 	/// Exit the program:
 	return EXIT_SUCCESS;
