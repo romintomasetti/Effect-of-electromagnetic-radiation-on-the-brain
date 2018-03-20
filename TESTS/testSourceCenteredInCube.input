@@ -66,6 +66,15 @@ $MESH
 		FRQCY=900E6
 		// Air gap (in meter)
 		AIR_GAP=1
+		/* Tell what is imposed and how.
+			Working principle:
+				You want to impose 2 sources.
+				In the first one,  you impose Ex=Ey=0 and Ez=sin wave. You don't touch H components.
+				In the second one, you impose Ey=1, nothing on Ex and Ez and only Hx is vanishing.
+				You should then write:
+				{[Ex=0,Ey=0,Ez=SIN],[Hx==,Hy==,Hz==]};{[Ex==,Ey=1,Ez==],[Hx=0,Hy==,Hz==]}
+				One thus understands that '==' means 'do nothing' 	*/
+		//IMPOSED={[EX=0;EY=0;EZ=SIN],[HX==,HY==,HZ==]}
 	$SOURCE
 	
 	$MATERIALS
@@ -87,11 +96,22 @@ $MESH
 $MESH
 
 $RUN_INFOS
+
+	$TIME_STEP
+		/// Time step used in the thermal algorithm (accessible by input_parser.thermal_algo_time_step):
+		THERMAL_TIME_STEP=1
+	$TIME_STEP
+
 	$STOP_SIMUL_AFTER
-	// The simulation will stop after... (in sec)
-	stopTime=10
-	// The electromagnetic solver stops after this max number of steps parameter:
-	maxStepsForOneCycleOfElectro=5E5
+		// The simulation will stop after... (in sec)
+		stopTime=10
+		// The electromagnetic solver stops after this max number of steps parameter:
+		maxStepsForOneCycleOfElectro=5E5 
+		// input_parser.maxStepsForOneCycleOfElectro
+		// The thermal solver stops after this max number of steps:
+		maxStepsForOneCycleOfThermal=5E5 
+		// input_parser.maxStepsForOneCycleOfThermal
+
 	$STOP_SIMUL_AFTER
 	
 	// Initial temperatures:
@@ -99,6 +119,33 @@ $RUN_INFOS
 		T_INIT_AIR   =25
 		T_INIT_WATER =29
 	$TEMP_INIT
+
+	// State all your boundary conditions inside this region:
+	$BOUNDARY_CONDITIONS
+		// Thermal boundary condition of a parallelipipoid:
+		/*
+		  How to use these Boundary Conditions:
+			For Neumann:   {Neumann;value}
+			For Dirichlet: {Dirichlet;value} (value = temperature)
+		*/
+		BC_FACE_0={Neumann;0}
+		BC_FACE_1={Neumann;0}
+		BC_FACE_2={Dirichlet;50}
+		BC_FACE_3={Dirichlet;0}
+		BC_FACE_4={Dirichlet;0}
+		BC_FACE_5={Dirichlet;0}
+		// Accessible by input_parser.THERMAL_FACE_BC_TYPE
+		// Accessible by input_parser.THERMAL_FACE_BC_VALUE
+
+	$BOUNDARY_CONDITIONS
+
+	// Gives some information on the sampling frequency / number of steps before saving:
+	$OUTPUT_SAVING
+		// Sampling frequency for the electromagnetic algorithm:
+		SAMPLING_FREQ_ELECTRO=10
+		// Sampling frequency for the thermal algorithm:
+		SAMPLING_FREQ_THERMAL=10
+	$OUTPUT_SAVING
 	
 $RUN_INFOS
 	

@@ -25,6 +25,8 @@
 #include <mpi.h>
 #include <unistd.h>
 
+#include <vector>
+
 #include "Materials.h"
 #include "Array_3D_Template.h"
 #include "Node3DField.h"
@@ -55,13 +57,16 @@
 
 using namespace std;
 
-
+void check_input_file_name_given(int argc, char *argv[],map<std::string,std::string> &inputs);	
 
 int main(int argc, char *argv[]){
 
 	omp_set_nested(1);
 	omp_set_dynamic(0);
-	
+
+	map<std::string,std::string> inputs;
+
+	check_input_file_name_given(argc, argv,inputs);	
 
 	ProfilingClass profiler;
 
@@ -69,6 +74,16 @@ int main(int argc, char *argv[]){
 	MPI_Initializer MPI_communicator(argc,argv,MPI_THREAD_MULTIPLE);
 	printf("\n---------\nMPI rank is %d and isRoot %d.\n--------\n",MPI_communicator.getRank(),
 		  MPI_communicator.isRootProcess());
+
+	/* Call the inpt file parser, input file name given as an argument: */
+	cout << "Calling input file parser...\n";
+	string filenameInput = inputs["-inputfile"];
+	InputParser input_parser;
+	int MPI_RANK = MPI_communicator.getRank();
+	input_parser.defaultParsingFromFile(filenameInput,MPI_RANK);
+	cout << "INPUT PARSER HAS FINISHED HIS JOBS." << endl;
+
+	abort();
 	
 	/* The variable allMat will store the materials' properties */
 	Materials allMat;
@@ -81,12 +96,7 @@ int main(int argc, char *argv[]){
 	cout << allMat.getProperty(25.,0,1) << endl;
 
 	
-	cout << "Calling input file parser...\n";
-	string filenameInput = "TESTS/testSourceCenteredInCube.input";
-	InputParser input_parser;
-	int MPI_RANK = MPI_communicator.getRank();
-	input_parser.defaultParsingFromFile(filenameInput,MPI_RANK);
-	cout << "INPUT PARSER HAS FINISHED HIS JOBS." << endl;
+	
 
 	
 	std::string profilingName;
@@ -169,6 +179,34 @@ int main(int argc, char *argv[]){
 	return 0;
 }
 
+/**
+ * Check that a valid input file name is given as an argument:
+ */
+void check_input_file_name_given(int argc, char *argv[],map<std::string,std::string> &inputs){
+
+	for(int I = 0 ; I < argc ; I ++){
+		printf("Arg[%d] = %s\n",I,argv[I]);
+
+		/// If argv[I] is "-inputfile", use it:
+		if(strcmp(argv[I],"-inputfile") == 0 && I < argc -1 ){
+
+			inputs.insert(std::pair<std::string,std::string>("-inputfile",argv[++I]));
+			
+		}else if(strcmp(argv[I],"-inputfile") == 0 && I < argc ){
+
+			fprintf(stderr,"In %s :: ERROR :: you give '-inputfile' but nothing after!\n",
+					__FUNCTION__);
+			fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+			#ifdef MPI_COMM_WORLD
+				MPI_Abort(MPI_COMM_WORLD,-1);
+			#else
+				abort();
+			#endif
+		}
+
+	}
+
+}
 
 
 

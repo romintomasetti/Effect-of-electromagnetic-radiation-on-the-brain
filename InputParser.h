@@ -27,8 +27,11 @@ enum stringDollar_Header2{
 	DELTAS,
 	DOMAIN_SIZE,
 	SOURCE,
+	TIME_STEP,
+	OUTPUT_SAVING,
 	STOP_SIMUL_AFTER,
 	TEMP_INIT,
+	BOUNDARY_CONDITIONS,
 	MATERIALS,
 	ORIGINS
 };
@@ -76,6 +79,14 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
+
+		// Thermal algorithm time step:
+		double thermal_algo_time_step = -1;
+
+		// Sampling frequency for the electromagnetic algorithm:
+		size_t SAMPLING_FREQ_ELECTRO = 0;
+		// Sampling frequency for the thermal algorithm:
+		size_t SAMPLING_FREQ_THERMAL = 0;
 
 		// Dictionary for delete operations before computing anything:
 		map<std::string,bool> removeWhat_dico;
@@ -149,10 +160,16 @@ class InputParser{
 		double lengthZ_WholeDomain_Thermal = 0.0;
 
 		size_t maxStepsForOneCycleOfElectro = 0;
+		size_t maxStepsForOneCycleOfThermal = 0;
 
 		std::map<std::string,std::string> TEST_PARAVIEW_MPI_ARGS;
 
 		void deleteFiles(int MPI_RANK = 0);
+
+		/// Boundary conditions for the thermal algorithm.
+		/// Example: access BC type of face 0 by THERMAL_FACE_BC_TYPE[0].
+		map<size_t,std::string> THERMAL_FACE_BC_TYPE;
+		map<size_t,double>      THERMAL_FACE_BC_VALUE;
 };
 
 #endif
