@@ -59,8 +59,8 @@ $MESH
 		L_Y=0.1
 		L_Z=0.1
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=0.3
-		C_Y=0.5
+		C_X=0.4
+		C_Y=0.4
 		C_Z=0.5
 		// Frequency [Hz]
 		FRQCY=900E6
@@ -90,7 +90,8 @@ $MESH
 					in each components of the electric field
 				    3) H=GLOBAL puts the indices I J K globals
 					in each components of the magnetic field*/
-		//TEST_PARAVIEW_MPI=(TEMP=RANK,E=RANK,H=RANK)
+		//TEST_PARAVIEW_MPI=(TEMP=RANK,E=GLOBAL,H=GLOBAL)
+		MATERIAL_DATA_FILE=data_air.csv
 	$MATERIALS
 	
 $MESH
