@@ -301,7 +301,7 @@ void AlgoElectro_NEW::update(
         size_t index;
         /* Coefficients for Ex */
         // Ex of size (M − 1) × N × P
-        #pragma omp for collapse(3) nowait
+        #pragma omp for collapse(3) 
             for(size_t K = 0 ; K < grid.size_Ex[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Ex[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Ex[0] ; I ++){
@@ -328,7 +328,7 @@ void AlgoElectro_NEW::update(
 
         /* Coefficients of Ey */
         // Ey is of size M × (N − 1) × P.
-        #pragma omp for collapse(3) nowait
+        #pragma omp for collapse(3) 
             for(size_t K = 0 ; K < grid.size_Ey[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Ey[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Ey[0] ; I ++){
@@ -354,7 +354,7 @@ void AlgoElectro_NEW::update(
 
         /* Coefficients of Ez */
         // Ez is of size  M × N × (P − 1)
-        #pragma omp for collapse(3) nowait
+        #pragma omp for collapse(3) 
             for(size_t K = 0 ; K < grid.size_Ez[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Ez[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Ez[0] ; I ++){
@@ -380,7 +380,7 @@ void AlgoElectro_NEW::update(
 
         /* Coefficients of Hx */
         // Hx is of size M × (N − 1) × (P − 1):
-        #pragma omp for collapse(3) nowait
+        #pragma omp for collapse(3) 
             for(size_t K = 0 ; K < grid.size_Hx[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Hx[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Hx[0] ; I ++){
@@ -406,7 +406,7 @@ void AlgoElectro_NEW::update(
 
         /* Coefficients of Hy */
         // Hy is of size (M − 1) × N × (P − 1)
-        #pragma omp for collapse(3) nowait
+        #pragma omp for collapse(3) 
             for(size_t K = 0 ; K < grid.size_Hy[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Hy[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Hy[0] ; I ++){
@@ -432,7 +432,7 @@ void AlgoElectro_NEW::update(
 
         /* Coefficients of Hz */
         // Hz is of size (M − 1) × (N − 1) × P
-        #pragma omp for collapse(3) nowait
+        #pragma omp for collapse(3) 
             for(size_t K = 0 ; K < grid.size_Hz[2] ; K ++){
                 for(size_t J = 0 ; J < grid.size_Hz[1] ; J ++){
                     for(size_t I = 0 ; I < grid.size_Hz[0] ; I ++){
@@ -679,15 +679,22 @@ void AlgoElectro_NEW::update(
             /// Prepare the array to send:
             prepare_array_to_be_sent(
                 Electric_field_to_send,
+                Magnetic_field_to_send,
                 electric_field_sizes,
+                magnetic_field_sizes,
                 E_x_tmp,
                 E_y_tmp,
                 E_z_tmp,
+                H_x_tmp,
+                H_y_tmp,
+                H_z_tmp,
                 grid.MPI_communicator.RankNeighbour,
-                size_faces_electric
+                size_faces_electric,
+                size_faces_magnetic,
+                false // false : tells the function we want to deal with magnetic field only 
             );
 
-            /// Wait all threads:
+            /// Wait all omp threads:
             #pragma omp barrier
 
             /// Only the master thread communicates:
@@ -696,9 +703,13 @@ void AlgoElectro_NEW::update(
                 communicate_single_omp_thread(
                     Electric_field_to_send,
                     Electric_field_to_recv,
+                    Magnetic_field_to_send,
+                    Magnetic_field_to_recv,
                     grid.MPI_communicator.RankNeighbour,
                     grid.MPI_communicator.getRank(),
-                    size_faces_electric
+                    size_faces_electric,
+                    size_faces_magnetic,
+                    false // false : tells the function we want to deal with magnetic field only 
                 );
             }
 
@@ -708,26 +719,27 @@ void AlgoElectro_NEW::update(
             /// Fill in the matrix of electric field with what was received:
             use_received_array(
                 Electric_field_to_recv,
+                Magnetic_field_to_recv,
                 electric_field_sizes,
+                magnetic_field_sizes,
                 E_x_tmp,
                 E_y_tmp,
                 E_z_tmp,
+                H_x_tmp,
+                H_y_tmp,
+                H_z_tmp,
                 grid.MPI_communicator.RankNeighbour,
-                size_faces_electric
-            ); 
+                size_faces_electric,
+                size_faces_magnetic,
+                false // false : tells the function we want to deal with magnetic field only 
+            );  
 
             #pragma omp barrier
-            #pragma omp single
+            #pragma omp master
             {
-                currentStep++;
-                interfaceParaview.convertAndWriteData(
-                    currentStep,
-                    "ELECTRO"
-                );
                 MPI_Barrier(MPI_COMM_WORLD);
-                MPI_Abort(MPI_COMM_WORLD,-88);
-            }
-            #pragma omp barrier*/
+                MPI_Abort(MPI_COMM_WORLD,-811);
+            }*/
 
             // Updating the magnetic field Hx.
             // Don't update neighboors ! Start at 1. Go to size-1.
@@ -743,7 +755,7 @@ void AlgoElectro_NEW::update(
 
             printf(">>> ROMIN :: REMOVE ASSERT !!!! (line %d de Algo)\n",__LINE__);
 
-            #pragma omp for schedule(static) collapse(3) nowait
+            #pragma omp for schedule(static) collapse(3) 
             for (K = 1 ; K < grid.size_Hx[2]-1 ; K++){
                 for(J = 1 ; J < grid.size_Hx[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Hx[0]-1 ; I++){
@@ -786,7 +798,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ex[0];
             size_y_2 = grid.size_Ex[1];
 
-            #pragma omp for schedule(static) collapse(3) nowait
+            #pragma omp for schedule(static) collapse(3) 
             for(K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
                 for(J = 1 ; J < grid.size_Hy[1]-1 ; J ++){
                     for(I = 1; I < grid.size_Hy[0]-1 ; I ++){
@@ -827,7 +839,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ey[0];
             size_y_2 = grid.size_Ey[1];
 
-            #pragma omp for schedule(static) collapse(3) nowait
+            #pragma omp for schedule(static) collapse(3) 
             for(K = 1 ; K < grid.size_Hz[2]-1  ; K ++){
                 for(J = 1 ; J < grid.size_Hz[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
@@ -885,7 +897,7 @@ void AlgoElectro_NEW::update(
                 grid.MPI_communicator.RankNeighbour,
                 size_faces_electric,
                 size_faces_magnetic,
-                false
+                false /* false : tells the function we want to deal with magnetic field only */
             );
 
             /// Wait all omp threads:
@@ -903,7 +915,7 @@ void AlgoElectro_NEW::update(
                     grid.MPI_communicator.getRank(),
                     size_faces_electric,
                     size_faces_magnetic,
-                    false
+                    false /* false : tells the function we want to deal with magnetic field only */
                 );
             }
 
@@ -925,7 +937,7 @@ void AlgoElectro_NEW::update(
                 grid.MPI_communicator.RankNeighbour,
                 size_faces_electric,
                 size_faces_magnetic,
-                false
+                false /* false : tells the function we want to deal with magnetic field only */
             );           
 
             /////////////////////////
@@ -948,7 +960,7 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Hy[1];
 
 
-            #pragma omp for schedule(static) collapse(3) nowait
+            #pragma omp for schedule(static) collapse(3) 
             for(K = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ ;
                     K < grid.size_Ex[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; 
                     K ++){
@@ -1003,7 +1015,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hz[0];
             size_y_2 = grid.size_Hz[1];
 
-            #pragma omp for schedule(static) collapse(3) nowait
+            #pragma omp for schedule(static) collapse(3) 
             for(K = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ ; K < grid.size_Ey[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; K ++){
                 for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY; J < grid.size_Ey[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY ; J ++){
                     for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX ; I < grid.size_Ey[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX ; I ++){
@@ -1018,7 +1030,7 @@ void AlgoElectro_NEW::update(
                                     + size_x_1 * ( J 
                                          + size_y_1 * (K-1 ));
                         // Hz(mm, nn, pp)
-                        index_2Plus  = I/*-DECALAGE_H_in_E   */
+                        index_2Plus  = I
                                     + size_x_2 * ( J 
                                          + size_y_2 * (K ));
                         // Hz(mm - 1, nn, pp)
@@ -1052,7 +1064,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hx[0];
             size_y_2 = grid.size_Hx[1];
 
-            #pragma omp for schedule(static) collapse(3) nowait
+            #pragma omp for schedule(static) collapse(3) 
             for(K = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; K < grid.size_Ez[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; K ++){
                 for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY ; J < grid.size_Ez[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY ; J ++){
                     for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX ; I < grid.size_Ez[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX ; I ++){
@@ -1109,7 +1121,7 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[1][it];
                 ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 
-                E_y_tmp[index] = 0;
+                //E_y_tmp[index] = 0;
             }
 
             #pragma omp for schedule(static)
@@ -1118,7 +1130,7 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[0][it];
                 ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
 
-                E_x_tmp[index] = 0;
+                //E_x_tmp[index] = 0;
             }
 
             #pragma omp barrier
@@ -1392,7 +1404,7 @@ void prepare_array_to_be_sent(
 
         if(is_electric_to_prepare){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0]-DECAL ; i++){
                     index   = i + electric_field_sizes[0] * ( 1 + electric_field_sizes[1] * k );
@@ -1401,14 +1413,12 @@ void prepare_array_to_be_sent(
 
                     ASSERT( counter, <, size_faces_electric[2]);
 
-                    Electric_field_to_send[2][counter] = E_x[index];
-
-                    //printf("Electric_field_to_send[2][%zu] = %lf\n",counter,Electric_field_to_send[2][counter]);
+                    Electric_field_to_send[2][counter] = E_x[index];    
                 }
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0]-DECAL ; i++){
                     index   = i + magnetic_field_sizes[0] * ( 1 + magnetic_field_sizes[1] * k );
@@ -1428,7 +1438,7 @@ void prepare_array_to_be_sent(
             /// Put E_y:
             /// Offset due to already put inside the face[2]:
             counter_prev_elec = (electric_field_sizes[0]-2*DECAL) * (electric_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+3] * ( 1 + electric_field_sizes[1+3] * k );
@@ -1447,7 +1457,7 @@ void prepare_array_to_be_sent(
             /// Put H_y:
             /// Offset due to already put inside the face[2]:
             counter_prev_magn = (magnetic_field_sizes[0]-2*DECAL) * (magnetic_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+3] * ( 1 + magnetic_field_sizes[1+3] * k );
@@ -1465,7 +1475,7 @@ void prepare_array_to_be_sent(
         if(is_electric_to_prepare){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[0+3]-2*DECAL) * (electric_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+2*3] * ( 1 + electric_field_sizes[1+2*3] * k);
@@ -1483,7 +1493,7 @@ void prepare_array_to_be_sent(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[0+3]-2*DECAL) * (magnetic_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+2*3] * ( 1 + magnetic_field_sizes[1+2*3] * k);
@@ -1508,7 +1518,7 @@ void prepare_array_to_be_sent(
 
         if(is_electric_to_prepare){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0]-DECAL ; i++){
                     /**
@@ -1529,7 +1539,7 @@ void prepare_array_to_be_sent(
             }
         }else{
             /// Put = H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0]-DECAL ; i++){
                     /**
@@ -1601,7 +1611,7 @@ void prepare_array_to_be_sent(
         if(is_electric_to_prepare){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[0+3]-2*DECAL) * (electric_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+2*3]-DECAL ; i++){
                     /**
@@ -1623,7 +1633,7 @@ void prepare_array_to_be_sent(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[0+3]-2*DECAL) * (magnetic_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+2*3]-DECAL ; i++){
                     /**
@@ -1657,7 +1667,7 @@ void prepare_array_to_be_sent(
 
         if(is_electric_to_prepare){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1]-DECAL ; j++){
                     index      = electric_field_sizes[0]-2 + electric_field_sizes[0] * ( j + electric_field_sizes[1] * k );
@@ -1672,7 +1682,7 @@ void prepare_array_to_be_sent(
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1]-DECAL ; j++){
                     index      = magnetic_field_sizes[0]-2 + magnetic_field_sizes[0] * ( j +
@@ -1691,7 +1701,7 @@ void prepare_array_to_be_sent(
         if(is_electric_to_prepare){
             /// Put E_y:
             counter_prev_elec = (electric_field_sizes[1]-2*DECAL) * (electric_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1+3]-DECAL ; j++){
                     index = electric_field_sizes[0+3]-2 + electric_field_sizes[0+3] * ( j + electric_field_sizes[1+3] * k );
@@ -1707,7 +1717,7 @@ void prepare_array_to_be_sent(
         }else{
             /// Put H_y:
             counter_prev_magn = (magnetic_field_sizes[1]-2*DECAL) * (magnetic_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1+3]-DECAL ; j++){
                     index = magnetic_field_sizes[0+3]-2 + magnetic_field_sizes[0+3] * ( j + 
@@ -1726,7 +1736,7 @@ void prepare_array_to_be_sent(
         if(is_electric_to_prepare){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[1+3]-2*DECAL) * (electric_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1+2*3]-DECAL ; j++){
                     index = electric_field_sizes[0+2*3]-2 
@@ -1743,7 +1753,7 @@ void prepare_array_to_be_sent(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[1+3]-2*DECAL) * (magnetic_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1+2*3]-DECAL ; j++){
                     index = magnetic_field_sizes[0+2*3]-2 
@@ -1770,7 +1780,7 @@ void prepare_array_to_be_sent(
 
         if(is_electric_to_prepare){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1]-DECAL ; j++){
                     index      = 1 + electric_field_sizes[0] * ( j + electric_field_sizes[1] * k );
@@ -1785,7 +1795,7 @@ void prepare_array_to_be_sent(
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1]-DECAL ; j++){
                     index      = 1 + magnetic_field_sizes[0] * ( j + magnetic_field_sizes[1] * k );
@@ -1803,7 +1813,7 @@ void prepare_array_to_be_sent(
         if(is_electric_to_prepare){
             /// Put E_y:
             counter_prev_elec = (electric_field_sizes[1]-2*DECAL) * (electric_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1+3]-DECAL ; j++){
                     index = 1 + electric_field_sizes[0+3] * ( j + electric_field_sizes[1+3] * k );
@@ -1819,7 +1829,7 @@ void prepare_array_to_be_sent(
         }else{
             /// Put H_y:
             counter_prev_magn = (magnetic_field_sizes[1]-2*DECAL) * (magnetic_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1+3]-DECAL ; j++){
                     index = 1 + magnetic_field_sizes[0+3] * ( j + magnetic_field_sizes[1+3] * k );
@@ -1837,7 +1847,7 @@ void prepare_array_to_be_sent(
         if(is_electric_to_prepare){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[1+3]-2*DECAL) * (electric_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1+2*3]-DECAL ; j++){
                     index = 1 + electric_field_sizes[0+2*3] * ( j + electric_field_sizes[1+2*3] * k);
@@ -1853,7 +1863,7 @@ void prepare_array_to_be_sent(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[1+3]-2*DECAL) * (magnetic_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1+2*3]-DECAL ; j++){
                     index = 1 + magnetic_field_sizes[0+2*3] * ( j + magnetic_field_sizes[1+2*3] * k);
@@ -1879,7 +1889,7 @@ void prepare_array_to_be_sent(
 
         if(is_electric_to_prepare){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < electric_field_sizes[1]-DECAL ; j++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0]-DECAL ; i++){
                     index      = i + electric_field_sizes[0] * ( j 
@@ -1895,7 +1905,7 @@ void prepare_array_to_be_sent(
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < magnetic_field_sizes[1]-DECAL ; j++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0]-DECAL ; i++){
                     index      = i + magnetic_field_sizes[0] * ( j 
@@ -1915,9 +1925,9 @@ void prepare_array_to_be_sent(
         if(is_electric_to_prepare){
             /// Put E_y:
             counter_prev_elec = (electric_field_sizes[0]-2*DECAL) * (electric_field_sizes[1]-2*DECAL);
-            #pragma omp for nowait
-            for(size_t j = DECAL ; j < electric_field_sizes[1+3] ; j++){
-                for(size_t i = DECAL ; i < electric_field_sizes[0+3] ; i++){
+            #pragma omp for 
+            for(size_t j = DECAL ; j < electric_field_sizes[1+3]-DECAL ; j++){
+                for(size_t i = DECAL ; i < electric_field_sizes[0+3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+3] * ( j 
                                 + electric_field_sizes[1+3] * (electric_field_sizes[2+3]-2) );
 
@@ -1932,9 +1942,9 @@ void prepare_array_to_be_sent(
         }else{
             /// Put H_y:
             counter_prev_magn = (magnetic_field_sizes[0]-2*DECAL) * (magnetic_field_sizes[1]-2*DECAL);
-            #pragma omp for nowait
-            for(size_t j = DECAL ; j < magnetic_field_sizes[1+3] ; j++){
-                for(size_t i = DECAL ; i < magnetic_field_sizes[0+3] ; i++){
+            #pragma omp for 
+            for(size_t j = DECAL ; j < magnetic_field_sizes[1+3]-DECAL ; j++){
+                for(size_t i = DECAL ; i < magnetic_field_sizes[0+3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+3] * ( j 
                                 + magnetic_field_sizes[1+3] * (magnetic_field_sizes[2+3]-2) );
 
@@ -1951,7 +1961,7 @@ void prepare_array_to_be_sent(
         if(is_electric_to_prepare){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[0+3]-2*DECAL) * (electric_field_sizes[1+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < electric_field_sizes[1+2*3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+2*3] * ( j 
@@ -1968,7 +1978,7 @@ void prepare_array_to_be_sent(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[0+3]-2*DECAL) * (magnetic_field_sizes[1+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < magnetic_field_sizes[1+2*3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+2*3] * ( j 
@@ -1994,9 +2004,9 @@ void prepare_array_to_be_sent(
 
         if(is_electric_to_prepare){
             /// Put E_x:
-            #pragma omp for nowait
-            for(size_t j = DECAL ; j < electric_field_sizes[1] ; j++){
-                for(size_t i = DECAL ; i < electric_field_sizes[0] ; i++){
+            #pragma omp for 
+            for(size_t j = DECAL ; j < electric_field_sizes[1]-DECAL ; j++){
+                for(size_t i = DECAL ; i < electric_field_sizes[0]-DECAL ; i++){
                     index      = i + electric_field_sizes[0] * ( j + electric_field_sizes[1] * (1) );
                     
                     counter = (i-DECAL) + (j-DECAL) * (electric_field_sizes[0]-2*DECAL);
@@ -2009,9 +2019,9 @@ void prepare_array_to_be_sent(
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
-            for(size_t j = DECAL ; j < magnetic_field_sizes[1] ; j++){
-                for(size_t i = DECAL ; i < magnetic_field_sizes[0] ; i++){
+            #pragma omp for 
+            for(size_t j = DECAL ; j < magnetic_field_sizes[1]-DECAL ; j++){
+                for(size_t i = DECAL ; i < magnetic_field_sizes[0]-DECAL ; i++){
                     index      = i + magnetic_field_sizes[0] * ( j + magnetic_field_sizes[1] * (1) );
                     
                     counter = (i-DECAL) + (j-DECAL) * (magnetic_field_sizes[0]-2*DECAL);
@@ -2027,7 +2037,7 @@ void prepare_array_to_be_sent(
         if(is_electric_to_prepare){
             /// Put E_y:
             counter_prev_elec = (electric_field_sizes[0]-2*DECAL) * (electric_field_sizes[1]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < electric_field_sizes[1+3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+3] * ( j + electric_field_sizes[1+3] * (1) );
@@ -2043,7 +2053,7 @@ void prepare_array_to_be_sent(
         }else{
             /// Put H_y:
             counter_prev_magn = (magnetic_field_sizes[0]-2*DECAL) * (magnetic_field_sizes[1]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < magnetic_field_sizes[1+3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+3] * ( j + magnetic_field_sizes[1+3] * (1) );
@@ -2061,7 +2071,7 @@ void prepare_array_to_be_sent(
         if(is_electric_to_prepare){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[0+3]-2*DECAL) * (electric_field_sizes[1+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < electric_field_sizes[1+2*3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+2*3] * ( j + electric_field_sizes[1+2*3] * (1) );
@@ -2077,7 +2087,7 @@ void prepare_array_to_be_sent(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[0+3]-2*DECAL) * (magnetic_field_sizes[1+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < magnetic_field_sizes[1+2*3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+2*3] * ( j + magnetic_field_sizes[1+2*3] * (1) );
@@ -2139,7 +2149,7 @@ void use_received_array(
         
         if(is_electric_to_use){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0]-DECAL ; i++){
                     index      = i + electric_field_sizes[0] * ( 0 + electric_field_sizes[1] * k );
@@ -2154,7 +2164,7 @@ void use_received_array(
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0]-DECAL ; i++){
                     index      = i + magnetic_field_sizes[0] * ( 0 + magnetic_field_sizes[1] * k );
@@ -2172,7 +2182,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_y:
             counter_prev_elec = (electric_field_sizes[0]-2*DECAL) * (electric_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+3] * ( 0 + electric_field_sizes[1+3] * k );
@@ -2188,7 +2198,7 @@ void use_received_array(
         }else{
             /// Put H_y:
             counter_prev_magn = (magnetic_field_sizes[0]-2*DECAL) * (magnetic_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+3] * ( 0 + magnetic_field_sizes[1+3] * k );
@@ -2206,7 +2216,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[0+3]-2*DECAL) * (electric_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+2*3] * ( 0 + electric_field_sizes[1+2*3] * k);
@@ -2222,7 +2232,7 @@ void use_received_array(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[0+3]-2*DECAL) * (magnetic_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+2*3] * ( 0 + magnetic_field_sizes[1+2*3] * k);
@@ -2250,7 +2260,7 @@ void use_received_array(
 
         if(is_electric_to_use){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0]-DECAL ; i++){
                     /**
@@ -2273,7 +2283,7 @@ void use_received_array(
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0]-DECAL ; i++){
                     /**
@@ -2299,7 +2309,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_y:
             counter_prev_elec = (electric_field_sizes[0]-2*DECAL) * (electric_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+3]-DECAL ; i++){
                     /**
@@ -2322,7 +2332,7 @@ void use_received_array(
         }else{
             /// Put H_y:
             counter_prev_magn = (magnetic_field_sizes[0]-2*DECAL) * (magnetic_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+3]-DECAL ; i++){
                     /**
@@ -2347,7 +2357,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[0+3]-2*DECAL) * (electric_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+2*3]-DECAL ; i++){
                     /**
@@ -2370,7 +2380,7 @@ void use_received_array(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[0+3]-2*DECAL) * (magnetic_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+2*3]-DECAL ; i++){
                     /**
@@ -2405,7 +2415,7 @@ void use_received_array(
 
         if(is_electric_to_use){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1]-DECAL ; j++){
                     /**
@@ -2427,7 +2437,7 @@ void use_received_array(
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1]-DECAL ; j++){
                     /**
@@ -2452,7 +2462,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_y:
             counter_prev_elec = (electric_field_sizes[1]-2*DECAL) * (electric_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1+3]-DECAL ; j++){
                     /**
@@ -2475,7 +2485,7 @@ void use_received_array(
         }else{
             /// Put H_y:
             counter_prev_magn = (magnetic_field_sizes[1]-2*DECAL) * (magnetic_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1+3]-DECAL ; j++){
                     /**
@@ -2500,7 +2510,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[1+3]-2*DECAL) * (electric_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1+2*3]-DECAL ; j++){
                     /**
@@ -2523,7 +2533,7 @@ void use_received_array(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[1+3]-2*DECAL) * (magnetic_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1+2*3]-DECAL ; j++){
                     /**
@@ -2555,7 +2565,7 @@ void use_received_array(
 
         if(is_electric_to_use){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1]-DECAL ; j++){
                     /**
@@ -2576,7 +2586,7 @@ void use_received_array(
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1]-DECAL ; j++){
                     /**
@@ -2600,7 +2610,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_y:
             counter_prev_elec = (electric_field_sizes[1]-2*DECAL) * (electric_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1+3]-DECAL ; j++){
                     /**
@@ -2622,7 +2632,7 @@ void use_received_array(
         }else{
             /// Put H_y:
             counter_prev_magn = (magnetic_field_sizes[1]-2*DECAL) * (magnetic_field_sizes[2]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1+3]-DECAL ; j++){
                     /**
@@ -2646,7 +2656,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[1+3]-2*DECAL) * (electric_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < electric_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < electric_field_sizes[1+2*3]-DECAL ; j++){
                     /**
@@ -2669,7 +2679,7 @@ void use_received_array(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[1+3]-2*DECAL) * (magnetic_field_sizes[2+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t k = DECAL ; k < magnetic_field_sizes[2+2*3]-DECAL ; k++){
                 for(size_t j = DECAL ; j < magnetic_field_sizes[1+2*3]-DECAL ; j++){
                     /**
@@ -2701,7 +2711,7 @@ void use_received_array(
 
         if(is_electric_to_use){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < electric_field_sizes[1]-DECAL ; j++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0]-DECAL ; i++){
                     index      = i + electric_field_sizes[0] 
@@ -2717,7 +2727,7 @@ void use_received_array(
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < magnetic_field_sizes[1]-DECAL ; j++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0]-DECAL ; i++){
                     index      = i + magnetic_field_sizes[0] 
@@ -2736,7 +2746,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_y:
             counter_prev_elec = (electric_field_sizes[0]-2*DECAL) * (electric_field_sizes[1]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < electric_field_sizes[1+3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+3] 
@@ -2753,7 +2763,7 @@ void use_received_array(
         }else{
             /// Put H_y:
             counter_prev_magn = (magnetic_field_sizes[0]-2*DECAL) * (magnetic_field_sizes[1]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < magnetic_field_sizes[1+3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+3] 
@@ -2772,7 +2782,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[0+3]-2*DECAL) * (electric_field_sizes[1+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < electric_field_sizes[1+2*3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + 
@@ -2790,7 +2800,7 @@ void use_received_array(
         }else{
             /// Put E_z:
             counter_prev_magn += (magnetic_field_sizes[0+3]-2*DECAL) * (magnetic_field_sizes[1+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < magnetic_field_sizes[1+2*3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + 
@@ -2817,7 +2827,7 @@ void use_received_array(
 
         if(is_electric_to_use){
             /// Put E_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < electric_field_sizes[1]-DECAL ; j++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0]-DECAL ; i++){
                     index      = i + electric_field_sizes[0] * ( j + electric_field_sizes[1] * (0) );
@@ -2832,7 +2842,7 @@ void use_received_array(
             }
         }else{
             /// Put H_x:
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < magnetic_field_sizes[1]-DECAL ; j++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0]-DECAL ; i++){
                     index      = i + magnetic_field_sizes[0] * ( j + magnetic_field_sizes[1] * (0) );
@@ -2850,7 +2860,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_y:
             counter_prev_elec = (electric_field_sizes[0]-2*DECAL) * (electric_field_sizes[1]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < electric_field_sizes[1+3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+3] * ( j + electric_field_sizes[1+3] * (0) );
@@ -2866,7 +2876,7 @@ void use_received_array(
         }else{
             /// Put H_y:
             counter_prev_magn = (magnetic_field_sizes[0]-2*DECAL) * (magnetic_field_sizes[1]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < magnetic_field_sizes[1+3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+3] * ( j + magnetic_field_sizes[1+3] * (0) );
@@ -2884,7 +2894,7 @@ void use_received_array(
         if(is_electric_to_use){
             /// Put E_z:
             counter_prev_elec += (electric_field_sizes[0+3]-2*DECAL) * (electric_field_sizes[1+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for 
             for(size_t j = DECAL ; j < electric_field_sizes[1+2*3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < electric_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + electric_field_sizes[0+2*3] * ( j + electric_field_sizes[1+2*3] * (0) );
@@ -2900,7 +2910,7 @@ void use_received_array(
         }else{
             /// Put H_z:
             counter_prev_magn += (magnetic_field_sizes[0+3]-2*DECAL) * (magnetic_field_sizes[1+3]-2*DECAL);
-            #pragma omp for nowait
+            #pragma omp for
             for(size_t j = DECAL ; j < magnetic_field_sizes[1+2*3]-DECAL ; j++){
                 for(size_t i = DECAL ; i < magnetic_field_sizes[0+2*3]-DECAL ; i++){
                     index = i + magnetic_field_sizes[0+2*3] * ( j + magnetic_field_sizes[1+2*3] * (0) );
@@ -2974,7 +2984,7 @@ void communicate_single_omp_thread(
 
         /* NEIGHBOOR IS EVEN, I AM ODD */
         if(mpi_me%2 != 0 && mpi_to_who[FACE]%2 == 0){
-                printf("[MPI %d - ODD - FACE %d -OMP %d] send to   [MPI %d] | sendTag %d , recvTag %d\n",
+                printf("[MPI %d - EVEN - FACE %d -OMP %d] send to   [MPI %d] | sendTag %d , recvTag %d\n",
                         mpi_me,
                         FACE,
                         omp_get_thread_num(),
@@ -3002,7 +3012,7 @@ void communicate_single_omp_thread(
                 );
             }
 
-                printf("[MPI %d - ODD - FACE %d -OMP %d] recv from [MPI %d] | sendTag %d , recvTag %d\n",
+                printf("[MPI %d - EVEN - FACE %d -OMP %d] recv from [MPI %d] | sendTag %d , recvTag %d\n",
                         mpi_me,
                         FACE,
                         omp_get_thread_num(),
@@ -3033,6 +3043,12 @@ void communicate_single_omp_thread(
                 printf("[MPI %d - ODD ] to [MPI %d] :: Done\n",
                         mpi_me,
                         mpi_to_who[FACE]);
+
+            /*if(!is_electric_to_communicate && mpi_me == 1 && mpi_to_who[FACE] == 0){
+                for(size_t I = 0 ; I < size_faces_magnetic[FACE] ; I ++)
+                    printf("MPI %d recv from MPI %d H : %lf\n",mpi_me,mpi_to_who[FACE],Magnetic_field_to_recv[FACE][I]);
+
+            }*/
                 
         /* NEIGHBOOR IS ODD, I AM EVEN */
         }else if(mpi_me%2 == 0 && mpi_to_who[FACE]%2 != 0){
