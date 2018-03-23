@@ -646,27 +646,27 @@ void AlgoElectro_NEW::update(
         size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 0;
 
         if(grid.MPI_communicator.MPI_POSITION[0] == grid.MPI_communicator.MPI_MAX_POSI[0]){
-            //IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = 1;
+            IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = 1;
         }
 
         if(grid.MPI_communicator.MPI_POSITION[1] == grid.MPI_communicator.MPI_MAX_POSI[1]){
-            //IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = 1;
+            IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = 1;
         }
 
         if(grid.MPI_communicator.MPI_POSITION[2] == grid.MPI_communicator.MPI_MAX_POSI[2]){
-            //IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = 1;
+            IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = 1;
         }
 
         if(grid.MPI_communicator.MPI_POSITION[0] == 0){
-            //IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 1;
+            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 1;
         }
 
         if(grid.MPI_communicator.MPI_POSITION[1] == 0){
-            //IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 1;
+            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 1;
         }
 
         if(grid.MPI_communicator.MPI_POSITION[2] == 0){
-            //IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
+            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
         }
 
         size_t I,J,K;

@@ -295,7 +295,7 @@ void GridCreator_NEW::meshInitialization(void){
     /* ALLOCATE SPACE FOR THE ELECTRIC FIELDS */
 
     /// Remove one if necessary (see paper and size of the global grid):
-    size_t REMOVE_ONE = 0;
+    size_t REMOVE_ONE = 1;
 
     // Size of E_x is  (M − 1) × N × P. Add 2 nodes in each direction for the neighboors.
 
