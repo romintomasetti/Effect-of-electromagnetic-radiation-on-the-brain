@@ -1,5 +1,7 @@
 #include "InputParser.h"
 
+#include "header_with_all_defines.hpp"
+
 #include <algorithm>
 #include <cctype>
 
@@ -191,8 +193,9 @@ void InputParser::defaultParsingFromFile(std::string &filename, int MPI_RANK){
 	if(this->is_file_exist(filename)){
 		/* Input file exists. */
 	}else{
-		fprintf(stderr,"In %s :: No file provided/ not found / cannot open it (%s). Aborting.\n",
-			__FUNCTION__,filename.c_str());
+		fprintf(stderr,"%sIn %s :: No file provided/ not found / cannot open it (given file name is |%s|).\n"
+					   " Have you tried '-inputfile my_file.csv' ? Aborting.%s\n",
+			ANSI_COLOR_RED,__FUNCTION__,filename.c_str(),ANSI_COLOR_RESET);
 		fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
 		#ifdef MPI_COMM_WORLD
 			MPI_Abort(MPI_COMM_WORLD,-1);
@@ -735,6 +738,16 @@ void InputParser::readHeader_MESH (ifstream &file){
 					this->RemoveAnyBlankSpaceInStr(currentLine);
 					// If the string is "$DELTAS" it means the section ends.
 					if(currentLine == "$MATERIALS"){
+						if(this->material_data_file == std::string()){
+							fprintf(stderr,"In %s :: ERROR :: You *MUST* provide a material data file. Aborting.\n",
+									__FUNCTION__);
+							fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+							#ifdef MPI_COMM_WORLD
+								MPI_Abort(MPI_COMM_WORLD,-1);
+							#else
+								abort();
+							#endif
+						}
 						break;
 					}
 					// If the string is empty, it was just a white space. Continue.
@@ -849,11 +862,13 @@ void InputParser::readHeader_MESH (ifstream &file){
 						}
 
 						/* END OF TEST_PARAVIEW_MPI */
-						
+
+					}else if(propName == "MATERIAL_DATA_FILE"){
+						this->material_data_file = propGiven;
 
 					}else{
 						printf("InputParser::readHeader_MESH:: You didn't provide a ");
-						printf("good member for $MESH$MATERIALS.\nAborting.\n");
+						printf("good member for $MESH$MATERIALS (has %s).\nAborting.\n",propName.c_str());
 						cout << propName << endl;
 						printf("(in file %s at %d)\n",__FILE__,__LINE__);
 						abort();

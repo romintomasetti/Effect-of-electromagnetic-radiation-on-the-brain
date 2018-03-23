@@ -285,45 +285,16 @@ void GridCreator_NEW::meshInitialization(void){
         abort();
     }
 
-    ///////////////////////////////////
-    /// IMPORTANT NOTE ON THE SIZES OF EACH FIELD - A REVOIR
     /**
-     * Because each field has its own size in each direction, we can't do 
-     * very simple things. After the MPI division performed by the 
-     * MPI_DIVISION function, we only have M, N and P.
-     * If we (for example) have 3 MPI processes, we 'cut' along the X direction.
-     * Let's imagine the mesh has 11 nodes in each direction, that is M = N = P = 11.
-     * Then: -  MPI 0 has 3 usefull Ex nodes
-     *       -  MPI 1 has 3 usefull Ex nodes
-     *       -  MPI 2 has 4 usefull Ex nodes and 1 useless Ex nodes
-     * such that the sum is 3 + 3 + 4 + 1 = 11.
-     * 
-     * Followed algorithm:
-     *      1) In MPI_DIVISION, a (X,Y,Z) position of the current MPI process has
-     *          been assigned. The total number of MPI processes along each direction is 
-     *          also known.
-     *      2) For the electric field components, we only have problems for the 
-     *          field in the direction of the cut(s) (for determining which MPI is where),
-     *          because the size is reduced by one (w.r.t. M, N and P) only in the direction
-     *          of the field component (i.e. M-1 for Ex, N-1 for Ey and P-1 for Ez).
-     *      3) For the magnetic field components, it is the contrary. We have problems in the directions
-     *          along which no 'cut' was performed for the MPI division.
-     * 
-     * Solution proposed to tackle this problem:
-     *      1) In the class MPI_Initializer, add the following properties:
-     *              a) must_add_one_to_E_X/Y/Z_along_X/Y/Z
-     *                  Tells if the MPI process should add a node in the X/Y/Z direction
-     *                  for the electric field X/Y/Z.
-     *                  If this is true, the MPI process must *NOT* write the line of 0
-     *                  when being inside the vtl writer. Only the last MPI process in he 
-     *                  direction of the cut can write this line of zeros.
-     *              b) must_add_one_to_H_X/Y/Z_along_X/Y/Z
-     *                  Same as for the electric field (see above).
+     * For each field (magnetic or electric), add 2 nodes in each direction so that 
+     * we have information on what happens inside the MPI processes around the current MPI
+     * process.
      */
 
 
     /* ALLOCATE SPACE FOR THE ELECTRIC FIELDS */
 
+    /// Remove one if necessary (see paper and size of the global grid):
     size_t REMOVE_ONE = 1;
 
     // Size of E_x is  (M − 1) × N × P. Add 2 nodes in each direction for the neighboors.
@@ -346,10 +317,10 @@ void GridCreator_NEW::meshInitialization(void){
     
     size = this->size_Ex[0] * this->size_Ex[1] * this->size_Ex[2];
 
-    this->E_x                 = new double[size];
-    this->E_x_material        = new unsigned char[size];
-    this->E_x_eps             = new double[size];
-    this->E_x_electrical_cond = new double [size];
+    this->E_x                 = new double[size]();
+    this->E_x_material        = new unsigned char[size]();
+    this->E_x_eps             = new double[size]();
+    this->E_x_electrical_cond = new double [size]();
 
     memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
@@ -375,17 +346,14 @@ void GridCreator_NEW::meshInitialization(void){
 
     size = this->size_Ey[0] * this->size_Ey[1] * this->size_Ey[2];
 
-    this->E_y                 = new double[size];
-    this->E_y_material        = new unsigned char[size];
-    this->E_y_eps             = new double[size];
-    this->E_y_electrical_cond = new double[size];
+    this->E_y                 = new double[size]();
+    this->E_y_material        = new unsigned char[size]();
+    this->E_y_eps             = new double[size]();
+    this->E_y_electrical_cond = new double[size]();
 
     memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
-    #if DEBUG > 2
-    std::cout << "GridCreator_New::initializing E_y" << std::endl;
-    #endif
     // Size of E_z is  M × N × (P − 1). Add 2 nodes in each direction for the neighboors.
 
     if(this->MPI_communicator.must_add_one_to_E_Z_along_XYZ[0] == true){
@@ -408,10 +376,10 @@ void GridCreator_NEW::meshInitialization(void){
 
     size = this->size_Ez[0] * this->size_Ez[1] * this->size_Ez[2];
 
-    this->E_z                 = new double[size];
-    this->E_z_material        = new unsigned char[size];
-    this->E_z_eps             = new double[size];
-    this->E_z_electrical_cond = new double[size];
+    this->E_z                 = new double[size]();
+    this->E_z_material        = new unsigned char[size]();
+    this->E_z_eps             = new double[size]();
+    this->E_z_electrical_cond = new double[size]();
 
     memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
@@ -421,37 +389,31 @@ void GridCreator_NEW::meshInitialization(void){
     // Size of H_x is  M × (N − 1) × (P − 1). Add 2 nodes in each direction for the neighboors.
 
     if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[0] == true){
-        this->size_Hx[0] = M - REMOVE_ONE;
+        this->size_Hx[0] = M + 2 - REMOVE_ONE;
     }else{
-        this->size_Hx[0] = M ;
+        this->size_Hx[0] = M + 2;
     }
-
-    this->size_Hx[0] ++;
 
     if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[1] == true){
-        this->size_Hx[1] = N - REMOVE_ONE;
+        this->size_Hx[1] = N + 2 - REMOVE_ONE;
     }else{
-        this->size_Hx[1] = N ;
+        this->size_Hx[1] = N + 2;
     }
-
-    this->size_Hx[1] ++;
 
     if(this->MPI_communicator.must_add_one_to_H_X_along_XYZ[2] == true){
-        this->size_Hx[2] = P - REMOVE_ONE;
+        this->size_Hx[2] = P + 2 - REMOVE_ONE;
     }else{
-        this->size_Hx[2] = P;
+        this->size_Hx[2] = P + 2;
     }
-
-    this->size_Hx[2] ++;
 
     size = this->size_Hx[0] * 
             this->size_Hx[1] * 
             this->size_Hx[2];
 
-    this->H_x               = new double[size];
-    this->H_x_material      = new unsigned char[size];
-    this->H_x_magnetic_cond = new double[size];
-    this->H_x_mu            = new double[size];
+    this->H_x               = new double[size]();
+    this->H_x_material      = new unsigned char[size]();
+    this->H_x_magnetic_cond = new double[size]();
+    this->H_x_mu            = new double[size]();
 
     memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
@@ -460,83 +422,68 @@ void GridCreator_NEW::meshInitialization(void){
     // Size of H_y is  (M − 1) × N × (P − 1). Add 2 nodes in each direction for the neighboors.
 
     if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] == true){
-        this->size_Hy[0] = M - REMOVE_ONE;
+        this->size_Hy[0] = M + 2 - REMOVE_ONE;
     }else{
-        this->size_Hy[0] = M ;
+        this->size_Hy[0] = M + 2;
     }
-
-    this->size_Hy[0] ++;
 
     if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[1] == true){
-        this->size_Hy[1] = N - REMOVE_ONE;
+        this->size_Hy[1] = N + 2 - REMOVE_ONE;
     }else{
-        this->size_Hy[1] = N;
+        this->size_Hy[1] = N + 2;
     }
-
-    this->size_Hy[1] ++;
 
     if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[2] == true){
-        this->size_Hy[2] = P - REMOVE_ONE;
+        this->size_Hy[2] = P + 2 - REMOVE_ONE;
     }else{
-        this->size_Hy[2] = P;
+        this->size_Hy[2] = P + 2;
     }
-
-    this->size_Hy[2] ++;
 
     size = this->size_Hy[0]
              * this->size_Hy[1]
              * this->size_Hy[2];
 
-    this->H_y               = new double[size];
-    this->H_y_material      = new unsigned char[size];
-    this->H_y_mu            = new double[size];
-    this->H_y_magnetic_cond = new double[size];
+    this->H_y               = new double[size]();
+    this->H_y_material      = new unsigned char[size]();
+    this->H_y_mu            = new double[size]();
+    this->H_y_magnetic_cond = new double[size]();
 
     memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
     // Size of H_z is  (M − 1) × (N − 1) × P. Add 2 nodes in each direction for the nieghboors.
     if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] == true){
-        this->size_Hz[0] = M - REMOVE_ONE;
+        this->size_Hz[0] = M + 2 - REMOVE_ONE;
     }else{
-        this->size_Hz[0] = M ;
+        this->size_Hz[0] = M + 2;
     }
-
-    this->size_Hz[0] ++;
 
     if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[1] == true){
-        this->size_Hz[1] = N - REMOVE_ONE;
+        this->size_Hz[1] = N + 2 - REMOVE_ONE;
     }else{
-        this->size_Hz[1] = N;
+        this->size_Hz[1] = N + 2;
     }
-
-    this->size_Hz[1] ++;
 
     if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[2] == true){
-        this->size_Hz[2] = P - REMOVE_ONE;
+        this->size_Hz[2] = P + 2 - REMOVE_ONE;
     }else{
-        this->size_Hz[2] = P;
+        this->size_Hz[2] = P + 2;
     }
-
-    this->size_Hz[2] ++;
 
     size = this->size_Hz[0]
              * this->size_Hz[1]
              * this->size_Hz[2];
 
-    this->H_z               = new double[size];
-    this->H_z_material      = new unsigned char[size];
-    this->H_z_mu            = new double[size];
-    this->H_z_magnetic_cond = new double[size];
+    this->H_z               = new double[size]();
+    this->H_z_material      = new unsigned char[size]();
+    this->H_z_mu            = new double[size]();
+    this->H_z_magnetic_cond = new double[size]();
 
     memory = (8+1+8+8) * size;
     this->profiler.addMemoryUsage("BYTES",memory);
 
     /* ALLOCATE SPACE FOR THE TEMPERATURE FIELD */
 
-    #if DEBUG > 2
-    std::cout << "GridCreator_New::initializing temperature" << std::endl;
-    #endif
     // The temperature grid is homogeneous. (this->size_Thermal^3).
     size_t T = this->size_Thermal[0] * this->size_Thermal[1] * this->size_Thermal[2];
 
@@ -547,10 +494,10 @@ void GridCreator_NEW::meshInitialization(void){
         abort();
     }
 
-    this->temperature          = new double[T];
-    this->temperature_material = new unsigned char[T];
-    this->thermal_conductivity = new double[T];
-    this->thermal_diffusivity  = new double[T];
+    this->temperature          = new double[T]();
+    this->temperature_material = new unsigned char[T]();
+    this->thermal_conductivity = new double[T]();
+    this->thermal_diffusivity  = new double[T]();
 
     memory = (8+1+8+8) * T;
     this->profiler.addMemoryUsage("BYTES",memory);

@@ -31,6 +31,9 @@ using namespace vtl;
 const int __one__ = 1;
 const bool isCpuLittleEndian = 1 == *(char *)(&__one__); // CPU endianness
 
+// Custom assert function:
+#define ASSERT(left,operator,right) { if(!((left) operator (right))){ printf("ASSERT FAILED: " #left "(%lf) " #operator " " #right "(%lf) @ %s:%d.\n",(double)(left),(double)(right),__FILE__,__LINE__); abort();} }
+
 /**
  * @brief Check that nested omp region is enabled to speed up the buffer filling during writing.
  * 
@@ -303,17 +306,18 @@ size_t write_vectorXML_custom_GridCreatorNew(
             size_field = size[0]*size[1]*size[2];
             buffer.resize(size_field);
 
-            size_t counter = 0 ;
             size_t index   = 0;
 
             size_t I,J,K;
 
-            #pragma omp private(index,I,J,K) shared(buffer,grid) for schedule(static) 
+            #pragma omp private(index,I,J,K) shared(buffer,grid) for
             for(K = 0 ; K < size[2] ; K ++){
                 for(J = 0 ; J < size[1] ; J ++){
                     for(I = 0 ; I < size[0] ; I ++){
 
                         index = I + size[0] * (J + K * size[1]);
+
+                        ASSERT(index,<,grid.size_Thermal[0]*grid.size_Thermal[1]*grid.size_Thermal[2]);
 
                         buffer[index] = (float)grid.temperature[index];
                         
@@ -350,14 +354,16 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
 
             // EX field:
-            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for 
             for(K = 1 ; K < grid.size_Ex[2]-1 ; K ++){
                 for(J = 1 ; J < grid.size_Ex[1]-1 ; J ++ ){
                     for(I = 1 ; I < grid.size_Ex[0]-1 ; I ++){
 
                         index = I + grid.size_Ex[0] * ( J + grid.size_Ex[1] * K );
+                        ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
 
                         buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+                        ASSERT(buff_index,<,buffer.size());
 
                         buffer[3*buff_index] = grid.E_x[index];
                         
@@ -366,14 +372,16 @@ size_t write_vectorXML_custom_GridCreatorNew(
             }
 
             // EY field:
-            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for
             for(size_t K = 1 ; K < grid.size_Ey[2]-1 ; K ++){
                 for(size_t J = 1 ; J < grid.size_Ey[1]-1 ; J ++ ){
                     for(size_t I = 1 ; I < grid.size_Ey[0]-1 ; I ++){
 
                         index = I + grid.size_Ey[0] * ( J + grid.size_Ey[1] * K );
+                        ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 
                         buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+                        ASSERT(buff_index,<,buffer.size());
 
                         buffer[3*buff_index+1] = grid.E_y[index];
                         
@@ -382,13 +390,16 @@ size_t write_vectorXML_custom_GridCreatorNew(
             }
 
             // EZ field:
-            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for
             for(size_t K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
                 for(size_t J = 1 ; J < grid.size_Ez[1]-1 ; J ++ ){
                     for(size_t I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
+
                         index = I + grid.size_Ez[0] * ( J + grid.size_Ez[1] * K );
+                        ASSERT(index,<,grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]);
 
                         buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
+                        ASSERT(buff_index,<,buffer.size());
 
                         buffer[3*buff_index+2] = grid.E_z[index];
                 
@@ -421,17 +432,22 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
             size_t I,J,K;
 
+            const size_t RM = 1;
+
             // HX field:
-            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
-            for(K = 0 ; K < grid.size_Hx[2]-DECALAGE_H ; K ++){
-                for(J = 0 ; J < grid.size_Hx[1]-DECALAGE_H ; J ++ ){
-                    for(I = 0 ; I < grid.size_Hx[0]-DECALAGE_H ; I ++){
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for
+            for(K = 1 ; K < grid.size_Hx[2]-DECALAGE_H ; K ++){
+                for(J = 1 ; J < grid.size_Hx[1]-DECALAGE_H ; J ++ ){
+                    for(I = 1 ; I < grid.size_Hx[0]-DECALAGE_H ; I ++){
 
                         index = I + grid.size_Hx[0] * ( J + grid.size_Hx[1] * K );
+                        ASSERT(index,<,grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]);
 
-                        buff_index = I
-                                + grid.sizes_EH[0] * ( J
-                                    + grid.sizes_EH[1] * (K) );
+                        buff_index = I-RM
+                                + grid.sizes_EH[0] * ( J-RM
+                                    + grid.sizes_EH[1] * (K-RM) );
+
+                        ASSERT(buff_index,<,buffer.size());
 
                         buffer[3*buff_index] = grid.H_x[index];
                         
@@ -440,16 +456,19 @@ size_t write_vectorXML_custom_GridCreatorNew(
             }
 
             // HY field:
-            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
-            for(K = 0 ; K < grid.size_Hy[2]-DECALAGE_H ; K ++){
-                for(J = 0 ; J < grid.size_Hy[1]-DECALAGE_H ; J ++ ){
-                    for(I = 0 ; I < grid.size_Hy[0]-DECALAGE_H ; I ++){
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for
+            for(K = 1 ; K < grid.size_Hy[2]-DECALAGE_H ; K ++){
+                for(J = 1 ; J < grid.size_Hy[1]-DECALAGE_H ; J ++ ){
+                    for(I = 1 ; I < grid.size_Hy[0]-DECALAGE_H ; I ++){
 
                         index = I + grid.size_Hy[0] * ( J + grid.size_Hy[1] * K );
+                        ASSERT(index,<,grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]);
 
-                        buff_index = I
-                                + grid.sizes_EH[0] * ( J
-                                     + grid.sizes_EH[1] * (K) );
+                        buff_index = I-RM
+                                + grid.sizes_EH[0] * ( J-RM
+                                     + grid.sizes_EH[1] * (K-RM) );
+
+                        ASSERT(buff_index,<,buffer.size());
 
                         buffer[3*buff_index+1] = grid.H_y[index];
                         
@@ -458,16 +477,18 @@ size_t write_vectorXML_custom_GridCreatorNew(
             }
 
             // HZ field:
-            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for schedule(static) 
-            for(size_t K = 0 ; K < grid.size_Hz[2]-DECALAGE_H ; K ++){
-                for(size_t J = 0 ; J < grid.size_Hz[1]-DECALAGE_H ; J ++ ){
-                    for(size_t I = 0 ; I < grid.size_Hz[0]-DECALAGE_H ; I ++){
+            #pragma omp private(index,I,J,K,buff_index) shared(grid,buffer) for
+            for(size_t K = 1 ; K < grid.size_Hz[2]-DECALAGE_H ; K ++){
+                for(size_t J = 1 ; J < grid.size_Hz[1]-DECALAGE_H ; J ++ ){
+                    for(size_t I = 1 ; I < grid.size_Hz[0]-DECALAGE_H ; I ++){
 
                         index = I + grid.size_Hz[0] * ( J + grid.size_Hz[1] * K );
+                        ASSERT(index,<,grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]);
 
-                        buff_index = I
-                                + grid.sizes_EH[0] * ( J
-                                     + grid.sizes_EH[1] * (K) );
+                        buff_index = I-RM
+                                + grid.sizes_EH[0] * ( J-RM
+                                     + grid.sizes_EH[1] * (K-RM) );
+                        ASSERT(buff_index,<,buffer.size());
 
                         buffer[3*buff_index+2] = grid.H_z[index];
                         

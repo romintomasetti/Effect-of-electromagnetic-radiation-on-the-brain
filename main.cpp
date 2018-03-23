@@ -75,19 +75,17 @@ int main(int argc, char *argv[]){
 	printf("\n---------\nMPI rank is %d and isRoot %d.\n--------\n",MPI_communicator.getRank(),
 		  MPI_communicator.isRootProcess());
 
-	/* Call the inpt file parser, input file name given as an argument: */
+	/* Call the input file parser, input file name given as an argument: */
 	cout << "Calling input file parser...\n";
 	string filenameInput = inputs["-inputfile"];
 	InputParser input_parser;
 	int MPI_RANK = MPI_communicator.getRank();
 	input_parser.defaultParsingFromFile(filenameInput,MPI_RANK);
 	cout << "INPUT PARSER HAS FINISHED HIS JOBS." << endl;
-
-	abort();
 	
-	/* The variable allMat will store the materials' properties */
+	/* The material object stores all the material properties */
 	Materials allMat;
-	allMat.getPropertiesFromFile("data_air.csv");//MaterialProperties.csv
+	allMat.getPropertiesFromFile(input_parser.material_data_file);
 	allMat.printAllProperties();
 	cout << "Print number of temp per mat::IN" << endl;
 	allMat.printNumberOfTempLinePerMat();
