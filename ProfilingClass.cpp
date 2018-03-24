@@ -90,20 +90,52 @@ void ProfilingClass::removeMemoryUsage(std::string type, double mem,
     }
 }
 
-// Add a timing input:
-void ProfilingClass::addTimingInputToDictionnary(std::string newTimingInput){
+/**
+ * @brief Add a timing input.
+ * 
+ * Arguments:
+ *      1) name of the new input
+ *      2) if true, do nothing if input already exists. If false, abort if
+ *          input already exists.
+ */
+void ProfilingClass::addTimingInputToDictionnary(
+    std::string newTimingInput,
+    bool try_and_do_nothing_if_exist // = true by default
+){
+
     // Determine if the field already exists.
     if ( this->time_taken_for.find(newTimingInput) == this->time_taken_for.end() ) {
         // The timing input doesn't exist. Adding it.
         this->time_taken_for.insert(std::pair<std::string,double>(newTimingInput,0.0));
         printf("ProfilingClass::addTimingInputToDictionnary:: timing input %s successfully added.\n",
             newTimingInput.c_str());
+    }else if(try_and_do_nothing_if_exist == true){
+        // Do nothing
     } else {
         // The timing input already exists. Aborting.
         fprintf(stderr,"ProfilingClass::addTimingInputToDictionnary::ERROR\n");
         fprintf(stderr,"\t>>> At file %s:%d\n",__FILE__,__LINE__);
         fprintf(stderr,"\t>>> The timing input '%s' already exists.\n",newTimingInput.c_str());
         abort();
+    }
+}
+
+// Get the time of an input:
+double ProfilingClass::getTimingInput(std::string timingInput){
+    if ( this->time_taken_for.find(timingInput) == this->time_taken_for.end() ) {
+        // The timing input doesn't exist. Aborting.
+        fprintf(stderr,"ProfilingClass::%s::ERROR\n",__FUNCTION__);
+        fprintf(stderr,"\t>>> At file %s:%d\n",__FILE__,__LINE__);
+        fprintf(stderr,"\t>>> The timing input '%s' doesn't exist.\n",timingInput.c_str());
+        
+        std::map<std::string,double>::iterator it;
+        std::cout << "\t>>> Timing inputs are:\n";
+        for (it=this->time_taken_for.begin(); it!=this->time_taken_for.end(); ++it)
+            std::cout << "\t\t>>> " << it->first << " => " << it->second << "\n";
+        abort();
+    } else {
+        // The timing input exists.
+        return this->time_taken_for[timingInput];
     }
 }
 
@@ -131,7 +163,10 @@ void ProfilingClass::incrementTimingInput(std::string timingInput, double incr){
     } else {
         // The timing input exists.
         this->time_taken_for[timingInput] += incr;
-        printf("Time for %s is now %f seconds.\n",timingInput.c_str(),this->time_taken_for[timingInput]);
+        #ifndef NDEBUG
+            printf("Time for %s is now %f seconds.\n",
+                        timingInput.c_str(),this->time_taken_for[timingInput]);
+        #endif
     }
 }
 

@@ -44,19 +44,12 @@ void InterfaceToParaviewer::initializeAll(void){
     double dz_Electro = 0.0;
     double delta_thermal = 0.0;
 
-    if(this->is_grid_creator_new == false){
-        dx_Electro = this->grid_Creator.input_parser.deltaX_Electro;
-        dy_Electro = this->grid_Creator.input_parser.deltaY_Electro;
-        dz_Electro = this->grid_Creator.input_parser.deltaZ_Electro;
 
-        delta_thermal = this->grid_Creator.input_parser.delta_Thermal;
-    }else{
-        dx_Electro = this->grid_Creator_NEW.input_parser.deltaX_Electro;
-        dy_Electro = this->grid_Creator_NEW.input_parser.deltaY_Electro;
-        dz_Electro = this->grid_Creator_NEW.input_parser.deltaZ_Electro;
+    dx_Electro = this->grid_Creator_NEW.input_parser.deltaX_Electro;
+    dy_Electro = this->grid_Creator_NEW.input_parser.deltaY_Electro;
+    dz_Electro = this->grid_Creator_NEW.input_parser.deltaZ_Electro;
 
-        delta_thermal = this->grid_Creator_NEW.input_parser.delta_Thermal;
-    }
+    delta_thermal = this->grid_Creator_NEW.input_parser.delta_Thermal;
 
     /* CHECK DELTAS */
     if(dx_Electro <= 0.0 || dy_Electro <= 0.0 || dz_Electro <= 0.0 || delta_thermal <= 0.0){
@@ -66,13 +59,8 @@ void InterfaceToParaviewer::initializeAll(void){
     }
 
     /* INITIALIZE 'grid_thermal'/'grid_Electro' for each MPI process (even for non-root ones) */
-    if(this->is_grid_creator_new == false){
-        this->grid_Electro.o = this->grid_Creator.originOfWholeSimulation;
-        this->grid_Thermal.o = this->grid_Creator.originOfWholeSimulation;
-    }else{
-        this->grid_Electro.o = this->grid_Creator_NEW.originOfWholeSimulation_Electro;
-        this->grid_Thermal.o = this->grid_Creator_NEW.originOfWholeSimulation_Thermal;
-    }
+    this->grid_Electro.o = this->grid_Creator_NEW.originOfWholeSimulation_Electro;
+    this->grid_Thermal.o = this->grid_Creator_NEW.originOfWholeSimulation_Thermal;
 
     this->grid_Electro.dx = vtl::Vec3d(dx_Electro,dy_Electro,dz_Electro);
     this->grid_Thermal.dx = vtl::Vec3d(delta_thermal,delta_thermal,delta_thermal);
@@ -87,21 +75,12 @@ void InterfaceToParaviewer::initializeAll(void){
     double length_y_whole_dom_thermal = 0.0;
     double length_z_whole_dom_thermal = 0.0;
 
-    if(this->is_grid_creator_new == false){
-        length_X_whole_dom_electro = this->grid_Creator.input_parser.lengthX_WholeDomain_Electro;
-        length_Y_whole_dom_electro = this->grid_Creator.input_parser.lengthY_WholeDomain_Electro;
-        length_Z_whole_dom_electro = this->grid_Creator.input_parser.lengthZ_WholeDomain_Electro;
-        length_x_whole_dom_thermal = this->grid_Creator.input_parser.lengthX_WholeDomain_Thermal;
-        length_y_whole_dom_thermal = this->grid_Creator.input_parser.lengthY_WholeDomain_Thermal;
-        length_z_whole_dom_thermal = this->grid_Creator.input_parser.lengthZ_WholeDomain_Thermal;
-    }else{
-        length_X_whole_dom_electro = this->grid_Creator_NEW.input_parser.lengthX_WholeDomain_Electro;
-        length_Y_whole_dom_electro = this->grid_Creator_NEW.input_parser.lengthY_WholeDomain_Electro;
-        length_Z_whole_dom_electro = this->grid_Creator_NEW.input_parser.lengthZ_WholeDomain_Electro;
-        length_x_whole_dom_thermal = this->grid_Creator_NEW.input_parser.lengthX_WholeDomain_Thermal;
-        length_y_whole_dom_thermal = this->grid_Creator_NEW.input_parser.lengthY_WholeDomain_Thermal;
-        length_z_whole_dom_thermal = this->grid_Creator_NEW.input_parser.lengthZ_WholeDomain_Thermal;
-    }
+    length_X_whole_dom_electro = this->grid_Creator_NEW.input_parser.lengthX_WholeDomain_Electro;
+    length_Y_whole_dom_electro = this->grid_Creator_NEW.input_parser.lengthY_WholeDomain_Electro;
+    length_Z_whole_dom_electro = this->grid_Creator_NEW.input_parser.lengthZ_WholeDomain_Electro;
+    length_x_whole_dom_thermal = this->grid_Creator_NEW.input_parser.lengthX_WholeDomain_Thermal;
+    length_y_whole_dom_thermal = this->grid_Creator_NEW.input_parser.lengthY_WholeDomain_Thermal;
+    length_z_whole_dom_thermal = this->grid_Creator_NEW.input_parser.lengthZ_WholeDomain_Thermal;
 
     size_t nodesWholeDom_X_Electro = length_X_whole_dom_electro / dx_Electro +1;
     size_t nodesWholeDom_Y_Electro = length_Y_whole_dom_electro / dy_Electro +1;
@@ -141,13 +120,8 @@ void InterfaceToParaviewer::initializeAll(void){
             this->sgrids_Thermal[I].dx = vtl::Vec3d(delta_thermal,delta_thermal,delta_thermal);
 
             // Setting the origin:
-            if(this->is_grid_creator_new == false){
-                this->sgrids_Electro[I].o = this->grid_Creator.originOfWholeSimulation;
-                this->sgrids_Thermal[I].o = this->grid_Creator.originOfWholeSimulation;
-            }else{
-                this->sgrids_Electro[I].o = this->grid_Creator_NEW.originOfWholeSimulation_Electro;
-                this->sgrids_Thermal[I].o = this->grid_Creator_NEW.originOfWholeSimulation_Thermal;
-            }
+            this->sgrids_Electro[I].o = this->grid_Creator_NEW.originOfWholeSimulation_Electro;
+            this->sgrids_Thermal[I].o = this->grid_Creator_NEW.originOfWholeSimulation_Thermal;
 
             // Setting the origin and end indices of each subgrid:
             if(I == this->MPI_communicator.rootProcess){
@@ -155,39 +129,26 @@ void InterfaceToParaviewer::initializeAll(void){
                 this->mygrid_Thermal.id = this->MPI_communicator.getRank();
                 // Don't communicate:
                 for(int k = 0 ; k < 3 ; k ++){
-                    if(this->is_grid_creator_new == false){
-                        // Grid creator:
-                        this->mygrid_Electro.np1[k] = this->mygrid_Thermal.np1[k] =
-                                        this->grid_Creator.originIndices[k];
+                    
+                    // Grid creator new:
+                    this->mygrid_Electro.np1[k] = this->grid_Creator_NEW.originIndices_Electro[k];
 
-                        this->mygrid_Electro.np2[k] = this->mygrid_Thermal.np2[k] =
-                                        this->mygrid_Electro.np1[k] + this->grid_Creator.numberOfNodesInEachDir[k];
+                    this->mygrid_Thermal.np1[k] = this->grid_Creator_NEW.originIndices_Thermal[k];
 
-                        this->sgrids_Electro[I].np1[k] = this->sgrids_Thermal[I].np1[k] =
-                                        this->grid_Creator.originIndices[k];
+                    this->mygrid_Electro.np2[k] = this->grid_Creator_NEW.sizes_EH[k];
 
-                        this->sgrids_Electro[I].np2[k] = this->sgrids_Thermal[I].np1[k] = 
-                                        this->sgrids_Electro[I].np1[k] + this->grid_Creator.numberOfNodesInEachDir[k];
-                    }else{
-                        // Grid creator new:
-                        this->mygrid_Electro.np1[k] = this->grid_Creator_NEW.originIndices_Electro[k];
+                    this->mygrid_Thermal.np2[k] = this->grid_Creator_NEW.size_Thermal[k];
 
-                        this->mygrid_Thermal.np1[k] = this->grid_Creator_NEW.originIndices_Thermal[k];
+                    this->sgrids_Electro[I].np1[k] = this->mygrid_Electro.np1[k];
 
-                        this->mygrid_Electro.np2[k] = this->grid_Creator_NEW.sizes_EH[k];
+                    this->sgrids_Thermal[I].np1[k] = this->mygrid_Thermal.np1[k];
 
-                        this->mygrid_Thermal.np2[k] = this->grid_Creator_NEW.size_Thermal[k];
+                    this->sgrids_Electro[I].np2[k] = this->mygrid_Electro.np1[k]
+                            + this->mygrid_Electro.np2[k];
 
-                        this->sgrids_Electro[I].np1[k] = this->mygrid_Electro.np1[k];
+                    this->sgrids_Thermal[I].np2[k] = this->mygrid_Thermal.np1[k]
+                            + this->mygrid_Thermal.np2[k];
 
-                        this->sgrids_Thermal[I].np1[k] = this->mygrid_Thermal.np1[k];
-
-                        this->sgrids_Electro[I].np2[k] = this->mygrid_Electro.np1[k]
-                                + this->mygrid_Electro.np2[k];
-
-                        this->sgrids_Thermal[I].np2[k] = this->mygrid_Thermal.np1[k]
-                                + this->mygrid_Thermal.np2[k];
-                    }
                 }
             }else{
                 unsigned long np1_Electro[3];
@@ -235,19 +196,12 @@ void InterfaceToParaviewer::initializeAll(void){
         unsigned long np2_Thermal[3];
 
         for(int k = 0 ; k  <  3 ; k ++ ){
-            if(this->is_grid_creator_new == false){
-                np1_Electro[k] = this->grid_Creator.originIndices[k];
-                np2_Electro[k] = np1_Electro[k] + this->grid_Creator.numberOfNodesInEachDir[k];
-                np1_Thermal[k] = np1_Electro[k];
-                np2_Thermal[k] = np2_Electro[k];
-            }else{
                 
-                np1_Electro[k] = this->grid_Creator_NEW.originIndices_Electro[k];
-                np2_Electro[k] = np1_Electro[k] + this->grid_Creator_NEW.sizes_EH[k];
+            np1_Electro[k] = this->grid_Creator_NEW.originIndices_Electro[k];
+            np2_Electro[k] = np1_Electro[k] + this->grid_Creator_NEW.sizes_EH[k];
 
-                np1_Thermal[k] = this->grid_Creator_NEW.originIndices_Thermal[k];
-                np2_Thermal[k] = np1_Thermal[k] + this->grid_Creator_NEW.size_Thermal[k];
-            }
+            np1_Thermal[k] = this->grid_Creator_NEW.originIndices_Thermal[k];
+            np2_Thermal[k] = np1_Thermal[k] + this->grid_Creator_NEW.size_Thermal[k];
         }   
 
         // Send np1_Electro:
@@ -326,20 +280,28 @@ std::string create_folder_and_go_in(std::string folderName){
     // Get current working directory:
     std::string currentWorkingDir = cwd(buf, sizeof buf);
 
-    printf("Current working directory is %s.\n",currentWorkingDir.c_str());
+    #ifndef NDEBUG
+        printf("Current working directory is %s.\n",currentWorkingDir.c_str());
+    #endif
 
     // Try to go into 'folderName' directory:
     if (0 == cd(folderName.c_str())) {
-      std::cout << "CWD changed to: " << cwd(buf, sizeof buf) << std::endl;
+        #ifndef NDEBUG
+            std::cout << "CWD changed to: " << cwd(buf, sizeof buf) << std::endl;
+        #endif
     }else{
-        printf("Must create the directory %s...\n",folderName.c_str());
+        #ifndef NDEBUG
+            printf("Must create the directory %s...\n",folderName.c_str());
+        #endif
         #if defined(_WIN32)
             _mkdir(folderName.c_str());
         #else 
             mkdir(folderName.c_str(), 0700); 
         #endif
         if(0 == cd(folderName.c_str())){
-            std::cout << "CWD changed to: " << cwd(buf, sizeof(buf)) << std::endl;
+            #ifndef NDEBUG
+                std::cout << "CWD changed to: " << cwd(buf, sizeof(buf)) << std::endl;
+            #endif
         }else{
             fprintf(stderr,"In %s :: Cannot create/change directory %s !\n",__FUNCTION__,folderName.c_str());
             fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
@@ -369,15 +331,8 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
     map<std::string,std::string> outputFileNames;
     std::string outputName;
 
-    if(this->is_grid_creator_new == false){
-        // Is of type GridCreator:
-        outputFileNames = this->grid_Creator.input_parser.get_outputNames();
-        outputName = outputFileNames["output"];
-    }else{
-        // Is of type GridCreator_NEW:
-        outputFileNames = this->grid_Creator_NEW.input_parser.get_outputNames();
-        outputName = outputFileNames["output"];
-    }
+    outputFileNames = this->grid_Creator_NEW.input_parser.get_outputNames();
+    outputName = outputFileNames["output"];
 
     /// Determine if the output files should be stored in a folder:
     std::vector<std::string> folderAndFileNames = get_folder_from_name(outputName);
@@ -395,120 +350,56 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
     /* DETERMINE WHICH GRID TO SAVE */
     if(strcmp(type.c_str(),"THERMAL") == 0){
         /* SAVE THERMAL GRID */
-        cout << ">>> MPI  WRITING XML (THERMAL GRID)" << endl;
-        try{
-            if(this->is_grid_creator_new == false){
-                export_spoints_XML_custom_GridCreator(
-                                "THERMAL",
-                                outputName,
-                                currentStep,
-                                this->grid_Thermal, 
-                                this->mygrid_Thermal,
-                                this->grid_Creator, 
-                                vtl::ZIPPED);
-            }else{
-                export_spoints_XML_custom_GridCreator_NEW(
-                                "THERMAL",
-                                outputName,
-                                currentStep,
-                                this->grid_Thermal, 
-                                this->mygrid_Thermal,
-                                this->grid_Creator_NEW, 
-                                vtl::ZIPPED);
-            }
-        }catch(...){
-            fprintf(stderr,"InterfaceToParaviewer::convertAndWriteData::ERROR\n");
-            fprintf(stderr,"Error while writing output on process MPI %d. Aborting.\n",
-                this->MPI_communicator.getRank());
-            fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
-            std::abort();
-        }
+
+        export_spoints_XML_custom_GridCreator_NEW(
+                        "THERMAL",
+                        outputName,
+                        currentStep,
+                        this->grid_Thermal, 
+                        this->mygrid_Thermal,
+                        this->grid_Creator_NEW, 
+                        vtl::ZIPPED);
 
         /* ONLY THE ROOT PROCESS CALLS THE FOLLOWING FUNCTION */
         if (this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess)
         {
-            cout << ">>> MPI ROOT WRITING XMLP (THERMAL GRID)" << endl;
-            if(this->is_grid_creator_new == false){
-                export_spoints_XMLP_custom_GridCreator(
-                                    "THERMAL",
-                                    outputName, 
-                                    currentStep, 
-                                    this->grid_Thermal, 
-                                    this->mygrid_Thermal, 
-                                    this->sgrids_Thermal, 
-                                    this->grid_Creator,
-                                    vtl::ZIPPED);
-            }else{
-                export_spoints_XMLP_custom_GridCreator_NEW(
-                                    "THERMAL",
-                                    outputName, 
-                                    currentStep, 
-                                    this->grid_Thermal, 
-                                    this->mygrid_Thermal, 
-                                    this->sgrids_Thermal, 
-                                    this->grid_Creator_NEW,
-                                    vtl::ZIPPED);
-            }
+            
+            export_spoints_XMLP_custom_GridCreator_NEW(
+                                "THERMAL",
+                                outputName, 
+                                currentStep, 
+                                this->grid_Thermal, 
+                                this->mygrid_Thermal, 
+                                this->sgrids_Thermal, 
+                                //this->grid_Creator_NEW,
+                                vtl::ZIPPED);
         }
 
         /* END OF THERMAL GRID SAVING */
     }else if(strcmp(type.c_str(),"ELECTRO") == 0){
         /* SAVE ELECTROMAGNETIC GRID */
-        try{
-            if(this->is_grid_creator_new == false){
-                std::cout << "Calling XML pas new (electro)" << std::endl;
-                export_spoints_XML_custom_GridCreator(
-                                "ELECTRO",
-                                outputName,
-                                currentStep,
-                                this->grid_Electro, 
-                                this->mygrid_Electro,
-                                this->grid_Creator, 
-                                vtl::ZIPPED);
-            }else{
-                std::cout << "Calling XML NEW" << std::endl;
-                export_spoints_XML_custom_GridCreator_NEW(
-                                "ELECTRO",
-                                outputName,
-                                currentStep,
-                                this->grid_Electro, 
-                                this->mygrid_Electro,
-                                this->grid_Creator_NEW, 
-                                vtl::ZIPPED);
-            }
-        }catch(...){
-            fprintf(stderr,"InterfaceToParaviewer::convertAndWriteData::ERROR\n");
-            fprintf(stderr,"Error while writing output on process MPI %d. Aborting.\n",
-                this->MPI_communicator.getRank());
-            fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
-            std::abort();
-        }
+            
+        export_spoints_XML_custom_GridCreator_NEW(
+                        "ELECTRO",
+                        outputName,
+                        currentStep,
+                        this->grid_Electro, 
+                        this->mygrid_Electro,
+                        this->grid_Creator_NEW, 
+                        vtl::ZIPPED);
 
         /* ONLY THE ROOT PROCESS CALLS THE FOLLOWING FUNCTION */
         if (this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess)
-        {
-            cout << ">>> MPI ROOT WRITING XMLP (ELECTRO GRID)" << endl;
-            if(this->is_grid_creator_new == false){
-                export_spoints_XMLP_custom_GridCreator(
-                                    "ELECTRO",
-                                    outputName, 
-                                    currentStep, 
-                                    this->grid_Electro, 
-                                    this->mygrid_Electro, 
-                                    this->sgrids_Electro, 
-                                    this->grid_Creator,
-                                    vtl::ZIPPED);
-            }else{
-                export_spoints_XMLP_custom_GridCreator_NEW(
-                                    "ELECTRO",
-                                    outputName, 
-                                    currentStep, 
-                                    this->grid_Electro, 
-                                    this->mygrid_Electro, 
-                                    this->sgrids_Electro, 
-                                    this->grid_Creator_NEW,
-                                    vtl::ZIPPED);
-            }
+        {            
+            export_spoints_XMLP_custom_GridCreator_NEW(
+                                "ELECTRO",
+                                outputName, 
+                                currentStep, 
+                                this->grid_Electro, 
+                                this->mygrid_Electro, 
+                                this->sgrids_Electro, 
+                                //this->grid_Creator_NEW,
+                                vtl::ZIPPED);
         }
 
         /* END OF ELECTROMAGNETIC GRID SAVING */
@@ -520,8 +411,6 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
         fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
         abort();
     }
-
-    cout << "WRITING DONE (MPI " << this->MPI_communicator.getRank() << endl;
 
     /// Revert to parent working directory:
     if( 0 != cd(parentFolder.c_str())){

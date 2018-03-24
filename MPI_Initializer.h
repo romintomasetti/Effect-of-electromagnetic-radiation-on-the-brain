@@ -6,7 +6,7 @@
 #include <mpi.h>
 #include <limits.h>
 #include "SetOnceVariable_Template.h"
-#include "GridCreator.h"
+
 #include "GridCreator_NEW.h"
 
 class GridCreator_NEW;
@@ -55,8 +55,6 @@ class MPI_Initializer{
 				std::abort();
 			}
 		}
-
-		void MpiDivision(GridCreator &);
 
 		void MPI_DIVISION(GridCreator_NEW & /*subgrid*/);
 

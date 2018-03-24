@@ -41,10 +41,16 @@ class ProfilingClass{
         void addMemoryUsage(std::string,double);
 
         // Add a timing input:
-        void addTimingInputToDictionnary(std::string);
+        void addTimingInputToDictionnary(
+            std::string,
+            bool try_and_do_nothing_if_exist = true
+        );
 
         // Increment a timing input:
         void incrementTimingInput(std::string, double);
+
+        // Get the time of an input:
+        double getTimingInput(std::string);
 
         // Set the output file's name:
         void setOutputFileName(std::string);

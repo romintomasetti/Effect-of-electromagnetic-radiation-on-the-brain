@@ -7,7 +7,7 @@ include(CheckCXXCompilerFlag)
 set(EXEC_NAME main)
 
 IF(NOT CMAKE_BUILD_TYPE)
-    #SET( CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+    SET( CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
 check_cxx_compiler_flag("-std=c++11" STDCXX11)

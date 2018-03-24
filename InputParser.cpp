@@ -705,17 +705,7 @@ void InputParser::readHeader_MESH (ifstream &file){
 									this->source.get_number_of_sources());
 							this->source.setAllFrequencies(temp);
 
-						}else if(propName == "AIR_GAP"){
-							std::vector<double> airgaps = 
-								this->determineVectorFromStr(
-									propGiven,
-									this->source.get_number_of_sources());
-							this->source.set_airGaps(airgaps);
-						
-						}else if(propName != "NBR_SOURCES" 
-								&& propName != "L_X" 
-								&& propName != "L_Y"
-								&& propName != "L_Z"){
+						}else{
 							printf("InputParser::readHeader_MESH:: You didn't provide a ");
 							printf("good member for $MESH$SOURCE.\nAborting.\n");
 							cout << propName << endl;

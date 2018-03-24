@@ -1,7 +1,6 @@
 #ifndef INTERFACETOPARAVIEWER_H
 #define INTERFACETOPARAVIEWER_H
 
-#include "GridCreator.h"
 
 #include "GridCreator_NEW.h"
 
@@ -12,8 +11,7 @@
 
 class InterfaceToParaviewer{
     private:
-        // Reference to a GridCreator object:
-        GridCreator     &grid_Creator;
+
         // Reference to a GridCreator_NEW object:
         GridCreator_NEW &grid_Creator_NEW;
         // Reference to a MPI_Initializer object:
@@ -37,22 +35,15 @@ class InterfaceToParaviewer{
         // My thermal grid:
         vtl::SPoints mygrid_Thermal;
 
-        // Decide if it is GidCreator or GridCreator_NEW:
-        bool is_grid_creator_new;
-
     public:
         // Default constructor:
-        InterfaceToParaviewer(GridCreator   &grid_Creator,
-                            MPI_Initializer &MPI_communicator,
-                            GridCreator_NEW &grid_Creator_NEW,
-                            bool is_grid_creator_new):
-                            grid_Creator(grid_Creator),
+        InterfaceToParaviewer(MPI_Initializer &MPI_communicator,
+                            GridCreator_NEW &grid_Creator_NEW):
                             grid_Creator_NEW(grid_Creator_NEW),
                             MPI_communicator(MPI_communicator)
                             {
                                 this->initializeAll();
                                 printf("InterfaceToParaviewer::constructor::OUT\n");
-                                this->is_grid_creator_new = is_grid_creator_new;
                             };
         // Default destructor:
         ~InterfaceToParaviewer(void){printf("InterfaceToParaviewer::destructor::out\n");};

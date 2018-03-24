@@ -30,12 +30,10 @@
 #include "Materials.h"
 #include "Array_3D_Template.h"
 #include "Node3DField.h"
-#include "GridCreator.h"
 #include "MPI_Initializer.h"
 #include "SetOnceVariable_Template.h"
 #include "InputParser.h"
 #include "ElectromagneticSource.h"
-#include "AlgoElectro.h"
 
 #include "vtl.h"
 #include "vtlSPoints.h"
@@ -112,8 +110,6 @@ int main(int argc, char *argv[]){
 	map<std::string,std::string> test222 = input_parser.get_outputNames();
 	cout << test222["output"] << test222["error"] << test222["profile"] << endl;
 
-	//cout << "Calling GridCreator constructor" << endl;
-	GridCreator mesher(input_parser,allMat,MPI_communicator);
 	
 	
 	MPI_Barrier(MPI_COMM_WORLD);
@@ -124,9 +120,10 @@ int main(int argc, char *argv[]){
 	gridTest.meshInitialization();
 
 	InterfaceToParaviewer interfaceToWriteOutput(
-			mesher,
 			MPI_communicator,
-			gridTest,true /*is_grid_creator_new*/);
+			gridTest
+		);
+		
 	interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
 	interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
 
@@ -159,10 +156,6 @@ int main(int argc, char *argv[]){
 	MPI_Barrier(MPI_COMM_WORLD);
 	//MPI_Abort(MPI_COMM_WORLD,-1);
 
-
-	//AlgoElectro algoElectromagn; 
-	
-	//algoElectromagn.update(mesher,interfaceToWriteOutput);
 	
 	AlgoElectro_NEW algoElectro_newTst;
 	algoElectro_newTst.update(gridTest,interfaceToWriteOutput);

@@ -23,19 +23,7 @@ class ElectromagneticSource{
 		std::vector<bool> nodesInsideAlreadySet;
 
 		//
-		std::vector<size_t> nbrNodeCorner1_X;
-		std::vector<size_t> nbrNodeCorner1_Y;
-		std::vector<size_t> nbrNodeCorner1_Z;
-		std::vector<size_t> nodesInsideAlong_X;
-		std::vector<size_t> nodesInsideAlong_Y;
-		std::vector<size_t> nodesInsideAlong_Z;
 
-		std::vector<size_t> nbrNodeCorner1_Airgap_X;
-		std::vector<size_t> nbrNodeCorner1_Airgap_Y;
-		std::vector<size_t> nbrNodeCorner1_Airgap_Z;
-		std::vector<size_t> nodesInsideAlong_Airgap_X;
-		std::vector<size_t> nodesInsideAlong_Airgap_Y;
-		std::vector<size_t> nodesInsideAlong_Airgap_Z;
 	public:
 		// Constructor:
 		ElectromagneticSource(){};
@@ -50,9 +38,6 @@ class ElectromagneticSource{
 		std::vector<double> centerY;
 		std::vector<double> centerZ;
 		std::vector<double> frequency;
-
-		std::vector<double> airgap;
-
 
 		void set_number_of_sources(const unsigned int);
 		unsigned int get_number_of_sources(void){

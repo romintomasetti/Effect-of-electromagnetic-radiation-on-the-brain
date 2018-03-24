@@ -64,8 +64,6 @@ $MESH
 		C_Z=0.5
 		// Frequency [Hz]
 		FRQCY=900E6
-		// Air gap (in meter)
-		AIR_GAP=1
 		/* Tell what is imposed and how.
 			Working principle:
 				You want to impose 2 sources.
@@ -107,7 +105,7 @@ $RUN_INFOS
 		// The simulation will stop after... (in sec)
 		stopTime=10
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=5E5 
+		maxStepsForOneCycleOfElectro=50
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
 		maxStepsForOneCycleOfThermal=5E5 
@@ -143,9 +141,9 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=10
+		SAMPLING_FREQ_ELECTRO=1
 		// Sampling frequency for the thermal algorithm:
-		SAMPLING_FREQ_THERMAL=10
+		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING
 	
 $RUN_INFOS
