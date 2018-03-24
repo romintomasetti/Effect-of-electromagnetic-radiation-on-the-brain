@@ -34,7 +34,9 @@ elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
 endif()
 
 
-
+IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	add_definitions(-Wno-literal-suffix)
+ENDIF()
 
 
 FILE(GLOB SRCS *.h *.hpp *.cpp)

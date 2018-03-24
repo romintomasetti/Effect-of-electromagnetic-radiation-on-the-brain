@@ -1169,6 +1169,7 @@ void AlgoElectro_NEW::update(
                                 (end___while_iter.tv_usec - start_while_iter.tv_usec) / 1.e6;
 
             currentStep ++;
+
             #pragma omp master
             {
                 /// If this is the first step, add some inputs to the profiler:
@@ -1233,11 +1234,11 @@ void AlgoElectro_NEW::update(
 
                 total_mpi_comm = 0;
 
+                current_time += dt;
+                
             }
             #pragma omp barrier
-            
-            /// Increment time and step:
-            current_time += dt;
+                        
 
         } /* END OF WHILE LOOP */
 

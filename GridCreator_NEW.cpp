@@ -382,9 +382,11 @@ void GridCreator_NEW::meshInitialization(void){
     this->thermal_diffusivity  = new double[T]();
 
     /* INITIALIZATION OF THE NODES */
+    printf("[MPI %d] - Assigning material...\n",this->MPI_communicator.getRank());
     this->Assign_A_Material_To_Each_Node();
 
     /* INITIALIZATION OF TEMPERATURE NODES (give a initial temperature) */
+    printf("[MPI %d] - Assigning initial temperature...\n",this->MPI_communicator.getRank());
     this->Assign_Init_Temperature_to_Temperature_nodes();
 
     // Get elapsed CPU time:
@@ -392,6 +394,9 @@ void GridCreator_NEW::meshInitialization(void){
     double elapsedTimeSec = end___grid_init - start_grid_init;
     this->profiler.incrementTimingInput("Grid_meshInit_omp_get_wtime",elapsedTimeSec);
 
+    printf("[MPI %d] - Grid initialization in %.5lf seconds.\n",
+        this->MPI_communicator.getRank(),
+        elapsedTimeSec);
 
 }
 
@@ -414,20 +419,12 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
 
     // Assign material as a function of the simulation type.
 
-    unsigned int DEFAULT = 4;
-    unsigned int nbr_omp_threads = 0;
-    if((unsigned)omp_get_num_threads() > DEFAULT){
-            nbr_omp_threads = omp_get_num_threads();
-    }else{
-        nbr_omp_threads = DEFAULT;
-    }
-
     size_t index;
 
     /////////////////////////////////////////
     /// FILL IN WITH PARALLEL OMP THREADS ///
     /////////////////////////////////////////
-    #pragma omp parallel num_threads(nbr_omp_threads)
+    #pragma omp parallel
         {
             bool is_USE_AIR_EVERYWHERE       = false;
             bool is_TEST_PARAVIEW            = false;
