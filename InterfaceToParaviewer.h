@@ -43,10 +43,9 @@ class InterfaceToParaviewer{
                             MPI_communicator(MPI_communicator)
                             {
                                 this->initializeAll();
-                                printf("InterfaceToParaviewer::constructor::OUT\n");
                             };
         // Default destructor:
-        ~InterfaceToParaviewer(void){printf("InterfaceToParaviewer::destructor::out\n");};
+        ~InterfaceToParaviewer(void){};
 
         // Initilize everything:
         void initializeAll(void);

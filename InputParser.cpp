@@ -23,14 +23,14 @@ void removeFilesOfDirectory(std::string directoryOutputFiles, std::string extens
 				std::string fileName = ent->d_name;
 				std::string fileExt  = fileName.substr(fileName.find('.')+1);
 				if(fileExt == extension){
-					printf ("%s has extension %s (will be deleted)\n", 
+					/*printf ("%s has extension %s (will be deleted)\n", 
 						ent->d_name,
-						fileExt.c_str());
+						fileExt.c_str());*/
 					std::remove( (directoryOutputFiles + "/" + fileName).c_str() );
 				}else{
-					printf ("%s has extension %s (will *NOT* be deleted)\n", 
+					/*printf ("%s has extension %s (will *NOT* be deleted)\n", 
 						ent->d_name,
-						fileExt.c_str());
+						fileExt.c_str());*/
 				}
   			}
 			closedir (dir);
@@ -998,7 +998,6 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 
 					if(propName == "stopTime"){
 						this->stopTime = std::stod(propGiven);
-						printf("STOP SIMUL SET TO %lf\n",this->stopTime);
 
 					}else if(propName == "maxStepsForOneCycleOfElectro"){
 						/**
@@ -1025,8 +1024,8 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 						 */
 						/// Transform the string in a size_t with std::stold and a cast:
 						this->maxStepsForOneCycleOfThermal = (size_t) std::stold(propGiven);
-						printf("max time step thermal %zu\n\n",
-							this->maxStepsForOneCycleOfThermal);
+						/*printf("max time step thermal %zu\n\n",
+							this->maxStepsForOneCycleOfThermal);*/
 						
 						if(this->maxStepsForOneCycleOfThermal == 0){
 							fprintf(stderr,"In %s ::maxStepsForOneCycleOfThermal has been set to zero. Aborting.\n",

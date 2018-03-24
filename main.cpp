@@ -70,26 +70,32 @@ int main(int argc, char *argv[]){
 
 	/* First of all, initialize MPI because if it fails, the program must immediately be stopped. */
 	MPI_Initializer MPI_communicator(argc,argv,MPI_THREAD_MULTIPLE);
-	printf("\n---------\nMPI rank is %d and isRoot %d.\n--------\n",MPI_communicator.getRank(),
-		  MPI_communicator.isRootProcess());
+	#ifndef NDEBUG
+		printf("\n---------\nMPI rank is %d and isRoot %d.\n--------\n",MPI_communicator.getRank(),
+			MPI_communicator.isRootProcess());
+	#endif
 
 	/* Call the input file parser, input file name given as an argument: */
-	cout << "Calling input file parser...\n";
+	#ifndef NDEBUG
+		cout << "Calling input file parser...\n";
+	#endif
 	string filenameInput = inputs["-inputfile"];
 	InputParser input_parser;
 	int MPI_RANK = MPI_communicator.getRank();
 	input_parser.defaultParsingFromFile(filenameInput,MPI_RANK);
-	cout << "INPUT PARSER HAS FINISHED HIS JOBS." << endl;
+	#ifndef NDEBUG
+		cout << "INPUT PARSER HAS FINISHED HIS JOBS." << endl;
+	#endif
 	
 	/* The material object stores all the material properties */
 	Materials allMat;
 	allMat.getPropertiesFromFile(input_parser.material_data_file);
-	allMat.printAllProperties();
-	cout << "Print number of temp per mat::IN" << endl;
+	//allMat.printAllProperties();
+	/*cout << "Print number of temp per mat::IN" << endl;
 	allMat.printNumberOfTempLinePerMat();
 	cout << "Print number of temp per mat::OUT" << endl;
 	cout << "For material 0 at 25K, property 1 is ";
-	cout << allMat.getProperty(25.,0,1) << endl;
+	cout << allMat.getProperty(25.,0,1) << endl;*/
 
 	
 	
@@ -104,19 +110,12 @@ int main(int argc, char *argv[]){
 
 	
 	
-	printf("Initial temperature for AIR is %f.\n",
-				input_parser.GetInitTemp_FromMaterialName["AIR"]);
-
-	map<std::string,std::string> test222 = input_parser.get_outputNames();
-	cout << test222["output"] << test222["error"] << test222["profile"] << endl;
-
-	
-	
-	MPI_Barrier(MPI_COMM_WORLD);
-	
+	/*printf("Initial temperature for AIR is %f.\n",
+				input_parser.GetInitTemp_FromMaterialName["AIR"]);*/	
 
 	GridCreator_NEW gridTest(input_parser,allMat,MPI_communicator,profiler);
-	cout << "Mesh init\n";
+
+	//cout << "Mesh init\n";
 	gridTest.meshInitialization();
 
 	InterfaceToParaviewer interfaceToWriteOutput(
@@ -127,10 +126,7 @@ int main(int argc, char *argv[]){
 	interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
 	interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
 
-	printf("ABORTING IN MAIN LINE 157\n");
-	MPI_Barrier(MPI_COMM_WORLD);
-
-	printf("\n\nMPI %d : Ex(%zu,%zu,%zu) | Ey(%zu,%zu,%zu) | Ez(%zu,%zu,%zu)"
+	/*printf("\n\nMPI %d : Ex(%zu,%zu,%zu) | Ey(%zu,%zu,%zu) | Ez(%zu,%zu,%zu)"
 					"Hx(%zu,%zu,%zu) | Hy(%zu,%zu,%zu) | Hz(%zu,%zu,%zu)\n\n",
 			MPI_communicator.getRank(),
 			gridTest.size_Ex[0],
@@ -151,21 +147,18 @@ int main(int argc, char *argv[]){
 			gridTest.size_Hz[0],
 			gridTest.size_Hz[1],
 			gridTest.size_Hz[2]
-			);
+			);*/
 
-	MPI_Barrier(MPI_COMM_WORLD);
+	//MPI_Barrier(MPI_COMM_WORLD);
 	//MPI_Abort(MPI_COMM_WORLD,-1);
 
 	
 	AlgoElectro_NEW algoElectro_newTst;
 	algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
 	
-	cout << "Calling all the destructors.\n";
-	
-	/* Phylosophy : */
-	// First create the MPI communicator
-	// Read the input file
-	// Then create the mesh on the mpi process
+	#ifndef NDEBUG
+		cout << "Calling all the destructors.\n";
+	#endif
 	
 	return 0;
 }
@@ -176,7 +169,7 @@ int main(int argc, char *argv[]){
 void check_input_file_name_given(int argc, char *argv[],map<std::string,std::string> &inputs){
 
 	for(int I = 0 ; I < argc ; I ++){
-		printf("Arg[%d] = %s\n",I,argv[I]);
+		//printf("Arg[%d] = %s\n",I,argv[I]);
 
 		/// If argv[I] is "-inputfile", use it:
 		if(strcmp(argv[I],"-inputfile") == 0 && I < argc -1 ){

@@ -27,6 +27,7 @@ void ElectromagneticSource::set_number_of_sources(const unsigned int nbrSources)
 		printf("ElectromagneticSource::set_number_of_sources::ERROR\n");
 		printf("\tThe property of the field 'number_of_sources' was already set.");
 		printf("\n\tAborting (at file %s at line %d)\n\n",__FILE__,__LINE__);
+		abort();
 	}
 }
 
@@ -166,48 +167,6 @@ bool ElectromagneticSource::is_inside_source_Romin(
 	double Y_coord = -1.0;
 	double Z_coord = -1.0;
 
-	if(type == "Ex"){
-		// The node is of part of the electric field's X component.
-		// Shift for this type of node is deltaX along X.
-		//shift_X = deltas_Electro[0];
-		//I_shift++;
-
-
-	}else if (type == "Ey"){
-		// The node is of part of the electric field's Y component.
-		// Shift for this type of node is deltaY along Y.
-		//shift_Y = deltas_Electro[1];
-		//J_shift++;
-
-	}else if (type == "Ez"){
-		// The node is of part of the electric field's Z component.
-		// Shift for this type of node is deltaZ along Z.
-		//shift_Z = deltas_Electro[2];
-
-	}else if (type == "Hx"){
-		// The node is of part of the magnetic field's X component.
-		// Shift for this type of node is deltaY along Y and deltaZ along Z.
-		//shift_Y = deltas_Electro[1];
-		//shift_Z = deltas_Electro[2];
-
-	}else if (type == "Hy"){
-		// The node is of part of the magnetic field's Y component.
-		// Shift for this type of node is deltaX along X and deltaZ along Z.
-		//shift_X = deltas_Electro[0];
-		//shift_Z = deltas_Electro[2];
-
-	}else if (type == "Hz"){
-		// The node is of part of the magnetic field's Z component.
-		// Shift for this type of node is deltaX along X and deltaY along Y.
-		//shift_X = deltas_Electro[0];
-		//shift_Y = deltas_Electro[1];
-
-	}else{
-		fprintf(stderr,"In %s :: invalid type (has %s). Aborting.\n",
-			__FUNCTION__,type.c_str());
-		fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
-	}
-
 	/// Compute the coordinates of the node w.r.t. the origin of the whole grid:
 	X_coord = origin_whole_grid[0] + I_gl * deltas_Electro[0] + shift_X;
 	Y_coord = origin_whole_grid[1] + J_gl * deltas_Electro[1] + shift_Y;
@@ -237,7 +196,7 @@ bool ElectromagneticSource::is_inside_source_Romin(
 		if(isOnFace_e_x == true && isOnFace_e_y == true){
 			// Impose none of Ex and Ey, return false:
 			if( type == "Ex" || type == "Ey" ){
-				printf("Sur l'arête : (%zu,%zu,%zu)\n",I_gl,J_gl,K_gl);
+				//printf("Sur l'arête : (%zu,%zu,%zu)\n",I_gl,J_gl,K_gl);
 				return false;
 			}
 		}else if(isOnFace_e_x == true){

@@ -28,8 +28,10 @@ void ProfilingClass::addTimingInputToDictionnary(
     if ( this->time_taken_for.find(newTimingInput) == this->time_taken_for.end() ) {
         // The timing input doesn't exist. Adding it.
         this->time_taken_for.insert(std::pair<std::string,double>(newTimingInput,0.0));
-        printf("ProfilingClass::addTimingInputToDictionnary:: timing input %s successfully added.\n",
-            newTimingInput.c_str());
+        #ifndef NDEBUG
+            printf("ProfilingClass::addTimingInputToDictionnary:: timing input %s successfully added.\n",
+                newTimingInput.c_str());
+        #endif
     }else if(try_and_do_nothing_if_exist == true){
         // Do nothing
     } else {
@@ -94,7 +96,9 @@ void ProfilingClass::incrementTimingInput(std::string timingInput, double incr){
 // Destructor:
 ProfilingClass::~ProfilingClass(void){
 
-    std::cout << "ProfilingClass::~ProfilingClass::IN" << std::endl;
+    #ifndef NDEBUG
+        std::cout << "ProfilingClass::~ProfilingClass::IN" << std::endl;
+    #endif
 
     if(this->outputFileName == std::string()){
         // The output file's name has not been set. Aborting.
@@ -106,8 +110,9 @@ ProfilingClass::~ProfilingClass(void){
     this->outputFile.open(this->outputFileName.c_str(),std::fstream::app);
     if(this->outputFile.is_open()){
         // Write inside file.
-        std::cout << "ProfilingClass::~ProfilingClass::WRITING" << std::endl;
-
+        #ifndef NDEBUG
+            std::cout << "ProfilingClass::~ProfilingClass::WRITING" << std::endl;
+        #endif
         // Timing inputs:
         std::map<std::string,double>::iterator it;
         for (it=this->time_taken_for.begin(); it!=this->time_taken_for.end();++it ){
@@ -121,9 +126,17 @@ ProfilingClass::~ProfilingClass(void){
         // File could not be opened.
         fprintf(stderr,"ProfilingClass::~ProfilingClass::ERROR\n");
         fprintf(stderr,"Cannot open the file %s.\n",this->outputFileName.c_str());
+        fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+        #ifdef MPI_COMM_WORLD
+            MPI_Abort(MPI_COMM_WORLD,-1);
+        #else
+            abort();
+        #endif
     }
 
-    std::cout << "ProfilingClass::~ProfilingClass::OUT" << std::endl;
+    #ifndef NDEBUG
+        std::cout << "ProfilingClass::~ProfilingClass::OUT" << std::endl;
+    #endif
 }
 
 // Set the output file's name:

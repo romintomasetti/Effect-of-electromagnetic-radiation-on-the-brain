@@ -219,7 +219,7 @@ void AlgoElectro_NEW::update(
     // Retrieve the time step:
     double dt = this->Compute_dt(grid);
     double current_time = 0.0;
-    std::cout << "AlgoElectro_NEW :: dt is " << dt << std::endl;
+    //std::cout << "AlgoElectro_NEW :: dt is " << dt << std::endl;
 
     /*
      *  TEMPERATURE WILL NEVER CHANGE IN THIS ALGORITHM.
@@ -490,7 +490,7 @@ void AlgoElectro_NEW::update(
     if(omp_get_thread_num() == 0 
         && grid.MPI_communicator.isRootProcess() != INT_MIN)
         {
-            printf(">>> FDTD scheme started with time step of %lf seconds.\n",
+            printf(">>> FDTD scheme started with time step of %.15lf seconds.\n",
                 dt);
         }
 
@@ -581,20 +581,20 @@ void AlgoElectro_NEW::update(
      */
     #pragma omp parallel num_threads(omp_get_max_threads()) default(none)\
         shared(grid,current_time,end,start)\
-        shared(local_nodes_inside_source_NUMBER)\
-        shared(local_nodes_inside_source_FREQ,ID_Source)\
+        firstprivate(local_nodes_inside_source_NUMBER)\
+        firstprivate(local_nodes_inside_source_FREQ,ID_Source)\
         shared(interfaceParaview)\
-        shared(C_hxh,C_hxe_1,C_hxe_2)\
-        shared(C_hyh,C_hye_1,C_hye_2)\
-        shared(C_hzh,C_hze_1,C_hze_2)\
-        shared(C_exe,C_exh_1,C_exh_2)\
-        shared(C_eye,C_eyh_1,C_eyh_2)\
-        shared(C_eze,C_ezh_1,C_ezh_2)\
+        firstprivate(C_hxh,C_hxe_1,C_hxe_2)\
+        firstprivate(C_hyh,C_hye_1,C_hye_2)\
+        firstprivate(C_hzh,C_hze_1,C_hze_2)\
+        firstprivate(C_exe,C_exh_1,C_exh_2)\
+        firstprivate(C_eye,C_eyh_1,C_eyh_2)\
+        firstprivate(C_eze,C_ezh_1,C_ezh_2)\
         shared(ompi_mpi_comm_world,ompi_mpi_int)\
-        shared(Electric_field_to_send,Electric_field_to_recv)\
-        shared(Magnetic_field_to_send,Magnetic_field_to_recv)\
-        shared(electric_field_sizes,magnetic_field_sizes,dt)\
-        shared(size_faces_electric,size_faces_magnetic)
+        firstprivate(Electric_field_to_send,Electric_field_to_recv)\
+        firstprivate(Magnetic_field_to_send,Magnetic_field_to_recv)\
+        firstprivate(electric_field_sizes,magnetic_field_sizes,dt)\
+        firstprivate(size_faces_electric,size_faces_magnetic)
     {
 
         /*
@@ -659,6 +659,14 @@ void AlgoElectro_NEW::update(
             IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
         }
 
+        bool has_neighboor = false;
+        for(unsigned int ii =  0; ii < NBR_FACES_CUBE ; ii ++){
+            if(grid.MPI_communicator.RankNeighbour[ii] != -1){
+                has_neighboor = true;
+                break;
+            }
+        }
+
         // Some indexing variables:
         size_t I,J,K;
 
@@ -700,7 +708,7 @@ void AlgoElectro_NEW::update(
                         ANSI_COLOR_RESET);
             #endif
 
-            #pragma omp for schedule(static) collapse(3) 
+            #pragma omp for schedule(static) collapse(3) nowait
             for (K = 1 ; K < grid.size_Hx[2]-1 ; K++){
                 for(J = 1 ; J < grid.size_Hx[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Hx[0]-1 ; I++){
@@ -743,7 +751,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ex[0];
             size_y_2 = grid.size_Ex[1];
 
-            #pragma omp for schedule(static) collapse(3) 
+            #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
                 for(J = 1 ; J < grid.size_Hy[1]-1 ; J ++){
                     for(I = 1; I < grid.size_Hy[0]-1 ; I ++){
@@ -784,7 +792,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ey[0];
             size_y_2 = grid.size_Ey[1];
 
-            #pragma omp for schedule(static) collapse(3) 
+            #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1 ; K < grid.size_Hz[2]-1  ; K ++){
                 for(J = 1 ; J < grid.size_Hz[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
@@ -825,68 +833,70 @@ void AlgoElectro_NEW::update(
             /////////////////////////
             gettimeofday( &start_mpi_comm, NULL);
             /// Prepare the array to send:
-            prepare_array_to_be_sent(
-                Electric_field_to_send,
-                Magnetic_field_to_send,
-                electric_field_sizes,
-                magnetic_field_sizes,
-                E_x_tmp,
-                E_y_tmp,
-                E_z_tmp,
-                H_x_tmp,
-                H_y_tmp,
-                H_z_tmp,
-                grid.MPI_communicator.RankNeighbour,
-                #ifndef NDEBUG
-                    size_faces_electric,
-                    size_faces_magnetic,
-                #endif
-                false /* false : tells the function we want to deal with magnetic field only */
-            );
-
-            /// Wait all omp threads:
-            #pragma omp barrier
-
-            /// Only the master thread communicates:
-            #pragma omp master
-            {
-                communicate_single_omp_thread(
+            if(has_neighboor){
+                prepare_array_to_be_sent(
                     Electric_field_to_send,
-                    Electric_field_to_recv,
                     Magnetic_field_to_send,
-                    Magnetic_field_to_recv,
+                    electric_field_sizes,
+                    magnetic_field_sizes,
+                    E_x_tmp,
+                    E_y_tmp,
+                    E_z_tmp,
+                    H_x_tmp,
+                    H_y_tmp,
+                    H_z_tmp,
                     grid.MPI_communicator.RankNeighbour,
-                    grid.MPI_communicator.getRank(),
-                    size_faces_electric,
-                    size_faces_magnetic,
+                    #ifndef NDEBUG
+                        size_faces_electric,
+                        size_faces_magnetic,
+                    #endif
                     false /* false : tells the function we want to deal with magnetic field only */
                 );
+
+                /// Wait all omp threads:
+                #pragma omp barrier
+
+                /// Only the master thread communicates:
+                #pragma omp master
+                {
+                    communicate_single_omp_thread(
+                        Electric_field_to_send,
+                        Electric_field_to_recv,
+                        Magnetic_field_to_send,
+                        Magnetic_field_to_recv,
+                        grid.MPI_communicator.RankNeighbour,
+                        grid.MPI_communicator.getRank(),
+                        size_faces_electric,
+                        size_faces_magnetic,
+                        false /* false : tells the function we want to deal with magnetic field only */
+                    );
+                }
+
+                /// Other threads wait for the communication to be done:
+                #pragma omp barrier
+
+                /// Fill in the matrix of electric field with what was received:
+                use_received_array(
+                    Electric_field_to_recv,
+                    Magnetic_field_to_recv,
+                    electric_field_sizes,
+                    magnetic_field_sizes,
+                    E_x_tmp,
+                    E_y_tmp,
+                    E_z_tmp,
+                    H_x_tmp,
+                    H_y_tmp,
+                    H_z_tmp,
+                    grid.MPI_communicator.RankNeighbour,
+                    #ifndef NDEBUG
+                        size_faces_electric,
+                        size_faces_magnetic,
+                    #endif
+                    false /* false : tells the function we want to deal with magnetic field only */
+                );           
+
+                #pragma omp barrier
             }
-
-            /// Other threads wait for the communication to be done:
-            #pragma omp barrier
-
-            /// Fill in the matrix of electric field with what was received:
-            use_received_array(
-                Electric_field_to_recv,
-                Magnetic_field_to_recv,
-                electric_field_sizes,
-                magnetic_field_sizes,
-                E_x_tmp,
-                E_y_tmp,
-                E_z_tmp,
-                H_x_tmp,
-                H_y_tmp,
-                H_z_tmp,
-                grid.MPI_communicator.RankNeighbour,
-                #ifndef NDEBUG
-                    size_faces_electric,
-                    size_faces_magnetic,
-                #endif
-                false /* false : tells the function we want to deal with magnetic field only */
-            );           
-
-            #pragma omp barrier
             gettimeofday( &end___mpi_comm , NULL);
             total_mpi_comm += end___mpi_comm.tv_sec  - start_mpi_comm.tv_sec + 
                                 (end___mpi_comm.tv_usec - start_mpi_comm.tv_usec) / 1.e6;
@@ -910,7 +920,7 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Hy[1];
 
 
-            #pragma omp for schedule(static) collapse(3) 
+            #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ ;
                     K < grid.size_Ex[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; 
                     K ++){
@@ -965,7 +975,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hz[0];
             size_y_2 = grid.size_Hz[1];
 
-            #pragma omp for schedule(static) collapse(3) 
+            #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ ; K < grid.size_Ey[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; K ++){
                 for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY; J < grid.size_Ey[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY ; J ++){
                     for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX ; I < grid.size_Ey[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX ; I ++){
@@ -1014,7 +1024,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hx[0];
             size_y_2 = grid.size_Hx[1];
 
-            #pragma omp for schedule(static) collapse(3) 
+            #pragma omp for schedule(static) collapse(3) nowait
             for(K = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; K < grid.size_Ez[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; K ++){
                 for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY ; J < grid.size_Ez[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY ; J ++){
                     for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX ; I < grid.size_Ez[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX ; I ++){
@@ -1054,7 +1064,7 @@ void AlgoElectro_NEW::update(
             ////////////////////////////
             /// IMPOSING THE SOURCES ///
             ////////////////////////////
-            #pragma omp for schedule(static)
+            #pragma omp for schedule(static) nowait
             for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[2].size() ; it ++){
 
                 index = local_nodes_inside_source_NUMBER[2][it];
@@ -1065,7 +1075,7 @@ void AlgoElectro_NEW::update(
                 E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
             }
 
-            #pragma omp for schedule(static)
+            #pragma omp for schedule(static) nowait
             for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[1].size() ; it ++){
 
                 index = local_nodes_inside_source_NUMBER[1][it];
@@ -1074,7 +1084,7 @@ void AlgoElectro_NEW::update(
                 E_y_tmp[index] = 0;
             }
 
-            #pragma omp for schedule(static)
+            #pragma omp for schedule(static) nowait
             for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[0].size() ; it ++){
 
                 index = local_nodes_inside_source_NUMBER[0][it];
@@ -1093,68 +1103,70 @@ void AlgoElectro_NEW::update(
             #pragma omp barrier
             gettimeofday( &start_mpi_comm , NULL);
             /// Prepare the array to send:
-            prepare_array_to_be_sent(
-                Electric_field_to_send,
-                Magnetic_field_to_send,
-                electric_field_sizes,
-                magnetic_field_sizes,
-                E_x_tmp,
-                E_y_tmp,
-                E_z_tmp,
-                H_x_tmp,
-                H_y_tmp,
-                H_z_tmp,
-                grid.MPI_communicator.RankNeighbour,
-                #ifndef NDEBUG
-                    size_faces_electric,
-                    size_faces_magnetic,
-                #endif
-                true // True : telling the function we communicate only electric field
-            );
-
-            /// Wait all omp threads:
-            #pragma omp barrier
-
-            /// Only the master thread communicates:
-            #pragma omp master
-            {
-                communicate_single_omp_thread(
+            if(has_neighboor){
+                prepare_array_to_be_sent(
                     Electric_field_to_send,
-                    Electric_field_to_recv,
                     Magnetic_field_to_send,
-                    Magnetic_field_to_recv,
+                    electric_field_sizes,
+                    magnetic_field_sizes,
+                    E_x_tmp,
+                    E_y_tmp,
+                    E_z_tmp,
+                    H_x_tmp,
+                    H_y_tmp,
+                    H_z_tmp,
                     grid.MPI_communicator.RankNeighbour,
-                    grid.MPI_communicator.getRank(),
-                    size_faces_electric,
-                    size_faces_magnetic,
-                    true
+                    #ifndef NDEBUG
+                        size_faces_electric,
+                        size_faces_magnetic,
+                    #endif
+                    true // True : telling the function we communicate only electric field
                 );
+
+                /// Wait all omp threads:
+                #pragma omp barrier
+
+                /// Only the master thread communicates:
+                #pragma omp master
+                {
+                    communicate_single_omp_thread(
+                        Electric_field_to_send,
+                        Electric_field_to_recv,
+                        Magnetic_field_to_send,
+                        Magnetic_field_to_recv,
+                        grid.MPI_communicator.RankNeighbour,
+                        grid.MPI_communicator.getRank(),
+                        size_faces_electric,
+                        size_faces_magnetic,
+                        true
+                    );
+                }
+
+                /// Other threads wait for the communication to be done:
+                #pragma omp barrier
+
+                /// Fill in the matrix of electric field with what was received:
+                use_received_array(
+                    Electric_field_to_recv,
+                    Magnetic_field_to_recv,
+                    electric_field_sizes,
+                    magnetic_field_sizes,
+                    E_x_tmp,
+                    E_y_tmp,
+                    E_z_tmp,
+                    H_x_tmp,
+                    H_y_tmp,
+                    H_z_tmp,
+                    grid.MPI_communicator.RankNeighbour,
+                    #ifndef NDEBUG
+                        size_faces_electric,
+                        size_faces_magnetic,
+                    #endif
+                    true // True : telling the function that we communicate electric field only.
+                );           
+
+                #pragma omp barrier
             }
-
-            /// Other threads wait for the communication to be done:
-            #pragma omp barrier
-
-            /// Fill in the matrix of electric field with what was received:
-            use_received_array(
-                Electric_field_to_recv,
-                Magnetic_field_to_recv,
-                electric_field_sizes,
-                magnetic_field_sizes,
-                E_x_tmp,
-                E_y_tmp,
-                E_z_tmp,
-                H_x_tmp,
-                H_y_tmp,
-                H_z_tmp,
-                grid.MPI_communicator.RankNeighbour,
-                #ifndef NDEBUG
-                    size_faces_electric,
-                    size_faces_magnetic,
-                #endif
-                true // True : telling the function that we communicate electric field only.
-            );           
-
-            #pragma omp barrier
             gettimeofday( &end___mpi_comm , NULL);
             total_mpi_comm += end___mpi_comm.tv_sec  - start_mpi_comm.tv_sec + 
                                 (end___mpi_comm.tv_usec - start_mpi_comm.tv_usec) / 1.e6;
@@ -1204,7 +1216,7 @@ void AlgoElectro_NEW::update(
 
                 grid.profiler.incrementTimingInput("ELECTRO_MPI_COMM",total_mpi_comm);
 
-                if(grid.MPI_communicator.isRootProcess() != INT_MIN){
+                if(grid.MPI_communicator.isRootProcess() != INT_MIN && currentStep == grid.input_parser.maxStepsForOneCycleOfElectro){
                         printf("%s[MPI %d - Electro - Update - step %zu]%s\n"
                                "\t> Current simulation time is   %.12lf seconds (over %.12lf).\n"
                                "\t> Current step is              %zu over %zu.\n"
@@ -1237,7 +1249,6 @@ void AlgoElectro_NEW::update(
                 current_time += dt;
                 
             }
-            #pragma omp barrier
                         
 
         } /* END OF WHILE LOOP */
@@ -1310,7 +1321,7 @@ void AlgoElectro_NEW::update(
                         (end.tv_usec - start.tv_usec) / 1.e6;
 
     grid.profiler.incrementTimingInput("AlgoElectro_NEW_UPDATE_gettimeofday",delta);
-    std::cout << "AlgoElectro_NEW_UPDATE => Time: " << delta << " s" << std::endl;
+    //std::cout << "AlgoElectro_NEW_UPDATE => Time: " << delta << " s" << std::endl;
 }
 
 void AlgoElectro_NEW::check_OMP_DYNAMIC_envVar(void){

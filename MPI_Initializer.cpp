@@ -52,7 +52,7 @@ MPI_Initializer::MPI_Initializer(int argc, char *argv[],int required){
 	int number_of_MPI_Processes = INT_MIN;
 	MPI_Comm_size( MPI_COMM_WORLD, &number_of_MPI_Processes);
 	this->number_of_MPI_Processes = number_of_MPI_Processes;
-	cout << "number of MPI processes is " << this->number_of_MPI_Processes.get() << endl;
+	//cout << "number of MPI processes is " << this->number_of_MPI_Processes.get() << endl;
 
 	#if DEBUG > 1
 	cout << "MPI_Initializer::constructor::OUT" << endl;
@@ -507,13 +507,13 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 			{
 				this->RankNeighbour[0] = -1;
 				this->RankNeighbour[1] =  myRank-1;
-				cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!!RankNeighbour x: " <<this->RankNeighbour[0] << " ; "<<this->RankNeighbour[1] << endl;	
+				//cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!!RankNeighbour x: " <<this->RankNeighbour[0] << " ; "<<this->RankNeighbour[1] << endl;	
 			}
 			else
 			{
 				this->RankNeighbour[0] = myRank+1;
 				this->RankNeighbour[1] = myRank-1;
-				cout << myRank<< "!!!!!!!!!!!!!!!!!!!!!!RankNeighbour x: " <<this->RankNeighbour[0] << " ; "<<this->RankNeighbour[1] << endl;
+				//cout << myRank<< "!!!!!!!!!!!!!!!!!!!!!!RankNeighbour x: " <<this->RankNeighbour[0] << " ; "<<this->RankNeighbour[1] << endl;
 			}
 		}
 		/* We do the y component */
@@ -521,13 +521,13 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		{
 			this->RankNeighbour[2] = -1;
 			this->RankNeighbour[3] = myRank+(nbProc/2);
-			cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!!RankNeighbour y: " <<this->RankNeighbour[2] << " ; "<< this->RankNeighbour[3] << endl;
+			//cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!!RankNeighbour y: " <<this->RankNeighbour[2] << " ; "<< this->RankNeighbour[3] << endl;
 		}
 		else if(PositionOnY == 1)
 		{
 			this->RankNeighbour[2] = myRank-(nbProc/2);
 			this->RankNeighbour[3] = -1;
-			cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!!RankNeighbour y: " <<this->RankNeighbour[2] << " ; "<<this->RankNeighbour[3] << endl;
+			//cout << myRank <<"!!!!!!!!!!!!!!!!!!!!!!RankNeighbour y: " <<this->RankNeighbour[2] << " ; "<<this->RankNeighbour[3] << endl;
 		}
 		else
 		{
@@ -540,7 +540,7 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		/* We do the z component */
 		this->RankNeighbour[4] = -1;
 		this->RankNeighbour[5] = -1;
-		cout << myRank<< "!!!!!!!!!!!!!!!!!!!!!!RankNeighbour z: " <<this->RankNeighbour[4] << " ; "<<this->RankNeighbour[5] << endl;
+		//cout << myRank<< "!!!!!!!!!!!!!!!!!!!!!!RankNeighbour z: " <<this->RankNeighbour[4] << " ; "<<this->RankNeighbour[5] << endl;
 
 	}
 
@@ -615,13 +615,14 @@ void MPI_Initializer::MPI_DIVISION(GridCreator_NEW & subGrid){
 		subGrid.MPI_communicator.must_add_one_to_H_Z_along_XYZ[2] = false;
 	}
 
-	printf("MPI %d ->  originIndices_Electro (%zu,%zu,%zu)\n",myRank,
-		subGrid.originIndices_Electro[0],
-		subGrid.originIndices_Electro[1],
-		subGrid.originIndices_Electro[2]);
-	printf("MPI %d ->  originInices_thermal  (%zu,%zu,%zu)\n",myRank,
-		subGrid.originIndices_Thermal[0],
-		subGrid.originIndices_Thermal[1],
-		subGrid.originIndices_Thermal[2]);
-
+	#ifndef NDEBUG
+		printf("MPI %d ->  originIndices_Electro (%zu,%zu,%zu)\n",myRank,
+			subGrid.originIndices_Electro[0],
+			subGrid.originIndices_Electro[1],
+			subGrid.originIndices_Electro[2]);
+		printf("MPI %d ->  originInices_thermal  (%zu,%zu,%zu)\n",myRank,
+			subGrid.originIndices_Thermal[0],
+			subGrid.originIndices_Thermal[1],
+			subGrid.originIndices_Thermal[2]);
+	#endif
 }

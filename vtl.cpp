@@ -301,8 +301,10 @@ size_t write_vectorXML_custom_GridCreatorNew(
 
             std::vector<size_t> size = grid.size_Thermal;
 
-            printf("MPI %d :: Has field Temperature and size(%zu,%zu,%zu)\n",
-                grid.MPI_communicator.getRank(),size[0],size[1],size[2]);
+            #ifndef NDEBUG
+                printf("MPI %d :: Has field Temperature and size(%zu,%zu,%zu)\n",
+                    grid.MPI_communicator.getRank(),size[0],size[1],size[2]);
+            #endif
 
             size_field = size[0]*size[1]*size[2];
             buffer.resize(size_field);
@@ -977,7 +979,9 @@ VTL_API void vtl::export_spoints_XMLP(std::string const &filename,
     f << "      <PCellData>\n";
     // scalar fields
     if(filename.find("THERMAL") != std::string::npos){
-        std::cout << ">>> PVTI :: THERMAL :: IN" << std::endl;
+        #ifndef NDEBUG
+            std::cout << ">>> PVTI :: THERMAL :: IN" << std::endl;
+        #endif
         if(mygrid.scalars.size() == 0){
             fprintf(stderr,"mygrid.scalars.size() == 0 :: ABORTING\n");
             fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
@@ -1066,7 +1070,7 @@ VTL_API void vtl::export_spoints_XMLP_custom_GridCreator_NEW(
          * @brief The root MPI writes the file for the thermal grid.
          */
         outputFileName.append("_THERMAL");
-        std::cout << "Call::export_spoints_XMLP::GridCreator_NEW::IN" << std::endl;
+
         export_spoints_XMLP(
             outputFileName,
             currentStep,

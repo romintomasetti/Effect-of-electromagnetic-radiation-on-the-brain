@@ -96,10 +96,12 @@ void InterfaceToParaviewer::initializeAll(void){
 
     // Initialize the subgrid if I am the root process:
     if(this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess){
-        printf("InterfaceToParaviewer::initializeAll\n");
-        printf("\t> From MPI %d, I am the root !\n",this->MPI_communicator.getRank());
-        printf("\t> Initializing the subgrids (EM and TH) of class-type SPoints with %d processes.\n",
-                    nb_MPI);
+        #ifndef NDEBUG
+            printf("InterfaceToParaviewer::initializeAll\n");
+            printf("\t> From MPI %d, I am the root !\n",this->MPI_communicator.getRank());
+            printf("\t> Initializing the subgrids (EM and TH) of class-type SPoints with %d processes.\n",
+                        nb_MPI);
+        #endif
 
         // Allocating space:
         this->sgrids_Electro.resize(nb_MPI);
@@ -108,8 +110,10 @@ void InterfaceToParaviewer::initializeAll(void){
         // Loop over each grid and get the starting/ending indices:
         for(unsigned char I = 0 ; I < nb_MPI ; I ++){
 
-            printf("\t> MPI %d :: Initializing sgrid_electro[%d] and sgrid_thermal[%d]...\n",
-                    this->MPI_communicator.getRank(),I,I);
+            #ifndef NDEBUG
+                printf("\t> MPI %d :: Initializing sgrid_electro[%d] and sgrid_thermal[%d]...\n",
+                        this->MPI_communicator.getRank(),I,I);
+            #endif
 
             // Giving the MPI ID to the element sgrids[I]:
             this->sgrids_Electro[I].id = I;
@@ -158,19 +162,15 @@ void InterfaceToParaviewer::initializeAll(void){
 
                 // Receive np1_Electro:
                 MPI_Recv(&np1_Electro,3,MPI_UNSIGNED_LONG,I,TAG_NP1_ELECTRO,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-                printf("\t> From root, received np1_electro from %d.\n",I);
 
                 // Receive np2_Electro:
                 MPI_Recv(&np2_Electro,3,MPI_UNSIGNED_LONG,I,TAG_NP2_ELECTRO,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-                printf("\t> From root, received np2_electro from %d.\n",I);
 
                 // Receive np1_Thermal:
                 MPI_Recv(&np1_Thermal,3,MPI_UNSIGNED_LONG,I,TAG_NP1_THERMAL,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-                printf("\t From root, received np1_thermal from %d.\n",I);
 
                 // Receive np2_Thermal:
                 MPI_Recv(&np2_Thermal,3,MPI_UNSIGNED_LONG,I,TAG_NP2_THERMAL,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
-                printf("\t From root, received np2_thermal from %d.\n",I);
 
                 for(int k = 0 ; k < 3 ; k ++){
                     this->sgrids_Electro[I].np1[k] = np1_Electro[k];
@@ -181,14 +181,16 @@ void InterfaceToParaviewer::initializeAll(void){
                 }
             }
 
-            cout << this->sgrids_Electro[I] << endl;
-            cout << this->sgrids_Thermal[I] << endl;
+            //cout << this->sgrids_Electro[I] << endl;
+            //cout << this->sgrids_Thermal[I] << endl;
         }
 
     }else if(this->MPI_communicator.isRootProcess() == INT_MIN){
 
-        printf("InterfaceToParaviewer::initializeAll\n");
-        printf("\t> From MPI process %d, I am not the root.\n",this->MPI_communicator.getRank());
+        #ifndef NDEBUG
+            printf("InterfaceToParaviewer::initializeAll\n");
+            printf("\t> From MPI process %d, I am not the root.\n",this->MPI_communicator.getRank());
+        #endif
 
         unsigned long np1_Electro[3];
         unsigned long np2_Electro[3];
@@ -206,11 +208,9 @@ void InterfaceToParaviewer::initializeAll(void){
 
         // Send np1_Electro:
         MPI_Send(&np1_Electro,3,MPI_UNSIGNED_LONG,this->MPI_communicator.rootProcess,TAG_NP1_ELECTRO,MPI_COMM_WORLD);
-        printf("\t> From MPI process %d, np1 sent to root.\n",this->MPI_communicator.getRank());
 
         // Send np2_Electro:
         MPI_Send(&np2_Electro,3,MPI_UNSIGNED_LONG,this->MPI_communicator.rootProcess,TAG_NP2_ELECTRO,MPI_COMM_WORLD);
-        printf("\t> From MPI process %d, np2 sent to root.\n",this->MPI_communicator.getRank());
 
         // Send np1_Thermal:
         MPI_Send(&np1_Thermal,3,MPI_UNSIGNED_LONG,this->MPI_communicator.rootProcess,TAG_NP1_THERMAL,MPI_COMM_WORLD);
@@ -242,9 +242,11 @@ void InterfaceToParaviewer::initializeAll(void){
     this->mygrid_Electro.vectors["MagneticField"] = NULL;
     this->mygrid_Thermal.scalars["Temperature"]   = NULL;
 
-    if(this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess){
-        printf("InterfaceToParaviewer::initializeAll::OUT\n");
-    }
+    #ifndef NDEBUG
+        if(this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess){
+            printf("InterfaceToParaviewer::initializeAll::OUT\n");
+        }
+    #endif
 }
 
 /**

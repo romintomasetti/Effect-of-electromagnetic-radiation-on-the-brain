@@ -51,7 +51,9 @@ void Materials::getPropertiesFromFile(string filename){
 	{
 		// Get the current line:
 		getline(file,currentLine);
-		cout << currentLine << endl;
+		#ifndef NDEBUG
+			std::cout << currentLine << std::endl;
+		#endif
 		if(currentLine.empty()){
 			// Do nothing, the line is empty !
 		}else{
@@ -76,7 +78,7 @@ void Materials::getPropertiesFromFile(string filename){
 				// Increment the number of materials
 				numberOfMaterials++;
 
-				cout << "C::" + currentMaterial << "/P::" + previousMaterial << endl;
+				//cout << "C::" + currentMaterial << "/P::" + previousMaterial << endl;
 
 				// We want to track the material for which we have the highest number of 
 				// properties specifications - it will be useful to initialize the table with
@@ -88,7 +90,7 @@ void Materials::getPropertiesFromFile(string filename){
 				counter = 1;
 			}else{
 				counter++;
-				cout << "Counter is " << counter << endl;
+				//cout << "Counter is " << counter << endl;
 			}
 			previousMaterial = currentMaterial;
 		}
@@ -101,7 +103,7 @@ void Materials::getPropertiesFromFile(string filename){
 	this->numberOfProperties = numberOfProperties;
 	this->maxNumberOfTemp    = maxNumberOfTemp; 	
 
-	cout << "maxNumberOfTemp = " << this->maxNumberOfTemp << endl;
+	//cout << "maxNumberOfTemp = " << this->maxNumberOfTemp << endl;
 
 	// Allocate the this->properties 3d array.
 	/*this->properties = new double**[numberOfMaterials];
@@ -119,15 +121,15 @@ void Materials::getPropertiesFromFile(string filename){
 								   this->numberOfProperties,
 								   this->maxNumberOfTemp);
 	this->properties.fillIn(-1.0);
-	this->printAllProperties();
+	//this->printAllProperties();
 	
 	// Empty the previous material variable for later.
 	previousMaterial = string();
-	#if DEBUG > 2
+	/*
 		cout << "The highest number of specification is " << maxNumberOfTemp << "." << endl;
 		cout << "Number of different materials is " << numberOfMaterials << "." << endl;
 		cout << "Number of properties is " << this->numberOfProperties << endl;
-	#endif
+	*/
 	// Rewind the position in the file for later:	
 	file.clear();
 	file.seekg(0);
@@ -161,11 +163,11 @@ void Materials::getPropertiesFromFile(string filename){
 					this->materialID_FromMaterialName[currentMaterial] = (unsigned char)counterMaterial; 
 					this->materialName_FromMaterialID[(unsigned char)counterMaterial] = currentMaterial;
 					this->numberOFTempForTheMaterial.push_back(counterTemp);
-					cout << "COUNTER TEMP : " << counterTemp << endl;
+					//cout << "COUNTER TEMP : " << counterTemp << endl;
 					counterTemp     = 0;
-					#if DEBUG > 2
-					cout << "On change de matériau.\n";
-					#endif
+					
+					//cout << "On change de matériau.\n";
+					
 				}
 				continue;
 			}else if(MATERIAL){
@@ -177,10 +179,10 @@ void Materials::getPropertiesFromFile(string filename){
 				double a = stod(valueStr,&offset);
 				// Push this double in the properties 3D table:
 				this->properties(counterMaterial,counterProperties,counterTemp) = a;
-				#if DEBUG > 2
-				cout << "Added prop. : " << a << "--" << valueStr << "--";
-				cout <<  "at (" << counterMaterial << "," << counterProperties << "," << counterTemp << ")" << endl;
-				#endif
+				
+				//cout << "Added prop. : " << a << "--" << valueStr << "--";
+				//cout <<  "at (" << counterMaterial << "," << counterProperties << "," << counterTemp << ")" << endl;
+				
 				valueStr = string();
 				counterProperties++;
 			}else{
@@ -189,10 +191,10 @@ void Materials::getPropertiesFromFile(string filename){
 					size_t offset = 0;
 					double a = stod(valueStr,&offset);
 					this->properties(counterMaterial,counterProperties,counterTemp) = a;
-					#if DEBUG > 2
-					cout << "Added prop. : " << a << "--" << valueStr << "--";
-					cout <<  "at (" << counterMaterial << "," << counterProperties << "," << counterTemp << ")" << endl;
-					#endif
+					
+					//cout << "Added prop. : " << a << "--" << valueStr << "--";
+					//cout <<  "at (" << counterMaterial << "," << counterProperties << "," << counterTemp << ")" << endl;
+					
 					valueStr = string();
 				}
 			}
@@ -203,15 +205,15 @@ void Materials::getPropertiesFromFile(string filename){
 		previousMaterial = currentMaterial;
         }
 	this->numberOFTempForTheMaterial.push_back(counterTemp-1);
-	cout << "COUNTER TEMP : " << counterTemp << endl;
+	//cout << "COUNTER TEMP : " << counterTemp << endl;
 	/* Closing file */
 	file.close();
-	#if DEBUG > 0
+	/*
 	for(auto& x : this->materialID_FromMaterialName)
 	{
 		cout << x.first << "," << (int)x.second << endl;
 	}
-	#endif
+	*/
 	
 }
 
