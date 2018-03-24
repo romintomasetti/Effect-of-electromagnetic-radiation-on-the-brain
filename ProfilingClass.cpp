@@ -11,85 +11,6 @@ void ProfilingClass::set_program_starting_time(){
     this->program_starting_time = std::time(nullptr);
 }
 
-// Adding memory usage:
-void ProfilingClass::addMemoryUsage(std::string type,double mem){
-    if(mem < 0){
-        fprintf(stderr,"ProfilingClass::addMemoryUsage::ERROR\n");
-        fprintf(stderr,"\t>>> Cannot add a negative memory ! (Has %f)\n",
-                mem);
-        fprintf(stderr,"Aborting in file %s:%d\n",__FILE__,__LINE__);
-        abort();
-    }
-    /* type is the type of memory the user adds: in bytes, kiloBytes, megaBytes, etc.*/
-    if(std::strcmp(type.c_str(),"BYTES") == 0){
-        this->usedMemoryInMegaBytes += mem*1E-6;
-    }else if(std::strcmp(type.c_str(),"KILOBYTES") == 0){
-        this->usedMemoryInMegaBytes += mem*1E-3;
-    }else if(std::strcmp(type.c_str(),"MEGABYTES") == 0){
-        this->usedMemoryInMegaBytes += mem;
-    }else if(std::strcmp(type.c_str(),"GIGABYTES") == 0){
-        this->usedMemoryInMegaBytes += mem*1E3;
-    }else{
-        fprintf(stderr,"ProfilingClass::addMemoryUsage::ERROR\n");
-        fprintf(stderr,"\n>>> std::string type has %s, which is not known.\nAborting.\n",type.c_str());
-        fprintf(stderr,"\n>>> In file %s:%d\n",__FILE__,__LINE__);
-        abort();
-    }
-    printf(">>> Memory in use is %f MBytes.\n",this->usedMemoryInMegaBytes);
-
-    if(this->usedMemoryInMegaBytes > this->peakUsedMemoryInMegaBytes){
-        this->peakUsedMemoryInMegaBytes = this->usedMemoryInMegaBytes;
-    }
-
-}
-
-// Remove memory usage:
-void ProfilingClass::removeMemoryUsage(std::string type, double mem,
-                        std::string senderMessage){
-    if(mem < 0){
-        fprintf(stderr,"ProfilingClass::removeMemoryUsage::ERROR\n");
-        fprintf(stderr,"\t>>> Cannot remove a negative memory ! (Has %f)\n",
-                mem);
-        fprintf(stderr,"Aborting in file %s:%d\n",__FILE__,__LINE__);
-        abort();
-    }
-    /* type is the type of memory the user adds: in bytes, kiloBytes, megaBytes, etc.*/
-    if(std::strcmp(type.c_str(),"BYTES") == 0){
-        this->usedMemoryInMegaBytes -= mem*1E-6;
-    }else if(std::strcmp(type.c_str(),"KILOBYTES") == 0){
-        this->usedMemoryInMegaBytes -= mem*1E-3;
-    }else if(std::strcmp(type.c_str(),"MEGABYTES") == 0){
-        this->usedMemoryInMegaBytes -= mem;
-    }else if(std::strcmp(type.c_str(),"GIGABYTES") == 0){
-        this->usedMemoryInMegaBytes -= mem*1E3;
-    }else{
-        fprintf(stderr,"ProfilingClass::addMemoryUsage::ERROR\n");
-        fprintf(stderr,"\n>>> std::string type has %s, which is not known.\nAborting.\n",type.c_str());
-        fprintf(stderr,"\n>>> In file %s:%d\n",__FILE__,__LINE__);
-        abort();
-    }
-    printf(">>> Memory in use is %f MBytes.\n",this->usedMemoryInMegaBytes);
-    if(senderMessage != std::string()){
-        if(this->outputFileName != std::string()){
-            this->outputFile.open(this->outputFileName.c_str(),std::fstream::app);
-            if(this->outputFile.is_open()){
-                // Write inside file.
-                this->outputFile << "RemovingMemoryUsage::";
-                this->outputFile << senderMessage;
-                this->outputFile << "::";
-                this->outputFile << std::fixed << std::setprecision(10) << this->usedMemoryInMegaBytes;
-                this->outputFile << " MBytes.";
-                this->outputFile << std::endl;
-                this->outputFile.close();
-            }else{
-                // File could not be opened.
-                fprintf(stderr,"ProfilingClass::removeMemoryUsage::ERROR\n");
-                fprintf(stderr,"Cannot open the file %s.\n",this->outputFileName.c_str());
-            }
-        }
-    }
-}
-
 /**
  * @brief Add a timing input.
  * 
@@ -186,14 +107,6 @@ ProfilingClass::~ProfilingClass(void){
     if(this->outputFile.is_open()){
         // Write inside file.
         std::cout << "ProfilingClass::~ProfilingClass::WRITING" << std::endl;
-        // Memory usage:
-        this->outputFile << "Memory usage is ";
-        this->outputFile << std::fixed << std::setprecision(10) << this->usedMemoryInMegaBytes;
-        this->outputFile << " MBytes." << std::endl;
-        // Peak memory usage:
-        this->outputFile << "Peak memory usage is ";
-        this->outputFile << std::fixed << std::setprecision(10) << this->peakUsedMemoryInMegaBytes;
-        this->outputFile << " MBytes." << std::endl;
 
         // Timing inputs:
         std::map<std::string,double>::iterator it;

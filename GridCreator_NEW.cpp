@@ -34,229 +34,132 @@ GridCreator_NEW::GridCreator_NEW(InputParser &input_parser,
     // It retrieves the number of nodes for the electromagnetic grid along each direction:
 	this->MPI_communicator.MPI_DIVISION(*this);
 
-    printf("MPI %d : RANK[%d, %d, %d, %d, %d, %d]\n",
-        this->MPI_communicator.getRank(),
-        this->MPI_communicator.RankNeighbour[0],
-        this->MPI_communicator.RankNeighbour[1],
-        this->MPI_communicator.RankNeighbour[2],
-        this->MPI_communicator.RankNeighbour[3],
-        this->MPI_communicator.RankNeighbour[4],
-        this->MPI_communicator.RankNeighbour[5]);
-
 }
 
 /* DESTRUCTOR */
 GridCreator_NEW::~GridCreator_NEW(void){
     std::cout << "GridCreator_NEW::~GridCreator_NEW::IN" << std::endl;
 
-    size_t totalFreedMemory = 0;
     /* FREE ALLOCATED SPACE */
 
     // E_x:
     if(this->E_x != NULL){
         delete[] this->E_x;
-        totalFreedMemory += 8* this->size_Ex[0] *
-                             this->size_Ex[1] *
-                             this->size_Ex[2];
     }
     // E_x_material:
     if(this->E_x_material !=NULL){
         delete[] this->E_x_material;
-        totalFreedMemory += 1* this->size_Ex[0] *
-                             this->size_Ex[1] *
-                             this->size_Ex[2];
     }
     // E_x_eps:
     if(this->E_x_eps != NULL){
         delete[] this->E_x_eps;
-        totalFreedMemory += 8* this->size_Ex[0] *
-                             this->size_Ex[1] *
-                             this->size_Ex[2];
     }
     // E_x_electrical_cond
     if(this->E_x_electrical_cond != NULL){
         delete[] this->E_x_electrical_cond;
-        totalFreedMemory += 8* this->size_Ex[0] *
-                             this->size_Ex[1] *
-                             this->size_Ex[2];
     }
     
     // E_y:
     if(this->E_y != NULL){
         delete[] this->E_y;
-        totalFreedMemory += 8* this->size_Ey[0] *
-                             this->size_Ey[1] *
-                             this->size_Ey[2];
     }
     // E_y_material:
     if(this->E_y_material != NULL){
         delete[] this->E_y_material;
-        totalFreedMemory += 1* this->size_Ey[0] *
-                             this->size_Ey[1] *
-                             this->size_Ey[2];
     }
     // E_y_eps:
     if(this->E_y_eps != NULL){
         delete[] this->E_y_eps;
-        totalFreedMemory += 8* this->size_Ey[0] *
-                             this->size_Ey[1] *
-                             this->size_Ey[2];
     }
     // E_y_electrical_cond
     if(this->E_y_electrical_cond != NULL){
         delete[] this->E_y_electrical_cond;
-        totalFreedMemory += 8* this->size_Ey[0] *
-                             this->size_Ey[1] *
-                             this->size_Ey[2];
     }
 
     // E_z:
     if(this->E_z != NULL){
         delete[] this->E_z;
-        totalFreedMemory += 8* this->size_Ez[0] *
-                             this->size_Ez[1] *
-                             this->size_Ez[2];
     }
     // E_z_material:
     if(this->E_z_material != NULL){
         delete[] this->E_z_material;
-        totalFreedMemory += 1* this->size_Ez[0] *
-                             this->size_Ez[1] *
-                             this->size_Ez[2];
     }
     // E_z_eps:
     if(this->E_z_eps != NULL){
         delete[] this->E_z_eps;
-        totalFreedMemory += 8* this->size_Ez[0] *
-                             this->size_Ez[1] *
-                             this->size_Ez[2];
     }
     // E_z_electrical_cond
     if(this->E_z_electrical_cond != NULL){
         delete[] this->E_z_electrical_cond;
-        totalFreedMemory += 8* this->size_Ez[0] *
-                             this->size_Ez[1] *
-                             this->size_Ez[2];
     }
 
     // H_x:
     if(this->H_x != NULL){
         delete[] this->H_x;
-        totalFreedMemory += 8* this->size_Hx[0] *
-                             this->size_Hx[1] *
-                             this->size_Hx[2];
     }
     // H_x_material:
     if(this->H_x_material!= NULL){
         delete[] this->H_x_material;
-        totalFreedMemory += 1* this->size_Hx[0] *
-                             this->size_Hx[1] *
-                             this->size_Hx[2];
     }
     // H_x_mu:
     if(this->H_x_mu != NULL){
         delete[] this->H_x_mu;
-        totalFreedMemory += 8* this->size_Hx[0] *
-                             this->size_Hx[1] *
-                             this->size_Hx[2];
     }
     // H_x_magnetic_cond:
     if(this->H_x_magnetic_cond != NULL){
         delete[] this->H_x_magnetic_cond;
-        totalFreedMemory += 8* this->size_Hx[0] *
-                             this->size_Hx[1] *
-                             this->size_Hx[2];
     }
 
     // H_y:
     if(this->H_y != NULL){
         delete[] this->H_y;
-        totalFreedMemory += 8* this->size_Hy[0] *
-                             this->size_Hy[1] *
-                             this->size_Hy[2];
     }
     // H_y_material:
     if(this->H_y_material != NULL){
-        delete[] this->H_y_material;
-        totalFreedMemory += 1* this->size_Hy[0] *
-                             this->size_Hy[1] *
-                             this->size_Hy[2];    
+        delete[] this->H_y_material;   
     }
     // H_y_mu:
     if(this->H_y_mu != NULL){
         delete[] this->H_y_mu;
-        totalFreedMemory += 8* this->size_Hy[0] *
-                             this->size_Hy[1] *
-                             this->size_Hy[2];
     }
     // H_y_magnetic_cond:
     if(this->H_y_magnetic_cond != NULL){
         delete[] this->H_y_magnetic_cond;
-        totalFreedMemory += 8* this->size_Hy[0] *
-                             this->size_Hy[1] *
-                             this->size_Hy[2];
     }
 
     // H_z:
     if(this->H_z != NULL){
         delete[] this->H_z;
-        totalFreedMemory += 8* this->size_Hz[0] *
-                             this->size_Hz[1] *
-                             this->size_Hz[2];
     }
     // H_z_material:
     if(this->H_z_material != NULL){
         delete[] this->H_z_material;
-        totalFreedMemory += 1* this->size_Hz[0] *
-                             this->size_Hz[1] *
-                             this->size_Hz[2];
     }
     // H_z_mu:
     if(this->H_z_mu != NULL){
         delete[] this->H_z_mu;
-        totalFreedMemory += 8* this->size_Hz[0] *
-                             this->size_Hz[1] *
-                             this->size_Hz[2];
     }
     // H_z_magnetic_cond:
     if(this->H_z_magnetic_cond != NULL){
         delete[] this->H_z_magnetic_cond;
-        totalFreedMemory += 8* this->size_Hz[0] *
-                             this->size_Hz[1] *
-                             this->size_Hz[2];
     }
 
     // Temperature:
     if(this->temperature != NULL){
         delete[] this->temperature;
-        totalFreedMemory += 8* this->size_Thermal[0] *
-                            this->size_Thermal[1] *
-                            this->size_Thermal[2];
-        }
+    }
     // Temperature_material:
     if(this->temperature_material != NULL){
         delete[] this->temperature_material;
-        totalFreedMemory += 1* this->size_Thermal[0] *
-                            this->size_Thermal[1] *
-                            this->size_Thermal[2];
     }
     // Thermal conductivity:
     if(this->thermal_conductivity != NULL){
         delete[] this->thermal_conductivity;
-        totalFreedMemory += 8* this->size_Thermal[0] *
-                            this->size_Thermal[1] *
-                            this->size_Thermal[2];
     }
     // Thermal diffusivity:
     if(this->thermal_diffusivity != NULL){
         delete[] this->thermal_diffusivity;
-        totalFreedMemory += 8* this->size_Thermal[0] *
-                            this->size_Thermal[1] *
-                            this->size_Thermal[2];
     }
-
-    this->profiler.removeMemoryUsage("BYTES",totalFreedMemory,
-            "GridCreator_NEW_Freeing_All");
 
     std::cout << "GridCreator_NEW::~GridCreator_NEW::OUT" << std::endl;
 }
@@ -269,8 +172,6 @@ void GridCreator_NEW::meshInitialization(void){
     double end___grid_init;
     this->profiler.addTimingInputToDictionnary("Grid_meshInit_omp_get_wtime");
     start_grid_init = omp_get_wtime();  
-
-    double memory = 0.0;
 
     size_t M = this->sizes_EH[0];
     size_t N = this->sizes_EH[1];
@@ -322,9 +223,6 @@ void GridCreator_NEW::meshInitialization(void){
     this->E_x_eps             = new double[size]();
     this->E_x_electrical_cond = new double [size]();
 
-    memory = (8+1+8+8) * size;
-    this->profiler.addMemoryUsage("BYTES",memory);
-
     // Size of E_y is  M × (N − 1) × P. Add 2 nodes in each direction for the neighboors.
     if(this->MPI_communicator.must_add_one_to_E_Y_along_XYZ[0] == true){
         this->size_Ey[0] = M + 2 - REMOVE_ONE;
@@ -350,9 +248,6 @@ void GridCreator_NEW::meshInitialization(void){
     this->E_y_material        = new unsigned char[size]();
     this->E_y_eps             = new double[size]();
     this->E_y_electrical_cond = new double[size]();
-
-    memory = (8+1+8+8) * size;
-    this->profiler.addMemoryUsage("BYTES",memory);
 
     // Size of E_z is  M × N × (P − 1). Add 2 nodes in each direction for the neighboors.
 
@@ -380,9 +275,6 @@ void GridCreator_NEW::meshInitialization(void){
     this->E_z_material        = new unsigned char[size]();
     this->E_z_eps             = new double[size]();
     this->E_z_electrical_cond = new double[size]();
-
-    memory = (8+1+8+8) * size;
-    this->profiler.addMemoryUsage("BYTES",memory);
 
     /* ALLOCATE SPACE FOR THE MAGNETIC FIELDS */
 
@@ -415,10 +307,6 @@ void GridCreator_NEW::meshInitialization(void){
     this->H_x_magnetic_cond = new double[size]();
     this->H_x_mu            = new double[size]();
 
-    memory = (8+1+8+8) * size;
-    this->profiler.addMemoryUsage("BYTES",memory);
-
-
     // Size of H_y is  (M − 1) × N × (P − 1). Add 2 nodes in each direction for the neighboors.
 
     if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] == true){
@@ -448,9 +336,6 @@ void GridCreator_NEW::meshInitialization(void){
     this->H_y_mu            = new double[size]();
     this->H_y_magnetic_cond = new double[size]();
 
-    memory = (8+1+8+8) * size;
-    this->profiler.addMemoryUsage("BYTES",memory);
-
     // Size of H_z is  (M − 1) × (N − 1) × P. Add 2 nodes in each direction for the nieghboors.
     if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] == true){
         this->size_Hz[0] = M + 2 - REMOVE_ONE;
@@ -479,9 +364,6 @@ void GridCreator_NEW::meshInitialization(void){
     this->H_z_mu            = new double[size]();
     this->H_z_magnetic_cond = new double[size]();
 
-    memory = (8+1+8+8) * size;
-    this->profiler.addMemoryUsage("BYTES",memory);
-
     /* ALLOCATE SPACE FOR THE TEMPERATURE FIELD */
 
     // The temperature grid is homogeneous. (this->size_Thermal^3).
@@ -498,9 +380,6 @@ void GridCreator_NEW::meshInitialization(void){
     this->temperature_material = new unsigned char[T]();
     this->thermal_conductivity = new double[T]();
     this->thermal_diffusivity  = new double[T]();
-
-    memory = (8+1+8+8) * T;
-    this->profiler.addMemoryUsage("BYTES",memory);
 
     /* INITIALIZATION OF THE NODES */
     this->Assign_A_Material_To_Each_Node();

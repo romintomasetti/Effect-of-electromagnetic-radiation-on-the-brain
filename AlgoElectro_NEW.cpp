@@ -240,7 +240,6 @@ void AlgoElectro_NEW::update(
     /* Set the coefficients for the electromagnetic update algorithm */
 
     size_t size;
-    size_t memory;
     
     //size_t M = grid.sizes_EH[0];
     //size_t N = grid.sizes_EH[1];
@@ -252,17 +251,11 @@ void AlgoElectro_NEW::update(
     double *C_hxe_1 = new double[size]();
     double *C_hxe_2 = new double[size]();
 
-    memory = 3 * sizeof(double) * size;
-    grid.profiler.addMemoryUsage("BYTES",memory);
-
     // Magnetic field Hy:
     size = grid.size_Hy[0] * grid.size_Hy[1] * grid.size_Hy[2];
     double *C_hyh   = new double[size]();
     double *C_hye_1 = new double[size]();
     double *C_hye_2 = new double[size]();
-
-    memory = 3 * sizeof(double) * size;
-    grid.profiler.addMemoryUsage("BYTES",memory);
 
     // Magnetic field Hz:
     size = grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2];
@@ -270,17 +263,11 @@ void AlgoElectro_NEW::update(
     double *C_hze_1 = new double[size]();
     double *C_hze_2 = new double[size]();
 
-    memory = 3 * sizeof(double) * size;
-    grid.profiler.addMemoryUsage("BYTES",memory);
-
     // Electric field Ex:
     size = grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2];
     double *C_exe   = new double[size]();
     double *C_exh_1 = new double[size]();
     double *C_exh_2 = new double[size]();
-
-    memory = 3 * sizeof(double) * size;
-    grid.profiler.addMemoryUsage("BYTES",memory);
 
     // Electric field Ey:
     size = grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]; 
@@ -288,17 +275,11 @@ void AlgoElectro_NEW::update(
     double *C_eyh_1 = new double[size]();
     double *C_eyh_2 = new double[size]();
 
-    memory = 3 * sizeof(double) * size;
-    grid.profiler.addMemoryUsage("BYTES",memory);
-
     // Electric field Ez:
     size = grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2];
     double *C_eze   = new double[size]();
     double *C_ezh_1 = new double[size]();
     double *C_ezh_2 = new double[size]();
-
-    memory = 3 * sizeof(double) * size;
-    grid.profiler.addMemoryUsage("BYTES",memory);
 
     /* COMPUTING COEFFICIENTS */
     #pragma omp parallel
@@ -498,14 +479,6 @@ void AlgoElectro_NEW::update(
             abort();
             #endif
         }
-        grid.profiler.addMemoryUsage(
-            "BYTES",
-            sizeof(size_t)*local_nodes_inside_source_NUMBER[i].size()
-        );
-        grid.profiler.addMemoryUsage(
-            "BYTES",
-            sizeof(unsigned char)*ID_Source[i].size()
-        );
     }
 
     /// Assign frequencies:
@@ -1272,18 +1245,6 @@ void AlgoElectro_NEW::update(
 
 
     /* FREE MEMORY */
-
-    for(int i = 0 ; i < 6 ; i ++){
-        grid.profiler.removeMemoryUsage(
-            "BYTES",
-            sizeof(size_t)*local_nodes_inside_source_NUMBER[i].size(),
-            "Free_nodes_inside_source_NUMBER[]");
-        grid.profiler.removeMemoryUsage(
-            "BYTES",
-            sizeof(unsigned char)*ID_Source[i].size(),
-            "Free_ID_Source[]"
-        );
-    }
     
     delete[] local_nodes_inside_source_NUMBER;
     delete[] ID_Source;
@@ -1294,9 +1255,6 @@ void AlgoElectro_NEW::update(
     delete[] C_hxe_1;
     delete[] C_hxe_2;
 
-    memory = (8+8+8) * size;
-    grid.profiler.removeMemoryUsage("BYTES",memory,"Algo_Free_H_x_coeffs");
-
 
     // Free H_y coefficents:
     size = grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2];
@@ -1304,17 +1262,11 @@ void AlgoElectro_NEW::update(
     delete[] C_hye_1;
     delete[] C_hye_2;
 
-    memory = (8+8+8) * size;
-    grid.profiler.removeMemoryUsage("BYTES",memory,"Algo_Free_H_y_coeffs");
-
     // Free H_z coefficients:
     size = grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2];
     delete[] C_hzh;
     delete[] C_hze_1;
     delete[] C_hze_2;
-
-    memory = (8+8+8) * size;
-    grid.profiler.removeMemoryUsage("BYTES",memory,"Algo_Free_H_z_coeffs");
 
     // Free E_x coefficients:
     size = grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2];
@@ -1322,17 +1274,11 @@ void AlgoElectro_NEW::update(
     delete[] C_exh_1;
     delete[] C_exh_2;
 
-    memory = (8+8+8) * size;
-    grid.profiler.removeMemoryUsage("BYTES",memory,"Algo_Free_E_x_coeffs");
-
     // Free E_y coefficients:
     size = grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2];
     delete[] C_eye;
     delete[] C_eyh_1;
     delete[] C_eyh_2;
-
-    memory = (8+8+8) * size;
-    grid.profiler.removeMemoryUsage("BYTES",memory,"Algo_Free_E_y_coeffs");
 
     // Free E_z coefficients:
     size = grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2];
@@ -1340,17 +1286,21 @@ void AlgoElectro_NEW::update(
     delete[] C_ezh_1;
     delete[] C_ezh_2;
 
-    memory = (8+8+8) * size;
-    grid.profiler.removeMemoryUsage("BYTES",memory,"Algo_Free_E_z_coeffs");
-
+    /// Free electric and magnetic fields:
     for(unsigned int i = 0 ; i < NBR_FACES_CUBE ; i ++){
         if(Electric_field_to_send[i] != NULL)
             free(Electric_field_to_send[i]);
         if(Electric_field_to_recv[i] != NULL)
             free(Electric_field_to_recv[i]);
+        if(Magnetic_field_to_recv[i] != NULL)
+            free(Magnetic_field_to_recv[i]);
+        if(Magnetic_field_to_send[i] != NULL)
+            free(Magnetic_field_to_send[i]);
     }
     if(Electric_field_to_send != NULL){free(Electric_field_to_send);}
     if(Electric_field_to_recv != NULL){free(Electric_field_to_recv);}
+    if(Magnetic_field_to_send != NULL){free(Magnetic_field_to_send);}
+    if(Magnetic_field_to_recv != NULL){free(Magnetic_field_to_recv);}
 
     /// Compute total elapsed time inside UPDATE:
     gettimeofday(&end, NULL);

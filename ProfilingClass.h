@@ -14,9 +14,6 @@
 
 class ProfilingClass{
     private:
-        // Used memory:
-        double usedMemoryInMegaBytes = 0.0;
-        double peakUsedMemoryInMegaBytes = 0.0;
         
         // Dictionnary for arbitrary time input:
         std::map<std::string,double> time_taken_for;
@@ -37,9 +34,6 @@ class ProfilingClass{
         // Set program starting time:
         void set_program_starting_time();
 
-        // Adding memory usage:
-        void addMemoryUsage(std::string,double);
-
         // Add a timing input:
         void addTimingInputToDictionnary(
             std::string,
@@ -54,10 +48,6 @@ class ProfilingClass{
 
         // Set the output file's name:
         void setOutputFileName(std::string);
-
-        // Remove some memory usage:
-        void removeMemoryUsage(std::string type, double mem,
-                        std::string senderMessage = std::string());
 
 };
 
