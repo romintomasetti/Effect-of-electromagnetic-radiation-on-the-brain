@@ -15,12 +15,7 @@ class GridCreator;
 
 class ElectromagneticSource{
 	private:
-		SetOnceVariable_Template<unsigned int> number_of_sources;
 		
-
-		std::vector<bool> lengthsAlreadySet;
-		std::vector<bool> centersAlreadySet;
-		std::vector<bool> nodesInsideAlreadySet;
 
 		//
 
@@ -29,6 +24,15 @@ class ElectromagneticSource{
 		ElectromagneticSource(){};
 		// Destructor:
 		~ElectromagneticSource(){};
+		
+		SetOnceVariable_Template<unsigned int> number_of_sources;
+		
+
+		std::vector<bool> lengthsAlreadySet;
+		std::vector<bool> centersAlreadySet;
+		std::vector<bool> nodesInsideAlreadySet;
+		
+		
 		// Set the number of sources:
 		// Lengths and centers in each direction of each source:
 		std::vector<double> lengthX;
