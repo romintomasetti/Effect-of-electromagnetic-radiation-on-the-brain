@@ -12,6 +12,20 @@
 #include <dirent.h>
 #include <fstream>
 
+std::vector<size_t> findCharacterInsideString(std::string str,std::string charact){
+	
+	std::vector<size_t> positions;
+	
+	size_t pos = str.find(charact, 0);
+	
+	while(pos != string::npos)
+	{
+		positions.push_back(pos);
+		pos = str.find(charact,pos+1);
+	}
+	return positions;
+}
+
 void removeFilesOfDirectory(std::string directoryOutputFiles, std::string extension){
 
 	DIR *dir;
@@ -186,6 +200,18 @@ void InputParser::defaultParsingFromFile(int MPI_RANK){
 	}
 
 	this->deleteFiles(MPI_RANK);
+	
+	if(this->source.number_of_sources.get() != 0 && this->conditionsInsideSources.empty()){
+		fprintf(stderr,"In %s :: ERROR :: There is %d sources, but you specified"
+						" no condition inside of it! Aborting.\n",__FUNCTION__,
+						this->source.number_of_sources.get());
+		fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+		#ifdef MPI_COMM_WORLD
+			MPI_Abort(MPI_COMM_WORLD,-1);
+		#else
+			abort();
+		#endif
+	}
 }
 
 void InputParser::defaultParsingFromFile(std::string &filename, int MPI_RANK){
@@ -635,6 +661,18 @@ void InputParser::readHeader_MESH (ifstream &file){
 						this->RemoveAnyBlankSpaceInStr(currentLine);
 						// If the string is "$DELTAS" it means the section ends.
 						if(currentLine == "$SOURCE"){
+							if(this->conditionsInsideSources.empty()){
+								fprintf(stderr,"In %s :: ERROR :: you have more than zero "
+											"source but not imposed condition specified !"
+											" Aborting.\n",
+											__FUNCTION__);
+								fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+								#ifdef MPI_COMM_WORLD
+									MPI_Abort(MPI_COMM_WORLD,-1);
+								#else
+									abort();
+								#endif
+							}
 							break;
 						}
 						// If the string is empty, it was just a white space. Continue.
@@ -704,6 +742,50 @@ void InputParser::readHeader_MESH (ifstream &file){
 									propGiven,
 									this->source.get_number_of_sources());
 							this->source.setAllFrequencies(temp);
+							
+						}else if(propName == "IMPOSED"){
+							/// Find the semi-colons:
+							std::vector<size_t> pos_semi_col
+								= findCharacterInsideString(propGiven, ";");
+							if(pos_semi_col.size() != this->source.number_of_sources.get()){
+								fprintf(stderr,"In %s :: ERROR :: IMPOSED :: "
+												"You must have as many semi-colon(s) as "
+												"you have sources. Aborting.\n",
+												__FUNCTION__);
+								fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+								#ifdef MPI_COMM_WORLD
+									MPI_Abort(MPI_COMM_WORLD,-1);
+								#else
+									abort();
+								#endif
+							}
+							
+							for(unsigned int I = 0 ; I < pos_semi_col.size() ; I ++){
+								std::string str;
+								if(I == 0){
+									str = propGiven.substr(
+										0,pos_semi_col[I]);
+								}else{
+									str = propGiven.substr(
+										pos_semi_col[I-1]+1,
+										(pos_semi_col[I]-pos_semi_col[I-1])-1);
+								}
+								//printf("Has : %s \n",str.c_str());
+								if(str != "DIPOLE" && str != "SIMPLE"){
+									fprintf(stderr,"In %s :: ERROR :: Imposed condition on source"
+												" should be either 'DIPOLE' or 'SIMPLE'. Aborting.\n",
+												__FUNCTION__);
+									fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+									#ifdef MPI_COMM_WORLD
+										MPI_Abort(MPI_COMM_WORLD,-1);
+									#else
+										abort();
+									#endif
+								}
+								this->conditionsInsideSources.push_back(str);
+							}
+							
+								
 
 						}else{
 							printf("InputParser::readHeader_MESH:: You didn't provide a ");
@@ -1259,12 +1341,14 @@ std::vector<double> InputParser::determineVectorFromStr(
 	if(tempVec.size() > size_to_verify_for){
 		fprintf(stderr,"In %s :: The vector from the string contains more elements than annouced.\n",
 			__FUNCTION__);
-		fprintf(stderr,"Received %s, annouced %zu elements but has %zu elements. Aborting.\n",
+		fprintf(stderr,"Received %s, announced %zu elements but has %zu elements. Aborting.\n",
 			str.c_str(),size_to_verify_for,tempVec.size());
 		abort();
 	}
 		
 	return tempVec;
 }
+
+
 
 

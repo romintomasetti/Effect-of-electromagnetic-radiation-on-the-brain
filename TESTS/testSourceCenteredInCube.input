@@ -12,7 +12,7 @@ $INFOS
 		// Profiling (cpu time, memory, etc):
 		profile=PROFILING
 	$NAME
-
+	
 	$REMOVE_EXISTING_FILES
 		// Specify if old .pvti and .vti files must be deleted prior to any computation:
 		remove_vti=true
@@ -33,11 +33,11 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=0.01
-		deltaY_Electro=0.01
-		deltaZ_Electro=0.01
+		deltaX_Electro=0.002
+		deltaY_Electro=0.002
+		deltaZ_Electro=0.002
 		delta_Thermal=0.01
-		ratio_EM_TH_delta=1
+		ratio_EM_TH_delta=0.2
 	$DELTAS
 		
 	// Boundaries of the domain
@@ -53,26 +53,19 @@ $MESH
 	
 	// Information on the source
 	$SOURCE
-		NBR_SOURCES=1
+		NBR_SOURCES=2
 		// Length of the source in each direction
-		L_X=0.1
-		L_Y=0.1
-		L_Z=0.1
+		L_X=0.1;0.1;
+		L_Y=0.1;0.1;
+		L_Z=0.1;0.1;
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=0.4
-		C_Y=0.4
-		C_Z=0.5
+		C_X=0.5;0.7;
+		C_Y=0.5;0.5;
+		C_Z=0.5;0.5;
 		// Frequency [Hz]
-		FRQCY=900E6
-		/* Tell what is imposed and how.
-			Working principle:
-				You want to impose 2 sources.
-				In the first one,  you impose Ex=Ey=0 and Ez=sin wave. You don't touch H components.
-				In the second one, you impose Ey=1, nothing on Ex and Ez and only Hx is vanishing.
-				You should then write:
-				{[Ex=0,Ey=0,Ez=SIN],[Hx==,Hy==,Hz==]};{[Ex==,Ey=1,Ez==],[Hx=0,Hy==,Hz==]}
-				One thus understands that '==' means 'do nothing' 	*/
-		//IMPOSED={[EX=0;EY=0;EZ=SIN],[HX==,HY==,HZ==]}
+		FRQCY=900E1;900E1;
+		/// Either 'DIPOLE' or 'SIMPLE' (for simple antenna):
+		IMPOSED=DIPOLE;SIMPLE;
 	$SOURCE
 	
 	$MATERIALS
@@ -105,7 +98,7 @@ $RUN_INFOS
 		// The simulation will stop after... (in sec)
 		stopTime=10
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=50
+		maxStepsForOneCycleOfElectro=100
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
 		maxStepsForOneCycleOfThermal=5E5 
@@ -141,7 +134,7 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=1
+		SAMPLING_FREQ_ELECTRO=1000
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING

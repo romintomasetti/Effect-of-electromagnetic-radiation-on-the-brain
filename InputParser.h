@@ -79,8 +79,13 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
-		/// Name of the material file:
+		/// Name of the file containing the materials' data:
 		std::string material_data_file = string();
+		
+		/**
+		 * Either 'dipole' or 'simple'
+		 */		
+		std::vector<std::string> conditionsInsideSources;
 
 		// Thermal algorithm time step:
 		double thermal_algo_time_step = -1;
