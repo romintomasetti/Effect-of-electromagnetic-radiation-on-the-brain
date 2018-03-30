@@ -122,12 +122,13 @@ class ElectromagneticSource{
 		 *                  By default, the origin is (0,0,0).
 		 * 
 		 */
-		bool is_inside_source_Romin(
+		std::string is_inside_source_Romin(
 			const size_t I_gl, 
 			const size_t J_gl, 
 			const size_t K_gl,
 			const std::vector<double> &deltas_Electro,
 			const std::string &type = "Not_given",
+			const std::string &source_type = "NOT_GIVEN",
 			const unsigned char ID_Source = UCHAR_MAX,
 			const std::vector<double> &origin_whole_grid = {0.0,0.0,0.0});
 };
