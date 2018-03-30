@@ -282,7 +282,15 @@ void AlgoElectro_NEW::update(
     double *C_ezh_2 = new double[size]();
 
     /* COMPUTING COEFFICIENTS */
-    #pragma omp parallel
+    #pragma omp parallel default(none)\
+		firstprivate(C_exe,C_exh_1,C_exh_2)\
+		firstprivate(C_eye,C_eyh_1,C_eyh_2)\
+		firstprivate(C_eze,C_ezh_1,C_ezh_2)\
+		firstprivate(C_hxh,C_hxe_1,C_hxe_2)\
+		firstprivate(C_hyh,C_hye_1,C_hye_2)\
+		firstprivate(C_hzh,C_hze_1,C_hze_2)\
+		shared(grid)\
+		firstprivate(dt)
     {
         size_t index;
         /* Coefficients for Ex */
@@ -451,17 +459,17 @@ void AlgoElectro_NEW::update(
     //      2) GridCreator_NEW calls its source object //
     /////////////////////////////////////////////////////
     
-    // Size 6 because 3 E and 3 H components:
+    // Size 3 because 3 E components:
     std::vector<size_t>        *local_nodes_inside_source_NUMBER ;
-    local_nodes_inside_source_NUMBER = new std::vector<size_t>[6];
+    local_nodes_inside_source_NUMBER = new std::vector<size_t>[3];
 
-    // Size 6 because 3 E and 3 H components:
+    // Size 3 because 3 E components:
     std::vector<unsigned char> *ID_Source                         ;
-    ID_Source = new std::vector<unsigned char>[6];
+    ID_Source = new std::vector<unsigned char>[3];
 
     std::vector<double>        local_nodes_inside_source_FREQ    ;
 
-    std::vector<std::string> TYPE = {"Ex","Ey","Ez","Hx","Hy","Hz"};
+    std::vector<std::string> TYPE = {"Ex","Ey","Ez"};
 
     for(unsigned int i = 0 ; i < TYPE.size() ; i ++){
         grid.Compute_nodes_inside_sources(
@@ -1072,7 +1080,11 @@ void AlgoElectro_NEW::update(
 
                 double frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
 
+                if(ID_Source[2][it] == UCHAR_MAX)
+                    frequency = 0;
+
                 E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
+
             }
 
             #pragma omp for schedule(static) nowait
@@ -1081,7 +1093,12 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[1][it];
                 ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 
-                E_y_tmp[index] = 0;
+                double frequency = local_nodes_inside_source_FREQ[ID_Source[1][it]];
+
+                if(ID_Source[1][it] == UCHAR_MAX)
+                    frequency = 0;
+
+                E_y_tmp[index] = sin(2*M_PI*frequency*current_time);
             }
 
             #pragma omp for schedule(static) nowait
@@ -1090,7 +1107,12 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[0][it];
                 ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
 
-                E_x_tmp[index] = 0;
+                double frequency = local_nodes_inside_source_FREQ[ID_Source[0][it]];
+
+                if(ID_Source[0][it] == UCHAR_MAX)
+                    frequency = 0;
+
+                E_x_tmp[index] = sin(2*M_PI*frequency*current_time);
             }
 
             
@@ -1262,38 +1284,32 @@ void AlgoElectro_NEW::update(
     delete[] ID_Source;
     
     // Free H_x coefficients:
-    size = grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2];
     delete[] C_hxh;
     delete[] C_hxe_1;
     delete[] C_hxe_2;
 
 
     // Free H_y coefficents:
-    size = grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2];
     delete[] C_hyh;
     delete[] C_hye_1;
     delete[] C_hye_2;
 
     // Free H_z coefficients:
-    size = grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2];
     delete[] C_hzh;
     delete[] C_hze_1;
     delete[] C_hze_2;
 
     // Free E_x coefficients:
-    size = grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2];
     delete[] C_exe;
     delete[] C_exh_1;
     delete[] C_exh_2;
 
     // Free E_y coefficients:
-    size = grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2];
     delete[] C_eye;
     delete[] C_eyh_1;
     delete[] C_eyh_2;
 
     // Free E_z coefficients:
-    size = grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2];
     delete[] C_eze;
     delete[] C_ezh_1;
     delete[] C_ezh_2;
