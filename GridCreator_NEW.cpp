@@ -7,6 +7,8 @@
 
 #include <algorithm>
 
+#include <cassert>
+
 /*
  * Defines for the column number of the properties:
  */
@@ -1218,15 +1220,17 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
 
                     // Loop over all the sources:
                     for(unsigned char id = 0 ; id < this->input_parser.source.get_number_of_sources() ; id ++){
-                        if(this->input_parser.source.is_inside_source_Romin(
+                        std::string res = this->input_parser.source.is_inside_source_Romin(
                             global[0],
                             global[1],
                             global[2],
                             this->delta_Electromagn,
                             type,
+							this->input_parser.conditionsInsideSources[id],
                             id,
                             this->input_parser.origin_Electro_grid
-                        ) == true)
+                        );
+                        if(res == "true")
                         {
                             /// Record min max
                             if(J > J_max[omp_get_thread_num()]){
@@ -1249,9 +1253,30 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
                             );
 
                             ID_for_nodes[omp_get_thread_num()].push_back((unsigned char)id);
-
-                            
+                        
                         }
+
+                        if( res == "0"){
+                            /// We must impose the field to 0.
+                            /// Record min max
+                            if(J > J_max[omp_get_thread_num()]){
+                                J_max[omp_get_thread_num()] = J;
+                            }
+                            if(I > I_max[omp_get_thread_num()]){ 
+                                I_max[omp_get_thread_num()] = I;
+                            }
+                            if(J < J_min[omp_get_thread_num()]){
+                                J_min[omp_get_thread_num()] = J;
+                            }
+                            if(I_min[omp_get_thread_num()] > I){
+                                I_min[omp_get_thread_num()] = I;
+                            }
+                            numbers_for_nodes[omp_get_thread_num()].push_back(
+                                I + SIZES_PRIVATE[0] * ( J + SIZES_PRIVATE[1] * K)
+                            );
+                            ID_for_nodes[omp_get_thread_num()].push_back(UCHAR_MAX);
+                        }
+
                     }
                 }
             }
