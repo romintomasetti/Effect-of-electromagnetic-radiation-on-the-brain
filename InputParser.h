@@ -79,6 +79,9 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
+		/// Linked to the source behaviour:
+		std::string source_time = string();
+
 		/// Name of the file containing the materials' data:
 		std::string material_data_file = string();
 		

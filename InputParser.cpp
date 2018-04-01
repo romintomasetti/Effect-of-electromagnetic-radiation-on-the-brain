@@ -673,6 +673,10 @@ void InputParser::readHeader_MESH (ifstream &file){
 									abort();
 								#endif
 							}
+							if(this->source_time == std::string())
+								DISPLAY_ERROR_ABORT(
+									"You must specify source type ! (GAUSSIAN, SINE)"
+								);
 							break;
 						}
 						// If the string is empty, it was just a white space. Continue.
@@ -785,7 +789,14 @@ void InputParser::readHeader_MESH (ifstream &file){
 								this->conditionsInsideSources.push_back(str);
 							}
 							
-								
+						}else if(propName == "SOURCE_TIME"){
+							if(propGiven != "GAUSSIAN" && propGiven != "SINE"){
+								DISPLAY_ERROR_ABORT(
+									"The given property is different from GAUSSIAN or SINE (has %s).",
+									propGiven.c_str()
+								);
+							}
+							this->source_time = propGiven;
 
 						}else{
 							printf("InputParser::readHeader_MESH:: You didn't provide a ");
