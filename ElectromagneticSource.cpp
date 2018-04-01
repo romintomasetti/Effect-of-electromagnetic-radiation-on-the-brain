@@ -328,8 +328,12 @@ std::string ElectromagneticSource::is_inside_source_Romin(
 					return "false";
 				}
 			}else if(isOnFace_e_MinusZ == true || isOnFace_e_PlusZ == true){
-				// Face with normal (+z) or (-z). Do nothing.
-				return "false"; 
+				// Face with normal (+z) or (-z). Impose Ex=Ey=0.
+				if( type == "Ex" || type == "Ey" ){
+					return "0";
+				}else{
+					return "false";
+				}
 			}
 
 			// In the bulk, impose Ex, Ey and Ez to zero:
