@@ -7,6 +7,12 @@
 #include <algorithm>
 #include <sys/time.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/file.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <assert.h>
 
 #include "header_with_all_defines.hpp"
@@ -15,8 +21,38 @@
 
 #define DECALAGE_E_SUPP 1
 
+#include <sys/file.h>
+ #define   LOCK_SH   1    /* shared lock */
+ #define   LOCK_EX   2    /* exclusive lock */
+ #define   LOCK_NB   4    /* don't block when locking */
+ #define   LOCK_UN   8    /* unlock */
 
 
+int tryGetLock( char const *lockName );
+void releaseLock( int fd);
+
+void testlock(void) {
+  # pragma omp parallel num_threads(16)
+  {    
+    int fd = -1; char ln[] = "testlock.lock";
+    while (fd == -1) fd = tryGetLock(ln);
+
+    cout << omp_get_thread_num() << ": got the lock!\n";
+    cout << omp_get_thread_num() << ": removing the lock\n";
+    FILE *file = fopen(ln,"a");
+    if( file != NULL){
+        fprintf(file,"Coucou de OMP %d.\n",omp_get_thread_num());
+        fclose(file);
+    }else{
+        printf("Fail opening file !\n");
+        abort();
+    }
+
+    system("cat testlock.lock");
+
+    releaseLock(fd);
+  }
+}
 
 
 void prepare_array_to_be_sent(
@@ -209,7 +245,6 @@ void AlgoElectro_NEW::update(
     GridCreator_NEW &grid,
     InterfaceToParaviewer &interfaceParaview)
 {
-
     /// Start monitoring the time taken for the algorithm to compute:
     struct timeval start, end;
     gettimeofday(&start, NULL);
@@ -605,10 +640,10 @@ void AlgoElectro_NEW::update(
         firstprivate(size_faces_electric,size_faces_magnetic)
     {
 
-        /*
-        shared(H_x_tmp,H_y_tmp,H_z_tmp)\
-        shared(E_x_tmp,E_y_tmp,E_z_tmp)\
-        */
+        bool MODULATE_SOURCE = false;
+        if(grid.input_parser.source_time == "GAUSSIAN"){
+            MODULATE_SOURCE =true;
+        }
 
         // Temporary pointers, to avoid doing grid.sthg !
         double *H_x_tmp = grid.H_x;
@@ -1078,14 +1113,31 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[2][it];
                 ASSERT(index,<,grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]);
 
-                double frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
+                double gauss     = 1;
+                double frequency = 0;
 
-                if(ID_Source[2][it] == UCHAR_MAX)
+                if(ID_Source[2][it] == UCHAR_MAX){
                     frequency = 0;
+                }else{
 
-                E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
+                    frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
+
+                    if(MODULATE_SOURCE == true){
+                        double period    = 2*M_PI/frequency;
+                        double MEAN      = 0*period;
+                        double STD       = period/10;
+                                        
+                        double t = current_time;
+                        
+                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                    }
+
+                }                
+
+                E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
 
             }
+
 
             #pragma omp for schedule(static) nowait
             for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[1].size() ; it ++){
@@ -1093,12 +1145,27 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[1][it];
                 ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 
-                double frequency = local_nodes_inside_source_FREQ[ID_Source[1][it]];
+                double gauss     = 1;
+                double frequency = 0;
 
-                if(ID_Source[1][it] == UCHAR_MAX)
+                if(ID_Source[1][it] == UCHAR_MAX){
                     frequency = 0;
+                }else{
 
-                E_y_tmp[index] = sin(2*M_PI*frequency*current_time);
+                    frequency = local_nodes_inside_source_FREQ[ID_Source[1][it]];
+
+                    if(MODULATE_SOURCE == true){
+                        double period    = 2*M_PI/frequency;
+                        double MEAN      = 0*period;
+                        double STD       = period/10;
+                                        
+                        double t = current_time;
+                        
+                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                    }
+                }
+
+                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
             }
 
             #pragma omp for schedule(static) nowait
@@ -1107,12 +1174,27 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[0][it];
                 ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
 
-                double frequency = local_nodes_inside_source_FREQ[ID_Source[0][it]];
+                double gauss     = 1;
+                double frequency = 0;
 
-                if(ID_Source[0][it] == UCHAR_MAX)
+                if(ID_Source[0][it] == UCHAR_MAX){
                     frequency = 0;
+                }else{
 
-                E_x_tmp[index] = sin(2*M_PI*frequency*current_time);
+                    frequency = local_nodes_inside_source_FREQ[ID_Source[0][it]];
+
+                    if(MODULATE_SOURCE == true){
+                        double period    = 2*M_PI/frequency;
+                        double MEAN      = 0*period;
+                        double STD       = period/10;
+                                        
+                        double t = current_time;
+                        
+                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                    }
+                }
+
+                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
             }
 
             
@@ -3120,7 +3202,7 @@ void communicate_single_omp_thread(
         /* NEIGHBOOR LARGER THAN ME */
         }else if( mpi_to_who[FACE] > mpi_me ){
             #ifndef NDEBUG
-                printf("[MPI %d - LARGER - FACE %d -OMP %d] to [MPI %d] | sendTag %d , recvTag %d\n",
+                printf("[MPI %d - LARGER - FACE %u -OMP %d] to [MPI %d] | sendTag %u , recvTag %d\n",
                         mpi_me,
                         FACE,
                         omp_get_thread_num(),
@@ -3176,7 +3258,7 @@ void communicate_single_omp_thread(
                 
         }else if( mpi_to_who[FACE] < mpi_me ){
             #ifndef NDEBUG
-                printf("[MPI %d - SMALLER - FACE %d - OMP %d] to [MPI %d] | sendTag %d , recvTag %d\n",
+                printf("[MPI %d - SMALLER - FACE %u - OMP %d] to [MPI %d] | sendTag %u , recvTag %d\n",
                         mpi_me,
                         FACE,
                         omp_get_thread_num(),
@@ -3232,7 +3314,7 @@ void communicate_single_omp_thread(
                 
         }else{
                 fprintf(stderr,"In function %s :: no way to communicate between MPI %d and"
-                                " MPI %d, on face %d. Aborting.\n",
+                                " MPI %d, on face %u. Aborting.\n",
                                 __FUNCTION__,mpi_me,mpi_to_who[FACE],FACE);
                 fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
                 #ifdef MPI_COMM_WORLD
@@ -3243,4 +3325,114 @@ void communicate_single_omp_thread(
         }
     }
     
+}
+
+/**
+ * @brief Function to probe the value of a field in time, and write it inside a file.
+ */
+void probe_a_field(
+    GridCreator_NEW &grid,
+    std::string &which_field,
+    std::string &filename,
+    std::string &which_form_to_probe,
+    std::vector<double> &infoOnForm,
+    std::vector<double> &electro_deltas,
+    double current_time
+)
+{
+    if(electro_deltas[0] < 0){
+        DISPLAY_ERROR_ABORT(
+            "You didn't specified a valid electro delta ! (has (%lf,%lf,%lf).",
+            electro_deltas[0],
+            electro_deltas[1],
+            electro_deltas[2]
+        );
+    }
+    if(which_form_to_probe == "point"){
+        /**
+         * @brief Probing the value of the field at a given point.
+         * The point is given in (x,y,z) coordinates or in global node number.
+         */
+        if(infoOnForm.size() != 3){
+            fprintf(stderr,"In %s :: ERROR :: You asked for probing a point"
+                            " but the 'infoOnForm' vector is not of size 3"
+                            " (has %zu). Aborting.\n",
+                            __FUNCTION__,infoOnForm.size());
+            fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+            MPI_Abort(MPI_COMM_WORLD,-1);
+        }
+
+        /// Check if the point is given as (x,y,z) or node number:
+        if(   round(infoOnForm[0]) == infoOnForm[0]
+           && round(infoOnForm[1]) == infoOnForm[1]
+           && round(infoOnForm[2]) == infoOnForm[2])
+        {
+            /// The info on the point is given as node number.
+        }else{
+            /// The info on the point is given as coordinates.
+            /// Compute global node number and check if it is inside the current MPI process:
+            size_t nbr_X_gl = infoOnForm[0] / electro_deltas[0];
+            size_t nbr_Y_gl = infoOnForm[1] / electro_deltas[1];
+            size_t nbr_Z_gl = infoOnForm[2] / electro_deltas[2];
+            if(grid.is_global_inside_me(nbr_X_gl,nbr_Y_gl,nbr_Z_gl) == true){
+                /// The node is inside this MPI process. Proceed.
+                /// Open the file:
+                int fd = -1;
+                while (fd == -1) fd = tryGetLock(filename.c_str());
+
+                FILE *file = NULL;
+                if(NULL == (file = fopen(filename.c_str(),"a"))){
+                    DISPLAY_ERROR_ABORT(
+                        "Cannot open the file %s.",filename.c_str()
+                    );
+                }else{
+                    double value = 0;
+                    fprintf(file,"(%20lf,%.5lf,%.5lf,%.5lf) %s = %20.5lf [gl_node(%zu,%zu,%zu)]\n",
+                                current_time,
+                                infoOnForm[0],
+                                infoOnForm[1],
+                                infoOnForm[2],
+                                which_field.c_str(),
+                                value,
+                                nbr_X_gl,nbr_Y_gl,nbr_Y_gl);
+                    fclose(file);
+                }
+
+
+                releaseLock(fd);
+            }else{
+                /// The node is not inside this MPI process. Return.
+                return;
+            }
+        }
+    }
+}
+
+/*! Try to get lock. Return its file descriptor or -1 if failed.
+ *
+ *  @param lockName Name of file used as lock (i.e. '/var/lock/myLock').
+ *  @return File descriptor of lock file, or -1 if failed.
+ */
+int tryGetLock( char const *lockName )
+{
+    mode_t m = umask( 0 );
+    int fd = open( lockName, O_RDWR|O_CREAT, 0666 );
+    umask( m );
+    if( fd >= 0 && flock( fd, LOCK_EX | LOCK_NB ) < 0 )
+    {
+        close( fd );
+        fd = -1;
+    }
+    return fd;
+}
+
+/*! Release the lock obtained with tryGetLock( lockName ).
+ *
+ *  @param fd File descriptor of lock returned by tryGetLock( lockName ).
+ */
+void releaseLock( int fd)
+{
+    if( fd < 0 )
+        return;
+    close( fd );
 }
