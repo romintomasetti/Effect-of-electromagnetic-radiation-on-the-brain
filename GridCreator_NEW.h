@@ -150,5 +150,12 @@ class GridCreator_NEW{
                 std::vector<double>        &local_nodes_inside_source_FREQ,
                 const std::string          &TYPE_OF_FIELD
             );
+
+        bool is_global_inside_me(
+            size_t nbr_X_gl,
+            size_t nbr_Y_gl,
+            size_t nbr_Z_gl
+        );
 };
+
 #endif
