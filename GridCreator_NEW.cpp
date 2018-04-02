@@ -7,6 +7,8 @@
 
 #include <algorithm>
 
+#include <cassert>
+
 /*
  * Defines for the column number of the properties:
  */
@@ -1218,15 +1220,17 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
 
                     // Loop over all the sources:
                     for(unsigned char id = 0 ; id < this->input_parser.source.get_number_of_sources() ; id ++){
-                        if(this->input_parser.source.is_inside_source_Romin(
+                        std::string res = this->input_parser.source.is_inside_source_Romin(
                             global[0],
                             global[1],
                             global[2],
                             this->delta_Electromagn,
                             type,
+							this->input_parser.conditionsInsideSources[id],
                             id,
                             this->input_parser.origin_Electro_grid
-                        ) == true)
+                        );
+                        if(res == "true")
                         {
                             /// Record min max
                             if(J > J_max[omp_get_thread_num()]){
@@ -1249,9 +1253,30 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
                             );
 
                             ID_for_nodes[omp_get_thread_num()].push_back((unsigned char)id);
-
-                            
+                        
                         }
+
+                        if( res == "0"){
+                            /// We must impose the field to 0.
+                            /// Record min max
+                            if(J > J_max[omp_get_thread_num()]){
+                                J_max[omp_get_thread_num()] = J;
+                            }
+                            if(I > I_max[omp_get_thread_num()]){ 
+                                I_max[omp_get_thread_num()] = I;
+                            }
+                            if(J < J_min[omp_get_thread_num()]){
+                                J_min[omp_get_thread_num()] = J;
+                            }
+                            if(I_min[omp_get_thread_num()] > I){
+                                I_min[omp_get_thread_num()] = I;
+                            }
+                            numbers_for_nodes[omp_get_thread_num()].push_back(
+                                I + SIZES_PRIVATE[0] * ( J + SIZES_PRIVATE[1] * K)
+                            );
+                            ID_for_nodes[omp_get_thread_num()].push_back(UCHAR_MAX);
+                        }
+
                     }
                 }
             }
@@ -1290,4 +1315,59 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
     delete[] ID_for_nodes;
     delete[] freq;
 
+}
+
+bool GridCreator_NEW::is_global_inside_me(
+    size_t nbr_X_gl,
+    size_t nbr_Y_gl,
+    size_t nbr_Z_gl
+)
+{
+    if(    nbr_X_gl >= this->originIndices_Electro[0] 
+        && nbr_X_gl <= this->originIndices_Electro[0]+this->sizes_EH[0])
+    {
+        if(    nbr_Y_gl >= this->originIndices_Electro[1] 
+            && nbr_Y_gl <= this->originIndices_Electro[1]+this->sizes_EH[1]){
+            if(    nbr_Z_gl >= this->originIndices_Electro[2] 
+                && nbr_Z_gl <= this->originIndices_Electro[2]+this->sizes_EH[2]){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * From the global node numbering, it returns the local node numbering,
+ * only if the node is inside this grid !
+ */
+void GridCreator_NEW::get_local_from_global_electro(
+    const size_t nbr_X_gl ,const size_t nbr_Y_gl ,const size_t nbr_Z_gl,
+    size_t *nbr_X_loc     ,size_t *nbr_Y_loc     ,size_t *nbr_Z_loc,
+    bool *is_ok
+)
+{
+    /// Check that the global node is inside this grid:
+    if( !is_global_inside_me(
+                    nbr_X_gl,
+                    nbr_Y_gl,
+                    nbr_Z_gl))
+        {
+            DISPLAY_WARNING(
+                "You have requested a global node which is not in this grid."
+            );
+            *is_ok = false;
+            return;
+        }
+
+    /**
+     * We must be carefull about the nodes for send/recv operations in MPI comm;
+     * we add a '+1' because the first column/row/slice is for send/recv.
+     */
+
+    *nbr_X_loc = nbr_X_gl - this->originIndices_Electro[0] + 1;
+    *nbr_Y_loc = nbr_Y_gl - this->originIndices_Electro[1] + 1;
+    *nbr_Z_loc = nbr_Z_gl - this->originIndices_Electro[2] + 1;
+
+    *is_ok = true;
 }

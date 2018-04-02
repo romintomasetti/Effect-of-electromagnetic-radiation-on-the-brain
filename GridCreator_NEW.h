@@ -150,5 +150,48 @@ class GridCreator_NEW{
                 std::vector<double>        &local_nodes_inside_source_FREQ,
                 const std::string          &TYPE_OF_FIELD
             );
+
+        bool is_global_inside_me(
+            size_t nbr_X_gl,
+            size_t nbr_Y_gl,
+            size_t nbr_Z_gl
+        );
+
+
+        double* get_fields(std::string &key){
+            if(key == "Ex")
+                return this->E_x;
+            else if(key == "Ey")
+                return this->E_y;
+            else if(key == "Ez")
+                return this->E_z;
+            else
+                DISPLAY_ERROR_ABORT(
+                    "No field corresponding to %s.",key.c_str()
+                );
+            return NULL;
+        }
+
+        std::vector<size_t> get_fields_size(std::string &key){
+            if(key == "size_Ex")
+                return this->size_Ex;
+            if(key == "size_Ey")
+                return this->size_Ey;
+            if(key == "size_Ez")
+                return this->size_Ez;
+            else
+                DISPLAY_ERROR_ABORT(
+                    "No field size crresponding to %s.",key.c_str()
+                );
+            std::vector<size_t> empty(1);
+            return empty;
+        }
+
+        void get_local_from_global_electro(
+            const size_t nbr_X_gl ,const size_t nbr_Y_gl ,const size_t nbr_Z_gl,
+            size_t *nbr_X_loc     ,size_t *nbr_Y_loc     ,size_t *nbr_Z_loc,
+            bool *is_ok
+        );
 };
+
 #endif

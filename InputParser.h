@@ -14,12 +14,22 @@
 #include "SetOnceVariable_Template.h"
 #include "ElectromagneticSource.h"
 
+#include "header_with_all_defines.hpp"
+
 using namespace std;
+
+typedef struct probed_point{
+	std::string type_field;
+	std::vector<double> coordinates;
+	std::string at_which_time;
+	std::string filename;
+}probed_point;
 
 enum stringDollar_Header1{
     INFOS,
 	MESH,
-	RUN_INFOS
+	RUN_INFOS,
+	POST_PROCESSING
 };
 enum stringDollar_Header2{
 	NAME,
@@ -33,7 +43,8 @@ enum stringDollar_Header2{
 	TEMP_INIT,
 	BOUNDARY_CONDITIONS,
 	MATERIALS,
-	ORIGINS
+	ORIGINS,
+	PROBING_POINTS
 };
 
 class InputParser{
@@ -59,9 +70,10 @@ class InputParser{
 			std::string,
 			size_t size_to_verify_for = 0 );
 
-		void readHeader_INFOS(ifstream &file);
-		void readHeader_MESH (ifstream &file);
-		void readHeader_RUN_INFOS(ifstream &file);
+		void readHeader_INFOS          (ifstream &file);
+		void readHeader_MESH           (ifstream &file);
+		void readHeader_RUN_INFOS      (ifstream &file);
+		void readHeader_POST_PROCESSING(ifstream &file);
 
 		void RemoveAnyBlankSpaceInStr(std::string &);
 
@@ -79,8 +91,19 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
-		/// Name of the material file:
+		/// Probed points:
+		std::vector<probed_point> points_to_be_probed;
+
+		/// Linked to the source behaviour:
+		std::string source_time = string();
+
+		/// Name of the file containing the materials' data:
 		std::string material_data_file = string();
+		
+		/**
+		 * Either 'dipole' or 'simple'
+		 */		
+		std::vector<std::string> conditionsInsideSources;
 
 		// Thermal algorithm time step:
 		double thermal_algo_time_step = -1;
