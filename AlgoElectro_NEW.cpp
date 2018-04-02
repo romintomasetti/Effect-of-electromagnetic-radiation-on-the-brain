@@ -209,7 +209,6 @@ void AlgoElectro_NEW::update(
     GridCreator_NEW &grid,
     InterfaceToParaviewer &interfaceParaview)
 {
-
     /// Start monitoring the time taken for the algorithm to compute:
     struct timeval start, end;
     gettimeofday(&start, NULL);
@@ -280,6 +279,68 @@ void AlgoElectro_NEW::update(
     double *C_eze   = new double[size]();
     double *C_ezh_1 = new double[size]();
     double *C_ezh_2 = new double[size]();
+
+
+    // ABC Old Tangential Field Ey at the extrmities of x of the grid:
+    size = (grid.size_Ey[1]-2)*(grid.size_Ey[2]-2);
+    double *Eyx0    = new double[size]();   
+    std::fill_n(Eyx0, size, 0);
+    double *Eyx1    = new double[size]();
+    std::fill_n(Eyx1, size, 0);
+    // std::vector<double> Eyx0(size, 0.0);
+    // std::vector<double> Eyx1(size, 0.0);
+
+    // ABC Old Tangential Field Ez at the extrmities of x of the grid:
+    size = (grid.size_Ez[1]-2)*(grid.size_Ez[2]-2);
+    double *Ezx0    = new double[size]();  
+    std::fill_n(Ezx0, size, 0);
+    double *Ezx1    = new double[size]();
+    std::fill_n(Ezx1, size, 0);
+    // std::vector<double> Ezx0(size, 0.0);
+    // std::vector<double> Ezx1(size, 0.0);
+
+    // ABC Old Tangential Field Ex at the extrmities of y of the grid:
+    size = (grid.size_Ex[0]-2)*(grid.size_Ex[2]-2);
+    double *Exy0    = new double[size]();    
+    std::fill_n(Exy0, size, 0);
+    double *Exy1    = new double[size]();
+    std::fill_n(Exy1, size, 0);
+    // std::vector<double> Exy0(size, 0.0);
+    // std::vector<double> Exy1(size, 0.0);
+
+    // ABC Old Tangential Field Ez at the extrmities of y of the grid:
+    size = (grid.size_Ez[0]-2)*(grid.size_Ez[2]-2);
+    double *Ezy0    = new double[size]();    
+    std::fill_n(Ezy0, size, 0);
+    double *Ezy1    = new double[size]();
+    std::fill_n(Ezy1, size, 0);
+    // std::vector<double> Ezy0(size, 0.0);
+    // std::vector<double> Ezy1(size, 0.0);
+
+    // ABC Old Tangential Field Ex at the extrmities of z of the grid:
+    size = (grid.size_Ex[0]-2)*(grid.size_Ex[1]-2);
+    double *Exz0    = new double[size]();
+    std::fill_n(Exz0, size, 0);
+    double *Exz1    = new double[size]();
+    std::fill_n(Exz1, size, 0);
+    // std::vector<double> Exz0(size, 0.0);
+    // std::vector<double> Exz1(size, 0.0);
+
+    // ABC Old Tangential Field Ey at the extrmities of z of the grid:
+    size = (grid.size_Ey[0]-2)*(grid.size_Ey[1]-2);
+    double *Eyz0    = new double[size]();    
+    std::fill_n(Eyz0, size, 0);
+    double *Eyz1    = new double[size]();
+    std::fill_n(Eyz1, size, 0);
+    // std::vector<double> Eyz0(size, 0.0);
+    // std::vector<double> Eyz1(size, 0.0);
+
+
+
+
+
+
+
 
     /* COMPUTING COEFFICIENTS */
     #pragma omp parallel
@@ -375,7 +436,6 @@ void AlgoElectro_NEW::update(
 
                         double COEF_H = grid.H_x_magnetic_cond[index] * dt
                             / (2.0 * grid.H_x_mu[index]);
-
                         // Coefficient C_hxh:
                         C_hxh[index] = (1-COEF_H) / (1+COEF_H);
 
@@ -402,6 +462,7 @@ void AlgoElectro_NEW::update(
                         double COEF_H = grid.H_y_magnetic_cond[index] * dt
                             / (2.0 * grid.H_y_mu[index]);
 
+
                         // Coefficient C_hxh:
                         C_hyh[index] = (1-COEF_H) / (1+COEF_H);
 
@@ -427,6 +488,8 @@ void AlgoElectro_NEW::update(
 
                         double COEF_H = grid.H_z_magnetic_cond[index] * dt
                             / (2.0 * grid.H_z_mu[index]);
+
+
 
                         // Coefficient C_hxh:
                         C_hzh[index] = (1-COEF_H) / (1+COEF_H);
@@ -495,15 +558,16 @@ void AlgoElectro_NEW::update(
         }
 
 
-    ///////////////////////////////////////////////
-    // UPDATE WHILE LOOP - PARALLELIZED WITH     //
-    // OPENMP THREADS    - MINIMUM 6 OPENMP      //
-    // THREADS ARE REQUIRED FOR MPI COMMUICATION //
-    // TO WORK.                                  //
-    ///////////////////////////////////////////////
+    ////////////////////////////////////////////////
+    // UPDATE WHILE LOOP - PARALLELIZED WITH      //
+    // OPENMP THREADS    - MINIMUM 6 OPENMP       //
+    // THREADS ARE REQUIRED FOR MPI COMMUNICATION //
+    // TO WORK.                                   //
+    //////////////////////////////////////////////// 
 
     /// Set OMP_DYNAMIC=false:
     this->check_OMP_DYNAMIC_envVar();
+
 
     /**
      * The following arrays contain the electric field nodes to be sent and received.
@@ -579,6 +643,8 @@ void AlgoElectro_NEW::update(
      * 
      *      TO DO
      */
+
+
     #pragma omp parallel num_threads(omp_get_max_threads()) default(none)\
         shared(grid,current_time,end,start)\
         firstprivate(local_nodes_inside_source_NUMBER)\
@@ -594,9 +660,15 @@ void AlgoElectro_NEW::update(
         firstprivate(Electric_field_to_send,Electric_field_to_recv)\
         firstprivate(Magnetic_field_to_send,Magnetic_field_to_recv)\
         firstprivate(electric_field_sizes,magnetic_field_sizes,dt)\
-        firstprivate(size_faces_electric,size_faces_magnetic)
+        firstprivate(size_faces_electric,size_faces_magnetic)\
+        firstprivate(Eyx0, Eyx1)\
+        firstprivate(Ezx0, Ezx1)\
+        firstprivate(Exy0, Exy1)\
+        firstprivate(Ezy0, Ezy1)\
+        firstprivate(Exz0, Exz1)\
+        firstprivate(Eyz0, Eyz1)
     {
-
+        
         /*
         shared(H_x_tmp,H_y_tmp,H_z_tmp)\
         shared(E_x_tmp,E_y_tmp,E_z_tmp)\
@@ -1166,7 +1238,10 @@ void AlgoElectro_NEW::update(
                 );           
 
                 #pragma omp barrier
+
             }
+
+           
             gettimeofday( &end___mpi_comm , NULL);
             total_mpi_comm += end___mpi_comm.tv_sec  - start_mpi_comm.tv_sec + 
                                 (end___mpi_comm.tv_usec - start_mpi_comm.tv_usec) / 1.e6;
@@ -1176,11 +1251,29 @@ void AlgoElectro_NEW::update(
             /// MPI COMMUNICATION ///
             /////////////////////////
             
+            #pragma omp barrier
+            this->abc(grid,
+                E_x_tmp, E_y_tmp, E_z_tmp, 
+                Eyx0, Ezx0, 
+                Eyx1, Ezx1, 
+                Exy0, Ezy0, 
+                Exy1, Ezy1, 
+                Exz0, Eyz0, 
+                Exz1, Eyz1,
+                dt
+                );
+            #pragma omp barrier
+
+            #pragma omp master
+
+
             gettimeofday( &end___while_iter , NULL);
             total_while_iter += end___while_iter.tv_sec  - start_while_iter.tv_sec + 
                                 (end___while_iter.tv_usec - start_while_iter.tv_usec) / 1.e6;
 
             currentStep ++;
+
+            
 
             #pragma omp master
             {
@@ -1189,13 +1282,11 @@ void AlgoElectro_NEW::update(
                     grid.profiler.addTimingInputToDictionnary("ELECTRO_WRITING_OUTPUTS",true);
                     grid.profiler.addTimingInputToDictionnary("ELECTRO_MPI_COMM",true);
                 }
-
                 /* WRITE TO OUTPUT FILES */
                 if( (currentStep%grid.input_parser.SAMPLING_FREQ_ELECTRO) == 0 ){
 
                     /// Probe time spent writing output:
                     double timeWriting = omp_get_wtime();
-
                     interfaceParaview.convertAndWriteData(
                         currentStep,
                         "ELECTRO"
@@ -1250,7 +1341,6 @@ void AlgoElectro_NEW::update(
                 
             }
                         
-
         } /* END OF WHILE LOOP */
 
     }/* END OF PARALLEL REGION */
@@ -1342,6 +1432,317 @@ void AlgoElectro_NEW::check_OMP_DYNAMIC_envVar(void){
 		//printf("OMP_DYNAMIC=%s.\n",std::getenv("OMP_DYNAMIC"));
 	}
 }
+
+
+
+
+void AlgoElectro_NEW::abc(   GridCreator_NEW &grid, 
+            double *Ex, double *Ey, double *Ez,  
+            double *Eyx0, double *Ezx0, 
+            double *Eyx1, double *Ezx1, 
+            double *Exy0, double *Ezy0, 
+            double *Exy1, double *Ezy1, 
+            double *Exz0, double *Eyz0,
+            double *Exz1, double *Eyz1,
+            double dt
+        )
+{
+    size_t i, j, k;
+
+
+    std::vector<double> delta_Electromagn = grid.delta_Electromagn;
+    size_t size_x =0 , size_y = 0, size_z = 0; 
+    size_t index, index_1Plus, index_1Moins, indexTmp;
+    double c, abccoef;
+
+    printf("omp_get _num_threads() = %d ", omp_get_num_threads());
+
+
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
+// !!!!!!!!!!!!!!!! A MODIFIER !!!!!!!!!!!!!!!!!!!!!!!!! |
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
+    c = 299792458;                                   //  |
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
+
+
+
+    
+
+
+    /*  Dans cette section, on va considérer que les dimensions dans chaque direction
+        seront correctement donnee sans correction a appliquer:
+        - Plus de "-1" 
+        - Tous les indices ont la même expression 
+        Par contre, une correction sera appliquee en prenant en compte le colonnes 
+        untiles a la communication:
+        - "-2" à size_x,y,z uniquement dans "IndexTmp"
+        Il restera a discuter des equations BC sur les aretes d'intersections qui, 
+        quoiqu'il advienne causeront des refections d'onde.
+    */
+
+    printf("delta t = %.15lf\n", dt);
+    printf("E_y_eps = %f\n", delta_Electromagn[0]);
+    printf("delta_Electromagn[1] = %f\n", delta_Electromagn[1]);
+    printf("delta_Electromagn[2] = %f\n", delta_Electromagn[2]);
+    printf("delta_Electromagn[0] = %f\n", delta_Electromagn[0]);
+
+
+
+    /* ABC at "x0" */
+
+    if(grid.MPI_communicator.RankNeighbour[1] == -1){
+        i = 1;
+
+        size_x = grid.size_Ey[0];
+        size_y = grid.size_Ey[1];
+        size_z = grid.size_Ey[2];
+
+
+        for (j = 1; j < size_y - 1; j++) // Peut-etre inverser les boucles
+            for (k = 1; k < size_z -1 ; k++) {
+                index = i + size_x * ( j + size_y * k);
+                index_1Plus = i+1 + size_x * (j + size_y *k);
+                indexTmp = (j-1) * (size_z -2) + (k-1);
+                // c = 1/(sqrt(grid.E_y_eps[index]*grid.H_y_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[1] -1) / (c*dt/delta_Electromagn[1] +1);
+                Ey[index] = Eyx0[indexTmp] +
+                    abccoef * (Ey[index_1Plus] - Ey[index]);
+                Eyx0[indexTmp] = Ey[index_1Plus];
+            }
+
+    
+
+        size_x = grid.size_Ez[0];
+        size_y = grid.size_Ez[1];
+        size_z = grid.size_Ez[2];
+
+        for (j = 1; j < size_y - 1 ; j++)
+            for (k = 1; k < size_z - 1; k++) {
+                index = i + size_x * ( j + size_y * k);
+                index_1Plus = i+1 + size_x * (j + size_y *k);
+                indexTmp = (j-1) * (size_z -2) + (k-1);
+                // c = 1/(sqrt(grid.E_z_eps[index]*grid.H_z_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ez[index] = Ezx0[indexTmp] +
+                    abccoef * (Ez[index_1Plus] - Ez[index]);
+                Ezx0[indexTmp] = Ez[index_1Plus];
+
+            }
+
+    } // End if
+
+/* ABC at "x1" */   
+
+    if(grid.MPI_communicator.RankNeighbour[0] == -1){
+        i = size_x - 2;
+
+        size_x = grid.size_Ey[0];
+        size_y = grid.size_Ey[1];
+        size_z = grid.size_Ey[2];
+        for (j = 1; j < size_y - 1; j++) // -1 not to take the last column which is to send
+            for (k = 1; k < size_z - 1; k++) { // -1 not to take the last column
+                index = i + size_x * ( j + size_y * k); //
+                index_1Moins = i-1 + size_x * (j + size_y *k);
+                indexTmp = (j-1) * (size_z - 2) + (k-1) ;
+                // c = 1.0/(sqrt(grid.E_y_eps[index]*grid.H_y_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ey[index] = Eyx1[indexTmp] +
+                    abccoef * (Ey[index_1Moins] - Ey[index]);
+                Eyx1[indexTmp] = Ey[index_1Moins];
+            }
+
+        
+
+        size_x = grid.size_Ez[0];
+        size_y = grid.size_Ez[1];
+        size_z = grid.size_Ez[2];
+
+        for ( j = 1; j < size_y - 1; j++) 
+            for (k = 1; k < size_z -  1; k++) {
+                index = i + size_x * ( j + size_y * k); //
+                index_1Moins = i-1 + size_x * (j + size_y *k);
+                indexTmp = (j-1) * (size_z - 2) + (k-1) ;
+                // c = 1.0/(sqrt(grid.E_z_eps[index]*grid.H_z_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ez[index] = Ezx1[indexTmp] +
+                    abccoef * (Ez[index_1Moins] - Ez[index]);
+                Ezx1[indexTmp] = Ez[index_1Moins];
+            }
+
+    } // End if
+
+    /* ABC at "y0" */
+
+    if(grid.MPI_communicator.RankNeighbour[2] == -1){
+        j = 1;
+
+        size_x = grid.size_Ex[0];
+        size_y = grid.size_Ex[1];
+        size_z = grid.size_Ex[2];
+
+        for (i = 1; i < size_x - 1; i++)
+            for (k = 1; k < size_z - 1; k++) {
+                index = i + size_x * ( j + size_y * k); //
+                index_1Plus = i + size_x * ((j+1) + size_y *k);
+                indexTmp = (i-1) * (size_z - 2) + (k-1) ;
+                // c = 1.0/(sqrt(grid.E_x_eps[index]*grid.H_x_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ex[index] = Exy0[indexTmp] +
+                    abccoef * (Ex[index_1Plus] - Ex[index]);
+                Exy0[indexTmp] = Ex[index_1Plus];
+ 
+            }
+        
+        size_x = grid.size_Ez[0];
+        size_y = grid.size_Ez[1];
+        size_z = grid.size_Ez[2];
+
+        for (i = 1; i < size_x - 1; i++)
+            for (k = 1; k < size_z - 1; k++) {
+                index = i + size_x * ( j + size_y * k); //
+                index_1Plus = i + size_x * ((j+1) + size_y *k);
+                indexTmp = (i-1) * (size_z - 2) + (k-1) ;
+                // c = 1.0/(sqrt(grid.E_z_eps[index]*grid.H_z_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ez[index] = Ezy0[indexTmp] +
+                    abccoef * (Ez[index_1Plus] - Ez[index]);
+                Ezy0[indexTmp] = Ez[index_1Plus];
+            }
+    } //End if
+
+
+    
+    /* ABC at "y1" */
+
+    if(grid.MPI_communicator.RankNeighbour[3] == -1){
+        j = size_y - 2;
+
+
+        size_x = grid.size_Ex[0];
+        size_y = grid.size_Ex[1];
+        size_z = grid.size_Ex[2];
+
+        for (i = 1; i < size_x - 1; i++)
+            for (k = 1; k < size_z -1; k++) {
+                index = i + size_x * ( j + size_y * k); //
+                index_1Moins = i + size_x * ((j-1) + size_y *k);
+                indexTmp = (i-1) * (size_z - 2) + (k-1) ;
+                // c = 1.0/(sqrt(grid.E_x_eps[index]*grid.H_x_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ex[index] = Exy1[indexTmp] +
+                    abccoef * (Ex[index_1Moins] - Ex[index]);
+                Exy1[indexTmp] = Ex[index_1Moins];
+
+            }
+
+        size_x = grid.size_Ez[0];
+        size_y = grid.size_Ez[1];
+        size_z = grid.size_Ez[2];
+
+        for (i = 1; i < size_x - 1; i++)
+            for (k = 1; k < size_z - 1; k++) {
+                index = i + size_x * ( j + size_y * k); //
+                index_1Moins = i + size_x * ((j-1) + size_y *k);
+                indexTmp = (i-1) * (size_z - 2) + (k-1) ;
+                // c = 1.0/(sqrt(grid.E_z_eps[index]*grid.H_z_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ez[index] = Ezy1[indexTmp] +
+                abccoef * (Ez[index_1Moins] - Ez[index]);
+                Ezy1[indexTmp] = Ez[index_1Moins];
+
+            }
+    } // End if
+
+
+
+    /* ABC at "z0" (bottom) */
+
+    if(grid.MPI_communicator.RankNeighbour[4] == -1){
+        k = 1;
+
+
+        size_x = grid.size_Ex[0];
+        size_y = grid.size_Ex[1];
+        size_z = grid.size_Ex[2];
+
+        for (i = 1; i < size_x - 1; i++)
+            for (j = 1; j < size_y -1 ; j++) {
+                index = i + size_x * ( j + size_y * k); //
+                index_1Plus = i + size_x * (j + size_y *(k+1));
+                indexTmp = (i-1) * (size_y - 2) + (j-1) ;
+                // c = 1.0/(sqrt(grid.E_x_eps[index]*grid.H_x_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ex[index] = Exz0[indexTmp] +
+                abccoef * (Ex[index] - Ex[index]);
+                Exz0[indexTmp] = Ex[index_1Plus];
+ 
+            }
+
+        size_x = grid.size_Ey[0];
+        size_y = grid.size_Ey[1];
+        size_z = grid.size_Ey[2];
+
+        for (i = 1; i < size_x - 1; i++)
+            for (j = 1; j < size_y - 1; j++) {
+                index = i + size_x * ( j + size_y * k); //
+                index_1Plus = i + size_x * (j + size_y *(k+1));
+                indexTmp = (i-1) * (size_y - 2) + (j-1) ;
+                // c = 1.0/(sqrt(grid.E_y_eps[index]*grid.H_y_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ey[index] = Eyz0[indexTmp] +
+                abccoef * (Ey[index_1Plus] - Ey[index]);
+                Eyz0[indexTmp] = Ey[index_1Plus];
+
+            }
+    } //End if
+
+
+
+    /* ABC at "z1" (top) */
+
+    if(grid.MPI_communicator.RankNeighbour[5] == -1){
+        k = size_z - 2;
+
+        size_x = grid.size_Ex[0];
+        size_y = grid.size_Ex[1];
+        size_z = grid.size_Ex[2];
+
+        for (i = 1; i < size_x - 1; i++)
+            for (j = 1; j < size_y - 1; j++) {
+                index = i + size_x * ( j + size_y * k); //
+                index_1Moins = i + size_x * (j + size_y *(k-1));
+                indexTmp = (i-1) * (size_y - 2) + (j-1) ;
+                // c = 1.0/(sqrt(grid.E_x_eps[index]*grid.H_x_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ex[index] = Exz1[indexTmp] +
+                abccoef * (Ex[index_1Moins] - Ex[index]);
+                Exz1[indexTmp] = Ex[index_1Moins];
+
+            }
+
+        size_x = grid.size_Ey[0];
+        size_y = grid.size_Ey[1];
+        size_z = grid.size_Ey[2];
+
+        for (i = 1; i < size_x - 1; i++)
+            for (j = 1; j < size_y - 1; j++) {
+                index = i + size_x * ( j + size_y * k); //
+                index_1Moins = i + size_x * (j + size_y *(k-1));
+                indexTmp = (i-1) * (size_y - 2) + (j-1) ;
+                // c = 1.0/(sqrt(grid.E_y_eps[index]*grid.H_y_mu[index]));
+                abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
+                Ey[index] = Eyz1[indexTmp] +
+                abccoef * (Ey[index_1Moins] - Ey[index]);
+                Eyz1[indexTmp] = Ey[index_1Moins];
+
+            }
+
+    } // End if 
+
+
+    return;
+}    
 
 
 

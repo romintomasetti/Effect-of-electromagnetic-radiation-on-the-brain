@@ -25,8 +25,23 @@ class AlgoElectro_NEW{
         /* Update function */
         void update(GridCreator_NEW &,InterfaceToParaviewer &);
 
+
         // Check that OMP_DYNAMIC is set to false:
         void check_OMP_DYNAMIC_envVar(void);
+
+
+        /* Update the points with boundary conditions  */
+        void abc( GridCreator_NEW &grid, 
+                double *Ex, double *Ey, double *Ez,
+                double *Eyx0, double *Ezx0, 
+                double *Eyx1, double *Ezx1, 
+                double *Exy0, double *Ezy0, 
+                double *Exy1, double *Ezy1, 
+                double *Exz0, double *Eyz0, 
+                double *Exz1, double *Eyz1,
+                double dt
+        );
+        
 
         void determine_OMP_thread_role_in_MPI_communication(
             int omp_thread_id /* omp_get_thread_num()*/,
