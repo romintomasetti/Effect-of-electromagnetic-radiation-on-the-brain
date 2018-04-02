@@ -33,21 +33,19 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-
-		deltaX_Electro=0.002
-		deltaY_Electro=0.002
-		deltaZ_Electro=0.002
-		delta_Thermal=0.01
-		ratio_EM_TH_delta=0.2
-
+		deltaX_Electro=0.05
+		deltaY_Electro=0.05
+		deltaZ_Electro=0.05
+		delta_Thermal=0.5
+		ratio_EM_TH_delta=0.1
 	$DELTAS
 		
 	// Boundaries of the domain
 	$DOMAIN_SIZE
 		// Length of the domain in each direction
-		L_X_ELECTRO=1
-		L_Y_ELECTRO=1
-		L_Z_ELECTRO=1
+		L_X_ELECTRO=10
+		L_Y_ELECTRO=10
+		L_Z_ELECTRO=10
 		L_X_THERMAL=1
 		L_Y_THERMAL=1
 		L_Z_THERMAL=1
@@ -55,19 +53,24 @@ $MESH
 	
 	// Information on the source
 	$SOURCE
-		NBR_SOURCES=2
+		NBR_SOURCES=1
 		// Length of the source in each direction
-		L_X=0.1;0.1;
-		L_Y=0.1;0.1;
-		L_Z=0.1;0.1;
+		L_X=0.1;
+		L_Y=0.1;
+		L_Z=0.1;
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=0.5;0.7;
-		C_Y=0.5;0.5;
-		C_Z=0.5;0.5;
+		C_X=5;
+		C_Y=5;
+		C_Z=5;
 		// Frequency [Hz]
-		FRQCY=900E1;900E1;
+		FRQCY=900E6;
 		/// Either 'DIPOLE' or 'SIMPLE' (for simple antenna):
-		IMPOSED=DIPOLE;SIMPLE;
+		/// If set to dipole, length is proportional to lambda = 3E8/freq
+		///
+		IMPOSED=DIPOLE;
+		/// Information on the source "time" : GAUSSIAN(MEAN,STD)
+		SOURCE_TIME=SINE
+		// Default with Gaussian is (MEAN,STD)=(0*period,period/10) where period=c/frequency, c=3e8
 	$SOURCE
 	
 	$MATERIALS
@@ -100,7 +103,7 @@ $RUN_INFOS
 		// The simulation will stop after... (in sec)
 		stopTime=10
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=100
+		maxStepsForOneCycleOfElectro=30
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
 		maxStepsForOneCycleOfThermal=5E5 
@@ -136,10 +139,25 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=1000
+		SAMPLING_FREQ_ELECTRO=100
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING
 	
 $RUN_INFOS
+
+// This section contains post-processing directives, such as probing data.
+$POST_PROCESSING
+
+	$PROBING_POINTS
+		// Probe the electrix field (X component) at coordinates (0.2,0.2,0.2) at all times.
+		// Outputfile is named 'Ex_02_02_02_ALL'
+		probe_point={Ex,0.3,0.5,0.5,ALL}
+		probe_point={Ey,0.3,0.5,0.5,ALL}
+		probe_point={Ez,0.3,0.5,0.5,ALL}
+	$PROBING_POINTS
+
+$POST_PROCESSING
+
+
 	
