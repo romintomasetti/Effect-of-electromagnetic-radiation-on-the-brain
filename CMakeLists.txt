@@ -43,7 +43,8 @@ IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 ENDIF()
 
 
-FILE(GLOB SRCS *.h *.hpp *.cpp)
+FILE(GLOB SRCS *.h *.hpp *.cpp *.c)
+message(${SRCS})
 ADD_EXECUTABLE(${EXEC_NAME} ${SRCS} ${VTL})
 
 
