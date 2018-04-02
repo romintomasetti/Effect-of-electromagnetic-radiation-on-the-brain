@@ -186,6 +186,12 @@ class GridCreator_NEW{
             std::vector<size_t> empty(1);
             return empty;
         }
+
+        void get_local_from_global_electro(
+            const size_t nbr_X_gl ,const size_t nbr_Y_gl ,const size_t nbr_Z_gl,
+            size_t *nbr_X_loc     ,size_t *nbr_Y_loc     ,size_t *nbr_Z_loc,
+            bool *is_ok
+        );
 };
 
 #endif

@@ -47,3 +47,15 @@
                     __LINE__);                        \
         ABORT_MPI(-1);                                \
         }
+
+#define DISPLAY_WARNING(...){                       \
+        fprintf(stderr,"%sIn %s :: WARNING :: %s",  \
+                    ANSI_COLOR_YELLOW,              \
+                    __FUNCTION__,                   \
+                    ANSI_COLOR_GREEN);              \
+        fprintf(stderr,__VA_ARGS__);                \
+        fprintf(stderr,"%sIn %s:%d\n",              \
+                    ANSI_COLOR_RESET,               \
+                    __FILE__,                       \
+                    __LINE__);                      \
+        }

@@ -1336,3 +1336,38 @@ bool GridCreator_NEW::is_global_inside_me(
     }
     return false;
 }
+
+/**
+ * From the global node numbering, it returns the local node numbering,
+ * only if the node is inside this grid !
+ */
+void GridCreator_NEW::get_local_from_global_electro(
+    const size_t nbr_X_gl ,const size_t nbr_Y_gl ,const size_t nbr_Z_gl,
+    size_t *nbr_X_loc     ,size_t *nbr_Y_loc     ,size_t *nbr_Z_loc,
+    bool *is_ok
+)
+{
+    /// Check that the global node is inside this grid:
+    if( !is_global_inside_me(
+                    nbr_X_gl,
+                    nbr_Y_gl,
+                    nbr_Z_gl))
+        {
+            DISPLAY_WARNING(
+                "You have requested a global node which is not in this grid."
+            );
+            *is_ok = false;
+            return;
+        }
+
+    /**
+     * We must be carefull about the nodes for send/recv operations in MPI comm;
+     * we add a '+1' because the first column/row/slice is for send/recv.
+     */
+
+    *nbr_X_loc = nbr_X_gl - this->originIndices_Electro[0] + 1;
+    *nbr_Y_loc = nbr_Y_gl - this->originIndices_Electro[1] + 1;
+    *nbr_Z_loc = nbr_Z_gl - this->originIndices_Electro[2] + 1;
+
+    *is_ok = true;
+}

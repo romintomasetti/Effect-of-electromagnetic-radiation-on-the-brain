@@ -3426,13 +3426,32 @@ void probe_a_field(
                     );
                 }else{
                     printf("Attention, recoder car pas les locaux ici ...\n");
-                    size_t nbr_X_loc = nbr_X_gl;
-                    size_t nbr_Y_loc = nbr_Y_gl;
-                    size_t nbr_Z_loc = nbr_Z_gl;
+                    size_t nbr_X_loc = 0;
+                    size_t nbr_Y_loc = 0;
+                    size_t nbr_Z_loc = 0;
+                    bool is_ok = false;
+                    grid.get_local_from_global_electro(
+                        nbr_X_gl  ,nbr_Y_gl  ,nbr_Z_gl,
+                        &nbr_X_loc,&nbr_Y_loc,&nbr_Z_loc,
+                        &is_ok
+                    );
+                    if(!is_ok){
+                        DISPLAY_ERROR_ABORT(
+                            "There was an error inside get_local_from_global."
+                        );
+                    }
                     std::string size = "size_";
                     size.append(which_field);
                     std::vector<size_t> sizes = grid.get_fields_size(size);
                     size_t index = nbr_X_loc + sizes[0] * (nbr_Y_loc + sizes[1] * nbr_Z_loc);
+
+                    if(index >= sizes[0]*sizes[1]*sizes[2]){
+                        DISPLAY_ERROR_ABORT(
+                            "index is out of bounds. Field is %s (size %zu) and index is %zu.",
+                            which_field.c_str(),sizes[0]*sizes[1]*sizes[2],index
+                        );
+                    }
+
                     double value = grid.get_fields(which_field)[index];
 
                     fprintf(file,"(%.10g,%.10g,%.10g,%.10g) %s = %.10g [gl_node(%zu,%zu,%zu)| dt %.10g]\n",
