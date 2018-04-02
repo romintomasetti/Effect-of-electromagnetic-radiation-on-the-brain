@@ -33,11 +33,13 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
+
 		deltaX_Electro=0.002
 		deltaY_Electro=0.002
 		deltaZ_Electro=0.002
 		delta_Thermal=0.01
 		ratio_EM_TH_delta=0.2
+
 	$DELTAS
 		
 	// Boundaries of the domain
