@@ -1324,12 +1324,12 @@ bool GridCreator_NEW::is_global_inside_me(
 )
 {
     if(    nbr_X_gl >= this->originIndices_Electro[0] 
-        && nbr_X_gl <= this->originIndices_Electro[0]+this->sizes_EH[0])
+        && nbr_X_gl < this->originIndices_Electro[0]+this->sizes_EH[0])
     {
         if(    nbr_Y_gl >= this->originIndices_Electro[1] 
-            && nbr_Y_gl <= this->originIndices_Electro[1]+this->sizes_EH[1]){
+            && nbr_Y_gl < this->originIndices_Electro[1]+this->sizes_EH[1]){
             if(    nbr_Z_gl >= this->originIndices_Electro[2] 
-                && nbr_Z_gl <= this->originIndices_Electro[2]+this->sizes_EH[2]){
+                && nbr_Z_gl < this->originIndices_Electro[2]+this->sizes_EH[2]){
                 return true;
             }
         }
