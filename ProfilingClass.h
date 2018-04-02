@@ -12,7 +12,7 @@
 #include <iostream>
 #include "SetOnceVariable_Template.h"
 
-#include "MemoryUsage.h"
+#include "MemoryUsage.hpp"
 
 #include "header_with_all_defines.hpp"
 
@@ -36,7 +36,7 @@ class ProfilingClass{
         // Constructor:
         ProfilingClass(void){this->set_program_starting_time();}
         // Destructor:
-        ~ProfilingClass(void);
+        ~ProfilingClass(void){}
 
         // Set program starting time:
         void set_program_starting_time();
@@ -63,6 +63,8 @@ class ProfilingClass{
         void probeMaxRSS(void){
             this->mem_usage_peak_rss_mega_bytes = getPeakRSS()/1E6;
         }
+
+        void writeToOutputFile(void);
 
 };
 

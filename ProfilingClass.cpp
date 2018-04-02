@@ -97,18 +97,16 @@ void ProfilingClass::incrementTimingInput(std::string timingInput, double incr){
     }
 }
 
-// Destructor:
-ProfilingClass::~ProfilingClass(void){
-
-    #ifndef NDEBUG
-        std::cout << "ProfilingClass::~ProfilingClass::IN" << std::endl;
-    #endif
+/**
+ * @brief Writes everything inside the outputfile.
+ */
+void ProfilingClass::writeToOutputFile(void){
 
     if(this->outputFileName == std::string()){
         // The output file's name has not been set. Aborting.
-        fprintf(stderr,"ProfilingClass::~ProfilingClass::ERROR\n");
-        fprintf(stderr,"The output file's name has not been set. Aborting.\n");
-        abort();
+        DISPLAY_ERROR_ABORT(
+            "The output file's name has not been set. Aborting.\n"
+        );
     }
     /* Write the timings and memory usage inside the output file */
     this->outputFile.open(this->outputFileName.c_str(),std::fstream::app);
@@ -141,19 +139,10 @@ ProfilingClass::~ProfilingClass(void){
         this->outputFile.close();
     }else{
         // File could not be opened.
-        fprintf(stderr,"ProfilingClass::~ProfilingClass::ERROR\n");
-        fprintf(stderr,"Cannot open the file %s.\n",this->outputFileName.c_str());
-        fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
-        #ifdef MPI_COMM_WORLD
-            MPI_Abort(MPI_COMM_WORLD,-1);
-        #else
-            abort();
-        #endif
+        DISPLAY_ERROR_ABORT(
+            "Cannot open the file %s.",this->outputFileName.c_str()
+        );
     }
-
-    //#ifndef NDEBUG
-        std::cout << "ProfilingClass::~ProfilingClass::OUT" << std::endl;
-    //#endif
 }
 
 // Set the output file's name:
