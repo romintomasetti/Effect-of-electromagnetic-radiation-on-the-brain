@@ -3425,7 +3425,7 @@ void probe_a_field(
                         "Cannot open the file %s.",filename.c_str()
                     );
                 }else{
-                    printf("Attention, recoder car pas les locaux ici ...\n");
+                    /// Get the local node numbering:
                     size_t nbr_X_loc = 0;
                     size_t nbr_Y_loc = 0;
                     size_t nbr_Z_loc = 0;
