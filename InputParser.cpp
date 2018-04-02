@@ -7,10 +7,25 @@
 
 #include <cstring>
 
+#include <sys/stat.h>
+
 #include <cmath>
 
 #include <dirent.h>
 #include <fstream>
+
+#include <time.h>
+
+#define DTTMFMT "%Y-%m-%d %H:%M:%S "
+#define DTTMSZ 21
+
+static char *getDtTm (char *buff) {
+    time_t t = time (0);
+    strftime (buff, DTTMSZ, DTTMFMT, localtime (&t));
+    return buff;
+}
+
+bool directory_exists( const std::string &directory, bool createIt );
 
 std::vector<size_t> findCharacterInsideString(std::string str,std::string charact){
 	
@@ -108,24 +123,28 @@ stringDollar_Header1 InputParser::hashit_Header1 (std::string const& inString) {
     if (inString == "INFOS") return INFOS;
     if (inString == "MESH") return MESH;
     if (inString == "RUN_INFOS") return RUN_INFOS;
+	if (inString == "POST_PROCESSING") return POST_PROCESSING;
 	else {
-		printf("In file %s at %d. Complain to Romin. Abort().\n",__FILE__,__LINE__);
-		abort();
+		DISPLAY_ERROR_ABORT(
+			"Nothing corresponds to %s in headers 1.\n",
+			inString.c_str()
+		);
 	}
 }
 stringDollar_Header2 InputParser::hashit_Header2 (std::string const& inString) {
-    if (inString == "NAME") return NAME;
+    if (inString == "NAME")                  return NAME;
 	if (inString == "REMOVE_EXISTING_FILES") return REMOVE_EXISTING_FILES;
-    if (inString == "DELTAS") return DELTAS;
-    if (inString == "DOMAIN_SIZE") return DOMAIN_SIZE;
-	if (inString == "SOURCE") return SOURCE;
-	if (inString == "STOP_SIMUL_AFTER") return STOP_SIMUL_AFTER;
-	if (inString == "TEMP_INIT") return TEMP_INIT;
-	if (inString == "TIME_STEP") return TIME_STEP;
-	if (inString == "BOUNDARY_CONDITIONS") return BOUNDARY_CONDITIONS;
-	if (inString == "OUTPUT_SAVING") return OUTPUT_SAVING;
-	if (inString == "MATERIALS") return MATERIALS;
-	if (inString == "ORIGINS")   return ORIGINS;
+    if (inString == "DELTAS")                return DELTAS;
+    if (inString == "DOMAIN_SIZE") 			 return DOMAIN_SIZE;
+	if (inString == "SOURCE")				 return SOURCE;
+	if (inString == "STOP_SIMUL_AFTER") 	 return STOP_SIMUL_AFTER;
+	if (inString == "TEMP_INIT") 			 return TEMP_INIT;
+	if (inString == "TIME_STEP") 			 return TIME_STEP;
+	if (inString == "BOUNDARY_CONDITIONS") 	 return BOUNDARY_CONDITIONS;
+	if (inString == "OUTPUT_SAVING") 		 return OUTPUT_SAVING;
+	if (inString == "MATERIALS") 			 return MATERIALS;
+	if (inString == "ORIGINS")   			 return ORIGINS;
+	if (inString == "PROBING_POINTS")        return PROBING_POINTS;
 	else {
 		printf("In file %s at %d. Complain to Romin. Abort().\n",__FILE__,__LINE__);
 		cout << "Faulty string is ::" + inString + "::" << endl;
@@ -220,7 +239,7 @@ void InputParser::defaultParsingFromFile(std::string &filename, int MPI_RANK){
 		/* Input file exists. */
 	}else{
 		fprintf(stderr,"%sIn %s :: No file provided/ not found / cannot open it (given file name is |%s|).\n"
-					   " Have you tried '-inputfile my_file.csv' ? Aborting.%s\n",
+					   " Have you tried '-inputfile my_file.input' ? Aborting.%s\n",
 			ANSI_COLOR_RED,__FUNCTION__,filename.c_str(),ANSI_COLOR_RESET);
 		fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
 		#ifdef MPI_COMM_WORLD
@@ -329,6 +348,10 @@ void InputParser::readHeader(ifstream &file,std::string &currentLine){
 
 		case RUN_INFOS: 
 			this->readHeader_RUN_INFOS(file);
+			break;
+
+		case POST_PROCESSING:
+			this->readHeader_POST_PROCESSING(file);
 			break;
 
 		default:
@@ -1360,6 +1383,171 @@ std::vector<double> InputParser::determineVectorFromStr(
 	return tempVec;
 }
 
+void InputParser::readHeader_POST_PROCESSING(ifstream &file){
+	
+	std::string currentLine = string();
+	
+	while(currentLine != "POST_PROCESSING"){
+		// Read line:
+		getline(file,currentLine);
+		// Get rid of comments:
+		this->checkLineISNotComment(file,currentLine);
+		// Remove any blank space:
+		this->RemoveAnyBlankSpaceInStr(currentLine);
+		// Remove Dollar sign:
+		currentLine = currentLine.substr(currentLine.find("$")+1);
+
+		if(currentLine == "POST_PROCESSING"){
+			break;
+		}
+
+		switch(this->hashit_Header2(currentLine)){
+			case PROBING_POINTS:
+				while(!file.eof()){
+					// Note: sections are ended by $the-section-name.
+					getline(file,currentLine);
+					this->checkLineISNotComment(file,currentLine);
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+
+					if(currentLine == "$PROBING_POINTS"){
+						break;
+					}
+
+					if(currentLine == string()){continue;}
+
+					std::size_t posEqual  = currentLine.find("=");
+					std::string propName  = currentLine.substr(0,posEqual); 
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+					
+					if( propName == "probe_point"){
+						// More than on point can be probed:
+						std::vector<size_t> pos_commas
+							= findCharacterInsideString(propGiven,",");
+						std::vector<size_t> pos_accol_open
+							= findCharacterInsideString(propGiven,"{");
+						std::vector<size_t> pos_accol_close
+							= findCharacterInsideString(propGiven,"}");
+
+						if(    pos_commas.size()      != 4 
+							|| pos_accol_open.size()  != 1
+							|| pos_accol_close.size() != 1)
+						{
+							DISPLAY_ERROR_ABORT(
+								"probe_point :: Wrong input (has %s)"
+								" but expected is something like"
+								" {Ex,0.2,0.2,0.2,ALL}.",
+								propGiven.c_str()
+							);
+						}
+
+						std::string type_field = 
+							propGiven.substr(pos_accol_open[0]+1,
+								(pos_commas[0]-pos_accol_open[0])-1);
+						std::vector<double> coord(3);
+						coord[0] = std::stod(propGiven.substr(pos_commas[0]+1,
+										(pos_commas[1]-pos_commas[0])+1));
+						coord[1] = std::stod(propGiven.substr(pos_commas[1]+1,
+										(pos_commas[2]-pos_commas[1])+1));
+						coord[2] = std::stod(propGiven.substr(pos_commas[2]+1,
+										(pos_commas[3]-pos_commas[2])+1));
+						std::string at_which_time
+							= propGiven.substr(pos_commas[3]+1,
+										(pos_accol_close[0]-pos_commas[3])-1);
 
 
 
+						std::string filename_ = "probe_point/";
+						filename_.append(type_field);
+						filename_.append("_");
+						filename_.append(to_string(coord[0]));
+						filename_.append("_");
+						filename_.append(to_string(coord[1]));
+						filename_.append("_");
+						filename_.append(to_string(coord[2]));
+						filename_.append("_");
+						filename_.append(at_which_time);
+						filename_.append(".txt");
+
+						/*printf("{|%s|,%lf,%lf,%lf,|%s|} --> %s\n",
+							type_field.c_str(),
+							coord[0],coord[1],coord[2],
+							at_which_time.c_str(),
+							filename_.c_str());*/
+
+						probed_point temp = {
+							type_field,   //.type_field    
+							coord,        //.coordinates 
+							at_which_time,//.at_which_time
+							filename_     //.filename
+						};
+						this->points_to_be_probed.push_back(temp);
+
+						const std::string dir = "probe_point";
+						directory_exists(dir,true);
+
+						/// Check that no file with the same name exists. If there is one, delete it.
+						if(is_file_exist(filename_)){
+							remove(filename_.c_str());
+						}
+						/// Create the file:
+						std::ofstream outfile (filename_,std::ofstream::out);
+						if(!outfile.is_open()){
+							DISPLAY_ERROR_ABORT(
+								"Cannot create file %s.",filename_.c_str()
+							);
+						}
+						char buff[DTTMSZ];
+						outfile << "Created on " << getDtTm (buff);
+						outfile << " | contains the field " + type_field;
+						outfile << " at time(" + at_which_time + ")";
+						outfile << " and at point (" << coord[0];
+						outfile << "," << coord[1] << "," << coord[2] << ")" << std::endl;
+						outfile.close();
+
+					}else{
+						DISPLAY_ERROR_ABORT(
+							"In $PROBING_POINTS :: no property corresponds to %s.",
+							propName.c_str()
+						);
+					}
+				}
+				break;
+
+			default:
+				DISPLAY_ERROR_ABORT(
+					"Should not end up here. Faulty line is %s.",
+					currentLine.c_str()
+				);
+		}
+	}
+}
+
+
+bool directory_exists( const std::string &directory, bool createIt )
+{
+    DIR* dir;
+
+	if(NULL == (dir = opendir(directory.c_str()))){
+		printf("Directory %s doesn't exist.\n",directory.c_str());
+		if(createIt){
+			/// Create the directory.
+			int success;
+			#ifdef __linux__
+				success = mkdir(directory.c_str(), 0777); 
+			#else
+				success = _mkdir(directory.c_str());
+			#endif
+			if(success != 0){
+				/// Directory creation failed:
+				DISPLAY_ERROR_ABORT(
+					"MKDIR(%s) failed.",directory.c_str()
+				);
+			}else{
+				printf("Directory %s successfully created !\n",directory.c_str());
+			}
+		}
+		return false;
+	}
+
+    return true;
+}

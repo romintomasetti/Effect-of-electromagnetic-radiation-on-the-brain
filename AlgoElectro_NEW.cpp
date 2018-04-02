@@ -28,6 +28,18 @@
  #define   LOCK_UN   8    /* unlock */
 
 
+void probe_a_field(
+    GridCreator_NEW &grid,
+    std::string &which_field,
+    std::string &filename,
+    std::string &which_form_to_probe,
+    std::vector<double> &infoOnForm,
+    std::vector<double> &electro_deltas,
+    double current_time,
+    double dt
+);
+
+
 int tryGetLock( char const *lockName );
 void releaseLock( int fd);
 
@@ -1288,6 +1300,32 @@ void AlgoElectro_NEW::update(
 
             #pragma omp master
             {
+                /// PROBE POINTS IF NECESSARY
+                if(!grid.input_parser.points_to_be_probed.empty()){
+                    for(size_t curr_pt = 0 ; curr_pt < grid.input_parser.points_to_be_probed.size();
+                                curr_pt ++){
+                                    std::string which_form_to_probe = "point";
+                                    probe_a_field(
+                                        //GridCreator_NEW &grid
+                                        grid,
+                                        //std::string &which_field
+                                        grid.input_parser.points_to_be_probed[curr_pt].type_field,
+                                        //std::string &filename
+                                        grid.input_parser.points_to_be_probed[curr_pt].filename,
+                                        //std::string &which_form_to_probe
+                                        which_form_to_probe,
+                                        //std::vector<double> &infoOnForm
+                                        grid.input_parser.points_to_be_probed[curr_pt].coordinates,
+                                        //std::vector<double> &electro_deltas
+                                        grid.delta_Electromagn,
+                                        //double current_time
+                                        current_time,
+                                        //double dt
+                                        dt
+                                    );
+                                }
+                }
+
                 /// If this is the first step, add some inputs to the profiler:
                 if(currentStep == 1){
                     grid.profiler.addTimingInputToDictionnary("ELECTRO_WRITING_OUTPUTS",true);
@@ -3337,7 +3375,8 @@ void probe_a_field(
     std::string &which_form_to_probe,
     std::vector<double> &infoOnForm,
     std::vector<double> &electro_deltas,
-    double current_time
+    double current_time,
+    double dt
 )
 {
     if(electro_deltas[0] < 0){
@@ -3386,19 +3425,27 @@ void probe_a_field(
                         "Cannot open the file %s.",filename.c_str()
                     );
                 }else{
-                    double value = 0;
-                    fprintf(file,"(%20lf,%.5lf,%.5lf,%.5lf) %s = %20.5lf [gl_node(%zu,%zu,%zu)]\n",
+                    printf("Attention, recoder car pas les locaux ici ...\n");
+                    size_t nbr_X_loc = nbr_X_gl;
+                    size_t nbr_Y_loc = nbr_Y_gl;
+                    size_t nbr_Z_loc = nbr_Z_gl;
+                    std::string size = "size_";
+                    size.append(which_field);
+                    std::vector<size_t> sizes = grid.get_fields_size(size);
+                    size_t index = nbr_X_loc + sizes[0] * (nbr_Y_loc + sizes[1] * nbr_Z_loc);
+                    double value = grid.get_fields(which_field)[index];
+
+                    fprintf(file,"(%.10g,%.10g,%.10g,%.10g) %s = %.10g [gl_node(%zu,%zu,%zu)| dt %.10g]\n",
                                 current_time,
                                 infoOnForm[0],
                                 infoOnForm[1],
                                 infoOnForm[2],
                                 which_field.c_str(),
                                 value,
-                                nbr_X_gl,nbr_Y_gl,nbr_Y_gl);
+                                nbr_X_gl,nbr_Y_gl,nbr_Y_gl,
+                                dt);
                     fclose(file);
                 }
-
-
                 releaseLock(fd);
             }else{
                 /// The node is not inside this MPI process. Return.
