@@ -18,6 +18,10 @@
 
 #define KRED  "\x1B[31m"
 #define KNRM  "\x1B[0m"
+
+/**
+ * CUSTOM ASSERT WHEN CMAKE IS IN DEBUG MODE
+ */
 #ifndef NDEBUG
     #define ASSERT(left,operator,right) { \
         if(!((left) operator (right))){ \
@@ -28,12 +32,19 @@
     #define ASSERT(left,operator,right) 
 #endif
 
+
+/**
+ * CUSTOM ABORT FUNCTION
+ */
 #ifdef MPI_COMM_WORLD
         #define ABORT_MPI(ARG) MPI_Abort(MPI_COMM_WORLD,ARG);
 #else
         #define ABORT_MPI(ARG) abort();
 #endif
 
+/**
+ * DISPLAY A MESSAGE AND ABORT
+ */
 #define DISPLAY_ERROR_ABORT(...){              \
         fprintf(stderr,"%sIn %s :: ERROR :: %s",      \
                     ANSI_COLOR_RED,                   \
@@ -48,6 +59,9 @@
         ABORT_MPI(-1);                                \
         }
 
+/**
+ * DISPLAY A WARNING. DO NOT ABORT.
+ */
 #define DISPLAY_WARNING(...){                       \
         fprintf(stderr,"%sIn %s :: WARNING :: %s",  \
                     ANSI_COLOR_YELLOW,              \
@@ -59,3 +73,23 @@
                     __FILE__,                       \
                     __LINE__);                      \
         }
+
+/**
+ * CUSTOM SIZE_T DATATYPE FOR MPI COMMUNICATION.
+ */
+#include <stdint.h>
+#include <limits.h>
+
+#if SIZE_MAX == UCHAR_MAX
+   #define my_MPI_SIZE_T MPI_UNSIGNED_CHAR
+#elif SIZE_MAX == USHRT_MAX
+   #define my_MPI_SIZE_T MPI_UNSIGNED_SHORT
+#elif SIZE_MAX == UINT_MAX
+   #define my_MPI_SIZE_T MPI_UNSIGNED
+#elif SIZE_MAX == ULONG_MAX
+   #define my_MPI_SIZE_T MPI_UNSIGNED_LONG
+#elif SIZE_MAX == ULLONG_MAX
+   #define my_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
+#else
+   #error "what is happening here?"
+#endif
