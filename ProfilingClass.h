@@ -12,8 +12,15 @@
 #include <iostream>
 #include "SetOnceVariable_Template.h"
 
+#include "MemoryUsage.h"
+
+#include "header_with_all_defines.hpp"
+
 class ProfilingClass{
     private:
+
+        size_t mem_usage_peak_rss_mega_bytes = 0;
+        size_t total_mem_usage_peak_rss_mega_bytes_all_mpi = 0;
         
         // Dictionnary for arbitrary time input:
         std::map<std::string,double> time_taken_for;
@@ -48,6 +55,14 @@ class ProfilingClass{
 
         // Set the output file's name:
         void setOutputFileName(std::string);
+
+        void gatherMemoryUsageMPI(void);
+
+        void storePeakMemoryUsage(size_t MEM_IN_MEGA_BYTES);
+
+        void probeMaxRSS(void){
+            this->mem_usage_peak_rss_mega_bytes = getPeakRSS()/1E6;
+        }
 
 };
 

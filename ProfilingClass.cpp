@@ -6,6 +6,10 @@
 #include <iomanip>
 #include <sstream>
 
+#include "mpi.h"
+
+
+
 // Set program starting time:
 void ProfilingClass::set_program_starting_time(){
     this->program_starting_time = std::time(nullptr);
@@ -121,6 +125,19 @@ ProfilingClass::~ProfilingClass(void){
             this->outputFile << std::fixed << std::setprecision(10) << it->second;
             this->outputFile << " seconds.\n";
         }
+        
+        if(this->mem_usage_peak_rss_mega_bytes == 0){
+            DISPLAY_WARNING(
+                "You never called a RSS prober. Do not trust the output is %s about RSS usage.",
+                this->outputFileName.c_str()
+            );
+        }
+        this->gatherMemoryUsageMPI();
+
+        this->outputFile << "Peak RSS for this MPI is " << this->mem_usage_peak_rss_mega_bytes;
+        this->outputFile << " MBytes" << std::endl;
+        this->outputFile << "Peak RSS for all MPI  is " << this->total_mem_usage_peak_rss_mega_bytes_all_mpi;
+        this->outputFile << " MBytes" << std::endl;
         this->outputFile.close();
     }else{
         // File could not be opened.
@@ -134,9 +151,9 @@ ProfilingClass::~ProfilingClass(void){
         #endif
     }
 
-    #ifndef NDEBUG
+    //#ifndef NDEBUG
         std::cout << "ProfilingClass::~ProfilingClass::OUT" << std::endl;
-    #endif
+    //#endif
 }
 
 // Set the output file's name:
@@ -157,4 +174,24 @@ void ProfilingClass::setOutputFileName(std::string str){
         printf("Output file's name was already set to %s.\n",this->outputFileName.c_str());
         printf("I do nothing and keep this name.\n");
     }
+}
+
+void ProfilingClass::storePeakMemoryUsage(size_t MEM_IN_MEGA_BYTES){
+    this->mem_usage_peak_rss_mega_bytes += MEM_IN_MEGA_BYTES;
+}
+
+void ProfilingClass::gatherMemoryUsageMPI(void){
+    #ifdef MPI_COMM_WORLD
+        MPI_Allreduce(
+            &this->mem_usage_peak_rss_mega_bytes,
+            &this->total_mem_usage_peak_rss_mega_bytes_all_mpi,
+            1,
+            my_MPI_SIZE_T,
+            MPI_SUM,
+            MPI_COMM_WORLD);
+    #else
+        DISPLAY_ERROR_ABORT(
+            "MPI_COMM_WORLD is not defined."
+        );
+    #endif
 }
