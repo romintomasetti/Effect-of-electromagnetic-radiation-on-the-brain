@@ -11,8 +11,6 @@
  * etc...
  */
 
-
-
 #include <new>
 #include <iostream>
 #include <string>
@@ -43,8 +41,6 @@
 #include "GridCreator_NEW.h"
 #include "AlgoElectro_NEW.hpp"
 
-#define PARALLELISM_OMP_ENABLED 1
-
 #define KRED  "\x1B[31m"
 #define KGRN  "\x1B[32m"
 #define KNRM  "\x1B[0m"
@@ -53,7 +49,12 @@
 
 #include "ProfilingClass.h"
 
+#include "MemoryUsage.hpp"
+
+
+
 using namespace std;
+
 
 void check_input_file_name_given(int argc, char *argv[],map<std::string,std::string> &inputs);	
 
@@ -118,6 +119,7 @@ int main(int argc, char *argv[]){
 	//cout << "Mesh init\n";
 	gridTest.meshInitialization();
 
+
 	InterfaceToParaviewer interfaceToWriteOutput(
 			MPI_communicator,
 			gridTest
@@ -155,6 +157,9 @@ int main(int argc, char *argv[]){
 	
 	AlgoElectro_NEW algoElectro_newTst;
 	algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
+
+	profiler.probeMaxRSS();
+	profiler.writeToOutputFile();
 	
 	#ifndef NDEBUG
 		cout << "Calling all the destructors.\n";
@@ -191,7 +196,6 @@ void check_input_file_name_given(int argc, char *argv[],map<std::string,std::str
 	}
 
 }
-
 
 
 
