@@ -1,4 +1,5 @@
 #include "MPI_Initializer.h"
+#include "header_with_all_defines.hpp"
 #include <iostream>
 
 // Constructor:
@@ -16,29 +17,18 @@ MPI_Initializer::MPI_Initializer(int argc, char *argv[],int required){
 	// MPI Query: check that the required level of thread support is effectively the 
 	// provided level of thread support:
 	if(this->provided.get() != this->required.get()){
-		cout << "MPI_Initializer::constructor::\n\tRequired level of thread support is ";
-		cout << this->required.get() << " and the provided level of thread support is ";
-		cout << this->provided.get() << ".\n";
 		// If the required level of thread support is higher than the provided one, abort:
 		if(this->required.get() > this->provided.get()){
 			// The current machine cannot provided the required level of
-			// thread support. Ask what to do.
-			cout << "The required level of thread support is higher than the provided one.\n";
-			cout << "For the communication between the MPI processes to work flowlessly";
-			cout << ", MPI_THREAD_MULTIPLE (or at least MPI_THREAD_SERIALIZED).\n";
-			cout << "You have thread support ";
+			// thread support.
 			if(this->provided.get() == MPI_THREAD_SINGLE ){
-				cout << "MPI_THREAD_SINGLE. Aborting because it is too low.\n";
-				abort();
+				DISPLAY_ERROR_ABORT(
+					"Level of MPI thread support is MPI_THREAD_SINGLE."
+				);
 			}else if(this->provided.get() == MPI_THREAD_FUNNELED ){
-				cout << "MPI_THREAD_FUNNELED. Aborting because it is too low.\n";
-				abort();
-			}else if(this->provided.get() == MPI_THREAD_SERIALIZED ){
-				cout << "MPI_THREAD_SERIALIZED. The communications will be severely affected";
-				cout << " but it is OK.\n";
-			}else if(this->required.get() == MPI_THREAD_MULTIPLE ){
-				cout << "MPI_THREAD_MULTIPLE. This is the best thread support you can have.";
-				cout << " We will intensively rely on that to communicate.\n";
+				DISPLAY_ERROR_ABORT(
+					"Level of MPI thread support is MPI_THREAD_FUNNELED."
+				);
 			}
 		}
 	}

@@ -333,57 +333,77 @@ void AlgoElectro_NEW::update(
     double *C_ezh_2 = new double[size]();
 
 
+    /**
+     * @brief Allocation of memory for ABC conditions:
+     */
+
     // ABC Old Tangential Field Ey at the extrmities of x of the grid:
     size = (grid.size_Ey[1]-2)*(grid.size_Ey[2]-2);
-    double *Eyx0    = new double[size]();   
-    std::fill_n(Eyx0, size, 0);
-    double *Eyx1    = new double[size]();
-    std::fill_n(Eyx1, size, 0);
+    double *Eyx0    = NULL;
+    double *Eyx1    = NULL;
+    Eyx0 = new double[size]();   
+    Eyx1 = new double[size]();
+    //std::fill_n(Eyx0, size, 0);
+    //std::fill_n(Eyx1, size, 0);
+
     // std::vector<double> Eyx0(size, 0.0);
     // std::vector<double> Eyx1(size, 0.0);
 
     // ABC Old Tangential Field Ez at the extrmities of x of the grid:
     size = (grid.size_Ez[1]-2)*(grid.size_Ez[2]-2);
-    double *Ezx0    = new double[size]();  
-    std::fill_n(Ezx0, size, 0);
-    double *Ezx1    = new double[size]();
-    std::fill_n(Ezx1, size, 0);
+    double *Ezx0    = NULL;
+    double *Ezx1    = NULL;
+    Ezx0 = new double[size]();  
+    Ezx1 = new double[size]();
+    //std::fill_n(Ezx0, size, 0);
+    //std::fill_n(Ezx1, size, 0);
+
     // std::vector<double> Ezx0(size, 0.0);
     // std::vector<double> Ezx1(size, 0.0);
 
     // ABC Old Tangential Field Ex at the extrmities of y of the grid:
     size = (grid.size_Ex[0]-2)*(grid.size_Ex[2]-2);
-    double *Exy0    = new double[size]();    
-    std::fill_n(Exy0, size, 0);
-    double *Exy1    = new double[size]();
-    std::fill_n(Exy1, size, 0);
+    double *Exy0    = NULL;
+    double *Exy1    = NULL;
+    Exy0 = new double[size]();    
+    Exy1 = new double[size]();
+    //std::fill_n(Exy0, size, 0);
+    //std::fill_n(Exy1, size, 0);
+
     // std::vector<double> Exy0(size, 0.0);
     // std::vector<double> Exy1(size, 0.0);
 
     // ABC Old Tangential Field Ez at the extrmities of y of the grid:
     size = (grid.size_Ez[0]-2)*(grid.size_Ez[2]-2);
-    double *Ezy0    = new double[size]();    
-    std::fill_n(Ezy0, size, 0);
-    double *Ezy1    = new double[size]();
-    std::fill_n(Ezy1, size, 0);
+    double *Ezy0    = NULL;    
+    double *Ezy1    = NULL;
+    Ezy0 = new double[size]();
+    Ezy1 = new double[size]();
+    //std::fill_n(Ezy0, size, 0);
+    //std::fill_n(Ezy1, size, 0);
     // std::vector<double> Ezy0(size, 0.0);
     // std::vector<double> Ezy1(size, 0.0);
 
     // ABC Old Tangential Field Ex at the extrmities of z of the grid:
     size = (grid.size_Ex[0]-2)*(grid.size_Ex[1]-2);
-    double *Exz0    = new double[size]();
-    std::fill_n(Exz0, size, 0);
-    double *Exz1    = new double[size]();
-    std::fill_n(Exz1, size, 0);
+    double *Exz0    = NULL;
+    double *Exz1    = NULL;
+    Exz0 = new double[size]();
+    Exz1 = new double[size]();
+    //std::fill_n(Exz0, size, 0);
+    //std::fill_n(Exz1, size, 0);
+    
     // std::vector<double> Exz0(size, 0.0);
     // std::vector<double> Exz1(size, 0.0);
 
     // ABC Old Tangential Field Ey at the extrmities of z of the grid:
     size = (grid.size_Ey[0]-2)*(grid.size_Ey[1]-2);
-    double *Eyz0    = new double[size]();    
-    std::fill_n(Eyz0, size, 0);
-    double *Eyz1    = new double[size]();
-    std::fill_n(Eyz1, size, 0);
+    double *Eyz0    = NULL;
+    double *Eyz1    = NULL;
+    Eyz0 = new double[size]();    
+    Eyz1 = new double[size]();    
+    //std::fill_n(Eyz0, size, 0);
+    //std::fill_n(Eyz1, size, 0);
     // std::vector<double> Eyz0(size, 0.0);
     // std::vector<double> Eyz1(size, 0.0);
 
@@ -1375,7 +1395,7 @@ void AlgoElectro_NEW::update(
             /////////////////////////
             
             #pragma omp barrier
-            #pragma master
+            #pragma omp master
             {
             this->abc(grid,
                 E_x_tmp, E_y_tmp, E_z_tmp, 
@@ -1541,6 +1561,26 @@ void AlgoElectro_NEW::update(
     delete[] C_eze;
     delete[] C_ezh_1;
     delete[] C_ezh_2;
+
+    /**
+     * @brief Freeing memory of ABC conditions.
+     * 
+     * Note: The delete[] checks for NULLPTR so no need to do 
+     *      if(ptr != NULL) {delete[] ptr;}
+     * but simply do delete[] ptr;
+     */
+    delete[] Eyx0;
+    delete[] Eyx1;
+    delete[] Ezx0;
+    delete[] Ezx1;
+    delete[] Exy0;
+    delete[] Exy1;
+    delete[] Ezy0;
+    delete[] Ezy1;
+    delete[] Exz0;
+    delete[] Exz1;
+    delete[] Eyz0;
+    delete[] Eyz1;
 
     /// Free electric and magnetic fields:
     for(unsigned int i = 0 ; i < NBR_FACES_CUBE ; i ++){
