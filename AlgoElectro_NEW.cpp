@@ -7,12 +7,6 @@
 #include <algorithm>
 #include <sys/time.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/file.h>
-#include <fcntl.h>
-#include <unistd.h>
-
 #include <assert.h>
 
 #include "header_with_all_defines.hpp"
@@ -21,50 +15,8 @@
 
 #define DECALAGE_E_SUPP 1
 
-#include <sys/file.h>
- #define   LOCK_SH   1    /* shared lock */
- #define   LOCK_EX   2    /* exclusive lock */
- #define   LOCK_NB   4    /* don't block when locking */
- #define   LOCK_UN   8    /* unlock */
 
 
-void probe_a_field(
-    GridCreator_NEW &grid,
-    std::string &which_field,
-    std::string &filename,
-    std::string &which_form_to_probe,
-    std::vector<double> &infoOnForm,
-    std::vector<double> &electro_deltas,
-    double current_time,
-    double dt
-);
-
-
-int tryGetLock( char const *lockName );
-void releaseLock( int fd);
-
-void testlock(void) {
-  # pragma omp parallel num_threads(16)
-  {    
-    int fd = -1; char ln[] = "testlock.lock";
-    while (fd == -1) fd = tryGetLock(ln);
-
-    cout << omp_get_thread_num() << ": got the lock!\n";
-    cout << omp_get_thread_num() << ": removing the lock\n";
-    FILE *file = fopen(ln,"a");
-    if( file != NULL){
-        fprintf(file,"Coucou de OMP %d.\n",omp_get_thread_num());
-        fclose(file);
-    }else{
-        printf("Fail opening file !\n");
-        abort();
-    }
-
-    system("cat testlock.lock");
-
-    releaseLock(fd);
-  }
-}
 
 
 void prepare_array_to_be_sent(
@@ -391,15 +343,7 @@ void AlgoElectro_NEW::update(
 
 
     /* COMPUTING COEFFICIENTS */
-    #pragma omp parallel default(none)\
-		firstprivate(C_exe,C_exh_1,C_exh_2)\
-		firstprivate(C_eye,C_eyh_1,C_eyh_2)\
-		firstprivate(C_eze,C_ezh_1,C_ezh_2)\
-		firstprivate(C_hxh,C_hxe_1,C_hxe_2)\
-		firstprivate(C_hyh,C_hye_1,C_hye_2)\
-		firstprivate(C_hzh,C_hze_1,C_hze_2)\
-		shared(grid)\
-		firstprivate(dt)
+    #pragma omp parallel
     {
         size_t index;
         /* Coefficients for Ex */
@@ -570,17 +514,17 @@ void AlgoElectro_NEW::update(
     //      2) GridCreator_NEW calls its source object //
     /////////////////////////////////////////////////////
     
-    // Size 3 because 3 E components:
+    // Size 6 because 3 E and 3 H components:
     std::vector<size_t>        *local_nodes_inside_source_NUMBER ;
-    local_nodes_inside_source_NUMBER = new std::vector<size_t>[3];
+    local_nodes_inside_source_NUMBER = new std::vector<size_t>[6];
 
-    // Size 3 because 3 E components:
+    // Size 6 because 3 E and 3 H components:
     std::vector<unsigned char> *ID_Source                         ;
-    ID_Source = new std::vector<unsigned char>[3];
+    ID_Source = new std::vector<unsigned char>[6];
 
     std::vector<double>        local_nodes_inside_source_FREQ    ;
 
-    std::vector<std::string> TYPE = {"Ex","Ey","Ez"};
+    std::vector<std::string> TYPE = {"Ex","Ey","Ez","Hx","Hy","Hz"};
 
     for(unsigned int i = 0 ; i < TYPE.size() ; i ++){
         grid.Compute_nodes_inside_sources(
@@ -724,13 +668,11 @@ void AlgoElectro_NEW::update(
         firstprivate(Exz0, Exz1)\
         firstprivate(Eyz0, Eyz1)
     {
-
-
-        bool MODULATE_SOURCE = false;
-        if(grid.input_parser.source_time == "GAUSSIAN"){
-            MODULATE_SOURCE =true;
-        }
-
+        
+        /*
+        shared(H_x_tmp,H_y_tmp,H_z_tmp)\
+        shared(E_x_tmp,E_y_tmp,E_z_tmp)\
+        */
 
         // Temporary pointers, to avoid doing grid.sthg !
         double *H_x_tmp = grid.H_x;
@@ -1200,31 +1142,10 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[2][it];
                 ASSERT(index,<,grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]);
 
-                double gauss     = 1;
-                double frequency = 0;
+                double frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
 
-                if(ID_Source[2][it] == UCHAR_MAX){
-                    frequency = 0;
-                }else{
-
-                    frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
-
-                    if(MODULATE_SOURCE == true){
-                        double period    = 2*M_PI/frequency;
-                        double MEAN      = 0*period;
-                        double STD       = period/10;
-                                        
-                        double t = current_time;
-                        
-                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
-                    }
-
-                }                
-
-                E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
-
+                E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
             }
-
 
             #pragma omp for schedule(static) nowait
             for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[1].size() ; it ++){
@@ -1232,27 +1153,7 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[1][it];
                 ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 
-                double gauss     = 1;
-                double frequency = 0;
-
-                if(ID_Source[1][it] == UCHAR_MAX){
-                    frequency = 0;
-                }else{
-
-                    frequency = local_nodes_inside_source_FREQ[ID_Source[1][it]];
-
-                    if(MODULATE_SOURCE == true){
-                        double period    = 2*M_PI/frequency;
-                        double MEAN      = 0*period;
-                        double STD       = period/10;
-                                        
-                        double t = current_time;
-                        
-                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
-                    }
-                }
-
-                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_y_tmp[index] = 0;
             }
 
             #pragma omp for schedule(static) nowait
@@ -1261,27 +1162,7 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[0][it];
                 ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
 
-                double gauss     = 1;
-                double frequency = 0;
-
-                if(ID_Source[0][it] == UCHAR_MAX){
-                    frequency = 0;
-                }else{
-
-                    frequency = local_nodes_inside_source_FREQ[ID_Source[0][it]];
-
-                    if(MODULATE_SOURCE == true){
-                        double period    = 2*M_PI/frequency;
-                        double MEAN      = 0*period;
-                        double STD       = period/10;
-                                        
-                        double t = current_time;
-                        
-                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
-                    }
-                }
-
-                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_x_tmp[index] = 0;
             }
 
             
@@ -1371,6 +1252,8 @@ void AlgoElectro_NEW::update(
             /////////////////////////
             
             #pragma omp barrier
+            #pragma master
+            {
             this->abc(grid,
                 E_x_tmp, E_y_tmp, E_z_tmp, 
                 Eyx0, Ezx0, 
@@ -1381,6 +1264,7 @@ void AlgoElectro_NEW::update(
                 Exz1, Eyz1,
                 dt
                 );
+            }
             #pragma omp barrier
 
             #pragma omp master
@@ -1396,32 +1280,6 @@ void AlgoElectro_NEW::update(
 
             #pragma omp master
             {
-                /// PROBE POINTS IF NECESSARY
-                if(!grid.input_parser.points_to_be_probed.empty()){
-                    for(size_t curr_pt = 0 ; curr_pt < grid.input_parser.points_to_be_probed.size();
-                                curr_pt ++){
-                                    std::string which_form_to_probe = "point";
-                                    probe_a_field(
-                                        //GridCreator_NEW &grid
-                                        grid,
-                                        //std::string &which_field
-                                        grid.input_parser.points_to_be_probed[curr_pt].type_field,
-                                        //std::string &filename
-                                        grid.input_parser.points_to_be_probed[curr_pt].filename,
-                                        //std::string &which_form_to_probe
-                                        which_form_to_probe,
-                                        //std::vector<double> &infoOnForm
-                                        grid.input_parser.points_to_be_probed[curr_pt].coordinates,
-                                        //std::vector<double> &electro_deltas
-                                        grid.delta_Electromagn,
-                                        //double current_time
-                                        current_time,
-                                        //double dt
-                                        dt
-                                    );
-                                }
-                }
-
                 /// If this is the first step, add some inputs to the profiler:
                 if(currentStep == 1){
                     grid.profiler.addTimingInputToDictionnary("ELECTRO_WRITING_OUTPUTS",true);
@@ -1497,32 +1355,38 @@ void AlgoElectro_NEW::update(
     delete[] ID_Source;
     
     // Free H_x coefficients:
+    size = grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2];
     delete[] C_hxh;
     delete[] C_hxe_1;
     delete[] C_hxe_2;
 
 
     // Free H_y coefficents:
+    size = grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2];
     delete[] C_hyh;
     delete[] C_hye_1;
     delete[] C_hye_2;
 
     // Free H_z coefficients:
+    size = grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2];
     delete[] C_hzh;
     delete[] C_hze_1;
     delete[] C_hze_2;
 
     // Free E_x coefficients:
+    size = grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2];
     delete[] C_exe;
     delete[] C_exh_1;
     delete[] C_exh_2;
 
     // Free E_y coefficients:
+    size = grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2];
     delete[] C_eye;
     delete[] C_eyh_1;
     delete[] C_eyh_2;
 
     // Free E_z coefficients:
+    size = grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2];
     delete[] C_eze;
     delete[] C_ezh_1;
     delete[] C_ezh_2;
@@ -1600,6 +1464,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
 // !!!!!!!!!!!!!!!! A MODIFIER !!!!!!!!!!!!!!!!!!!!!!!!! |
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
+    printf("Attention pas la bonne vitesse de la lumière (line %d)\n",__LINE__);
     c = 299792458;                                   //  |
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
@@ -1674,11 +1539,13 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 /* ABC at "x1" */   
 
     if(grid.MPI_communicator.RankNeighbour[0] == -1){
-        i = size_x - 2;
-
+        
         size_x = grid.size_Ey[0];
         size_y = grid.size_Ey[1];
         size_z = grid.size_Ey[2];
+
+        i = size_x - 2;
+
         for (j = 1; j < size_y - 1; j++) // -1 not to take the last column which is to send
             for (k = 1; k < size_z - 1; k++) { // -1 not to take the last column
                 index = i + size_x * ( j + size_y * k); //
@@ -1696,6 +1563,8 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         size_x = grid.size_Ez[0];
         size_y = grid.size_Ez[1];
         size_z = grid.size_Ez[2];
+        
+        i = size_x - 2;
 
         for ( j = 1; j < size_y - 1; j++) 
             for (k = 1; k < size_z -  1; k++) {
@@ -1755,12 +1624,12 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
     /* ABC at "y1" */
 
     if(grid.MPI_communicator.RankNeighbour[3] == -1){
-        j = size_y - 2;
-
 
         size_x = grid.size_Ex[0];
         size_y = grid.size_Ex[1];
         size_z = grid.size_Ex[2];
+
+        j = size_y - 2;
 
         for (i = 1; i < size_x - 1; i++)
             for (k = 1; k < size_z -1; k++) {
@@ -1778,6 +1647,8 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         size_x = grid.size_Ez[0];
         size_y = grid.size_Ez[1];
         size_z = grid.size_Ez[2];
+
+        j = size_y - 2;
 
         for (i = 1; i < size_x - 1; i++)
             for (k = 1; k < size_z - 1; k++) {
@@ -1841,11 +1712,12 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
     /* ABC at "z1" (top) */
 
     if(grid.MPI_communicator.RankNeighbour[5] == -1){
-        k = size_z - 2;
 
         size_x = grid.size_Ex[0];
         size_y = grid.size_Ex[1];
         size_z = grid.size_Ex[2];
+
+        k = size_z - 2;
 
         for (i = 1; i < size_x - 1; i++)
             for (j = 1; j < size_y - 1; j++) {
@@ -1863,6 +1735,8 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         size_x = grid.size_Ey[0];
         size_y = grid.size_Ey[1];
         size_z = grid.size_Ey[2];
+
+        k = size_z - 2;
 
         for (i = 1; i < size_x - 1; i++)
             for (j = 1; j < size_y - 1; j++) {
@@ -3644,7 +3518,7 @@ void communicate_single_omp_thread(
         /* NEIGHBOOR LARGER THAN ME */
         }else if( mpi_to_who[FACE] > mpi_me ){
             #ifndef NDEBUG
-                printf("[MPI %d - LARGER - FACE %u -OMP %d] to [MPI %d] | sendTag %u , recvTag %d\n",
+                printf("[MPI %d - LARGER - FACE %d -OMP %d] to [MPI %d] | sendTag %d , recvTag %d\n",
                         mpi_me,
                         FACE,
                         omp_get_thread_num(),
@@ -3700,7 +3574,7 @@ void communicate_single_omp_thread(
                 
         }else if( mpi_to_who[FACE] < mpi_me ){
             #ifndef NDEBUG
-                printf("[MPI %d - SMALLER - FACE %u - OMP %d] to [MPI %d] | sendTag %u , recvTag %d\n",
+                printf("[MPI %d - SMALLER - FACE %d - OMP %d] to [MPI %d] | sendTag %d , recvTag %d\n",
                         mpi_me,
                         FACE,
                         omp_get_thread_num(),
@@ -3756,7 +3630,7 @@ void communicate_single_omp_thread(
                 
         }else{
                 fprintf(stderr,"In function %s :: no way to communicate between MPI %d and"
-                                " MPI %d, on face %u. Aborting.\n",
+                                " MPI %d, on face %d. Aborting.\n",
                                 __FUNCTION__,mpi_me,mpi_to_who[FACE],FACE);
                 fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
                 #ifdef MPI_COMM_WORLD
