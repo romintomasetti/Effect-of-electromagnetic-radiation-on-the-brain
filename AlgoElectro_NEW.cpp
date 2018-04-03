@@ -7,6 +7,12 @@
 #include <algorithm>
 #include <sys/time.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/file.h>
+#include <fcntl.h>
+#include <unistd.h>
+
 #include <assert.h>
 
 #include "header_with_all_defines.hpp"
@@ -14,6 +20,52 @@
 #define NBR_FACES_CUBE 6
 
 #define DECALAGE_E_SUPP 1
+
+#include <sys/file.h>
+ #define   LOCK_SH   1    /* shared lock */
+ #define   LOCK_EX   2    /* exclusive lock */
+ #define   LOCK_NB   4    /* don't block when locking */
+ #define   LOCK_UN   8    /* unlock */
+
+
+void probe_a_field(
+    GridCreator_NEW &grid,
+    std::string &which_field,
+    std::string &filename,
+    std::string &which_form_to_probe,
+    std::vector<double> &infoOnForm,
+    std::vector<double> &electro_deltas,
+    double current_time,
+    double dt
+);
+
+
+int tryGetLock( char const *lockName );
+void releaseLock( int fd);
+
+void testlock(void) {
+  # pragma omp parallel num_threads(16)
+  {    
+    int fd = -1; char ln[] = "testlock.lock";
+    while (fd == -1) fd = tryGetLock(ln);
+
+    cout << omp_get_thread_num() << ": got the lock!\n";
+    cout << omp_get_thread_num() << ": removing the lock\n";
+    FILE *file = fopen(ln,"a");
+    if( file != NULL){
+        fprintf(file,"Coucou de OMP %d.\n",omp_get_thread_num());
+        fclose(file);
+    }else{
+        printf("Fail opening file !\n");
+        abort();
+    }
+
+    system("cat testlock.lock");
+
+    releaseLock(fd);
+  }
+}
+
 
 
 
@@ -343,7 +395,15 @@ void AlgoElectro_NEW::update(
 
 
     /* COMPUTING COEFFICIENTS */
-    #pragma omp parallel
+    #pragma omp parallel default(none)\
+		firstprivate(C_exe,C_exh_1,C_exh_2)\
+		firstprivate(C_eye,C_eyh_1,C_eyh_2)\
+		firstprivate(C_eze,C_ezh_1,C_ezh_2)\
+		firstprivate(C_hxh,C_hxe_1,C_hxe_2)\
+		firstprivate(C_hyh,C_hye_1,C_hye_2)\
+		firstprivate(C_hzh,C_hze_1,C_hze_2)\
+		shared(grid)\
+		firstprivate(dt)
     {
         size_t index;
         /* Coefficients for Ex */
@@ -514,17 +574,17 @@ void AlgoElectro_NEW::update(
     //      2) GridCreator_NEW calls its source object //
     /////////////////////////////////////////////////////
     
-    // Size 6 because 3 E and 3 H components:
+    // Size 3 because 3 E components:
     std::vector<size_t>        *local_nodes_inside_source_NUMBER ;
-    local_nodes_inside_source_NUMBER = new std::vector<size_t>[6];
+    local_nodes_inside_source_NUMBER = new std::vector<size_t>[3];
 
-    // Size 6 because 3 E and 3 H components:
+    // Size 3 because 3 E components:
     std::vector<unsigned char> *ID_Source                         ;
-    ID_Source = new std::vector<unsigned char>[6];
+    ID_Source = new std::vector<unsigned char>[3];
 
     std::vector<double>        local_nodes_inside_source_FREQ    ;
 
-    std::vector<std::string> TYPE = {"Ex","Ey","Ez","Hx","Hy","Hz"};
+    std::vector<std::string> TYPE = {"Ex","Ey","Ez"};
 
     for(unsigned int i = 0 ; i < TYPE.size() ; i ++){
         grid.Compute_nodes_inside_sources(
@@ -556,6 +616,8 @@ void AlgoElectro_NEW::update(
             printf(">>> FDTD scheme started with time step of %.15lf seconds.\n",
                 dt);
         }
+
+
 
 
     ////////////////////////////////////////////////
@@ -668,11 +730,11 @@ void AlgoElectro_NEW::update(
         firstprivate(Exz0, Exz1)\
         firstprivate(Eyz0, Eyz1)
     {
-        
-        /*
-        shared(H_x_tmp,H_y_tmp,H_z_tmp)\
-        shared(E_x_tmp,E_y_tmp,E_z_tmp)\
-        */
+
+        bool MODULATE_SOURCE = false;
+        if(grid.input_parser.source_time == "GAUSSIAN"){
+            MODULATE_SOURCE =true;
+        }
 
         // Temporary pointers, to avoid doing grid.sthg !
         double *H_x_tmp = grid.H_x;
@@ -1142,10 +1204,31 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[2][it];
                 ASSERT(index,<,grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]);
 
-                double frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
+                double gauss     = 1;
+                double frequency = 0;
 
-                E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
+                if(ID_Source[2][it] == UCHAR_MAX){
+                    frequency = 0;
+                }else{
+
+                    frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
+
+                    if(MODULATE_SOURCE == true){
+                        double period    = 2*M_PI/frequency;
+                        double MEAN      = 0*period;
+                        double STD       = period/10;
+                                        
+                        double t = current_time;
+                        
+                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                    }
+
+                }                
+
+                E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+
             }
+
 
             #pragma omp for schedule(static) nowait
             for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[1].size() ; it ++){
@@ -1153,7 +1236,27 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[1][it];
                 ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 
-                E_y_tmp[index] = 0;
+                double gauss     = 1;
+                double frequency = 0;
+
+                if(ID_Source[1][it] == UCHAR_MAX){
+                    frequency = 0;
+                }else{
+
+                    frequency = local_nodes_inside_source_FREQ[ID_Source[1][it]];
+
+                    if(MODULATE_SOURCE == true){
+                        double period    = 2*M_PI/frequency;
+                        double MEAN      = 0*period;
+                        double STD       = period/10;
+                                        
+                        double t = current_time;
+                        
+                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                    }
+                }
+
+                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
             }
 
             #pragma omp for schedule(static) nowait
@@ -1162,7 +1265,27 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[0][it];
                 ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
 
-                E_x_tmp[index] = 0;
+                double gauss     = 1;
+                double frequency = 0;
+
+                if(ID_Source[0][it] == UCHAR_MAX){
+                    frequency = 0;
+                }else{
+
+                    frequency = local_nodes_inside_source_FREQ[ID_Source[0][it]];
+
+                    if(MODULATE_SOURCE == true){
+                        double period    = 2*M_PI/frequency;
+                        double MEAN      = 0*period;
+                        double STD       = period/10;
+                                        
+                        double t = current_time;
+                        
+                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                    }
+                }
+
+                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
             }
 
             
@@ -1280,6 +1403,33 @@ void AlgoElectro_NEW::update(
 
             #pragma omp master
             {
+                /// PROBE POINTS IF NECESSARY
+                if(!grid.input_parser.points_to_be_probed.empty()){
+                    for(size_t curr_pt = 0 ; curr_pt < grid.input_parser.points_to_be_probed.size();
+                                curr_pt ++)
+                        {
+                            std::string which_form_to_probe = "point";
+                            probe_a_field(
+                                //GridCreator_NEW &grid
+                                grid,
+                                //std::string &which_field
+                                grid.input_parser.points_to_be_probed[curr_pt].type_field,
+                                //std::string &filename
+                                grid.input_parser.points_to_be_probed[curr_pt].filename,
+                                //std::string &which_form_to_probe
+                                which_form_to_probe,
+                                //std::vector<double> &infoOnForm
+                                grid.input_parser.points_to_be_probed[curr_pt].coordinates,
+                                //std::vector<double> &electro_deltas
+                                grid.delta_Electromagn,
+                                //double current_time
+                                current_time,
+                                //double dt
+                                dt
+                            );
+                        }
+                }
+
                 /// If this is the first step, add some inputs to the profiler:
                 if(currentStep == 1){
                     grid.profiler.addTimingInputToDictionnary("ELECTRO_WRITING_OUTPUTS",true);
@@ -1310,7 +1460,8 @@ void AlgoElectro_NEW::update(
 
                 grid.profiler.incrementTimingInput("ELECTRO_MPI_COMM",total_mpi_comm);
 
-                if(grid.MPI_communicator.isRootProcess() != INT_MIN && currentStep == grid.input_parser.maxStepsForOneCycleOfElectro){
+                if(    grid.MPI_communicator.isRootProcess() != INT_MIN 
+                    && currentStep == grid.input_parser.maxStepsForOneCycleOfElectro){
                         printf("%s[MPI %d - Electro - Update - step %zu]%s\n"
                                "\t> Current simulation time is   %.12lf seconds (over %.12lf).\n"
                                "\t> Current step is              %zu over %zu.\n"
