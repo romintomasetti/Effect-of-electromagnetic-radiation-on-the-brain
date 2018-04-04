@@ -51,10 +51,12 @@
 
 #include "MemoryUsage.hpp"
 
+#include "DISC_INTEGR/discrete_integration_util.hpp"
+
+#include "boost/format.hpp"
 
 
 using namespace std;
-
 
 void check_input_file_name_given(int argc, char *argv[],map<std::string,std::string> &inputs);	
 
