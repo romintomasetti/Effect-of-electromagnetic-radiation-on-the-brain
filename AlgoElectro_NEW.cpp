@@ -3924,7 +3924,7 @@ void probe_a_field(
 
                     double value = grid.get_fields(which_field)[index];
 
-                    fprintf(file,"(%.10g,%.10g,%.10g,%.10g) %s = %.10g [gl_node(%zu,%zu,%zu)| dt %.10g]\n",
+                    fprintf(file,"(%.10g,%.10g,%.10g,%.10g) %s = %.10g [gl_node(%zu,%zu,%zu)| dt %.10g | step %zu]\n",
                                 current_time,
                                 infoOnForm[0],
                                 infoOnForm[1],
@@ -3932,7 +3932,8 @@ void probe_a_field(
                                 which_field.c_str(),
                                 value,
                                 nbr_X_gl,nbr_Y_gl,nbr_Y_gl,
-                                dt);
+                                dt,
+                                (size_t)(current_time/dt));
                     fclose(file);
                 }
                 releaseLock(fd);
