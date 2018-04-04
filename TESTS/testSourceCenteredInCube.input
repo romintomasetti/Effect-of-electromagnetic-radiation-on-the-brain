@@ -33,19 +33,19 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=0.05
-		deltaY_Electro=0.05
-		deltaZ_Electro=0.05
-		delta_Thermal=0.5
-		ratio_EM_TH_delta=0.1
+		deltaX_Electro=0.005
+		deltaY_Electro=0.005
+		deltaZ_Electro=0.005
+		delta_Thermal=0.1
+		ratio_EM_TH_delta=0.05
 	$DELTAS
 		
 	// Boundaries of the domain
 	$DOMAIN_SIZE
 		// Length of the domain in each direction
-		L_X_ELECTRO=10
-		L_Y_ELECTRO=10
-		L_Z_ELECTRO=10
+		L_X_ELECTRO=1
+		L_Y_ELECTRO=1
+		L_Z_ELECTRO=1
 		L_X_THERMAL=1
 		L_Y_THERMAL=1
 		L_Z_THERMAL=1
@@ -59,16 +59,16 @@ $MESH
 		L_Y=0.1;
 		L_Z=0.1;
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=5;
-		C_Y=5;
-		C_Z=5;
+		C_X=0.5;
+		C_Y=0.5;
+		C_Z=0.5;
 		// Frequency [Hz]
 		FRQCY=900E6;
 		/// Either 'DIPOLE' or 'SIMPLE' (for simple antenna):
 		/// If set to dipole, length is proportional to lambda = 3E8/freq
 		///
-		IMPOSED=DIPOLE;
-		/// Information on the source "time" : GAUSSIAN(MEAN,STD)
+		IMPOSED=SIMPLE;
+		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
 		SOURCE_TIME=SINE
 		// Default with Gaussian is (MEAN,STD)=(0*period,period/10) where period=c/frequency, c=3e8
 	$SOURCE
@@ -87,7 +87,8 @@ $MESH
 				    3) H=GLOBAL puts the indices I J K globals
 					in each components of the magnetic field*/
 		//TEST_PARAVIEW_MPI=(TEMP=RANK,E=GLOBAL,H=GLOBAL)
-		MATERIAL_DATA_FILE=data_air.csv
+		//USE_GEOMETRY_FILE={true,/home/romin/Documents/MULTIPLHYSICS_PROJECT_2018/Effect-of-electromagnetic-radiation-on-the-brain/CREATE_GEOMETRY/geometry_input_file.geometry}
+		MATERIAL_DATA_FILE={OLD=data_air.csv,ELECTRO=tissueproperties_900E6_HZ.csv}
 	$MATERIALS
 	
 $MESH
@@ -103,7 +104,7 @@ $RUN_INFOS
 		// The simulation will stop after... (in sec)
 		stopTime=10
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=30
+		maxStepsForOneCycleOfElectro=1000
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
 		maxStepsForOneCycleOfThermal=5E5 
@@ -115,6 +116,7 @@ $RUN_INFOS
 	$TEMP_INIT
 		T_INIT_AIR   =25
 		T_INIT_WATER =29
+		INIT_TEMP_FILE=initial_temperature_materials.initTemp
 	$TEMP_INIT
 
 	// State all your boundary conditions inside this region:
@@ -139,10 +141,16 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=100
+		SAMPLING_FREQ_ELECTRO=1
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING
+
+	$ELECTRO_STEADY_STATE
+		/* We won't check for steady state at each point, but every 
+		   -specified by CHECK_EVERY_POINT- points */
+		CHECK_EVERY_POINT=10
+	$ELECTRO_STEADY_STATE
 	
 $RUN_INFOS
 
@@ -152,9 +160,24 @@ $POST_PROCESSING
 	$PROBING_POINTS
 		// Probe the electrix field (X component) at coordinates (0.2,0.2,0.2) at all times.
 		// Outputfile is named 'Ex_02_02_02_ALL'
-		probe_point={Ex,0.3,0.5,0.5,ALL}
-		probe_point={Ey,0.3,0.5,0.5,ALL}
-		probe_point={Ez,0.3,0.5,0.5,ALL}
+		probe_point={Ex,0.8,0.5,0.5,ALL}
+		probe_point={Ey,0.8,0.5,0.5,ALL}
+		probe_point={Ez,0.8,0.5,0.5,ALL}
+		probe_point={Ex,0.7,0.5,0.5,ALL}
+		probe_point={Ey,0.7,0.5,0.5,ALL}
+		probe_point={Ez,0.7,0.5,0.5,ALL}
+		probe_point={Ex,0.9,0.5,0.5,ALL}
+		probe_point={Ey,0.9,0.5,0.5,ALL}
+		probe_point={Ez,0.9,0.5,0.5,ALL}
+		probe_point={Ex,0.6,0.5,0.5,ALL}
+		probe_point={Ey,0.6,0.5,0.5,ALL}
+		probe_point={Ez,0.6,0.5,0.5,ALL}
+		probe_point={Ex,0.5,0.5,0.5,ALL}
+		probe_point={Ey,0.5,0.5,0.5,ALL}
+		probe_point={Ez,0.5,0.5,0.5,ALL}
+		probe_point={Ex,1.0,0.5,0.5,ALL}
+		probe_point={Ey,1.0,0.5,0.5,ALL}
+		probe_point={Ez,1.0,0.5,0.5,ALL}
 	$PROBING_POINTS
 
 $POST_PROCESSING
