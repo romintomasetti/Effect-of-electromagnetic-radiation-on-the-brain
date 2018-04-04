@@ -8,6 +8,7 @@
 #include <iostream>
 #include <sstream>
 #include <cstdio>
+#include <stdexcept>
 
 JSON_API void read_json(std::string fname, rapidjson::Document &d)
 {
