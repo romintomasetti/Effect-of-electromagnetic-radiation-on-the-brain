@@ -1,0 +1,6 @@
+{
+    "Air.initTemp"             : 300.0,
+    "BoneCortical.initTemp"    : 300.0,
+    "BrainGreyMatter.initTemp" : 300.0,
+    "BrainWhiteMatter.initTemp": 300.0
+}
