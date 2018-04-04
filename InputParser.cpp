@@ -1,5 +1,9 @@
 #include "InputParser.h"
 
+#include "JSON/json.hpp"
+#include "rapidjson/document.h"
+using namespace rapidjson;
+
 #include "header_with_all_defines.hpp"
 
 #include <algorithm>
@@ -145,6 +149,7 @@ stringDollar_Header2 InputParser::hashit_Header2 (std::string const& inString) {
 	if (inString == "MATERIALS") 			 return MATERIALS;
 	if (inString == "ORIGINS")   			 return ORIGINS;
 	if (inString == "PROBING_POINTS")        return PROBING_POINTS;
+	if (inString == "ELECTRO_STEADY_STATE")  return ELECTRO_STEADY_STATE;
 	else {
 		printf("In file %s at %d. Complain to Romin. Abort().\n",__FILE__,__LINE__);
 		cout << "Faulty string is ::" + inString + "::" << endl;
@@ -844,15 +849,17 @@ void InputParser::readHeader_MESH (ifstream &file){
 					this->RemoveAnyBlankSpaceInStr(currentLine);
 					// If the string is "$DELTAS" it means the section ends.
 					if(currentLine == "$MATERIALS"){
-						if(this->material_data_file == std::string()){
-							fprintf(stderr,"In %s :: ERROR :: You *MUST* provide a material data file. Aborting.\n",
-									__FUNCTION__);
-							fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
-							#ifdef MPI_COMM_WORLD
-								MPI_Abort(MPI_COMM_WORLD,-1);
-							#else
-								abort();
-							#endif
+						if(this->material_data_files.size() <= 1){
+							DISPLAY_ERROR_ABORT(
+								" You *MUST* provide TWO material data files."
+							);
+						}
+						if(this->simulationType.get() == "USE_GEOMETRY_FILE"){
+							if(this->file_containing_geometry == std::string()){
+								DISPLAY_ERROR_ABORT(
+									"You want to use a geometry file, but you don't provide it."
+								);
+							}
 						}
 						break;
 					}
@@ -873,6 +880,69 @@ void InputParser::readHeader_MESH (ifstream &file){
 							printf(" to false.Aborting.\n");
 							std::abort();
 						}
+
+					}else if(propName == "USE_GEOMETRY_FILE"){
+						// Parse the propGiven string:
+						std::vector<size_t> pos_acc_open
+							= findCharacterInsideString(propGiven,"{");
+						std::vector<size_t> pos_acc_closed
+							= findCharacterInsideString(propGiven,"}");
+						std::vector<size_t> pos_comma
+							= findCharacterInsideString(propGiven,",");
+
+						if(    pos_acc_open.size()   != 1
+							|| pos_acc_closed.size() != 1
+							|| pos_comma.size()      != 1){
+								std::string compl_info = std::string();
+								if(pos_comma.size() != 1){
+									compl_info = 
+										"You possibly put a semi-colon separator"
+										" instead of a comma separator.";
+								}else{
+									compl_info =
+										"You probably miss a brace.";
+								}
+								DISPLAY_ERROR_ABORT(
+									"You should provide something like"
+									" USE_GEOMETRY_FILE={true,my_file.geomtry}"
+									" (has %s).%s",
+									propGiven.c_str(),
+									compl_info.c_str()
+								);
+							}
+						/// Check that the boolean is set to true:
+						std::string boolVar = 
+							propGiven.substr(
+								pos_acc_open[0]+1,
+								pos_comma[0]-pos_acc_open[0]-1
+							);
+						if(boolVar != "true"){
+							DISPLAY_ERROR_ABORT(
+								"You want USE_GEOMETRY_FILE but you set it to %s."
+								" Please set it to true.",
+								boolVar.c_str()
+							);
+						}else{
+							this->simulationType = propName;
+						}
+						/// Get the geometry file name:
+						std::string geometryFilename
+							= propGiven.substr(
+								pos_comma[0]+1,
+								pos_acc_closed[0]-pos_comma[0]-1
+							);
+						if(geometryFilename.substr(geometryFilename.find('.')+1) != "geometry"){
+							DISPLAY_ERROR_ABORT(
+								"The geometry file should have the extension '.geometry'"
+								 " but it has '.%s'.",
+								 geometryFilename.substr(geometryFilename.find('.')+1).c_str()
+							);
+						}else{
+							this->file_containing_geometry
+								= geometryFilename;
+						}
+						
+						
 
 					}else if(propName == "TEST_PARAVIEW"){
 						if(propGiven == "true"){
@@ -970,7 +1040,62 @@ void InputParser::readHeader_MESH (ifstream &file){
 						/* END OF TEST_PARAVIEW_MPI */
 
 					}else if(propName == "MATERIAL_DATA_FILE"){
-						this->material_data_file = propGiven;
+						// Determine the number of files:
+						std::vector<size_t> pos_commas
+							= findCharacterInsideString(propGiven,",");
+						size_t nbr_files = pos_commas.size()+1;
+						// Find equal signs:
+						std::vector<size_t> pos_equal_signs
+							= findCharacterInsideString(propGiven,"=");
+						if(pos_equal_signs.size() != nbr_files){
+							DISPLAY_ERROR_ABORT(
+								"You have requested %zu material files but"
+								" I only have %zu equal signs (should have %zu).",
+								nbr_files,pos_equal_signs.size(),nbr_files
+							);
+						}
+
+						size_t pos_acc_close = findCharacterInsideString(propGiven,"}")[0];
+						
+						for(size_t I = 0 ; I < nbr_files ; I++){
+							size_t beg = 0;
+							size_t size= 0;
+							std::string type;
+							if(I == 0){
+								beg  = pos_equal_signs[0]+1;
+								size = pos_commas[0]-beg;
+								type = propGiven.substr(1,beg-2);
+								//std::cout << type << std::endl;
+							}else if( I == nbr_files - 1){
+								beg = pos_equal_signs[nbr_files-1]+1;
+								size= pos_acc_close-beg;
+								type = propGiven.substr(
+											pos_commas[nbr_files-2]+1,
+											pos_equal_signs[nbr_files-1]-pos_commas[nbr_files-2]-1);
+								//std::cout << type << std::endl;
+							}else{
+								beg  = pos_equal_signs[I-1]+1;
+								size = pos_commas[I]-beg;
+								type = propGiven.substr(
+										pos_commas[I-1],
+										pos_equal_signs[I-1]-pos_commas[I-1]-1);
+								//std::cout << type << std::endl;
+							}
+							if(I == 0 && type != "OLD"){
+								DISPLAY_ERROR_ABORT(
+									"First provided file should be 'OLD'."
+								);
+							}
+							if(I == 1 && type != "ELECTRO"){
+								DISPLAY_ERROR_ABORT(
+									"Second provided file should be 'ELECTRO'."
+								);
+							}
+							std::string whichFile
+								= propGiven.substr(beg,size);
+							//std::cout << whichFile << std::endl;
+							this->material_data_files.push_back(whichFile);
+						}
 
 					}else{
 						printf("InputParser::readHeader_MESH:: You didn't provide a ");
@@ -1191,11 +1316,62 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					std::string mat = propName.substr(
 							propName.find("T_INIT")+sizeof("T_INIT"));
 
-					if(mat != string()){
+					if(mat != string() && propName != "INIT_TEMP_FILE"){
 						double tempInit = std::stod(propGiven);
 						this->GetInitTemp_FromMaterialName.insert(
 							std::pair<std::string,double>(mat,tempInit)
-						);
+						); 
+					}else if(propName == "INIT_TEMP_FILE"){
+
+						std::string init_temp_filename = propGiven;
+						bool failed = true;
+
+						if(this->is_file_exist(init_temp_filename)){
+							failed = false;
+							rapidjson::Document doc;
+							read_json(init_temp_filename,doc);
+
+							// Go through file:
+							static const char* kTypeNames[] = 
+    							{ "Null", "False", "True", "Object", "Array", "String", "Number" };
+							for (Value::ConstMemberIterator itr = doc.MemberBegin();
+								itr != doc.MemberEnd(); ++itr)
+							{
+								std::string name(itr->name.GetString());
+								std::string value(kTypeNames[itr->value.GetType()]);
+
+								if( value != "Number"){
+									DISPLAY_ERROR_ABORT(
+										"In file %s: the name %s has not a number value"
+										" but a %s value.",
+										init_temp_filename.c_str(),
+										name.c_str(),
+										kTypeNames[itr->value.GetType()]
+									);
+								}
+								if(name.find(".initTemp") == std::string::npos){
+									DISPLAY_ERROR_ABORT(
+										"In file %s: the name %s doesn't contain '.initTemp'.",
+										init_temp_filename.c_str(),
+										name.c_str()
+									);
+								}
+								std::string mat = name.substr(0,name.find(".initTemp"));
+								double tempInit = itr->value.GetDouble();
+								//std::cout << "Adding material initial temperature:: " + mat << tempInit << std::endl;
+								this->GetInitTemp_FromMaterialName.insert(
+									std::pair<std::string,double>(mat,tempInit)
+									); 
+
+							}
+							
+						}
+						if(failed){
+							DISPLAY_ERROR_ABORT(
+								"File %s is not found.",init_temp_filename.c_str()
+							);
+						}
+
 					}else{
 						printf("InputParser::readHeader_RUN_INFOS:: You didn't provide a ");
 						printf("good member for $RUN_INFOS$TEMP_INIT.\nAborting.\n");
@@ -1238,6 +1414,40 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 						cout << propName << endl;
 						printf("(in file %s at %d)\n",__FILE__,__LINE__);
 						abort();
+					}
+				}
+				break;
+
+			case ELECTRO_STEADY_STATE:
+				// Read the given time steps:
+				while(!file.eof()){
+					// Note: sections are ended by $the-section-name.
+					// Read line:
+					getline(file,currentLine);
+					// Get rid of comments:
+					this->checkLineISNotComment(file,currentLine);
+					// Remove any blank in the string:
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+					// If the string is "$DELTAS" it means the section ends.
+					if(currentLine == "$ELECTRO_STEADY_STATE"){
+						break;
+					}
+					// If the string is empty, it was just a white space. Continue.
+					if(currentLine == string()){continue;}
+					// Find the position of the equal sign:
+					std::size_t posEqual  = currentLine.find("=");
+					// The property we want to set:
+					std::string propName  = currentLine.substr(0,posEqual);
+					// The property name the user gave:
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+
+					if(propName == "CHECK_EVERY_POINT"){
+
+					}else{
+						DISPLAY_ERROR_ABORT(
+							"In ELECTRO_STEADY_STATE :: nothing corresponds to %s.",
+							propName.c_str()
+						);
 					}
 				}
 				break;

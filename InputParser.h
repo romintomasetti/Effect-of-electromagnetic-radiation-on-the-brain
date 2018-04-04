@@ -44,7 +44,8 @@ enum stringDollar_Header2{
 	BOUNDARY_CONDITIONS,
 	MATERIALS,
 	ORIGINS,
-	PROBING_POINTS
+	PROBING_POINTS,
+	ELECTRO_STEADY_STATE
 };
 
 class InputParser{
@@ -91,6 +92,9 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
+		/// File containing geometry parameters:
+		std::string file_containing_geometry = std::string();
+
 		/// Probed points:
 		std::vector<probed_point> points_to_be_probed;
 
@@ -98,7 +102,7 @@ class InputParser{
 		std::string source_time = string();
 
 		/// Name of the file containing the materials' data:
-		std::string material_data_file = string();
+		std::vector<std::string> material_data_files;
 		
 		/**
 		 * Either 'dipole' or 'simple'
