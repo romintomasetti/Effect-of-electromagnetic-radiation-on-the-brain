@@ -1,6 +1,117 @@
 #include "Materials.h"
 #include <fstream>
 #include <cstring>
+#include <algorithm>
+
+#include "CSV_parser.hpp"
+#include "header_with_all_defines.hpp"
+
+void Materials::get_properties_from_file_ELECTRO(std::string const &filename_ELECTRO_PROPS){
+	/// Check that the file is a CSV file:
+	std::string filename = filename_ELECTRO_PROPS;
+	if(filename.substr(filename.find(".")+1) != "csv"){
+		DISPLAY_ERROR_ABORT("The property file %s has not a '.csv' extension.",filename.c_str());
+	}
+
+	/// Read the whole CSV file:
+	std::vector<std::vector<std::string> > data = parse2DCsvFile(filename);
+ 
+	/// Count the number of different materials:
+	size_t nbr_mat = 0;
+	std::string current_mat = data[1][0];
+	std::vector<std::string> list_mat;
+    for (size_t I = 1 ; I < data.size() ;  I++) {
+		std::vector<std::string> l = data[I];
+        if(l[0] != current_mat){
+			/// Check that the material was not already encountered:
+			std::vector<std::string>::iterator it;
+			it = std::find (list_mat.begin(), list_mat.end(), l[0]);
+			if (it == list_mat.end()){
+				//std::cout << "New mat : " << l[0] << std::endl;
+				this->materialID_FromMaterialName_ELECTRO[l[0]]    = nbr_mat;
+				this->materialName_FromMaterialID_ELECTRO[nbr_mat] = l[0];
+				if(nbr_mat == 0 && l[0] != "Air"){
+					DISPLAY_ERROR_ABORT(
+						"The material with ID 0 MUST be air but as %s instead.",
+						this->materialName_FromMaterialID_ELECTRO[nbr_mat].c_str()
+					);
+				}
+				
+				nbr_mat++;
+				list_mat.push_back(l[0]);
+				current_mat = l[0];
+			}
+		}
+    }
+
+	/// Count the number of properties:
+	size_t nbr_prop = data[1].size()-1;
+
+	/// Get the properties names (start for loop at 1 becase first column is material name):
+	std::vector<std::string> propNames(nbr_prop);
+	for(size_t I = 1 ; I <= nbr_prop ; I ++){
+		propNames[I-1] = data[1][I];
+		//std::cout << "New prop " + propNames[I-1] << std::endl;
+	} 
+
+	this->list_of_properties_of_list_of_materials_ELECTRO
+		= propNames;
+
+	/// Fill in this->list_of_materials:
+	this->list_of_materials_ELECTRO = std::vector<material_struct>(nbr_mat);
+	for(size_t I = 0 ; I < nbr_mat ; I ++){
+		this->list_of_materials_ELECTRO[I].name = list_mat[I];
+		this->list_of_materials_ELECTRO[I].ID   = I;
+		for(size_t J = 0 ; J < nbr_prop ; J ++){
+			this->list_of_materials_ELECTRO[I].properties.insert(
+				std::pair<std::string,double>(propNames[J],0.0)
+			);
+		}
+	}
+
+	for(size_t I = 1 ; I < data.size() ; I ++){
+		std::vector<std::string> l = data[I];
+
+		std::vector<std::string>::iterator it;
+		it = std::find (list_mat.begin(), list_mat.end(), l[0]);
+
+		if (it != list_mat.end()){
+			std::string mat = l[0];
+			size_t ID = this->materialID_FromMaterialName_ELECTRO[mat];
+
+			//printf("Current mat %s :: Id %zu\n",mat.c_str(),ID);
+			for(size_t J = 1 ; J <= nbr_prop ; J ++){
+				/// Identify the property:
+				std::string propName = propNames[J-1];
+				//std::cout << propName + "=" + l[J] << std::endl;
+
+				double propVal = 0.0;
+
+				if(l[J] == "\"N/A\""){
+					propVal = nan("");
+					//printf(">>>> Has %lf...\n",propVal);
+				}else{
+					propVal = std::stod(l[J]);
+				}
+				
+				this->list_of_materials_ELECTRO[ID].properties[propName] = propVal;
+			}
+		}
+	}
+
+	#ifndef NDEBUG
+	std::vector<material_struct> list_mat_prop = this->list_of_materials_ELECTRO;
+	for(size_t I = 0 ; I < list_mat_prop.size() ; I ++){
+		printf(">>> EM properties of material %s:\n",list_mat_prop[I].name.c_str());
+		map<std::string, double>::iterator it;
+		for(it = list_mat_prop[I].properties.begin(); it != list_mat_prop[I].properties.end() ; it ++){
+			printf("\t> %s = %lf\n",
+				it->first.c_str(),
+				it->second);
+		}
+	}
+	#endif
+}
 
 /****************************************/
 /* Conventions for the properties file  */
@@ -16,7 +127,8 @@
 /* You cannot mix water and air properties in the above example. You must first provide all air
  * properties and then all water properties, or the contrary. No mixing.*/
 
-void Materials::getPropertiesFromFile(string filename){
+void Materials::getPropertiesFromFile(string filename,string filename_ELECTRO_PROPS){
+	this->get_properties_from_file_ELECTRO(filename_ELECTRO_PROPS);
 	/* Opening the file */
 	ifstream file;
 	file.open(filename,fstream::in);
