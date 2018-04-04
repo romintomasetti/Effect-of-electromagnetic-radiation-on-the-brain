@@ -6,6 +6,8 @@ include(CheckCXXCompilerFlag)
 
 set(EXEC_NAME main)
 
+option(BUILD_DOC "Build documentation" ON)
+
 IF(NOT CMAKE_BUILD_TYPE)
     SET( CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
@@ -44,9 +46,9 @@ ENDIF()
 
 
 FILE(GLOB SRCS *.h *.hpp *.cpp *.c)
-message(${SRCS})
-ADD_EXECUTABLE(${EXEC_NAME} ${SRCS} ${VTL})
-
+ADD_EXECUTABLE(${EXEC_NAME} ${SRCS})
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/JSON)
+TARGET_LINK_LIBRARIES(main json)
 
 # MPI --
 # --------------------------------------------------------------
@@ -111,3 +113,19 @@ else (DOXYGEN_FOUND)
   message("Doxygen need to be installed to generate the doxygen documentation")
 endif (DOXYGEN_FOUND)
 # ------------------------------------------------------------------------
+
+
+enable_testing()
+
+
+ADD_SUBDIRECTORY( JSON )
+
+find_path(
+    RAPIDJSON_INCLUDE_DIRS 
+    NAMES "rapidjson/rapidjson.h"
+    PATHS ${PROJECT_SOURCE_DIR})
+message(STATUS "RAPIDJSON_INCLUDE_DIRS=" ${RAPIDJSON_INCLUDE_DIRS})
+if(NOT RAPIDJSON_INCLUDE_DIRS)
+    message(FATAL_ERROR "RapidJSON include dir not found!")
+endif()
+include_directories(${RAPIDJSON_INCLUDE_DIRS})
