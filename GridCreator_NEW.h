@@ -13,6 +13,15 @@
 #include "vtlVec3.h"
 #include "vtlSPoints.h" 
 
+enum Geometrical_Forms
+{
+    SPHERES,
+    CUBES,
+    DEFAULT
+};
+
+Geometrical_Forms enum_for_geometrical_forms(std::string const &str);
+
 class MPI_Initializer;
 class GridCreator_NEW{
     public:
@@ -192,6 +201,18 @@ class GridCreator_NEW{
             size_t *nbr_X_loc     ,size_t *nbr_Y_loc     ,size_t *nbr_Z_loc,
             bool *is_ok
         );
+
+        void fillIn_material_with_geometry_file(void);
+
+        void fillInMat_forms(
+            const size_t numberOf,
+            std::vector<double> const &radius,
+            std::vector<double> const &centers,
+            std::vector<std::string> const &material_inside,
+            std::string type_form
+        );
+
+        void Display_size_fields(void);
 };
 
 #endif

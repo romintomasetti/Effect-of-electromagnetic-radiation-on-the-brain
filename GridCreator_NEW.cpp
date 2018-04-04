@@ -7,7 +7,25 @@
 
 #include <algorithm>
 
+#include "CSV_parser.hpp"
+
 #include <cassert>
+
+#include <sstream>
+
+#include "JSON/json.hpp"
+
+#include "GeometricalForms_isInside.hpp"
+
+Geometrical_Forms enum_for_geometrical_forms(std::string const &str){
+    if(str == "SPHERES")
+        return SPHERES;
+    else if(str == "CUBES")
+        return CUBES;
+    else
+        DISPLAY_ERROR_ABORT("No enum 'Geometrical_Forms corresponding to %s.",str.c_str());
+        return DEFAULT;
+}
 
 /*
  * Defines for the column number of the properties:
@@ -16,6 +34,16 @@
 #define COLUMN_PERMITTIVITY 5
 #define COLUMN_ELEC_CONDUC  6
 #define COLUMN_MAGN_CONDUC  7
+
+std::string double_vector_to_string(std::vector<double> const &vec, std::string const &separator){
+    std::string ret;
+    std::ostringstream temp;
+    for(size_t I = 0 ; I < vec.size() ; I ++){
+        temp << vec[I] << separator;
+    }
+    ret = temp.str();
+    return ret;
+}
 
 /* CONSTRUCTOR */
 GridCreator_NEW::GridCreator_NEW(InputParser &input_parser,
@@ -370,14 +398,13 @@ void GridCreator_NEW::meshInitialization(void){
 
     /* ALLOCATE SPACE FOR THE TEMPERATURE FIELD */
 
-    // The temperature grid is homogeneous. (this->size_Thermal^3).
+    // The temperature grid is "homogeneous". (this->size_Thermal^3).
     size_t T = this->size_Thermal[0] * this->size_Thermal[1] * this->size_Thermal[2];
 
     if(T == 0){
-        fprintf(stderr,"GridCreator_NEW::meshInitialization::ERROR\n");
-        fprintf(stderr,"Your temperature grid is empty (size T is 0).\n");
-        fprintf(stderr,"Aborting.\nFile %s:%d\n",__FILE__,__LINE__);
-        abort();
+        DISPLAY_ERROR_ABORT(
+            "Your temperature grid is empty (size T is 0)."
+        );
     }
 
     this->temperature          = new double[T]();
@@ -395,7 +422,8 @@ void GridCreator_NEW::meshInitialization(void){
     #ifndef NDEBUG
         printf("[MPI %d] - Assigning initial temperature...\n",this->MPI_communicator.getRank());
     #endif
-    this->Assign_Init_Temperature_to_Temperature_nodes();
+    DISPLAY_WARNING("Attention, on n'initialise plus la température.");
+    //this->Assign_Init_Temperature_to_Temperature_nodes();
 
     // Get elapsed CPU time:
     end___grid_init = omp_get_wtime(); 
@@ -418,23 +446,31 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
     /// Verify the simulation type:
     if( this->input_parser.get_SimulationType() != "USE_AIR_EVERYWHERE"
         && this->input_parser.get_SimulationType() != "TEST_PARAVIEW"
-        && this->input_parser.get_SimulationType() != "TEST_PARAVIEW_MPI")
+        && this->input_parser.get_SimulationType() != "TEST_PARAVIEW_MPI"
+        && this->input_parser.get_SimulationType() != "USE_GEOMETRY_FILE")
     {
-        fprintf(stderr,"GridCreator_NEW::Assign_A_Material_To_Each_Node()::ERROR\n");
-        fprintf(stderr,"\t>>> Simulation type (%s) doesn't correspond to any known type. Aborting.\n",
-            this->input_parser.get_SimulationType().c_str());
-        fprintf(stderr,"\tFile %s:%d\n",__FILE__,__LINE__);
-        abort();
+        DISPLAY_ERROR_ABORT(
+            "\t>>> Simulation type (%s) doesn't correspond to any known type.",
+            this->input_parser.get_SimulationType().c_str()
+        );
     }
 
     // Assign material as a function of the simulation type.
 
     GridCreator_NEW *ref_obj = this;
 
+    if(ref_obj->input_parser.get_SimulationType() == "USE_GEOMETRY_FILE"){
+        /**
+         * @brief For ths specific case, we use another function.
+         */
+        this->fillIn_material_with_geometry_file();
+        return;
+    }
+
     /////////////////////////////////////////
     /// FILL IN WITH PARALLEL OMP THREADS ///
     /////////////////////////////////////////
-    #pragma omp parallel default(none) firstprivate(ref_obj)
+    #pragma omp parallel default(shared) firstprivate(ref_obj)
         {
             size_t index;
             double *E_x = this->E_x;
@@ -506,8 +542,10 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
                 }
 
             }else{
-                printf("FATAL ERROR. SORRY.\n");
-                abort();
+                DISPLAY_ERROR_ABORT(
+                    "No simulation type corresponding to %s is coded yet.",
+                    ref_obj->input_parser.get_SimulationType().c_str()
+                );
             }
             // EX field:
             #pragma omp for nowait
@@ -1020,11 +1058,156 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
 
         }
 
+    }else if(whatToDo == "INIT_TEMP"){
+
+        size_t index = 0;
+
+        /**
+         * X component of the electric field.
+         */
+        for(size_t K = 0 ; K < this->size_Ex[2]; K++){
+            for(size_t J = 0 ; J < this->size_Ex[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
+
+                    index = I + this->size_Ex[0] * ( J + this->size_Ex[1] * K);
+
+                    // Determine the material ID:
+                    unsigned int mat_ID   = this->E_x_material[index];
+                    // Determine material name:
+                    std::string  mat_name = this->materials.materialName_FromMaterialID_ELECTRO[mat_ID];
+                    // Get the properties:
+                    double elec_cond = 
+                        this->materials
+                            .list_of_materials_ELECTRO[mat_ID]
+                            .properties["\"Conductivity[S/m]\""];
+                    double permittivity =
+                        this->materials
+                            .list_of_materials_ELECTRO[mat_ID]
+                            .properties["\"Relativepermittivity\""]
+                        * VACUUM_PERMITTIVITY;
+                    this->E_x_electrical_cond[index] = elec_cond;
+                    this->E_x_eps[index]             = permittivity;                   
+                }
+            }
+        }
+
+        /**
+         * Y component of the electric field.
+         */
+        for(size_t K = 0 ; K < this->size_Ey[2]; K++){
+            for(size_t J = 0 ; J < this->size_Ey[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
+
+                    index = I + this->size_Ey[0] * ( J + this->size_Ey[1] * K);
+
+                    // Determine the material ID:
+                    unsigned int mat_ID   = this->E_y_material[index];
+                    // Determine material name:
+                    std::string  mat_name = this->materials.materialName_FromMaterialID_ELECTRO[mat_ID];
+                    // Get the properties:
+                    double elec_cond = 
+                        this->materials
+                            .list_of_materials_ELECTRO[mat_ID]
+                            .properties["\"Conductivity[S/m]\""];
+                    double permittivity =
+                        this->materials
+                            .list_of_materials_ELECTRO[mat_ID]
+                            .properties["\"Relativepermittivity\""]
+                        * VACUUM_PERMITTIVITY;
+                    this->E_y_electrical_cond[index] = elec_cond;
+                    this->E_y_eps[index]             = permittivity;                   
+                }
+            }
+        }
+
+        /**
+         * Z component of the electric field.
+         */
+        for(size_t K = 0 ; K < this->size_Ez[2]; K++){
+            for(size_t J = 0 ; J < this->size_Ez[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
+
+                    index = I + this->size_Ez[0] * ( J + this->size_Ez[1] * K);
+
+                    // Determine the material ID:
+                    unsigned int mat_ID   = this->E_z_material[index];
+                    // Determine material name:
+                    std::string  mat_name = this->materials.materialName_FromMaterialID_ELECTRO[mat_ID];
+                    // Get the properties:
+                    double elec_cond = 
+                        this->materials
+                            .list_of_materials_ELECTRO[mat_ID]
+                            .properties["\"Conductivity[S/m]\""];
+                    double permittivity =
+                        this->materials
+                            .list_of_materials_ELECTRO[mat_ID]
+                            .properties["\"Relativepermittivity\""]
+                        * VACUUM_PERMITTIVITY;
+                    /*printf("sigma(%.9g) - eps(%.9g) - eps_0(%.9g) - eps_r(%.9g)\n",
+                        elec_cond,permittivity,VACUUM_PERMITTIVITY,
+                        this->materials
+                            .list_of_materials_ELECTRO[mat_ID]
+                            .properties["\"Relativepermittivity\""]);*/
+                    this->E_z_electrical_cond[index] = elec_cond;
+                    this->E_z_eps[index]             = permittivity;                   
+                }
+            }
+        }
+
+        DISPLAY_WARNING(
+            "Attention. Permeability is the vacuum one. magn_cond is 0."
+            " No data found yet."
+        );
+
+        /**
+         * X component of the magnetic field.
+         */
+        for(size_t K = 0 ; K < this->size_Hx[2]; K++){
+            for(size_t J = 0 ; J < this->size_Hx[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
+
+                    index = I + this->size_Hx[0] * ( J + this->size_Hx[1] * K);
+                    
+                    this->H_x_magnetic_cond[index] = 0.0;
+                    this->H_x_mu[index]            = VACUUM_PERMEABILITY;                 
+                }
+            }
+        }
+
+        /**
+         * X component of the magnetic field.
+         */
+        for(size_t K = 0 ; K < this->size_Hy[2]; K++){
+            for(size_t J = 0 ; J < this->size_Hy[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
+
+                    index = I + this->size_Hy[0] * ( J + this->size_Hy[1] * K);
+                    
+                    this->H_y_magnetic_cond[index] = 0.0;
+                    this->H_y_mu[index]            = VACUUM_PERMEABILITY;                 
+                }
+            }
+        }
+
+        /**
+         * Z component of the magnetic field.
+         */
+        for(size_t K = 0 ; K < this->size_Hz[2]; K++){
+            for(size_t J = 0 ; J < this->size_Hz[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
+
+                    index = I + this->size_Hz[0] * ( J + this->size_Hz[1] * K);
+                    
+                    this->H_z_magnetic_cond[index] = 0.0;
+                    this->H_z_mu[index]            = VACUUM_PERMEABILITY;                 
+                }
+            }
+        }
+
     }else{
-        fprintf(stderr,"GridCreator_NEW::Initialize_Electromagnetic_Properties::ERROR\n");
-        fprintf(stderr,"No 'whatToDo' corresponding to %s. Aborting.\n",whatToDo.c_str());
-        fprintf(stderr,"In file %s:%d\n",__FILE__,__LINE__);
-        abort();
+        DISPLAY_ERROR_ABORT(
+            "Nothing corresponding to %s.",whatToDo.c_str()
+        );
     }
 
 }
@@ -1370,4 +1553,592 @@ void GridCreator_NEW::get_local_from_global_electro(
     *nbr_Z_loc = nbr_Z_gl - this->originIndices_Electro[2] + 1;
 
     *is_ok = true;
+}
+
+
+void GridCreator_NEW::fillIn_material_with_geometry_file(void){
+    /**
+     * @brief This function uses a geometry file to fill in the material properties.
+     */
+
+    /// Check that the geometry file is with extension .geometry:
+    std::string filename = this->input_parser.file_containing_geometry;
+    if( filename.substr(filename.find(".")+1) != "geometry"){
+        DISPLAY_ERROR_ABORT(
+            "The geometry file should have extenson '.geometry'"
+            " but it has '.%s'",
+            filename.substr(filename.find(".")+1).c_str()
+        );
+    }
+
+    std::stringstream errTryCatch;
+    try{
+        /// Read the geomery file with JSON:
+        rapidjson::Document geometryFileJSON;
+        read_json(filename, geometryFileJSON);
+
+        /// Read what kind of geometries we have:
+        std::vector<std::string> kind_of_geometries
+            = read_vector_string(
+                geometryFileJSON,
+                "geometriesAre",
+                std::vector<std::string>(1));
+
+        for(size_t forms = 0 ; forms < kind_of_geometries.size() ; forms++){
+            if(kind_of_geometries[forms] == "spheres"){
+                /**
+                 * We have spheres.
+                 */
+                size_t numberOf = static_cast<size_t> (read_int(
+                    geometryFileJSON,"spheres.howMany",0));
+                std::vector<double> radius
+                    = read_vector_double(geometryFileJSON,"spheres.radius",std::vector<double>(0));
+                std::vector<double> centers
+                    = read_vector_double(geometryFileJSON,"spheres.center",std::vector<double>(0));
+                std::vector<std::string> materials_inside_spheres
+                    = read_vector_string(geometryFileJSON,"spheres.material",std::vector<std::string>(0));
+                
+                /// Check the sizes of provided data:
+                if(radius.size() != numberOf || centers.size() != 3*numberOf || materials_inside_spheres.size() != numberOf){
+                    DISPLAY_ERROR_ABORT(
+                        "You specified %zu spheres but either 'spheres.radius' (size %zu, should be %zu)"
+                        " or 'spheres.center' (size %zu, should be %zu) or 'spheres.material'"
+                        " (size %zu, should be %zu) is not well-defined.",
+                        numberOf,radius.size(),numberOf,centers.size(),3*numberOf,
+                        materials_inside_spheres.size(),numberOf
+                    );
+                }
+
+                /// Check that radius is given in decreasing order:
+                double max = radius[0];
+                for(size_t I = 1 ; I < radius.size() ; I ++){
+                    if(radius[I] > max){
+                        DISPLAY_ERROR_ABORT(
+                            "The radii should be given in decreasing order. Has [%s]...",
+                            double_vector_to_string(radius,";").c_str()
+                        );
+                    }
+                    max = radius[I];
+                }
+
+                /// Fill in the material vectors:
+                this->fillInMat_forms(
+                    numberOf,
+                    radius,
+                    centers,
+                    materials_inside_spheres,
+                    "SPHERES");
+
+            }else if(kind_of_geometries[forms] == "cubes"){
+                /**
+                 * We have cubes.
+                 */
+                size_t numberOf = static_cast<size_t> (read_int(
+                    geometryFileJSON,"cubes.howMany",0));
+                std::vector<double> sides
+                    = read_vector_double(geometryFileJSON,"cubes.side",std::vector<double>(0));
+                std::vector<double> centers
+                    = read_vector_double(geometryFileJSON,"cubes.center",std::vector<double>(0));
+                std::vector<std::string> materials_inside_cubes
+                    = read_vector_string(geometryFileJSON,"cubes.material",std::vector<std::string>(0));
+                
+                /// Check the sizes of provided data:
+                if(sides.size() != numberOf || centers.size() != 3*numberOf || materials_inside_cubes.size() != numberOf){
+                    DISPLAY_ERROR_ABORT(
+                        "You specified %zu cubes but either 'cubes.radius' (size %zu, should be %zu)"
+                        " or 'cubes.center' (size %zu, should be %zu) or 'cubes.material'"
+                        " (size %zu, should be %zu) is not well-defined.",
+                        numberOf,sides.size(),numberOf,centers.size(),3*numberOf,
+                        materials_inside_cubes.size(),numberOf
+                    );
+                }
+
+                /// Check that sides is given in decreasing order:
+                double max = sides[0];
+                for(size_t I = 1 ; I < sides.size() ; I ++){
+                    if(sides[I] > max){
+                        DISPLAY_ERROR_ABORT(
+                            "The sides should be given in decreasing order. Has [%s]...",
+                            double_vector_to_string(sides,";").c_str()
+                        );
+                    }
+                    max = sides[I];
+                }
+
+                /// Fill in the material vectors:
+                this->fillInMat_forms(
+                    numberOf,
+                    sides,
+                    centers,
+                    materials_inside_cubes,
+                    "CUBES");
+            }else{
+                DISPLAY_ERROR_ABORT(
+                    "No geometricalform corresponding to %s is coded yet !",
+                    kind_of_geometries[forms].c_str()
+                );
+            }
+        }
+
+
+
+
+    }catch(std::runtime_error &e){
+        if (this->MPI_communicator.getRank() == this->MPI_communicator.rootProcess)
+            errTryCatch << e.what();
+            DISPLAY_ERROR_ABORT(
+                "%s",errTryCatch.str().c_str()
+            );
+    }
+
+    
+
+}
+
+void GridCreator_NEW::fillInMat_forms(
+    const size_t numberOf,
+    std::vector<double> const &radius,
+    std::vector<double> const &centers,
+    std::vector<std::string> const &material_inside,
+    std::string type_form
+)
+{
+
+    /**
+     * NOTE: BY DEFAULT, AIR IS THE MATERIAL WITH ID 0.
+     *       MATERIAL VECTORS ARE INITIALIZED WITH ZEROS.
+     *       SO FALSE_VAR PREVENTS PUTTING ZEROS IF THE NODE IS
+     *       NOT INSIDE ANY FORM.
+     */
+
+    bool FALSE_VAR = false;
+
+    /**
+     * @brief This function uses spheres to fill in the materials.
+     */
+    std::vector<double> coord(3);
+    std::vector<double> center_temp(3);
+
+    /**
+     * Field Ex
+     */
+    for(size_t K = 0 ; K < this->size_Ex[2] ; K ++){
+        for(size_t J = 0 ; J < this->size_Ex[1] ; J ++){
+            for(size_t I = 0 ; I < this->size_Ex[0] ; I++){
+                /// Compute coordinate, attention to "send/recv" nodes !
+                if(I == 0){
+                    coord[0] = (this->originIndices_Electro[0]-1)*this->delta_Electromagn[0];
+                }else{
+                    coord[0] = (this->originIndices_Electro[0]+I-1)*this->delta_Electromagn[0];
+                }
+                if(J == 0){
+                    coord[1] = (this->originIndices_Electro[1]-1)*this->delta_Electromagn[1];
+                }else{
+                    coord[1] = (this->originIndices_Electro[1]+J-1)*this->delta_Electromagn[1];
+                }
+                if(K == 0){
+                    coord[2] = (this->originIndices_Electro[2]-1)*this->delta_Electromagn[2];
+                }else{
+                    coord[2] = (this->originIndices_Electro[2]+K-1)*this->delta_Electromagn[2];
+                }
+                
+                bool inside_none = true;
+                
+                for(size_t S = 0 ; S < numberOf ; S++){
+                    center_temp[0] = centers[3*S+0];
+                    center_temp[1] = centers[3*S+1];
+                    center_temp[2] = centers[3*S+2];
+
+                    bool is_inside = false;
+
+                    switch(enum_for_geometrical_forms(type_form)){
+                        case SPHERES:
+                            is_inside = is_inside_sphere(coord,radius[S],center_temp);
+                            break;
+                        case CUBES:
+                            is_inside = is_inside_cube(coord,radius[S],center_temp);
+                            break;
+                        default:
+                            DISPLAY_ERROR_ABORT("Nothing corresponding to %s.",type_form.c_str());
+                            break;
+                    }
+
+                    if(is_inside){
+                        /// The node is inside the sphere. Determine the material inside
+                        /// this sphere and get its ID:
+                        inside_none = false;
+                        std::string mat  = material_inside[S];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        size_t index = I + this->size_Ex[0]*(J+K*this->size_Ex[1]);
+                        this->E_x_material[index] = ID;
+
+                    }
+                }
+                if(inside_none && FALSE_VAR){
+                    /// Assign air:
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    size_t index = I + this->size_Ex[0]*(J+K*this->size_Ex[1]);
+                    this->E_x_material[index] = ID;
+                }
+
+            }
+        }
+    }
+
+    /**
+     * Field Ey
+     */
+    for(size_t K = 0 ; K < this->size_Ey[2] ; K ++){
+        for(size_t J = 0 ; J < this->size_Ey[1] ; J ++){
+            for(size_t I = 0 ; I < this->size_Ey[0] ; I++){
+                /// Compute coordinate, attention to "send/recv" nodes !
+                if(I == 0){
+                    coord[0] = (this->originIndices_Electro[0]-1)*this->delta_Electromagn[0];
+                }else{
+                    coord[0] = (this->originIndices_Electro[0]+I-1)*this->delta_Electromagn[0];
+                }
+                if(J == 0){
+                    coord[1] = (this->originIndices_Electro[1]-1)*this->delta_Electromagn[1];
+                }else{
+                    coord[1] = (this->originIndices_Electro[1]+J-1)*this->delta_Electromagn[1];
+                }
+                if(K == 0){
+                    coord[2] = (this->originIndices_Electro[2]-1)*this->delta_Electromagn[2];
+                }else{
+                    coord[2] = (this->originIndices_Electro[2]+K-1)*this->delta_Electromagn[2];
+                }
+
+                bool inside_none = true;
+                
+                for(size_t S = 0 ; S < numberOf ; S++){
+                    center_temp[0] = centers[3*S+0];
+                    center_temp[1] = centers[3*S+1];
+                    center_temp[2] = centers[3*S+2];
+
+                    bool is_inside = false;
+
+                    switch(enum_for_geometrical_forms(type_form)){
+                        case SPHERES:
+                            is_inside = is_inside_sphere(coord,radius[S],center_temp);
+                            break;
+                        case CUBES:
+                            is_inside = is_inside_cube(coord,radius[S],center_temp);
+                            break;
+                        default:
+                            DISPLAY_ERROR_ABORT("Nothing corresponding to %s.",type_form.c_str());
+                            break;
+                    }
+
+                    if(is_inside){
+                        /// The node is inside the sphere. Determine the material inside
+                        /// this sphere and get its ID:
+                        inside_none = false;
+                        std::string mat  = material_inside[S];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        size_t index = I + this->size_Ey[0]*(J+K*this->size_Ey[1]);
+                        this->E_y_material[index] = ID;
+
+                    }
+                }
+                if(inside_none && FALSE_VAR){
+                    /// Assign air:
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    size_t index = I + this->size_Ey[0]*(J+K*this->size_Ey[1]);
+                    this->E_y_material[index] = ID;
+                }
+
+            }
+        }
+    }
+
+    /**
+     * Field Ez
+     */
+    for(size_t K = 0 ; K < this->size_Ez[2] ; K ++){
+        for(size_t J = 0 ; J < this->size_Ez[1] ; J ++){
+            for(size_t I = 0 ; I < this->size_Ez[0] ; I++){
+                /// Compute coordinate, attention to "send/recv" nodes !
+                if(I == 0){
+                    coord[0] = (this->originIndices_Electro[0]-1)*this->delta_Electromagn[0];
+                }else{
+                    coord[0] = (this->originIndices_Electro[0]+I-1)*this->delta_Electromagn[0];
+                }
+                if(J == 0){
+                    coord[1] = (this->originIndices_Electro[1]-1)*this->delta_Electromagn[1];
+                }else{
+                    coord[1] = (this->originIndices_Electro[1]+J-1)*this->delta_Electromagn[1];
+                }
+                if(K == 0){
+                    coord[2] = (this->originIndices_Electro[2]-1)*this->delta_Electromagn[2];
+                }else{
+                    coord[2] = (this->originIndices_Electro[2]+K-1)*this->delta_Electromagn[2];
+                }
+
+                bool inside_none = true;
+                
+                for(size_t S = 0 ; S < numberOf ; S++){
+                    center_temp[0] = centers[3*S+0];
+                    center_temp[1] = centers[3*S+1];
+                    center_temp[2] = centers[3*S+2];
+
+                    bool is_inside = false;
+
+                    switch(enum_for_geometrical_forms(type_form)){
+                        case SPHERES:
+                            is_inside = is_inside_sphere(coord,radius[S],center_temp);
+                            break;
+                        case CUBES:
+                            is_inside = is_inside_cube(coord,radius[S],center_temp);
+                            break;
+                        default:
+                            DISPLAY_ERROR_ABORT("Nothing corresponding to %s.",type_form.c_str());
+                            break;
+                    }
+
+                    if(is_inside){
+                        /// The node is inside the sphere. Determine the material inside
+                        /// this sphere and get its ID:
+                        inside_none = false;
+                        std::string mat  = material_inside[S];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        size_t index = I + this->size_Ez[0]*(J+K*this->size_Ez[1]);
+                        this->E_z_material[index] = ID;
+
+                    }
+                }
+                if(inside_none && FALSE_VAR){
+                    /// Assign air:
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    size_t index = I + this->size_Ez[0]*(J+K*this->size_Ez[1]);
+                    this->E_z_material[index] = ID;
+                }
+
+            }
+        }
+    }
+
+    /**
+     * Field Hx
+     */
+    for(size_t K = 0 ; K < this->size_Hx[2] ; K ++){
+        for(size_t J = 0 ; J < this->size_Hx[1] ; J ++){
+            for(size_t I = 0 ; I < this->size_Hx[0] ; I++){
+                /// Compute coordinate, attention to "send/recv" nodes !
+                if(I == 0){
+                    coord[0] = (this->originIndices_Electro[0]-1)*this->delta_Electromagn[0];
+                }else{
+                    coord[0] = (this->originIndices_Electro[0]+I-1)*this->delta_Electromagn[0];
+                }
+                if(J == 0){
+                    coord[1] = (this->originIndices_Electro[1]-1)*this->delta_Electromagn[1];
+                }else{
+                    coord[1] = (this->originIndices_Electro[1]+J-1)*this->delta_Electromagn[1];
+                }
+                if(K == 0){
+                    coord[2] = (this->originIndices_Electro[2]-1)*this->delta_Electromagn[2];
+                }else{
+                    coord[2] = (this->originIndices_Electro[2]+K-1)*this->delta_Electromagn[2];
+                }
+
+                bool inside_none = true;
+                
+                for(size_t S = 0 ; S < numberOf ; S++){
+                    center_temp[0] = centers[3*S+0];
+                    center_temp[1] = centers[3*S+1];
+                    center_temp[2] = centers[3*S+2];
+
+                    bool is_inside = false;
+
+                    switch(enum_for_geometrical_forms(type_form)){
+                        case SPHERES:
+                            is_inside = is_inside_sphere(coord,radius[S],center_temp);
+                            break;
+                        case CUBES:
+                            is_inside = is_inside_cube(coord,radius[S],center_temp);
+                            break;
+                        default:
+                            DISPLAY_ERROR_ABORT("Nothing corresponding to %s.",type_form.c_str());
+                            break;
+                    }
+
+                    if(is_inside){
+                        /// The node is inside the sphere. Determine the material inside
+                        /// this sphere and get its ID:
+                        inside_none = false;
+                        std::string mat  = material_inside[S];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        size_t index = I + this->size_Hx[0]*(J+K*this->size_Hx[1]);
+                        this->H_x_material[index] = ID;
+
+                    }
+                }
+                if(inside_none && FALSE_VAR){
+                    /// Assign air:
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    size_t index = I + this->size_Hx[0]*(J+K*this->size_Hx[1]);
+                    this->H_x_material[index] = ID;
+                }
+
+            }
+        }
+    }
+
+    /**
+     * Field Hy
+     */
+    for(size_t K = 0 ; K < this->size_Hy[2] ; K ++){
+        for(size_t J = 0 ; J < this->size_Hy[1] ; J ++){
+            for(size_t I = 0 ; I < this->size_Hy[0] ; I++){
+                /// Compute coordinate, attention to "send/recv" nodes !
+                if(I == 0){
+                    coord[0] = (this->originIndices_Electro[0]-1)*this->delta_Electromagn[0];
+                }else{
+                    coord[0] = (this->originIndices_Electro[0]+I-1)*this->delta_Electromagn[0];
+                }
+                if(J == 0){
+                    coord[1] = (this->originIndices_Electro[1]-1)*this->delta_Electromagn[1];
+                }else{
+                    coord[1] = (this->originIndices_Electro[1]+J-1)*this->delta_Electromagn[1];
+                }
+                if(K == 0){
+                    coord[2] = (this->originIndices_Electro[2]-1)*this->delta_Electromagn[2];
+                }else{
+                    coord[2] = (this->originIndices_Electro[2]+K-1)*this->delta_Electromagn[2];
+                }
+                bool inside_none = true;
+                
+                for(size_t S = 0 ; S < numberOf ; S++){
+                    center_temp[0] = centers[3*S+0];
+                    center_temp[1] = centers[3*S+1];
+                    center_temp[2] = centers[3*S+2];
+
+                    bool is_inside = false;
+
+                    switch(enum_for_geometrical_forms(type_form)){
+                        case SPHERES:
+                            is_inside = is_inside_sphere(coord,radius[S],center_temp);
+                            break;
+                        case CUBES:
+                            is_inside = is_inside_cube(coord,radius[S],center_temp);
+                            break;
+                        default:
+                            DISPLAY_ERROR_ABORT("Nothing corresponding to %s.",type_form.c_str());
+                            break;
+                    }
+
+                    if(is_inside){
+                        /// The node is inside the sphere. Determine the material inside
+                        /// this sphere and get its ID:
+                        inside_none = false;
+                        std::string mat  = material_inside[S];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        size_t index = I + this->size_Hy[0]*(J+K*this->size_Hy[1]);
+                        this->H_y_material[index] = ID;
+
+                    }
+                }
+                if(inside_none && FALSE_VAR){
+                    /// Assign air:
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    size_t index = I + this->size_Hy[0]*(J+K*this->size_Hy[1]);
+                    this->H_y_material[index] = ID;
+                }
+
+            }
+        }
+    }
+
+    /**
+     * Field Hz
+     */
+    for(size_t K = 0 ; K < this->size_Hz[2] ; K ++){
+        for(size_t J = 0 ; J < this->size_Hz[1] ; J ++){
+            for(size_t I = 0 ; I < this->size_Hz[0] ; I++){
+                /// Compute coordinate, attention to "send/recv" nodes !
+                if(I == 0){
+                    coord[0] = (this->originIndices_Electro[0]-1)*this->delta_Electromagn[0];
+                }else{
+                    coord[0] = (this->originIndices_Electro[0]+I-1)*this->delta_Electromagn[0];
+                }
+                if(J == 0){
+                    coord[1] = (this->originIndices_Electro[1]-1)*this->delta_Electromagn[1];
+                }else{
+                    coord[1] = (this->originIndices_Electro[1]+J-1)*this->delta_Electromagn[1];
+                }
+                if(K == 0){
+                    coord[2] = (this->originIndices_Electro[2]-1)*this->delta_Electromagn[2];
+                }else{
+                    coord[2] = (this->originIndices_Electro[2]+K-1)*this->delta_Electromagn[2];
+                }
+
+                bool inside_none = true;
+                
+                for(size_t S = 0 ; S < numberOf ; S++){
+                    center_temp[0] = centers[3*S+0];
+                    center_temp[1] = centers[3*S+1];
+                    center_temp[2] = centers[3*S+2];
+
+                    bool is_inside = false;
+
+                    switch(enum_for_geometrical_forms(type_form)){
+                        case SPHERES:
+                            is_inside = is_inside_sphere(coord,radius[S],center_temp);
+                            break;
+                        case CUBES:
+                            is_inside = is_inside_cube(coord,radius[S],center_temp);
+                            break;
+                        default:
+                            DISPLAY_ERROR_ABORT("Nothing corresponding to %s.",type_form.c_str());
+                            break;
+                    }
+
+                    if(is_inside){
+                        /// The node is inside the sphere. Determine the material inside
+                        /// this sphere and get its ID:
+                        inside_none = false;
+                        std::string mat  = material_inside[S];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        size_t index = I + this->size_Hz[0]*(J+K*this->size_Hz[1]);
+                        this->H_z_material[index] = ID;
+                    }
+                }
+                if(inside_none && FALSE_VAR){
+                    /// Assign air:
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    size_t index = I + this->size_Hz[0]*(J+K*this->size_Hz[1]);
+                    this->H_z_material[index] = ID;
+                }
+
+            }
+        }
+    }
+
+}
+
+void GridCreator_NEW::Display_size_fields(void){
+    std::stringstream sstr;
+    sstr << ">>> " << ANSI_COLOR_GREEN << "[MPI ";
+    sstr << this->MPI_communicator.getRank() << "] - DISPLAYING FIELD SIZES:";
+    sstr << ANSI_COLOR_RESET << std::endl;
+
+    sstr << "\t> Ex(" << this->size_Ex[0] << ",";
+    sstr << this->size_Ex[1] << "," << this->size_Ex[2] << ")\n";
+
+    sstr << "\t> Ey(" << this->size_Ey[0] << ",";
+    sstr << this->size_Ey[1] << "," << this->size_Ey[2] << ")\n";
+
+    sstr << "\t> Ez(" << this->size_Ez[0] << ",";
+    sstr << this->size_Ez[1] << "," << this->size_Ez[2] << ")\n";
+    
+    sstr << "\t> Hx(" << this->size_Hx[0] << ",";
+    sstr << this->size_Hx[1] << "," << this->size_Hx[2] << ")\n";
+
+    sstr << "\t> Hy(" << this->size_Hy[0] << ",";
+    sstr << this->size_Hy[1] << "," << this->size_Hy[2] << ")\n";
+
+    sstr << "\t> Hz(" << this->size_Hz[0] << ",";
+    sstr << this->size_Hz[1] << "," << this->size_Hz[2] << ")\n";
+
+    std::cout << sstr.str();
+    
 }
