@@ -90,7 +90,10 @@ int main(int argc, char *argv[]){
 	
 	/* The material object stores all the material properties */
 	Materials allMat;
-	allMat.getPropertiesFromFile(input_parser.material_data_file);
+	allMat.getPropertiesFromFile(
+		input_parser.material_data_files[0],
+		input_parser.material_data_files[1]
+	);
 	//allMat.printAllProperties();
 	/*cout << "Print number of temp per mat::IN" << endl;
 	allMat.printNumberOfTempLinePerMat();
@@ -119,6 +122,8 @@ int main(int argc, char *argv[]){
 	//cout << "Mesh init\n";
 	gridTest.meshInitialization();
 
+	//gridTest.Display_size_fields();
+
 
 	InterfaceToParaviewer interfaceToWriteOutput(
 			MPI_communicator,
@@ -127,32 +132,6 @@ int main(int argc, char *argv[]){
 		
 	interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
 	interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
-
-	/*printf("\n\nMPI %d : Ex(%zu,%zu,%zu) | Ey(%zu,%zu,%zu) | Ez(%zu,%zu,%zu)"
-					"Hx(%zu,%zu,%zu) | Hy(%zu,%zu,%zu) | Hz(%zu,%zu,%zu)\n\n",
-			MPI_communicator.getRank(),
-			gridTest.size_Ex[0],
-			gridTest.size_Ex[1],
-			gridTest.size_Ex[2],
-			gridTest.size_Ey[0],
-			gridTest.size_Ey[1],
-			gridTest.size_Ey[2],
-			gridTest.size_Ez[0],
-			gridTest.size_Ez[1],
-			gridTest.size_Ez[2],
-			gridTest.size_Hx[0],
-			gridTest.size_Hx[1],
-			gridTest.size_Hx[2],
-			gridTest.size_Hy[0],
-			gridTest.size_Hy[1],
-			gridTest.size_Hy[2],
-			gridTest.size_Hz[0],
-			gridTest.size_Hz[1],
-			gridTest.size_Hz[2]
-			);*/
-
-	//MPI_Barrier(MPI_COMM_WORLD);
-	//MPI_Abort(MPI_COMM_WORLD,-1);
 
 	
 	AlgoElectro_NEW algoElectro_newTst;
