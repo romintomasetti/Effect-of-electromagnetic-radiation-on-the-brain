@@ -55,6 +55,8 @@ class AlgoElectro_NEW{
             size_t * /*size_of_recv_vector*/
         );
 
+        bool SteadyStateAnalyser(void);
+
 };
 
 #endif

@@ -286,7 +286,8 @@ void AlgoElectro_NEW::update(
     */
 
     // In the object grid, set the properties mu, eps, magnetic cond. and electric cond. for each node:
-    grid.Initialize_Electromagnetic_Properties("AIR_AT_INIT_TEMP");
+    //grid.Initialize_Electromagnetic_Properties("AIR_AT_INIT_TEMP");
+    grid.Initialize_Electromagnetic_Properties("INIT_TEMP");
 
     /* Set the coefficients for the electromagnetic update algorithm */
 
@@ -3970,4 +3971,13 @@ void releaseLock( int fd)
     if( fd < 0 )
         return;
     close( fd );
+}
+
+/**
+ * @brief Steady-state analyser.
+ */
+bool AlgoElectro_NEW::SteadyStateAnalyser(void){
+    DISPLAY_ERROR_ABORT(
+        "Not implemented yet."
+    );
 }
