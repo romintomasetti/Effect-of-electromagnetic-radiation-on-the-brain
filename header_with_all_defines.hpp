@@ -9,6 +9,14 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
+
+#include <cmath>
+/**
+ * PHYSICAL VARIABLES:
+ */
+#define VACUUM_PERMITTIVITY 8.8541878176E-12
+#define VACUUM_PERMEABILITY 4*M_PI*1E-7
+
 /**
  * @brief Custom assert function.
  * 
@@ -43,10 +51,25 @@
 #endif
 
 /**
+ * Custom FPRINTF.
+ */
+#ifdef MPI_COMM_WORLD
+#define FPRINTF(...){\
+        int ID_MPI_Process = INT_MIN;\
+	MPI_Comm_rank( MPI_COMM_WORLD, &ID_MPI_Process);\
+        fprintf(stderr,"[MPI %d] - ",ID_MPI_Process);\
+        fprintf(__VA_ARGS__);\
+}
+#else
+#define FPRINTF(...)\
+        fprintf(__VA_ARGS__);
+#endif
+
+/**
  * DISPLAY A MESSAGE AND ABORT
  */
 #define DISPLAY_ERROR_ABORT(...){              \
-        fprintf(stderr,"%sIn %s :: ERROR :: %s",      \
+        FPRINTF(stderr,"%sIn %s :: ERROR :: %s",      \
                     ANSI_COLOR_RED,                   \
                     __FUNCTION__,                     \
                     ANSI_COLOR_GREEN);                \
@@ -63,12 +86,12 @@
  * DISPLAY A WARNING. DO NOT ABORT.
  */
 #define DISPLAY_WARNING(...){                       \
-        fprintf(stderr,"%sIn %s :: WARNING :: %s",  \
+        FPRINTF(stderr,"%sIn %s :: WARNING :: %s",  \
                     ANSI_COLOR_YELLOW,              \
                     __FUNCTION__,                   \
                     ANSI_COLOR_GREEN);              \
         fprintf(stderr,__VA_ARGS__);                \
-        fprintf(stderr,"%sIn %s:%d\n",              \
+        fprintf(stderr,"\n%sIn %s:%d\n",            \
                     ANSI_COLOR_RESET,               \
                     __FILE__,                       \
                     __LINE__);                      \
