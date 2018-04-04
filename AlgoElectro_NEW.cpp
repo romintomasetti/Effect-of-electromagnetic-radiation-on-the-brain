@@ -13,6 +13,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "DISC_INTEGR/discrete_integration_util.hpp"
+
 #include <assert.h>
 
 #include "header_with_all_defines.hpp"
@@ -286,8 +288,11 @@ void AlgoElectro_NEW::update(
     */
 
     // In the object grid, set the properties mu, eps, magnetic cond. and electric cond. for each node:
-    //grid.Initialize_Electromagnetic_Properties("AIR_AT_INIT_TEMP");
-    grid.Initialize_Electromagnetic_Properties("INIT_TEMP");
+    if(grid.input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
+        grid.Initialize_Electromagnetic_Properties("AIR_AT_INIT_TEMP");
+    }else{
+        grid.Initialize_Electromagnetic_Properties("INIT_TEMP");
+    }
 
     /* Set the coefficients for the electromagnetic update algorithm */
 
@@ -638,7 +643,10 @@ void AlgoElectro_NEW::update(
                 dt);
         }
 
-
+    ///////////////////////////////////////////
+    /// VARIABLES FOR STEADY-STATE CHECKING ///
+    ///////////////////////////////////////////
+    DISPLAY_WARNING("Steadiness : en cours de construction.");
 
 
     ////////////////////////////////////////////////
@@ -753,8 +761,10 @@ void AlgoElectro_NEW::update(
     {
 
         bool MODULATE_SOURCE = false;
+        double MIN_GAUSS_BEFORE_LET_BE = 1E-100;
         if(grid.input_parser.source_time == "GAUSSIAN"){
             MODULATE_SOURCE =true;
+            MIN_GAUSS_BEFORE_LET_BE = 1E-5;
         }
 
         // Temporary pointers, to avoid doing grid.sthg !
@@ -1219,17 +1229,17 @@ void AlgoElectro_NEW::update(
             ////////////////////////////
             /// IMPOSING THE SOURCES ///
             ////////////////////////////
+            double frequency = 0.0;
+            double gauss     = 0.0;
             #pragma omp for schedule(static) nowait
             for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[2].size() ; it ++){
 
                 index = local_nodes_inside_source_NUMBER[2][it];
                 ASSERT(index,<,grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]);
 
-                double gauss     = 1;
-                double frequency = 0;
-
                 if(ID_Source[2][it] == UCHAR_MAX){
                     frequency = 0;
+                    E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
                 }else{
 
                     frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
@@ -1242,12 +1252,14 @@ void AlgoElectro_NEW::update(
                         double t = current_time;
                         
                         gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                            // do nothing
+                        }else{
+                            E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                        }
                     }
 
                 }                
-
-                E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
-
             }
 
 
@@ -1257,11 +1269,9 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[1][it];
                 ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 
-                double gauss     = 1;
-                double frequency = 0;
-
                 if(ID_Source[1][it] == UCHAR_MAX){
                     frequency = 0;
+                    E_y_tmp[index] = sin(2*M_PI*frequency*current_time);
                 }else{
 
                     frequency = local_nodes_inside_source_FREQ[ID_Source[1][it]];
@@ -1274,10 +1284,13 @@ void AlgoElectro_NEW::update(
                         double t = current_time;
                         
                         gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                            // do nothing
+                        }else{
+                            E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                        }
                     }
                 }
-
-                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
             }
 
             #pragma omp for schedule(static) nowait
@@ -1286,13 +1299,10 @@ void AlgoElectro_NEW::update(
                 index = local_nodes_inside_source_NUMBER[0][it];
                 ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
 
-                double gauss     = 1;
-                double frequency = 0;
-
                 if(ID_Source[0][it] == UCHAR_MAX){
                     frequency = 0;
+                    E_x_tmp[index] = sin(2*M_PI*frequency*current_time);
                 }else{
-
                     frequency = local_nodes_inside_source_FREQ[ID_Source[0][it]];
 
                     if(MODULATE_SOURCE == true){
@@ -1303,10 +1313,14 @@ void AlgoElectro_NEW::update(
                         double t = current_time;
                         
                         gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+
+                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                            // do nothing
+                        }else{
+                            E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                        }
                     }
                 }
-
-                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
             }
 
             
@@ -1482,7 +1496,7 @@ void AlgoElectro_NEW::update(
                 grid.profiler.incrementTimingInput("ELECTRO_MPI_COMM",total_mpi_comm);
 
                 if(    grid.MPI_communicator.isRootProcess() != INT_MIN 
-                    && currentStep == grid.input_parser.maxStepsForOneCycleOfElectro){
+                    /*&& currentStep == grid.input_parser.maxStepsForOneCycleOfElectro*/){
                         printf("%s[MPI %d - Electro - Update - step %zu]%s\n"
                                "\t> Current simulation time is   %.12lf seconds (over %.12lf).\n"
                                "\t> Current step is              %zu over %zu.\n"
@@ -1656,7 +1670,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
 // !!!!!!!!!!!!!!!! A MODIFIER !!!!!!!!!!!!!!!!!!!!!!!!! |
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
-    printf("Attention pas la bonne vitesse de la lumière (line %d)\n",__LINE__);
+   /* printf("Attention pas la bonne vitesse de la lumière (line %d)\n",__LINE__);*/
     c = 299792458;                                   //  |
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! |
@@ -1677,11 +1691,11 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         quoiqu'il advienne causeront des refections d'onde.
     */
 
-    printf("delta t = %.15lf\n", dt);
+    /*printf("delta t = %.15lf\n", dt);
     printf("E_y_eps = %f\n", delta_Electromagn[0]);
     printf("delta_Electromagn[1] = %f\n", delta_Electromagn[1]);
     printf("delta_Electromagn[2] = %f\n", delta_Electromagn[2]);
-    printf("delta_Electromagn[0] = %f\n", delta_Electromagn[0]);
+    printf("delta_Electromagn[0] = %f\n", delta_Electromagn[0]);*/
 
 
 
@@ -3974,11 +3988,22 @@ void releaseLock( int fd)
     close( fd );
 }
 
+inline double absolute_value_sinus_func(double x){
+	return fabs(std::sin(x));
+}
+
 /**
  * @brief Steady-state analyser.
  */
 bool AlgoElectro_NEW::SteadyStateAnalyser(void){
+
+    /// Compute the integral of the absolute value of a sine wave:
+    double res = GaussLobattoInt(&absolute_value_sinus_func,
+					0, 10,
+					1e-10,
+					1E5);
     DISPLAY_ERROR_ABORT(
         "Not implemented yet."
     );
+    return false;
 }
