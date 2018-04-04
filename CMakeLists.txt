@@ -48,7 +48,7 @@ ENDIF()
 FILE(GLOB SRCS *.h *.hpp *.cpp *.c)
 ADD_EXECUTABLE(${EXEC_NAME} ${SRCS})
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/JSON)
-TARGET_LINK_LIBRARIES(main json)
+TARGET_LINK_LIBRARIES(main json disc_integr)
 
 # MPI --
 # --------------------------------------------------------------
@@ -129,3 +129,6 @@ if(NOT RAPIDJSON_INCLUDE_DIRS)
     message(FATAL_ERROR "RapidJSON include dir not found!")
 endif()
 include_directories(${RAPIDJSON_INCLUDE_DIRS})
+
+ADD_SUBDIRECTORY( DISC_INTEGR )
+INCLUDE_DIRECTORIES( DISC_INTEGR)
