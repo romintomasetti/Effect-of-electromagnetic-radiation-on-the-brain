@@ -1,0 +1,105 @@
+Density (kg/m³),Average,Standard Deviation,Number of Studies,Minimum,Maximum
+Adrenal Gland,1028,4,2,1025,1030
+Air,1,0,2,1,1
+Bile,928,0,1,928,928
+Blood,1050,17,4,1025,1060
+Blood Plasma,1020,0,1,1020,1020
+Blood Serum,1024,0,1,1024,1024
+Blood Vessel Wall,1102,64,2,1056,1147
+Bone (Cancellous),1178,149,3,1080,1350
+Bone (Cortical),1908,133,5,1800,2100
+Bone Marrow (Red),1029,2,2,1027,1030
+Bone Marrow (Yellow),980,0,2,980,980
+Brain,1046,6,2,1041,1050
+Brain (Grey Matter),1045,8,2,1039,1050
+Brain (White Matter),1041,2,3,1040,1043
+Breast Fat,911,53,6,812,961
+Breast Gland,1041,45,4,990,1092
+Bronchi,1102,64,2,1056,1147
+Bronchi lumen,1,0,2,1,1
+Cartilage,1100,1,2,1099,1100
+Cerebellum,1045,7,2,1040,1050
+Cerebrospinal Fluid,1007,0,1,1007,1007
+Cervix,1105,74,2,1052,1157
+Commissura Anterior,1041,2,3,1040,1043
+Commissura Posterior,1041,2,3,1040,1043
+Connective Tissue,1027,0,2,911,1142
+Diaphragm,1090,52,5,1041,1178
+Ductus Deferens,1102,64,2,1056,1147
+Dura,1174,0,1,1174,1174
+Epididymis,1082,54,2,1044,1120
+Esophagus,1040,0,1,1040,1040
+Esophagus Lumen,1,0,2,1,1
+Eye (Cornea),1051,15,2,1040,1061
+Eye (Lens),1076,21,2,1061,1090
+Eye (Sclera),1032,0,1,1032,1032
+Eye (Vitreous Humor),1005,6,2,1000,1009
+Eye Lens (Cortex),1076,21,2,1061,1090
+Eye Lens (Nucleus),1076,21,2,1061,1090
+Fat,911,53,6,812,961
+Fat (Average Infiltrated),911,53,6,812,961
+Fat (Not Infiltrated),911,53,6,812,961
+Gallbladder,1071,63,2,1026,1115
+Heart Lumen,1050,17,4,1025,1060
+Heart Muscle,1081,36,5,1059,1143
+Hippocampus,1045,8,2,1039,1050
+Hypophysis,1053,18,2,1040,1066
+Hypothalamus,1045,8,2,1039,1050
+Intervertebral Disc,1100,1,2,1099,1100
+Kidney,1066,56,4,1019,1147
+Kidney (Cortex),1049,0,1,1049,1049
+Kidney (Medulla),1044,0,1,1044,1044
+Large Intestine,1088,62,2,1044,1132
+Large Intestine Lumen,1045,0,2,1000,1090
+Larynx,1100,1,2,1099,1100
+Liver,1079,53,4,1050,1158
+Lung,394,174,5,255,604
+Lung (Deflated),1050,0,1,1050,1050
+Lung (Inflated),394,174,5,255,604
+Lymph,1019,0,1,1019,1019
+Lymphnode,1035,7,2,1030,1040
+Mandible,1908,133,5,1800,2100
+Medulla Oblongata,1046,6,2,1041,1050
+Meniscus,1100,1,2,1099,1100
+Midbrain,1046,6,2,1041,1050
+Mucous Membrane,1102,0,1,1102,1102
+Muscle,1090,52,5,1041,1178
+Nerve,1075,52,2,1038,1112
+Ovary,1048,0,1,1048,1048
+Pancreas,1087,59,2,1045,1128
+Penis,1102,64,2,1056,1147
+Pharynx,1,0,2,1,1
+Pineal Body,1053,18,2,1040,1066
+Placenta,1018,33,2,995,1041
+Pons,1046,6,2,1041,1050
+Prostate,1045,0,1,1045,1045
+SAT (Subcutaneous Fat),911,53,6,812,961
+Salivary Gland,1048,0,1,1048,1048
+Seminal vesicle,1045,0,1,1045,1045
+Skin,1109,14,3,1100,1125
+Skull Cancellous,1178,149,3,1080,1350
+Skull Cortical,1908,133,5,1800,2100
+Small Intestine,1030,0,1,1030,1030
+Small Intestine Lumen,1045,0,2,1000,1090
+Spinal Cord,1075,52,2,1038,1112
+Spleen,1089,64,3,1050,1163
+Stomach,1088,54,2,1050,1126
+Stomach Lumen,1045,0,2,1000,1090
+Tendon\Ligament,1142,45,2,1110,1174
+Testis,1082,54,2,1044,1120
+Thalamus,1045,8,2,1039,1050
+Thymus,1023,0,1,1023,1023
+Thyroid Gland,1050,0,2,1050,1050
+Tongue,1090,52,5,1041,1178
+Tooth,2180,28,2,2160,2200
+Tooth (Dentine),2063,79,5,1960,2145
+Tooth (Enamel),2958,29,3,2925,2980
+Trachea,1080,0,1,1080,1080
+Trachea Lumen,1,0,2,1,1
+Ureter\Urethra,1102,64,2,1056,1147
+Urinary Bladder Wall,1086,65,2,1040,1132
+Urine,1024,16,2,1012,1035
+Uterus,1105,74,2,1052,1157
+Vagina,1088,62,2,1044,1132
+Vertebrae,1908,133,5,1800,2100
+Water,994,0,1,994,994

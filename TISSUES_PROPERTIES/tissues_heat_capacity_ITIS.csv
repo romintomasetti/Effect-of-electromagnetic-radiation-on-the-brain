@@ -1,0 +1,105 @@
+Heat Capacity (J/kg/°C),Average,Standard Deviation,Number of Studies,Minimum,Maximum
+Adrenal Gland,3513,124,2,3425,3600
+Air,1004,3,3,1000,1006
+Bile,4037,194,2,3900,4174
+Blood,3617,301,3,3300,3900
+Blood Plasma,3930,0,1,3930,3930
+Blood Serum,NaN,NaN,0,NaN,NaN
+Blood Vessel Wall,3306,158,3,3171,3480
+Bone (Cancellous),2274,234,3,2060,2524
+Bone (Cortical),1313,295,6,826,1650
+Bone Marrow (Red),2666,0,1,2666,2666
+Bone Marrow (Yellow),2065,0,1,2065,2065
+Brain,3630,74,2,3578,3682
+Brain (Grey Matter),3696,34,5,3664,3753
+Brain (White Matter),3583,78,5,3452,3664
+Breast Fat,2348,372,6,1806,2973
+Breast Gland,2960,0,1,2960,2960
+Bronchi,3306,158,3,3171,3480
+Bronchi lumen,1004,3,3,1000,1006
+Cartilage,3568,78,4,3500,3664
+Cerebellum,3653,0,1,3653,3653
+Cerebrospinal Fluid,4096,197,4,3800,4200
+Cervix,3676,0,1,3676,3676
+Commissura Anterior,3583,78,5,3452,3664
+Commissura Posterior,3583,78,5,3452,3664
+Connective Tissue,2372,0,2,1313,3432
+Diaphragm,3421,460,5,2624,3799
+Ductus Deferens,3306,158,3,3171,3480
+Dura,3364,0,1,3364,3364
+Epididymis,3778,0,1,3778,3778
+Esophagus,3500,0,1,3500,3500
+Esophagus Lumen,1004,3,3,1000,1006
+Eye (Cornea),3615,0,1,3615,3615
+Eye (Lens),3133,297,5,3000,3664
+Eye (Sclera),4200,0,1,4200,4200
+Eye (Vitreous Humor),4047,230,5,3664,4200
+Eye Lens (Cortex),3133,297,5,3000,3664
+Eye Lens (Nucleus),3133,297,5,3000,3664
+Fat,2348,372,6,1806,2973
+Fat (Average Infiltrated),2348,372,6,1806,2973
+Fat (Not Infiltrated),2348,372,6,1806,2973
+Gallbladder,3716,0,1,3716,3716
+Heart Lumen,3617,301,3,3300,3900
+Heart Muscle,3686,62,3,3614,3724
+Hippocampus,3696,34,5,3664,3753
+Hypophysis,3687,0,1,3687,3687
+Hypothalamus,3696,34,5,3664,3753
+Intervertebral Disc,3568,78,4,3500,3664
+Kidney,3763,120,3,3653,3891
+Kidney (Cortex),3587,52,2,3550,3624
+Kidney (Medulla),3745,0,1,3745,3745
+Large Intestine,3655,64,2,3609,3700
+Large Intestine Lumen,3801,0,2,3421,4181
+Larynx,3568,78,4,3500,3664
+Liver,3540,119,5,3332,3617
+Lung,3886,0,1,3886,3886
+Lung (Deflated),3886,0,1,3886,3886
+Lung (Inflated),3886,0,1,3886,3886
+Lymph,NaN,NaN,0,NaN,NaN
+Lymphnode,3739,313,2,3517,3960
+Mandible,1313,295,6,826,1650
+Medulla Oblongata,3630,74,2,3578,3682
+Meniscus,3568,78,4,3500,3664
+Midbrain,3630,74,2,3578,3682
+Mucous Membrane,3150,0,1,3150,3150
+Muscle,3421,460,5,2624,3799
+Nerve,3613,72,2,3562,3664
+Ovary,3778,0,1,3778,3778
+Pancreas,3164,484,2,2822,3506
+Penis,3306,158,3,3171,3480
+Pharynx,1004,3,3,1000,1006
+Pineal Body,3687,0,1,3687,3687
+Placenta,3807,47,2,3773,3840
+Pons,3630,74,2,3578,3682
+Prostate,3760,28,2,3740,3780
+SAT (Subcutaneous Fat),2348,372,6,1806,2973
+Salivary Gland,3760,28,2,3740,3780
+Seminal vesicle,3760,28,2,3740,3780
+Skin,3391,233,4,3150,3662
+Skull Cancellous,2274,234,3,2060,2524
+Skull Cortical,1313,295,6,826,1650
+Small Intestine,3595,0,1,3595,3595
+Small Intestine Lumen,3801,0,2,3421,4181
+Spinal Cord,3630,34,5,3664,3753
+Spleen,3596,191,3,3376,3724
+Stomach,3690,0,1,3690,3690
+Stomach Lumen,3801,0,2,3421,4181
+Tendon\Ligament,3432,96,2,3364,3500
+Testis,3778,0,1,3778,3778
+Thalamus,3696,34,5,3664,3753
+Thymus,3043,0,2,2348,3739
+Thyroid Gland,3609,0,1,3609,3609
+Tongue,3421,460,5,2624,3799
+Tooth,1255,0,1,1255,1255
+Tooth (Dentine),1338,222,3,1170,1590
+Tooth (Enamel),711,0,1,711,711
+Trachea,3568,78,4,3500,3664
+Trachea Lumen,1004,3,3,1000,1006
+Ureter\Urethra,3306,158,3,3171,3480
+Urinary Bladder Wall,3581,302,3,3300,3900
+Urine,4178,0,1,4178,4178
+Uterus,3676,0,1,3676,3676
+Vagina,3655,64,2,3609,3700
+Vertebrae,1313,295,6,826,1650
+Water,4178,0,1,4178,4178
