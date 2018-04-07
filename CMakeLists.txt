@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 2.8 FATAL_ERROR)
 
 project (Effect-of-electromagnetic-radiation-on-the-brain CXX)
 
@@ -7,6 +7,7 @@ include(CheckCXXCompilerFlag)
 set(EXEC_NAME main)
 
 option(BUILD_DOC "Build documentation" ON)
+set(THREADS_PREFER_PTHREAD_FLAG On)
 
 IF(NOT CMAKE_BUILD_TYPE)
     SET( CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
@@ -22,9 +23,10 @@ check_cxx_compiler_flag("-std=c++11" STDCXX11)
   endif(STDCXX11)
 
 # ADDING OPTIMIZATION:
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Ofast -Wall -Wextra")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Ofast -Wall -Wextra -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frerun-loop-opt -fexpensive-optimizations")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -funroll-loops")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funroll-loops")
+
 
 # ADDING WARNINGS
 if(MSVC)
@@ -36,7 +38,7 @@ if(MSVC)
     endif()
 elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long")
 endif()
 
 
@@ -44,11 +46,25 @@ IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	add_definitions(-Wno-literal-suffix)
 ENDIF()
 
-
 FILE(GLOB SRCS *.h *.hpp *.cpp *.c)
 ADD_EXECUTABLE(${EXEC_NAME} ${SRCS})
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/JSON)
-TARGET_LINK_LIBRARIES(main json disc_integr)
+target_link_libraries(${EXEC_NAME} pthread)
+
+################################################################################
+#Install required boost libs:
+include(cmake_modules/add_boost.cmake)
+################################################################################
+# Boost
+include(cmake_modules/FindBoost.cmake)
+set(Boost_USE_STATIC_LIBS OFF) 
+set(Boost_USE_MULTITHREADED ON)  
+set(Boost_USE_STATIC_RUNTIME OFF) 
+message("In main cmakelists boostsourcedir is ${BoostSourceDir}")
+set( BOOST_ROOT "${BoostSourceDir}" )
+set( Boost_NO_SYSTEM_PATHS on CACHE BOOL "Do not search system for Boost" )
+find_package(Boost REQUIRED COMPONENTS system regex filesystem) 
+include_directories(${Boost_INCLUDE_DIRS})
+TARGET_LINK_LIBRARIES(${EXEC_NAME} ${Boost_LIBRARIES})
 
 # MPI --
 # --------------------------------------------------------------
@@ -114,7 +130,6 @@ else (DOXYGEN_FOUND)
 endif (DOXYGEN_FOUND)
 # ------------------------------------------------------------------------
 
-
 enable_testing()
 
 
@@ -132,3 +147,10 @@ include_directories(${RAPIDJSON_INCLUDE_DIRS})
 
 ADD_SUBDIRECTORY( DISC_INTEGR )
 INCLUDE_DIRECTORIES( DISC_INTEGR)
+
+ADD_SUBDIRECTORY   ( UTILS )
+INCLUDE_DIRECTORIES( UTILS )
+
+
+TARGET_LINK_LIBRARIES(${EXEC_NAME} json disc_integr utils)
+TARGET_LINK_LIBRARIES(${EXEC_NAME} ${Boost_LIBRARIES})
