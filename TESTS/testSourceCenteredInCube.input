@@ -115,7 +115,7 @@ $RUN_INFOS
 	
 	// Initial temperatures:
 	$TEMP_INIT
-		INIT_TEMP_FILE=initial_temperature_materials.initTemp
+		INIT_TEMP_FILE=../initial_temperature_materials.initTemp
 	$TEMP_INIT
 
 	// State all your boundary conditions inside this region:
