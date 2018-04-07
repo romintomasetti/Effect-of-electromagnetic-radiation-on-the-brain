@@ -1,4 +1,18 @@
-cmake_minimum_required (VERSION 2.8 FATAL_ERROR)
+set(MinimalCmakeVersion 3.5.0)
+if(${CMAKE_VERSION} VERSION_LESS ${MinimalCmakeVersion}) 
+    message(STATUS "Please consider to switch to CMake ${MinimalCmakeVersion}")
+	message(STATUS "> You can easily install a second version of cmake in parallel.")
+	message(STATUS "> Go to your home directory.")
+	message(STATUS "> First, get the sources with: wget https://cmake.org/files/v3.5/cmake-3.5.0.tar.gz")
+	message(STATUS "> Then, do: tar xzf cmake-${MinimalCmakeVersion}.tar.gz")
+	message(STATUS "> Then, do: cd cmake-${MinimalCmakeVersion}")
+	message(STATUS "> Then, do: ./bootstrap --system-curl")
+	message(STATUS "> Then, do: gmake")
+	message(STATUS "> Note that 'gmake' might take a while, so you can speed it up with gmake - j NBR_PROC")
+	message(STATUS "> Use an alias for this new installation (i.e.: $HOME/cmake-${MinimalCmakeVersion}/bin/cmake)")
+endif()
+
+cmake_minimum_required (VERSION ${MinimalCmakeVersion})
 
 project (Effect-of-electromagnetic-radiation-on-the-brain CXX)
 
@@ -59,6 +73,7 @@ else()
 endif()
 
 set(BoostVersion 1.66.0)
+set(Boost_VERSION 106600)
 find_package(Boost ${BoostVersion} COMPONENTS system regex filesystem QUIET) 
 if(Boost_FOUND)
 	message(STATUS "Boost found in ${Boost_INCLUDE_DIRS} / ${BoostSourceDir}")
@@ -68,7 +83,6 @@ else()
 	include(cmake_modules/add_boost.cmake)
 	################################################################################
 	# Boost
-	include(cmake_modules/FindBoost.cmake)
 	set(Boost_USE_STATIC_LIBS OFF) 
 	set(Boost_USE_MULTITHREADED ON)  
 	set(Boost_USE_STATIC_RUNTIME OFF) 
