@@ -1,5 +1,6 @@
 #include "InputParser.h"
 
+
 #include "JSON/json.hpp"
 #include "rapidjson/document.h"
 using namespace rapidjson;
@@ -854,6 +855,12 @@ void InputParser::readHeader_MESH (ifstream &file){
 								" You *MUST* provide TWO material data files."
 							);
 						}
+						if(!is_directory(this->material_data_directory)){
+							DISPLAY_ERROR_ABORT(
+								"You mus provide a valid material data directory. Has %s.",
+								this->material_data_directory.string().c_str()
+							);
+						}
 						if(this->simulationType.get() == "USE_GEOMETRY_FILE"){
 							if(this->file_containing_geometry == std::string()){
 								DISPLAY_ERROR_ABORT(
@@ -880,6 +887,25 @@ void InputParser::readHeader_MESH (ifstream &file){
 							printf(" to false.Aborting.\n");
 							std::abort();
 						}
+					
+					}else if(propName == "MATERIAL_DIRECTORY"){
+						boost::filesystem::path givenPath(propGiven);
+						if(is_directory(givenPath)){
+							this->material_data_directory = givenPath;
+						}else{
+							int ret = search_for_directory(
+								propGiven,
+								givenPath
+							);
+							if(ret != EXIT_SUCCESS){
+								DISPLAY_ERROR_ABORT(
+									"Cannot find directory %s.",
+									propGiven.c_str()
+								);
+							}
+							this->material_data_directory = givenPath;
+						}
+						//std::cout << "Material dirctory is " << this->material_data_directory << std::endl;
 
 					}else if(propName == "USE_GEOMETRY_FILE"){
 						// Parse the propGiven string:
@@ -1312,16 +1338,7 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					// The property name the user gave:
 					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
 
-					// Create a substring with the material:
-					std::string mat = propName.substr(
-							propName.find("T_INIT")+sizeof("T_INIT"));
-
-					if(mat != string() && propName != "INIT_TEMP_FILE"){
-						double tempInit = std::stod(propGiven);
-						this->GetInitTemp_FromMaterialName.insert(
-							std::pair<std::string,double>(mat,tempInit)
-						); 
-					}else if(propName == "INIT_TEMP_FILE"){
+					if(propName == "INIT_TEMP_FILE"){
 
 						std::string init_temp_filename = propGiven;
 						bool failed = true;
@@ -1339,7 +1356,17 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 							{
 								std::string name(itr->name.GetString());
 								std::string value(kTypeNames[itr->value.GetType()]);
-
+								// The file contains only .info and .initTemp fields:
+								if(name.find(".initTemp") == std::string::npos
+									&& name.find(".info") == std::string::npos){
+										DISPLAY_ERROR_ABORT(
+											"In file %s: the name %s doesn't contain '.initTemp'.",
+											init_temp_filename.c_str(),
+											name.c_str()
+										);
+								}
+								if(name.find(".info") != std::string::npos)
+									continue;
 								if( value != "Number"){
 									DISPLAY_ERROR_ABORT(
 										"In file %s: the name %s has not a number value"
@@ -1347,13 +1374,6 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 										init_temp_filename.c_str(),
 										name.c_str(),
 										kTypeNames[itr->value.GetType()]
-									);
-								}
-								if(name.find(".initTemp") == std::string::npos){
-									DISPLAY_ERROR_ABORT(
-										"In file %s: the name %s doesn't contain '.initTemp'.",
-										init_temp_filename.c_str(),
-										name.c_str()
 									);
 								}
 								std::string mat = name.substr(0,name.find(".initTemp"));

@@ -16,6 +16,10 @@
 
 #include "header_with_all_defines.hpp"
 
+#include <boost/filesystem.hpp>
+
+#include <UTILS/directory_searching.hpp>
+
 using namespace std;
 
 typedef struct probed_point{
@@ -92,6 +96,8 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
+		/// Directory containing all materail data files:
+		boost::filesystem::path material_data_directory;
 		/// File containing geometry parameters:
 		std::string file_containing_geometry = std::string();
 
