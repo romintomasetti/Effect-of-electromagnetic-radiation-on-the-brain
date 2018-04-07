@@ -1,3 +1,5 @@
+#ifndef HEADER_WITH_ALL_DEFINES_HPP
+#define HEADER_WITH_ALL_DEFINES_HPP
 /**
  * Define some colors:
  */
@@ -115,4 +117,6 @@
    #define my_MPI_SIZE_T MPI_UNSIGNED_LONG_LONG
 #else
    #error "what is happening here?"
+#endif
+
 #endif

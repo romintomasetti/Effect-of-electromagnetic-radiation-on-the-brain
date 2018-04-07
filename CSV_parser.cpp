@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <cctype>
 
+#include <boost/algorithm/string.hpp>
+
 #include <cstring>
 
 #include <sys/stat.h>
@@ -22,7 +24,7 @@
 
 #include <time.h>
 
-void RemoveAnyBlankSpaceInStr(std::string &str){
+inline void RemoveAnyBlankSpaceInStr(std::string &str){
 	str.erase(std::remove_if(str.begin(),
 			 str.end(), [](unsigned char x){return std::isspace(x);}),
 			 str.end());
@@ -48,6 +50,7 @@ std::vector<std::vector<std::string> > parse2DCsvFile(std::string inputFileName)
                     break;
                 try {
                     RemoveAnyBlankSpaceInStr(line);
+                    boost::erase_all(line, "\"");
                     record.push_back(line);
                 }
                 catch (const std::invalid_argument &e) {

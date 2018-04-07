@@ -32,6 +32,8 @@
 #include "InputParser.h"
 #include "ElectromagneticSource.h"
 
+#include "UTILS/directory_searching.hpp"
+
 #include "vtl.h"
 #include "vtlSPoints.h"
 
@@ -90,11 +92,15 @@ int main(int argc, char *argv[]){
 	#endif
 	
 	/* The material object stores all the material properties */
-	Materials allMat;
-	allMat.getPropertiesFromFile(
+	Materials allMat(
+		input_parser.material_data_directory.string(),
+		input_parser.GetInitTemp_FromMaterialName
+	);
+	
+	/*allMat.getPropertiesFromFile(
 		input_parser.material_data_files[0],
 		input_parser.material_data_files[1]
-	);
+	);*/
 	//allMat.printAllProperties();
 	/*cout << "Print number of temp per mat::IN" << endl;
 	allMat.printNumberOfTempLinePerMat();
