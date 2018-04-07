@@ -69,14 +69,10 @@ void removeFilesOfDirectory(std::string directoryOutputFiles, std::string extens
   			}
 			closedir (dir);
 		} else {
-			fprintf(stderr,"In %s :: could not open directory (%s) to delete %s files. Aborting.\n",
-				__FUNCTION__,directoryOutputFiles.c_str(),extension.c_str());
-			fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
-			#ifdef MPI_COMM_WORLD
-				MPI_Abort(MPI_COMM_WORLD,-1);
-			#else
-				abort();
-			#endif
+			DISPLAY_WARNING(
+				"Could not open directory (%s) to delete %s files.",
+				directoryOutputFiles.c_str(),extension.c_str()
+			);
 		}
 	}
 }
