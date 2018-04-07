@@ -20,8 +20,10 @@
 #
 build/*
 TESTS/*
+boost_*/*
 .vscode/*
 vscode/*
+boost/*
 #
 main
 main.cpp
