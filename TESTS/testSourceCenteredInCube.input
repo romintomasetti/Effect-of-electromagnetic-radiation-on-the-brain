@@ -69,7 +69,7 @@ $MESH
 		///
 		IMPOSED=SIMPLE;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
-		SOURCE_TIME=SINE
+		SOURCE_TIME=GAUSSIAN
 		// Default with Gaussian is (MEAN,STD)=(0*period,period/10) where period=c/frequency, c=3e8
 	$SOURCE
 	
@@ -89,6 +89,7 @@ $MESH
 		//TEST_PARAVIEW_MPI=(TEMP=RANK,E=GLOBAL,H=GLOBAL)
 		//USE_GEOMETRY_FILE={true,/home/romin/Documents/MULTIPLHYSICS_PROJECT_2018/Effect-of-electromagnetic-radiation-on-the-brain/CREATE_GEOMETRY/geometry_input_file.geometry}
 		MATERIAL_DATA_FILE={OLD=data_air.csv,ELECTRO=tissueproperties_900E6_HZ.csv}
+		MATERIAL_DIRECTORY=TISSUES_PROPERTIES
 	$MATERIALS
 	
 $MESH
@@ -114,8 +115,6 @@ $RUN_INFOS
 	
 	// Initial temperatures:
 	$TEMP_INIT
-		T_INIT_AIR   =25
-		T_INIT_WATER =29
 		INIT_TEMP_FILE=initial_temperature_materials.initTemp
 	$TEMP_INIT
 
@@ -141,7 +140,7 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=1
+		SAMPLING_FREQ_ELECTRO=100calc
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING
