@@ -1,5 +1,5 @@
-Heat Capacity (J/kg/°C),Average,Standard Deviation,Number of Studies,Minimum,Maximum
-Adrenal Gland,3513,124,2,3425,3600
+ALL TISSUES,,,,,
+Tissue,Heat Capacity (J/kg/°C),Standard Deviation,Number of Studies,Minimum,Maximum
 Air,1004,3,3,1000,1006
 Bile,4037,194,2,3900,4174
 Blood,3617,301,3,3300,3900

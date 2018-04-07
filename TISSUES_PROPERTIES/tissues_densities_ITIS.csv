@@ -1,5 +1,5 @@
-Density (kg/m³),Average,Standard Deviation,Number of Studies,Minimum,Maximum
-Adrenal Gland,1028,4,2,1025,1030
+ALL TISSUES,,,,,
+Tissue,Density (kg/m³),Standard Deviation,Number of Studies,Minimum,Maximum
 Air,1,0,2,1,1
 Bile,928,0,1,928,928
 Blood,1050,17,4,1025,1060
