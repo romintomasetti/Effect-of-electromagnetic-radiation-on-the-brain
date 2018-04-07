@@ -48,21 +48,40 @@ ENDIF()
 
 FILE(GLOB SRCS *.h *.hpp *.cpp *.c)
 ADD_EXECUTABLE(${EXEC_NAME} ${SRCS})
-target_link_libraries(${EXEC_NAME} pthread)
 
-################################################################################
-#Install required boost libs:
-include(cmake_modules/add_boost.cmake)
-################################################################################
-# Boost
-include(cmake_modules/FindBoost.cmake)
-set(Boost_USE_STATIC_LIBS OFF) 
-set(Boost_USE_MULTITHREADED ON)  
-set(Boost_USE_STATIC_RUNTIME OFF) 
-message("In main cmakelists boostsourcedir is ${BoostSourceDir}")
-set( BOOST_ROOT "${BoostSourceDir}" )
-set( Boost_NO_SYSTEM_PATHS on CACHE BOOL "Do not search system for Boost" )
-find_package(Boost REQUIRED COMPONENTS system regex filesystem) 
+# OpenMP --
+find_package(OpenMP REQUIRED)
+if(OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+else()
+	MESSAGE(FATAL_ERROR "OpenMP was not found !")
+endif()
+
+set(BoostVersion 1.66.0)
+find_package(Boost ${BoostVersion} COMPONENTS system regex filesystem QUIET) 
+if(Boost_FOUND)
+	message(STATUS "Boost found in ${Boost_INCLUDE_DIRS} / ${BoostSourceDir}")
+else()
+	################################################################################
+	#Install required boost libs:
+	include(cmake_modules/add_boost.cmake)
+	################################################################################
+	# Boost
+	include(cmake_modules/FindBoost.cmake)
+	set(Boost_USE_STATIC_LIBS OFF) 
+	set(Boost_USE_MULTITHREADED ON)  
+	set(Boost_USE_STATIC_RUNTIME OFF) 
+	message("In main cmakelists boostsourcedir is ${BoostSourceDir}")
+	set( BOOST_ROOT "${BoostSourceDir}" )
+	set( Boost_NO_SYSTEM_PATHS on CACHE BOOL "Do not search system for Boost" )
+	find_package(Boost ${BoostVersion} REQUIRED COMPONENTS system regex filesystem QUIET) 
+	if(NOT Boost_FOUND)
+		message(FATAL_ERROR "Boost not found")
+	else()
+		message(STATUS "After install : Boost ${BoostVersion} found in ${Boost_INCLUDE_DIRS}.")
+	endif()
+endif()
 include_directories(${Boost_INCLUDE_DIRS})
 TARGET_LINK_LIBRARIES(${EXEC_NAME} ${Boost_LIBRARIES})
 
@@ -90,14 +109,6 @@ IF( MINGW )
     add_definitions(-DMSMPI_NO_SAL)
 ENDIF()
 
-
-# OpenMP --
-find_package(OpenMP REQUIRED)
-if(OPENMP_FOUND)
-    #MESSAGE ("OpenMP_CXX_FLAGS=${OpenMP_CXX_FLAGS}")
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-endif()
 
 FIND_PACKAGE(ZLIB)
 IF(ZLIB_FOUND)
