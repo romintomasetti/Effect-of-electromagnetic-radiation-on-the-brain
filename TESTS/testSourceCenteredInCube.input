@@ -75,7 +75,7 @@ $MESH
 	
 	$MATERIALS
 		/* PUT AIR EVERYWHERE */
-		USE_AIR_EVERYWHERE=true
+		//USE_AIR_EVERYWHERE=true
 		/* TEST PARAVIEW OUTPUT WITH ONE MPI (puts I,J,K inside components
 			of the electric and magnetic fields)*/
 		//TEST_PARAVIEW=true
@@ -87,7 +87,7 @@ $MESH
 				    3) H=GLOBAL puts the indices I J K globals
 					in each components of the magnetic field*/
 		//TEST_PARAVIEW_MPI=(TEMP=RANK,E=GLOBAL,H=GLOBAL)
-		//USE_GEOMETRY_FILE={true,/home/romin/Documents/MULTIPLHYSICS_PROJECT_2018/Effect-of-electromagnetic-radiation-on-the-brain/CREATE_GEOMETRY/geometry_input_file.geometry}
+		USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/Multi_layered_spherical_brain.geometry}
 		MATERIAL_DATA_FILE={OLD=data_air.csv,ELECTRO=tissueproperties_900E6_HZ.csv}
 		MATERIAL_DIRECTORY=TISSUES_PROPERTIES
 	$MATERIALS

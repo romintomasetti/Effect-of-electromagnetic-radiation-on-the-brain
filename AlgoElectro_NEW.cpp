@@ -289,6 +289,7 @@ void AlgoElectro_NEW::update(
 
     // In the object grid, set the properties mu, eps, magnetic cond. and electric cond. for each node:
     if(grid.input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
+		DISPLAY_ERROR_ABORT("USE_AIR_EVERYWHERE is depreciated.");
         grid.Initialize_Electromagnetic_Properties("AIR_AT_INIT_TEMP");
     }else{
         grid.Initialize_Electromagnetic_Properties("INIT_TEMP");

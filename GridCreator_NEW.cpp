@@ -249,7 +249,7 @@ void GridCreator_NEW::meshInitialization(void){
     }
     
     size = this->size_Ex[0] * this->size_Ex[1] * this->size_Ex[2];
-
+	
     this->E_x                 = new double[size]();
     this->E_x_material        = new unsigned char[size]();
     this->E_x_eps             = new double[size]();
@@ -275,7 +275,7 @@ void GridCreator_NEW::meshInitialization(void){
     }
 
     size = this->size_Ey[0] * this->size_Ey[1] * this->size_Ey[2];
-
+	
     this->E_y                 = new double[size]();
     this->E_y_material        = new unsigned char[size]();
     this->E_y_eps             = new double[size]();
@@ -302,7 +302,7 @@ void GridCreator_NEW::meshInitialization(void){
     }
 
     size = this->size_Ez[0] * this->size_Ez[1] * this->size_Ez[2];
-
+	
     this->E_z                 = new double[size]();
     this->E_z_material        = new unsigned char[size]();
     this->E_z_eps             = new double[size]();
@@ -333,7 +333,7 @@ void GridCreator_NEW::meshInitialization(void){
     size = this->size_Hx[0] * 
             this->size_Hx[1] * 
             this->size_Hx[2];
-
+	
     this->H_x               = new double[size]();
     this->H_x_material      = new unsigned char[size]();
     this->H_x_magnetic_cond = new double[size]();
@@ -362,7 +362,7 @@ void GridCreator_NEW::meshInitialization(void){
     size = this->size_Hy[0]
              * this->size_Hy[1]
              * this->size_Hy[2];
-
+	
     this->H_y               = new double[size]();
     this->H_y_material      = new unsigned char[size]();
     this->H_y_mu            = new double[size]();
@@ -391,7 +391,7 @@ void GridCreator_NEW::meshInitialization(void){
              * this->size_Hz[1]
              * this->size_Hz[2];
 
-    this->H_z               = new double[size]();
+	this->H_z               = new double[size]();
     this->H_z_material      = new unsigned char[size]();
     this->H_z_mu            = new double[size]();
     this->H_z_magnetic_cond = new double[size]();
@@ -406,7 +406,6 @@ void GridCreator_NEW::meshInitialization(void){
             "Your temperature grid is empty (size T is 0)."
         );
     }
-
     this->temperature          = new double[T]();
     this->temperature_material = new unsigned char[T]();
     this->thermal_conductivity = new double[T]();
@@ -945,6 +944,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
          * The nodes properties (mu, eps, magn. and elec. cond.) are assigned by assuming initial
          * air temperature.
          */
+		DISPLAY_ERROR_ABORT("AIR_AT_INIT_TEMP is depreciated.");
 
         size_t index;
 
@@ -1059,34 +1059,41 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
         }
 
     }else if(whatToDo == "INIT_TEMP"){
+		
+		GridCreator_NEW *ref_obj = this;
+		
 
+	#pragma omp parallel default(shared)\
+		firstprivate(ref_obj)
+	{
         size_t index = 0;
 
         /**
          * X component of the electric field.
          */
-        for(size_t K = 0 ; K < this->size_Ex[2]; K++){
-            for(size_t J = 0 ; J < this->size_Ex[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
+		#pragma omp for
+        for(size_t K = 0 ; K < ref_obj->size_Ex[2]; K++){
+            for(size_t J = 0 ; J < ref_obj->size_Ex[1] ; J ++){
+                for(size_t I = 0 ; I < ref_obj->size_Ex[0] ; I ++){
 
-                    index = I + this->size_Ex[0] * ( J + this->size_Ex[1] * K);
+                    index = I + ref_obj->size_Ex[0] * ( J + ref_obj->size_Ex[1] * K);
 
                     // Determine the material ID:
-                    unsigned int mat_ID   = this->E_x_material[index];
+                    unsigned int mat_ID   = ref_obj->E_x_material[index];
                     // Determine material name:
-                    std::string  mat_name = this->materials.materialName_FromMaterialID_ELECTRO[mat_ID];
+                    std::string  mat_name = ref_obj->materials.materialName_FromMaterialID_unified[mat_ID];
                     // Get the properties:
                     double elec_cond = 
-                        this->materials
-                            .list_of_materials_ELECTRO[mat_ID]
-                            .properties["\"Conductivity[S/m]\""];
+                        ref_obj->materials
+                            .unified_material_list[mat_ID]
+                            .properties["ELECTRICALCONDUCTIVITY(S/M)"];
                     double permittivity =
-                        this->materials
-                            .list_of_materials_ELECTRO[mat_ID]
-                            .properties["\"Relativepermittivity\""]
+                        ref_obj->materials
+                            .unified_material_list[mat_ID]
+                            .properties["RELATIVEPERMITTIVITY"]
                         * VACUUM_PERMITTIVITY;
-                    this->E_x_electrical_cond[index] = elec_cond;
-                    this->E_x_eps[index]             = permittivity;                   
+                    ref_obj->E_x_electrical_cond[index] = elec_cond;
+                    ref_obj->E_x_eps[index]             = permittivity;                   
                 }
             }
         }
@@ -1094,28 +1101,29 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
         /**
          * Y component of the electric field.
          */
-        for(size_t K = 0 ; K < this->size_Ey[2]; K++){
-            for(size_t J = 0 ; J < this->size_Ey[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
+		#pragma omp for
+        for(size_t K = 0 ; K < ref_obj->size_Ey[2]; K++){
+            for(size_t J = 0 ; J < ref_obj->size_Ey[1] ; J ++){
+                for(size_t I = 0 ; I < ref_obj->size_Ey[0] ; I ++){
 
-                    index = I + this->size_Ey[0] * ( J + this->size_Ey[1] * K);
+                    index = I + ref_obj->size_Ey[0] * ( J + ref_obj->size_Ey[1] * K);
 
                     // Determine the material ID:
-                    unsigned int mat_ID   = this->E_y_material[index];
+                    unsigned int mat_ID   = ref_obj->E_y_material[index];
                     // Determine material name:
-                    std::string  mat_name = this->materials.materialName_FromMaterialID_ELECTRO[mat_ID];
+                    std::string  mat_name = ref_obj->materials.materialName_FromMaterialID_unified[mat_ID];
                     // Get the properties:
                     double elec_cond = 
-                        this->materials
-                            .list_of_materials_ELECTRO[mat_ID]
-                            .properties["\"Conductivity[S/m]\""];
+                        ref_obj->materials
+                            .unified_material_list[mat_ID]
+                            .properties["ELECTRICALCONDUCTIVITY"];
                     double permittivity =
-                        this->materials
-                            .list_of_materials_ELECTRO[mat_ID]
-                            .properties["\"Relativepermittivity\""]
+                        ref_obj->materials
+                            .unified_material_list[mat_ID]
+                            .properties["RELATIVEPERMITTIVITY"]
                         * VACUUM_PERMITTIVITY;
-                    this->E_y_electrical_cond[index] = elec_cond;
-                    this->E_y_eps[index]             = permittivity;                   
+                    ref_obj->E_y_electrical_cond[index] = elec_cond;
+                    ref_obj->E_y_eps[index]             = permittivity;                   
                 }
             }
         }
@@ -1123,53 +1131,55 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
         /**
          * Z component of the electric field.
          */
-        for(size_t K = 0 ; K < this->size_Ez[2]; K++){
-            for(size_t J = 0 ; J < this->size_Ez[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
+		#pragma omp for
+        for(size_t K = 0 ; K < ref_obj->size_Ez[2]; K++){
+            for(size_t J = 0 ; J < ref_obj->size_Ez[1] ; J ++){
+                for(size_t I = 0 ; I < ref_obj->size_Ez[0] ; I ++){
 
-                    index = I + this->size_Ez[0] * ( J + this->size_Ez[1] * K);
+                    index = I + ref_obj->size_Ez[0] * ( J + ref_obj->size_Ez[1] * K);
 
                     // Determine the material ID:
-                    unsigned int mat_ID   = this->E_z_material[index];
+                    unsigned int mat_ID   = ref_obj->E_z_material[index];
                     // Determine material name:
-                    std::string  mat_name = this->materials.materialName_FromMaterialID_ELECTRO[mat_ID];
+                    std::string  mat_name = ref_obj->materials.materialName_FromMaterialID_unified[mat_ID];
                     // Get the properties:
                     double elec_cond = 
-                        this->materials
-                            .list_of_materials_ELECTRO[mat_ID]
-                            .properties["\"Conductivity[S/m]\""];
+                        ref_obj->materials
+                            .unified_material_list[mat_ID]
+                            .properties["ELECTRICALCONDUCTIVITY"];
                     double permittivity =
-                        this->materials
-                            .list_of_materials_ELECTRO[mat_ID]
-                            .properties["\"Relativepermittivity\""]
+                        ref_obj->materials
+                            .unified_material_list[mat_ID]
+                            .properties["RELATIVEPERMITTIVITY"]
                         * VACUUM_PERMITTIVITY;
                     /*printf("sigma(%.9g) - eps(%.9g) - eps_0(%.9g) - eps_r(%.9g)\n",
                         elec_cond,permittivity,VACUUM_PERMITTIVITY,
                         this->materials
                             .list_of_materials_ELECTRO[mat_ID]
                             .properties["\"Relativepermittivity\""]);*/
-                    this->E_z_electrical_cond[index] = elec_cond;
-                    this->E_z_eps[index]             = permittivity;                   
+                    ref_obj->E_z_electrical_cond[index] = elec_cond;
+                    ref_obj->E_z_eps[index]             = permittivity;                   
                 }
             }
         }
 
         DISPLAY_WARNING(
-            "Attention. Permeability is the vacuum one. magn_cond is 0."
+            "Attention. Rel. permeability is the vacuum one, magn_cond is 0."
             " No data found yet."
         );
 
         /**
          * X component of the magnetic field.
          */
-        for(size_t K = 0 ; K < this->size_Hx[2]; K++){
-            for(size_t J = 0 ; J < this->size_Hx[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
+		#pragma omp for
+        for(size_t K = 0 ; K < ref_obj->size_Hx[2]; K++){
+            for(size_t J = 0 ; J < ref_obj->size_Hx[1] ; J ++){
+                for(size_t I = 0 ; I < ref_obj->size_Hx[0] ; I ++){
 
-                    index = I + this->size_Hx[0] * ( J + this->size_Hx[1] * K);
+                    index = I + ref_obj->size_Hx[0] * ( J + ref_obj->size_Hx[1] * K);
                     
-                    this->H_x_magnetic_cond[index] = 0.0;
-                    this->H_x_mu[index]            = VACUUM_PERMEABILITY;                 
+                    ref_obj->H_x_magnetic_cond[index] = 0.0;
+                    ref_obj->H_x_mu[index]            = VACUUM_PERMEABILITY;                 
                 }
             }
         }
@@ -1177,14 +1187,15 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
         /**
          * X component of the magnetic field.
          */
-        for(size_t K = 0 ; K < this->size_Hy[2]; K++){
-            for(size_t J = 0 ; J < this->size_Hy[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
+		#pragma omp for
+        for(size_t K = 0 ; K < ref_obj->size_Hy[2]; K++){
+            for(size_t J = 0 ; J < ref_obj->size_Hy[1] ; J ++){
+                for(size_t I = 0 ; I < ref_obj->size_Hy[0] ; I ++){
 
-                    index = I + this->size_Hy[0] * ( J + this->size_Hy[1] * K);
+                    index = I + ref_obj->size_Hy[0] * ( J + ref_obj->size_Hy[1] * K);
                     
-                    this->H_y_magnetic_cond[index] = 0.0;
-                    this->H_y_mu[index]            = VACUUM_PERMEABILITY;                 
+                    ref_obj->H_y_magnetic_cond[index] = 0.0;
+                    ref_obj->H_y_mu[index]            = VACUUM_PERMEABILITY;                 
                 }
             }
         }
@@ -1192,18 +1203,20 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
         /**
          * Z component of the magnetic field.
          */
-        for(size_t K = 0 ; K < this->size_Hz[2]; K++){
-            for(size_t J = 0 ; J < this->size_Hz[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
+		#pragma omp for
+        for(size_t K = 0 ; K < ref_obj->size_Hz[2]; K++){
+            for(size_t J = 0 ; J < ref_obj->size_Hz[1] ; J ++){
+                for(size_t I = 0 ; I < ref_obj->size_Hz[0] ; I ++){
 
-                    index = I + this->size_Hz[0] * ( J + this->size_Hz[1] * K);
+                    index = I + ref_obj->size_Hz[0] * ( J + ref_obj->size_Hz[1] * K);
                     
-                    this->H_z_magnetic_cond[index] = 0.0;
-                    this->H_z_mu[index]            = VACUUM_PERMEABILITY;                 
+                    ref_obj->H_z_magnetic_cond[index] = 0.0;
+                    ref_obj->H_z_mu[index]            = VACUUM_PERMEABILITY;                 
                 }
             }
         }
-
+	}/* END OF PRAGMA OMP PARALLEL */
+	
     }else{
         DISPLAY_ERROR_ABORT(
             "Nothing corresponding to %s.",whatToDo.c_str()
@@ -1563,17 +1576,17 @@ void GridCreator_NEW::fillIn_material_with_geometry_file(void){
 
     /// Check that the geometry file is with extension .geometry:
     std::string filename = this->input_parser.file_containing_geometry;
-    if( filename.substr(filename.find(".")+1) != "geometry"){
+    if( boost::filesystem::extension(filename) != ".geometry"){
         DISPLAY_ERROR_ABORT(
             "The geometry file should have extenson '.geometry'"
             " but it has '.%s'",
-            filename.substr(filename.find(".")+1).c_str()
+            boost::filesystem::extension(filename).c_str()
         );
     }
 
     std::stringstream errTryCatch;
     try{
-        /// Read the geomery file with JSON:
+        /// Read the geometry file with JSON:
         rapidjson::Document geometryFileJSON;
         read_json(filename, geometryFileJSON);
 
@@ -1703,6 +1716,9 @@ void GridCreator_NEW::fillInMat_forms(
     std::string type_form
 )
 {
+	if(this->materials.materialID_FromMaterialName_unified.empty()){
+		DISPLAY_ERROR_ABORT("materialID_FromMaterialName_unified is empty.");
+	}
 
     /**
      * NOTE: BY DEFAULT, AIR IS THE MATERIAL WITH ID 0.
@@ -1768,7 +1784,7 @@ void GridCreator_NEW::fillInMat_forms(
                         /// this sphere and get its ID:
                         inside_none = false;
                         std::string mat  = material_inside[S];
-                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_unified[mat];
                         size_t index = I + this->size_Ex[0]*(J+K*this->size_Ex[1]);
                         this->E_x_material[index] = ID;
 
@@ -1776,7 +1792,7 @@ void GridCreator_NEW::fillInMat_forms(
                 }
                 if(inside_none && FALSE_VAR){
                     /// Assign air:
-                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_unified["Air"];
                     size_t index = I + this->size_Ex[0]*(J+K*this->size_Ex[1]);
                     this->E_x_material[index] = ID;
                 }
@@ -1834,7 +1850,7 @@ void GridCreator_NEW::fillInMat_forms(
                         /// this sphere and get its ID:
                         inside_none = false;
                         std::string mat  = material_inside[S];
-                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_unified[mat];
                         size_t index = I + this->size_Ey[0]*(J+K*this->size_Ey[1]);
                         this->E_y_material[index] = ID;
 
@@ -1842,7 +1858,7 @@ void GridCreator_NEW::fillInMat_forms(
                 }
                 if(inside_none && FALSE_VAR){
                     /// Assign air:
-                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_unified["Air"];
                     size_t index = I + this->size_Ey[0]*(J+K*this->size_Ey[1]);
                     this->E_y_material[index] = ID;
                 }
@@ -1900,7 +1916,7 @@ void GridCreator_NEW::fillInMat_forms(
                         /// this sphere and get its ID:
                         inside_none = false;
                         std::string mat  = material_inside[S];
-                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_unified[mat];
                         size_t index = I + this->size_Ez[0]*(J+K*this->size_Ez[1]);
                         this->E_z_material[index] = ID;
 
@@ -1908,7 +1924,7 @@ void GridCreator_NEW::fillInMat_forms(
                 }
                 if(inside_none && FALSE_VAR){
                     /// Assign air:
-                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_unified["Air"];
                     size_t index = I + this->size_Ez[0]*(J+K*this->size_Ez[1]);
                     this->E_z_material[index] = ID;
                 }
@@ -1966,7 +1982,7 @@ void GridCreator_NEW::fillInMat_forms(
                         /// this sphere and get its ID:
                         inside_none = false;
                         std::string mat  = material_inside[S];
-                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_unified[mat];
                         size_t index = I + this->size_Hx[0]*(J+K*this->size_Hx[1]);
                         this->H_x_material[index] = ID;
 
@@ -1974,7 +1990,7 @@ void GridCreator_NEW::fillInMat_forms(
                 }
                 if(inside_none && FALSE_VAR){
                     /// Assign air:
-                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_unified["Air"];
                     size_t index = I + this->size_Hx[0]*(J+K*this->size_Hx[1]);
                     this->H_x_material[index] = ID;
                 }
@@ -2031,7 +2047,7 @@ void GridCreator_NEW::fillInMat_forms(
                         /// this sphere and get its ID:
                         inside_none = false;
                         std::string mat  = material_inside[S];
-                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_unified[mat];
                         size_t index = I + this->size_Hy[0]*(J+K*this->size_Hy[1]);
                         this->H_y_material[index] = ID;
 
@@ -2039,7 +2055,7 @@ void GridCreator_NEW::fillInMat_forms(
                 }
                 if(inside_none && FALSE_VAR){
                     /// Assign air:
-                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_unified["Air"];
                     size_t index = I + this->size_Hy[0]*(J+K*this->size_Hy[1]);
                     this->H_y_material[index] = ID;
                 }
@@ -2097,14 +2113,14 @@ void GridCreator_NEW::fillInMat_forms(
                         /// this sphere and get its ID:
                         inside_none = false;
                         std::string mat  = material_inside[S];
-                        unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO[mat];
+                        unsigned int ID  = this->materials.materialID_FromMaterialName_unified[mat];
                         size_t index = I + this->size_Hz[0]*(J+K*this->size_Hz[1]);
                         this->H_z_material[index] = ID;
                     }
                 }
                 if(inside_none && FALSE_VAR){
                     /// Assign air:
-                    unsigned int ID  = this->materials.materialID_FromMaterialName_ELECTRO["Air"];
+                    unsigned int ID  = this->materials.materialID_FromMaterialName_unified["Air"];
                     size_t index = I + this->size_Hz[0]*(J+K*this->size_Hz[1]);
                     this->H_z_material[index] = ID;
                 }
@@ -2112,7 +2128,6 @@ void GridCreator_NEW::fillInMat_forms(
             }
         }
     }
-
 }
 
 void GridCreator_NEW::Display_size_fields(void){

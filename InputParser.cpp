@@ -953,11 +953,12 @@ void InputParser::readHeader_MESH (ifstream &file){
 								pos_comma[0]+1,
 								pos_acc_closed[0]-pos_comma[0]-1
 							);
-						if(geometryFilename.substr(geometryFilename.find('.')+1) != "geometry"){
+						/*if(geometryFilename.substr(geometryFilename.find('.')+1) != "geometry"){*/
+						if(boost::filesystem::extension(geometryFilename) != ".geometry"){
 							DISPLAY_ERROR_ABORT(
 								"The geometry file should have the extension '.geometry'"
-								 " but it has '.%s'.",
-								 geometryFilename.substr(geometryFilename.find('.')+1).c_str()
+								" but it has '.%s'.",
+								boost::filesystem::extension(geometryFilename).c_str()
 							);
 						}else{
 							this->file_containing_geometry

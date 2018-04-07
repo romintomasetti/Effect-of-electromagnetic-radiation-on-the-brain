@@ -44,7 +44,7 @@ class Materials{
 		
 		// Maximum number of temperature specifications:
 		unsigned int maxNumberOfTemp    = 0;
-		// Dictionnary with the materials and the chosen unsigned char assigned to it:
+		// Dictionary with the materials and the chosen unsigned char assigned to it:
 		//map<string,unsigned char> materialID_FromMaterialName;
 		
 		
@@ -62,6 +62,8 @@ class Materials{
 
 		// After the reading of the directory, unify all properties inside one field:
 		std::vector<material_struct> unified_material_list;
+		std::map<std::string,unsigned int> materialID_FromMaterialName_unified;
+		std::map<unsigned int,std::string> materialName_FromMaterialID_unified;
 		void unification_of_data_files(void);
 
 		map<std::string,std::vector<material_struct> > list_of_mat_from_dir;

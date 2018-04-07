@@ -118,7 +118,15 @@ void Materials::unification_of_data_files(void){
 			temp_mat.properties.insert(temp_pair);
 		}
 		//temp_mat.printf_mat();
-		this->unified_material_list.push_back(temp_mat);		
+		this->unified_material_list.push_back(temp_mat);
+		this->materialID_FromMaterialName_unified
+			.insert(
+				std::pair<std::string,unsigned int>(temp_mat.name,temp_mat.ID)
+				);
+		this->materialName_FromMaterialID_unified
+			.insert(
+				std::pair<unsigned int,std::string>(temp_mat.ID,temp_mat.name)
+				);
 	}
 }
 

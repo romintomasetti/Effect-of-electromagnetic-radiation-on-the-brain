@@ -96,7 +96,7 @@ class InputParser{
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
 	public:
-		/// Directory containing all materail data files:
+		/// Directory containing all material data files:
 		boost::filesystem::path material_data_directory;
 		/// File containing geometry parameters:
 		std::string file_containing_geometry = std::string();
