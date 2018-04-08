@@ -178,14 +178,15 @@ double Materials::get_mean_prop_from_dir(std::string const &mat, std::string con
 			//std::cout << ">>> All elements are equal each other" << std::endl;
 			return found_values[0];
 		}
-		DISPLAY_WARNING(
-			"For material %s, property %s : I found more then one value so I take the mean."
-			" Found values are [%s%s%s]",
-			mat.c_str(),prop.c_str(),
-			ANSI_COLOR_RED,
-			format_vector_double(found_values).c_str(),
-			ANSI_COLOR_RESET
-		);
+		if(this->MPI_RANK == this->MPI_root && this->VERBOSITY > 1)
+			DISPLAY_WARNING(
+				"For material %s, property %s : I found more than one value so I take the mean."
+				" Found values are [%s%s%s]",
+				mat.c_str(),prop.c_str(),
+				ANSI_COLOR_RED,
+				format_vector_double(found_values).c_str(),
+				ANSI_COLOR_RESET
+			);
 		return accumulate( found_values.begin(), found_values.end(), 0.0)/found_values.size();
 	}else if(found_values.size() == 1){
 		return found_values[0];

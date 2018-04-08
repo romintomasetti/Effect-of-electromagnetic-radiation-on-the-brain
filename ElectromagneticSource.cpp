@@ -25,11 +25,14 @@ void ElectromagneticSource::set_number_of_sources(const unsigned int nbrSources)
 		this->centerX.reserve(this->number_of_sources.get());
 		this->centerY.reserve(this->number_of_sources.get());
 		this->centerZ.reserve(this->number_of_sources.get());
+		
+		this->there_is_at_least_one_element_non_zero_in_source.reserve(this->number_of_sources.get());
+		for(size_t I = 0 ; I < this->number_of_sources.get() ; I ++)
+			this->there_is_at_least_one_element_non_zero_in_source[I] = false;
+		
 	}else{
-		printf("ElectromagneticSource::set_number_of_sources::ERROR\n");
-		printf("\tThe property of the field 'number_of_sources' was already set.");
-		printf("\n\tAborting (at file %s at line %d)\n\n",__FILE__,__LINE__);
-		abort();
+		DISPLAY_ERROR_ABORT(
+			"The property of the field 'number_of_sources' was already set.");
 	}
 }
 
@@ -221,16 +224,16 @@ std::string ElectromagneticSource::is_inside_source_Romin(
 				if(type == "Ex"){
 					return "false";
 				}else if(type == "Ey"){
-					return "true";
+					return "0";
 				}
 			}else if(isOnFace_e_y == true){
 				if(type == "Ex"){
-					return "true";
+					return "0";
 				}else if(type == "Ey"){
 					return "false";
 				}
 			}
-
+			this->there_is_at_least_one_element_non_zero_in_source[ID_Source] = true;
 			return "true";
 		}
 	}else if(source_type == "DIPOLE"){
@@ -276,6 +279,7 @@ std::string ElectromagneticSource::is_inside_source_Romin(
 			/// Check if Ez is inside the airgap:
 			if( abs(Z_coord - this->centerZ[ID_Source] ) < EPS ){
 				if( type == "Ez"){
+					this->there_is_at_least_one_element_non_zero_in_source[ID_Source] = true;
 					return "true";
 				}else if(type == "Ex" || type == "Ey"){
 					return "false";

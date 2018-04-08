@@ -3,11 +3,16 @@
 
 #include "GridCreator_NEW.h"
 
+#include <float.h>
+#include <limits.h>
+
+
 #include "InterfaceToParaviewer.h"
 
 class AlgoElectro_NEW{
     private:
         /* MEMBERS */
+		unsigned int VERBOSITY = 0;
         
         /* FUNCTIONS */
 
@@ -17,7 +22,9 @@ class AlgoElectro_NEW{
     public:
 
         /* CONSTRUCTOR */
-        AlgoElectro_NEW(void){}
+        AlgoElectro_NEW(unsigned int VERBOSITY){
+			this->VERBOSITY = VERBOSITY;
+		}
 
         /* DESTRUCTOR  */
         ~AlgoElectro_NEW(void){}

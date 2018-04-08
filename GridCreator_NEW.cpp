@@ -46,7 +46,8 @@ std::string double_vector_to_string(std::vector<double> const &vec, std::string 
 }
 
 /* CONSTRUCTOR */
-GridCreator_NEW::GridCreator_NEW(InputParser &input_parser,
+GridCreator_NEW::GridCreator_NEW(unsigned int VERBOSITY,
+						InputParser &input_parser,
 					    Materials &materials,
 					    MPI_Initializer &MPI_communicator,
                         ProfilingClass &profiler):
@@ -63,6 +64,9 @@ GridCreator_NEW::GridCreator_NEW(InputParser &input_parser,
     // Call the MPI division function, from the MPI_communicator field.
     // It retrieves the number of nodes for the electromagnetic grid along each direction:
 	this->MPI_communicator.MPI_DIVISION(*this);
+	
+	/// Verbosity:
+	this->VERBOSITY = VERBOSITY;
 
 }
 
@@ -199,6 +203,10 @@ GridCreator_NEW::~GridCreator_NEW(void){
 /* GRID INITIALIZATION */
 void GridCreator_NEW::meshInitialization(void){
     
+	if(VERBOSITY >= 1)
+		printf("\t> [MPI %d] - Starting mesh initialization...\n",
+			this->MPI_communicator.getRank());
+	
     // Timing the grid initialization (in CPU time):
     double start_grid_init;
     double end___grid_init;
@@ -412,9 +420,8 @@ void GridCreator_NEW::meshInitialization(void){
     this->thermal_diffusivity  = new double[T]();
 
     /* INITIALIZATION OF THE NODES */
-    #ifndef NDEBUG
-        printf("[MPI %d] - Assigning material...\n",this->MPI_communicator.getRank());
-    #endif
+    if(this->VERBOSITY >= 1)
+        printf("\t\t>> [MPI %d] - Assigning material...\n",this->MPI_communicator.getRank());
     this->Assign_A_Material_To_Each_Node();
 
     /* INITIALIZATION OF TEMPERATURE NODES (give a initial temperature) */
@@ -429,11 +436,10 @@ void GridCreator_NEW::meshInitialization(void){
     double elapsedTimeSec = end___grid_init - start_grid_init;
     this->profiler.incrementTimingInput("Grid_meshInit_omp_get_wtime",elapsedTimeSec);
 
-    #ifndef NDEBUG
-        printf("[MPI %d] - Grid initialization in %.5lf seconds.\n",
+    if(this->VERBOSITY >= 1)
+        printf("\t> [MPI %d] - Grid initialization in %.5lf seconds.\n",
             this->MPI_communicator.getRank(),
             elapsedTimeSec);
-    #endif
 
 }
 
@@ -1071,7 +1077,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
         /**
          * X component of the electric field.
          */
-		#pragma omp for
+		#pragma omp for nowait
         for(size_t K = 0 ; K < ref_obj->size_Ex[2]; K++){
             for(size_t J = 0 ; J < ref_obj->size_Ex[1] ; J ++){
                 for(size_t I = 0 ; I < ref_obj->size_Ex[0] ; I ++){
@@ -1097,11 +1103,15 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 }
             }
         }
+		if(ref_obj->VERBOSITY >= 2 && omp_get_thread_num() == 0){
+			printf("\t\t>> [MPI %d] - Ex electromagn. properties are now initialized.\n",
+				ref_obj->MPI_communicator.getRank());
+		}
 
         /**
          * Y component of the electric field.
          */
-		#pragma omp for
+		#pragma omp for nowait
         for(size_t K = 0 ; K < ref_obj->size_Ey[2]; K++){
             for(size_t J = 0 ; J < ref_obj->size_Ey[1] ; J ++){
                 for(size_t I = 0 ; I < ref_obj->size_Ey[0] ; I ++){
@@ -1127,11 +1137,15 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 }
             }
         }
+		if(ref_obj->VERBOSITY >= 2 && omp_get_thread_num() == 0){
+			printf("\t\t>> [MPI %d] - Ey electromagn. properties are now initialized.\n",
+				ref_obj->MPI_communicator.getRank());
+		}
 
         /**
          * Z component of the electric field.
          */
-		#pragma omp for
+		#pragma omp for nowait
         for(size_t K = 0 ; K < ref_obj->size_Ez[2]; K++){
             for(size_t J = 0 ; J < ref_obj->size_Ez[1] ; J ++){
                 for(size_t I = 0 ; I < ref_obj->size_Ez[0] ; I ++){
@@ -1162,6 +1176,10 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 }
             }
         }
+		if(ref_obj->VERBOSITY >= 2 && omp_get_thread_num() == 0){
+			printf("\t\t>> [MPI %d] - Ez electromagn. properties are now initialized.\n",
+				ref_obj->MPI_communicator.getRank());
+		}
 
         DISPLAY_WARNING(
             "Attention. Rel. permeability is the vacuum one, magn_cond is 0."
@@ -1171,7 +1189,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
         /**
          * X component of the magnetic field.
          */
-		#pragma omp for
+		#pragma omp for nowait
         for(size_t K = 0 ; K < ref_obj->size_Hx[2]; K++){
             for(size_t J = 0 ; J < ref_obj->size_Hx[1] ; J ++){
                 for(size_t I = 0 ; I < ref_obj->size_Hx[0] ; I ++){
@@ -1183,11 +1201,15 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 }
             }
         }
+		if(ref_obj->VERBOSITY >= 2 && omp_get_thread_num() == 0){
+			printf("\t\t>> [MPI %d] - Hx electromagn. properties are now initialized.\n",
+				ref_obj->MPI_communicator.getRank());
+		}
 
         /**
          * X component of the magnetic field.
          */
-		#pragma omp for
+		#pragma omp for nowait
         for(size_t K = 0 ; K < ref_obj->size_Hy[2]; K++){
             for(size_t J = 0 ; J < ref_obj->size_Hy[1] ; J ++){
                 for(size_t I = 0 ; I < ref_obj->size_Hy[0] ; I ++){
@@ -1199,11 +1221,15 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 }
             }
         }
+		if(ref_obj->VERBOSITY >= 2 && omp_get_thread_num() == 0){
+			printf("\t\t>> [MPI %d] - Hy electromagn. properties are now initialized.\n",
+				ref_obj->MPI_communicator.getRank());
+		}
 
         /**
          * Z component of the magnetic field.
          */
-		#pragma omp for
+		#pragma omp for nowait
         for(size_t K = 0 ; K < ref_obj->size_Hz[2]; K++){
             for(size_t J = 0 ; J < ref_obj->size_Hz[1] ; J ++){
                 for(size_t I = 0 ; I < ref_obj->size_Hz[0] ; I ++){
@@ -1215,6 +1241,10 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                 }
             }
         }
+		if(ref_obj->VERBOSITY >= 2 && omp_get_thread_num() == 0){
+			printf("\t\t>> [MPI %d] - Hz electromagn. properties are now initialized.\n",
+				ref_obj->MPI_communicator.getRank());
+		}
 	}/* END OF PRAGMA OMP PARALLEL */
 	
     }else{
@@ -1428,6 +1458,10 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
                         );
                         if(res == "true")
                         {
+							this->input_parser
+								.source
+								.there_is_at_least_one_element_non_zero_in_source[id]
+								= true;
                             /// Record min max
                             if(J > J_max[omp_get_thread_num()]){
                                 J_max[omp_get_thread_num()] = J;
@@ -1602,6 +1636,9 @@ void GridCreator_NEW::fillIn_material_with_geometry_file(void){
                 /**
                  * We have spheres.
                  */
+				if(this->VERBOSITY >= 1)
+					printf("\t\t\t>>> [MPI %d] - Spheres...\n",
+							this->MPI_communicator.getRank());
                 size_t numberOf = static_cast<size_t> (read_int(
                     geometryFileJSON,"spheres.howMany",0));
                 std::vector<double> radius
@@ -1646,6 +1683,9 @@ void GridCreator_NEW::fillIn_material_with_geometry_file(void){
                 /**
                  * We have cubes.
                  */
+				if(this->VERBOSITY >= 1)
+					printf("\t\t\t>>> [MPI %d] - Cubes...\n",
+							this->MPI_communicator.getRank());
                 size_t numberOf = static_cast<size_t> (read_int(
                     geometryFileJSON,"cubes.howMany",0));
                 std::vector<double> sides
@@ -1800,6 +1840,10 @@ void GridCreator_NEW::fillInMat_forms(
             }
         }
     }
+	if(this->VERBOSITY >= 2){
+		printf("\t\t\t\t>>>> [MPI %d] - Form %s for Ex - DONE.\n",
+				this->MPI_communicator.getRank(),type_form.c_str());
+	}
 
     /**
      * Field Ey
@@ -1866,6 +1910,10 @@ void GridCreator_NEW::fillInMat_forms(
             }
         }
     }
+	if(this->VERBOSITY >= 2){
+		printf("\t\t\t\t>>>> [MPI %d] - Form %s for Ey - DONE.\n",
+				this->MPI_communicator.getRank(),type_form.c_str());
+	}
 
     /**
      * Field Ez
@@ -1932,6 +1980,10 @@ void GridCreator_NEW::fillInMat_forms(
             }
         }
     }
+	if(this->VERBOSITY >= 2){
+		printf("\t\t\t\t>>>> [MPI %d] - Form %s for Ez - DONE.\n",
+				this->MPI_communicator.getRank(),type_form.c_str());
+	}
 
     /**
      * Field Hx
@@ -1998,6 +2050,10 @@ void GridCreator_NEW::fillInMat_forms(
             }
         }
     }
+	if(this->VERBOSITY >= 2){
+		printf("\t\t\t\t>>>> [MPI %d] - Form %s for Hx - DONE.\n",
+				this->MPI_communicator.getRank(),type_form.c_str());
+	}
 
     /**
      * Field Hy
@@ -2063,6 +2119,10 @@ void GridCreator_NEW::fillInMat_forms(
             }
         }
     }
+	if(this->VERBOSITY >= 2){
+		printf("\t\t\t\t>>>> [MPI %d] - Form %s for Hy - DONE.\n",
+				this->MPI_communicator.getRank(),type_form.c_str());
+	}
 
     /**
      * Field Hz
@@ -2128,6 +2188,10 @@ void GridCreator_NEW::fillInMat_forms(
             }
         }
     }
+	if(this->VERBOSITY >= 2){
+		printf("\t\t\t\t>>>> [MPI %d] - Form %s for Hz - DONE.\n",
+				this->MPI_communicator.getRank(),type_form.c_str());
+	}
 }
 
 void GridCreator_NEW::Display_size_fields(void){

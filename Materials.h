@@ -18,6 +18,8 @@
 
 #include <boost/filesystem.hpp>
 
+#include <climits>
+
 using namespace std;
 
 typedef struct material_struct{
@@ -36,6 +38,10 @@ typedef struct material_struct{
 
 class Materials{
 	private:
+		int MPI_RANK = INT_MIN;
+		int MPI_root = INT_MIN;
+		unsigned int VERBOSITY = 0;
+	
 		bool unification_done = false;
 		// Contains all the properties of all materials:
 		Array_3D_Template<double> properties;
@@ -99,9 +105,15 @@ class Materials{
 		map<std::string,double> GetInitTemp_FromMaterialName;
 		// Constructor:
 		Materials(
+			unsigned int VERBOSITY,
+			int MPI_RANK,
+			int MPI_root,
 			std::string dir,
 			map<std::string,double> GetInitTemp_FromMaterialName
 		){
+			this->VERBOSITY = VERBOSITY;
+			this->MPI_RANK = MPI_RANK;
+			this->MPI_root = MPI_root;
 			this->GetInitTemp_FromMaterialName = GetInitTemp_FromMaterialName;
 			this->get_properties_from_directory(dir);
 			if(this->unification_done != true)

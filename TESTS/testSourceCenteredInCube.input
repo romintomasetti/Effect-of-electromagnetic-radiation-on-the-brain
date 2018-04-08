@@ -33,11 +33,11 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=0.005
-		deltaY_Electro=0.005
-		deltaZ_Electro=0.005
+		deltaX_Electro=0.008
+		deltaY_Electro=0.008
+		deltaZ_Electro=0.008
 		delta_Thermal=0.1
-		ratio_EM_TH_delta=0.05
+		ratio_EM_TH_delta=0.08
 	$DELTAS
 		
 	// Boundaries of the domain
@@ -69,7 +69,7 @@ $MESH
 		///
 		IMPOSED=SIMPLE;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
-		SOURCE_TIME=GAUSSIAN
+		SOURCE_TIME=SINE
 		// Default with Gaussian is (MEAN,STD)=(0*period,period/10) where period=c/frequency, c=3e8
 	$SOURCE
 	

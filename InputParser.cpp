@@ -1708,28 +1708,29 @@ void InputParser::readHeader_POST_PROCESSING(ifstream &file){
 							filename_     //.filename
 						};
 						this->points_to_be_probed.push_back(temp);
+						if(this->MPI_rank == 0){
+							const std::string dir = "probe_point";
+							directory_exists(dir,true);
 
-						const std::string dir = "probe_point";
-						directory_exists(dir,true);
-
-						/// Check that no file with the same name exists. If there is one, delete it.
-						if(is_file_exist(filename_)){
-							remove(filename_.c_str());
+							/// Check that no file with the same name exists. If there is one, delete it.
+							if(is_file_exist(filename_)){
+								remove(filename_.c_str());
+							}
+							/// Create the file:
+							std::ofstream outfile (filename_,std::ofstream::out);
+							if(!outfile.is_open()){
+								DISPLAY_ERROR_ABORT(
+									"Cannot create file %s.",filename_.c_str()
+								);
+							}
+							char buff[DTTMSZ];
+							outfile << "Created on " << getDtTm (buff);
+							outfile << " | contains the field " + type_field;
+							outfile << " at time(" + at_which_time + ")";
+							outfile << " and at point (" << coord[0];
+							outfile << "," << coord[1] << "," << coord[2] << ")" << std::endl;
+							outfile.close();
 						}
-						/// Create the file:
-						std::ofstream outfile (filename_,std::ofstream::out);
-						if(!outfile.is_open()){
-							DISPLAY_ERROR_ABORT(
-								"Cannot create file %s.",filename_.c_str()
-							);
-						}
-						char buff[DTTMSZ];
-						outfile << "Created on " << getDtTm (buff);
-						outfile << " | contains the field " + type_field;
-						outfile << " at time(" + at_which_time + ")";
-						outfile << " and at point (" << coord[0];
-						outfile << "," << coord[1] << "," << coord[2] << ")" << std::endl;
-						outfile.close();
 
 					}else{
 						DISPLAY_ERROR_ABORT(

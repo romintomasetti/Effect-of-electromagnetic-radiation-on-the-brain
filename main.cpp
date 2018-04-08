@@ -23,6 +23,8 @@
 #include <mpi.h>
 #include <unistd.h>
 
+#include <boost/lexical_cast.hpp>
+
 #include <vector>
 
 #include "Materials.h"
@@ -62,13 +64,22 @@ using namespace std;
 void check_input_file_name_given(int argc, char *argv[],map<std::string,std::string> &inputs);	
 
 int main(int argc, char *argv[]){
-
+	
+	unsigned int VERBOSITY = 5;
+	
 	omp_set_nested(1);
 	omp_set_dynamic(0);
 
-	map<std::string,std::string> inputs;
+	std::map<std::string,std::string> inputs;
+	std::map<std::string,std::string>::iterator it;
 
 	check_input_file_name_given(argc, argv,inputs);	
+	
+	it = inputs.find("-v");
+	if(it != inputs.end()){
+		/// User provided a verbosity argument.
+		VERBOSITY = std::stoul(inputs["-v"]);
+	}
 
 	ProfilingClass profiler;
 
@@ -84,7 +95,7 @@ int main(int argc, char *argv[]){
 		cout << "Calling input file parser...\n";
 	#endif
 	string filenameInput = inputs["-inputfile"];
-	InputParser input_parser;
+	InputParser input_parser(MPI_communicator.getRank());
 	int MPI_RANK = MPI_communicator.getRank();
 	input_parser.defaultParsingFromFile(filenameInput,MPI_RANK);
 	#ifndef NDEBUG
@@ -93,6 +104,9 @@ int main(int argc, char *argv[]){
 	
 	/* The material object stores all the material properties */
 	Materials allMat(
+		VERBOSITY,
+		MPI_communicator.getRank(),
+		MPI_communicator.rootProcess,
 		input_parser.material_data_directory.string(),
 		input_parser.GetInitTemp_FromMaterialName
 	);
@@ -124,7 +138,12 @@ int main(int argc, char *argv[]){
 	/*printf("Initial temperature for AIR is %f.\n",
 				input_parser.GetInitTemp_FromMaterialName["AIR"]);*/	
 
-	GridCreator_NEW gridTest(input_parser,allMat,MPI_communicator,profiler);
+	GridCreator_NEW gridTest(
+		VERBOSITY,
+		input_parser,
+		allMat,
+		MPI_communicator,
+		profiler);
 
 	//cout << "Mesh init\n";
 	gridTest.meshInitialization();
@@ -141,7 +160,7 @@ int main(int argc, char *argv[]){
 	interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
 
 	
-	AlgoElectro_NEW algoElectro_newTst;
+	AlgoElectro_NEW algoElectro_newTst(VERBOSITY);
 	algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
 
 	profiler.probeMaxRSS();
@@ -160,23 +179,29 @@ int main(int argc, char *argv[]){
 void check_input_file_name_given(int argc, char *argv[],map<std::string,std::string> &inputs){
 
 	for(int I = 0 ; I < argc ; I ++){
+		if(strcmp(argv[I],"./main") == 0 || strcmp(argv[I],"main") == 0)
+			continue;
 		//printf("Arg[%d] = %s\n",I,argv[I]);
 
 		/// If argv[I] is "-inputfile", use it:
 		if(strcmp(argv[I],"-inputfile") == 0 && I < argc -1 ){
 
 			inputs.insert(std::pair<std::string,std::string>("-inputfile",argv[++I]));
-			
-		}else if(strcmp(argv[I],"-inputfile") == 0 && I < argc ){
-
-			fprintf(stderr,"In %s :: ERROR :: you give '-inputfile' but nothing after!\n",
-					__FUNCTION__);
-			fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
-			#ifdef MPI_COMM_WORLD
-				MPI_Abort(MPI_COMM_WORLD,-1);
-			#else
-				abort();
-			#endif
+		}else if(strcmp(argv[I],"-v") == 0 && I < argc - 1){
+			/// Verify that the argument to -v is a number:
+			try{
+				boost::lexical_cast<double>(argv[I+1]);
+			}catch(boost::bad_lexical_cast &){
+				DISPLAY_ERROR_ABORT("The argument to '-v' should be an unsigned int but has %s.",
+									argv[I+1]);
+			}
+			inputs.insert(std::pair<std::string,std::string>("-v",argv[++I]));
+		}else{
+			printf("COUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU :: %s\n",argv[I]);
+			DISPLAY_ERROR_ABORT(
+				"The input argument %s is not known.",
+				argv[I]
+			);
 		}
 
 	}

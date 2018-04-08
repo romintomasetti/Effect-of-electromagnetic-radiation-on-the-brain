@@ -146,7 +146,8 @@ class InputParser{
 		ElectromagneticSource source;
 
 		// Default constructor:
-		InputParser(){};
+		int MPI_rank = 0;
+		InputParser(int MPI_rank){this->MPI_rank = MPI_rank;};
 		// Constructor:
 		InputParser(string file_name);
 		// Destructor:

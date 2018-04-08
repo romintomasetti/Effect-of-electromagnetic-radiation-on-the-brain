@@ -24,6 +24,8 @@ Geometrical_Forms enum_for_geometrical_forms(std::string const &str);
 
 class MPI_Initializer;
 class GridCreator_NEW{
+	private:
+		unsigned int VERBOSITY = 0;
     public:
 
         const size_t DECALAGE_A_LA_MAIN = 0;
@@ -127,7 +129,8 @@ class GridCreator_NEW{
         /* FUNCTIONS */
 
         // Constructor:
-        GridCreator_NEW(InputParser &input_parser,
+        GridCreator_NEW(unsigned int VERBOSITY,
+						InputParser &input_parser,
 					    Materials &materials,
 					    MPI_Initializer &MPI_communicator,
                         ProfilingClass &profiler);

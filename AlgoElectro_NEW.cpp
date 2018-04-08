@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <unistd.h>
 
 #include "DISC_INTEGR/discrete_integration_util.hpp"
@@ -29,6 +30,7 @@
  #define   LOCK_NB   4    /* don't block when locking */
  #define   LOCK_UN   8    /* unlock */
 
+void fflush_stdout(void){fflush(stdout);}
 
 void probe_a_field(
     GridCreator_NEW &grid,
@@ -219,40 +221,72 @@ double AlgoElectro_NEW::Compute_dt(GridCreator_NEW &mesh){
     double dy = mesh.delta_Electromagn[1];
     double dz = mesh.delta_Electromagn[2];
     // Time step:
-    double dt = 0.0;
+    double dt = DBL_MAX;
     // Temporary variable:
     double tmp= 0.0;
     // Iterator:
     unsigned char i=0;                                      
 
     // Iterate over the number of materials. For each material, compute the required time step.
-    // At the end, the smallest time step is chosen.                                          
-    for (i = 0 ; i < mesh.materials.numberOfMaterials ; i++ ){
-
-            // Get material:
-            string material = mesh.materials.materialName_FromMaterialID[i];
-            // Get permeability:
-            double mu_material = mesh.materials.getProperty(
-                    mesh.input_parser.GetInitTemp_FromMaterialName[material],
-                    i,4);    
+    // At the end, the smallest time step is chosen. 
+	size_t nbr_mat = mesh.materials.unified_material_list.size();
+    for (i = 0 ; i < nbr_mat ; i++ ){
+			/// Get material name:
+			std::string mat_name = mesh.materials.unified_material_list[i].name;
+			/// Get permeability:
+			double rel_permeability = 0;
+			std::map<std::string,double>::iterator it;
+			it = mesh.materials.unified_material_list[i].properties.find("RELATIVEPERMEABILITY");
+			if(it == mesh.materials.unified_material_list[i].properties.end()){
+				/// Use default relative permeability
+				rel_permeability = 1;
+			}else{
+				rel_permeability = mesh
+									.materials
+									.unified_material_list[i].properties["RELATIVEPERMEABILITY"];
+				if(rel_permeability == nan("") || rel_permeability == 0)
+					continue;
+			}
+            double mu_material = rel_permeability * VACUUM_PERMEABILITY;
 
             // Get permittivity:
-            double epsilon_material = mesh.materials.getProperty(
-                   mesh.input_parser.GetInitTemp_FromMaterialName[material],
-                    i,5);     
+			double rel_permittivity = 0;
+			it = mesh.materials.unified_material_list[i].properties.find("RELATIVEPERMITTIVITY");
+			if(it == mesh.materials.unified_material_list[i].properties.end()){
+				/// Use default relative permeability
+				rel_permittivity = 1;
+				DISPLAY_WARNING("using def rel per");
+			}else{
+				rel_permittivity = mesh
+									.materials
+									.unified_material_list[i].properties["RELATIVEPERMITTIVITY"];
+				if(rel_permittivity == nan("") || rel_permittivity == 0)
+					continue;
+			}
+            double epsilon_material = rel_permittivity * VACUUM_PERMITTIVITY;
+			
+			/*printf("%20s - [mu::%.9g | eps::%.9g | rel_mu::%.9g | rel_eps::%.9g]\n",
+					mat_name.c_str(),
+					mu_material,
+					epsilon_material,
+					rel_permeability,
+					rel_permittivity);*/
+			
             // Compute speed of light:
             double c = 1/(sqrt(mu_material*epsilon_material));
             // Take the smallest time step:
-            if( i == 0 ){
-                dt = 1 / ( c * sqrt( 1 / ( dx * dx ) + 1 / ( dy * dy ) + 1 / (dz *dz) ) );
-            }
-            else{
-                tmp = 1/(c*sqrt(1/(dx*dx) + 1/(dy*dy) + 1/(dz*dz)));
-                if( tmp < dt ){
-                    dt = tmp;
-                }
-            }
+
+			tmp = 1/(c*sqrt(1/(dx*dx) + 1/(dy*dy) + 1/(dz*dz)));
+			if( tmp < dt )
+				dt = tmp;
     }
+	/*printf(">>> Chosen dt is %.9g.\n",dt);*/
+	
+	if(dt == DBL_MAX){
+		DISPLAY_ERROR_ABORT(
+			"There was an error because dt == DBL_MAX is true."
+		);
+	}
     return dt;
 }
 
@@ -288,6 +322,9 @@ void AlgoElectro_NEW::update(
     */
 
     // In the object grid, set the properties mu, eps, magnetic cond. and electric cond. for each node:
+	if(this->VERBOSITY >= 1)
+		printf("\t> [MPI %d] - Initializing electromagnetic properties...\n",
+				grid.MPI_communicator.getRank());
     if(grid.input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
 		DISPLAY_ERROR_ABORT("USE_AIR_EVERYWHERE is depreciated.");
         grid.Initialize_Electromagnetic_Properties("AIR_AT_INIT_TEMP");
@@ -420,7 +457,8 @@ void AlgoElectro_NEW::update(
 
 
 
-
+	if(this->VERBOSITY >= 1)
+		printf("\t> [MPI %d] - Computing coefficients...\n",grid.MPI_communicator.getRank());
     /* COMPUTING COEFFICIENTS */
     #pragma omp parallel default(none)\
 		firstprivate(C_exe,C_exh_1,C_exh_2)\
@@ -613,6 +651,9 @@ void AlgoElectro_NEW::update(
 
     std::vector<std::string> TYPE = {"Ex","Ey","Ez"};
 
+	if(VERBOSITY >= 1)
+		printf("\t> [MPI %d] - Computing nodes inside sources...\n",
+				grid.MPI_communicator.getRank());
     for(unsigned int i = 0 ; i < TYPE.size() ; i ++){
         grid.Compute_nodes_inside_sources(
             local_nodes_inside_source_NUMBER[i],
@@ -630,6 +671,39 @@ void AlgoElectro_NEW::update(
             #endif
         }
     }
+	/// Verify that there is at least one emitting element:
+	int at_least_one_node = 0;
+	for(size_t I = 0 ; I < grid.input_parser.source.get_number_of_sources() ; I++){
+		if(grid.input_parser.source.there_is_at_least_one_element_non_zero_in_source[I]){
+			at_least_one_node = 1;
+			break;
+		}
+	}
+	/// Communicate between MPI processes to check if there is a source somewhere:
+	int checking_at_least_one_node[grid.MPI_communicator.getNumberOfMPIProcesses()];
+	MPI_Gather(
+		&at_least_one_node,
+		1,
+		MPI_INT,
+		checking_at_least_one_node,
+		grid.MPI_communicator.getNumberOfMPIProcesses(),
+		MPI_INT,
+		grid.MPI_communicator.rootProcess,
+		MPI_COMM_WORLD);
+	int counter_false = 0;
+	if(grid.MPI_communicator.getRank() == grid.MPI_communicator.rootProcess){
+		for(int i = 0 ; i < grid.MPI_communicator.getNumberOfMPIProcesses() ; i++){
+			if(checking_at_least_one_node[i] == 0){
+				counter_false++;
+			}
+		}
+		if(counter_false == grid.MPI_communicator.getNumberOfMPIProcesses()){
+			DISPLAY_ERROR_ABORT(
+				"There is no node emitting anything. Your solution will remain zero everywhere."
+			);
+		}
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
 
     /// Assign frequencies:
     local_nodes_inside_source_FREQ = grid.input_parser.source.frequency;
@@ -836,7 +910,7 @@ void AlgoElectro_NEW::update(
         // Some indexing variables:
         size_t I,J,K;
 
-        /// Variables to monitore the time spent communicating:
+        /// Variables to monitor the time spent communicating:
         struct timeval start_mpi_comm;
         struct timeval end___mpi_comm;
         double         total_mpi_comm = 0.0;
@@ -846,9 +920,14 @@ void AlgoElectro_NEW::update(
         struct timeval end___while_iter;
         double         total_while_iter = 0.0;
 
+		if(this->VERBOSITY >= 3){
+			printf("\t>[MPI %d] - Entering while loop of update (EM).\n",
+					grid.MPI_communicator.getRank());
+		}
         while(current_time < grid.input_parser.get_stopTime()
                 && currentStep < grid.input_parser.maxStepsForOneCycleOfElectro){
-
+			printf("\t>[MPI %d] - Entered while loop of update (EM).\n",
+					grid.MPI_communicator.getRank());
             gettimeofday( &start_while_iter , NULL);
 
             // Updating the magnetic field Hx.
@@ -865,7 +944,7 @@ void AlgoElectro_NEW::update(
 
             #ifndef NDEBUG
                 #pragma omp master
-                printf("%s>>> %s!!! WARNING !!!%s 'NDEBUG' is not defied. You are in debug mode."
+                printf("%s>>> %s!!! WARNING !!!%s 'NDEBUG' is not defined. You are in debug mode."
                        " Be aware that the code is subsequently much slower. As an example,"
                        " a lot of asserts and printf's are performed.%s\n",
                         ANSI_COLOR_RED,
@@ -904,6 +983,9 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
+			fflush_stdout();
+			printf("\t>[MPI %d] - Hx ok(EM).\n",
+					grid.MPI_communicator.getRank());
 
             // Updating the magnetic field Hy.
             // Don't update neighboors ! Start at 1. Go to size-1.
@@ -945,6 +1027,10 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
+			fflush_stdout();
+			printf("\t>[MPI %d] - Hy ok(EM).\n",
+					grid.MPI_communicator.getRank());
+			MPI_Barrier(MPI_COMM_WORLD);
 
             // Updating the magnetic field Hz.
             // Don't update neighboors ! Start at 1. Go to size-1.
@@ -978,14 +1064,29 @@ void AlgoElectro_NEW::update(
                         ASSERT(index_1Moins,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
                         ASSERT(index_2Plus,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
                         ASSERT(index_2Moins,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
+						
+						if(grid.MPI_communicator.getRank() == 0)
+							printf("Coucou Hz mpi 0 [%zu,%zu,%zu,%zu,%zu] / size[%zu,%zu,%zu]\n",
+									index,
+									index_1Plus,
+									index_1Moins,
+									index_2Plus,
+									index_2Moins,
+									grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2],
+									grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2],
+									grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 
                         H_z_tmp[index] = C_hzh[index] * H_z_tmp[index]
                                 + C_hze_1[index] * (E_x_tmp[index_1Plus] - E_x_tmp[index_1Moins])
                                 - C_hze_2[index] * (E_y_tmp[index_2Plus] - E_y_tmp[index_2Moins]);
-
                     }
                 }
             }
+			fflush_stdout();
+			MPI_Barrier(MPI_COMM_WORLD);
+			printf("\t>[MPI %d] - Hz ok(EM).\n",
+					grid.MPI_communicator.getRank());
+			
 
             /////////////////////////////////////////////////////
             /// OPENMP barrier because we must ensure all the ///
@@ -997,6 +1098,10 @@ void AlgoElectro_NEW::update(
             /////////////////////////
             /// MPI COMMUNICATION ///
             /////////////////////////
+			if(this->VERBOSITY >= 3 && omp_get_thread_num() == 0 && grid.MPI_communicator.getRank() == 0){
+				printf("[MPI %d] - While loop: communication of H.\n",
+						grid.MPI_communicator.getRank());
+			}	
             gettimeofday( &start_mpi_comm, NULL);
             /// Prepare the array to send:
             if(has_neighboor){
@@ -1258,7 +1363,9 @@ void AlgoElectro_NEW::update(
                         }else{
                             E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
                         }
-                    }
+                    }else{
+						E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
+					}
 
                 }                
             }
@@ -1290,7 +1397,9 @@ void AlgoElectro_NEW::update(
                         }else{
                             E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
                         }
-                    }
+                    }else{
+						E_y_tmp[index] = sin(2*M_PI*frequency*current_time);
+					}
                 }
             }
 
@@ -1320,7 +1429,9 @@ void AlgoElectro_NEW::update(
                         }else{
                             E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
                         }
-                    }
+                    }else{
+						E_x_tmp[index] = sin(2*M_PI*frequency*current_time);
+					}
                 }
             }
 
@@ -1413,6 +1524,10 @@ void AlgoElectro_NEW::update(
             #pragma omp barrier
             #pragma omp master
             {
+				MPI_Barrier(MPI_COMM_WORLD);
+				fflush_stdout();
+				MPI_Barrier(MPI_COMM_WORLD);
+				printf("[MPI %d] - Starting ABC.\n",grid.MPI_communicator.getRank());
             this->abc(grid,
                 E_x_tmp, E_y_tmp, E_z_tmp, 
                 Eyx0, Ezx0, 
@@ -1423,6 +1538,9 @@ void AlgoElectro_NEW::update(
                 Exz1, Eyz1,
                 dt
                 );
+				fflush_stdout();
+				MPI_Barrier(MPI_COMM_WORLD);
+				printf("[MPI %d] - Ending ABC.\n",grid.MPI_communicator.getRank());
             }
             #pragma omp barrier
 
@@ -1499,7 +1617,7 @@ void AlgoElectro_NEW::update(
                 if(    grid.MPI_communicator.isRootProcess() != INT_MIN 
                     /*&& currentStep == grid.input_parser.maxStepsForOneCycleOfElectro*/){
                         printf("%s[MPI %d - Electro - Update - step %zu]%s\n"
-                               "\t> Current simulation time is   %.12lf seconds (over %.12lf).\n"
+                               "\t> Current simulation time is   %.10g seconds (over %.10g) [dt = %.10g seconds].\n"
                                "\t> Current step is              %zu over %zu.\n"
                                "\t> Time elapsed inside while is %.6lf seconds (TOTAL).\n"
                                "\t> Time elaspsed per iter. is   %.6lf seconds (ITER).\n"
@@ -1513,6 +1631,7 @@ void AlgoElectro_NEW::update(
                                ANSI_COLOR_RESET,
                                current_time,
                                grid.input_parser.get_stopTime(),
+							   dt,
                                currentStep,
                                grid.input_parser.maxStepsForOneCycleOfElectro,
                                total_while_iter,

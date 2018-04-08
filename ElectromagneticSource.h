@@ -5,6 +5,8 @@
 #include <vector>
 #include "SetOnceVariable_Template.h"
 
+#include "header_with_all_defines.hpp"
+
 #include <climits>
 
 //#include "GridCreator.h"
@@ -20,6 +22,7 @@ class ElectromagneticSource{
 		//
 
 	public:
+		std::vector<bool> there_is_at_least_one_element_non_zero_in_source;
 		// Constructor:
 		ElectromagneticSource(){};
 		// Destructor:

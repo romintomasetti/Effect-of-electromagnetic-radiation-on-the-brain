@@ -47,7 +47,14 @@
  * CUSTOM ABORT FUNCTION
  */
 #ifdef MPI_COMM_WORLD
-        #define ABORT_MPI(ARG) MPI_Abort(MPI_COMM_WORLD,ARG);
+        #define ABORT_MPI(ARG){\
+			int done_already;\
+			MPI_Initialized(&done_already);\
+			if (!done_already)\
+				abort();\
+			else\
+				MPI_Abort(MPI_COMM_WORLD,ARG);\
+		}
 #else
         #define ABORT_MPI(ARG) abort();
 #endif
@@ -58,7 +65,13 @@
 #ifdef MPI_COMM_WORLD
 #define FPRINTF(...){\
         int ID_MPI_Process = INT_MIN;\
-	MPI_Comm_rank( MPI_COMM_WORLD, &ID_MPI_Process);\
+		int done_already;\
+		MPI_Initialized(&done_already);\
+		if(!done_already){\
+			ID_MPI_Process = INT_MIN;\
+		}else{\
+			MPI_Comm_rank( MPI_COMM_WORLD, &ID_MPI_Process);\
+		}\
         fprintf(stderr,"[MPI %d] - ",ID_MPI_Process);\
         fprintf(__VA_ARGS__);\
 }
