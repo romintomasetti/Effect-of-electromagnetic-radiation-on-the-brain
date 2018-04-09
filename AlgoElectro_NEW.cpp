@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <sys/time.h>
 
+#include "UTILS/vector_utilities.hpp"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/file.h>
@@ -346,11 +348,19 @@ void AlgoElectro_NEW::update(
     double *C_hxe_1 = new double[size]();
     double *C_hxe_2 = new double[size]();
 
+    fill_double_vector_with_zeros(C_hxh,size);
+    fill_double_vector_with_zeros(C_hxe_1,size);
+    fill_double_vector_with_zeros(C_hxe_2,size);
+
     // Magnetic field Hy:
     size = grid.size_Hy[0] * grid.size_Hy[1] * grid.size_Hy[2];
     double *C_hyh   = new double[size]();
     double *C_hye_1 = new double[size]();
     double *C_hye_2 = new double[size]();
+
+    fill_double_vector_with_zeros(C_hyh,size);
+    fill_double_vector_with_zeros(C_hye_1,size);
+    fill_double_vector_with_zeros(C_hye_2,size);
 
     // Magnetic field Hz:
     size = grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2];
@@ -358,11 +368,19 @@ void AlgoElectro_NEW::update(
     double *C_hze_1 = new double[size]();
     double *C_hze_2 = new double[size]();
 
+    fill_double_vector_with_zeros(C_hzh,size);
+    fill_double_vector_with_zeros(C_hze_1,size);
+    fill_double_vector_with_zeros(C_hze_2,size);
+
     // Electric field Ex:
     size = grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2];
     double *C_exe   = new double[size]();
     double *C_exh_1 = new double[size]();
     double *C_exh_2 = new double[size]();
+
+    fill_double_vector_with_zeros(C_exe,size);
+    fill_double_vector_with_zeros(C_exh_1,size);
+    fill_double_vector_with_zeros(C_exh_2,size);
 
     // Electric field Ey:
     size = grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]; 
@@ -370,11 +388,19 @@ void AlgoElectro_NEW::update(
     double *C_eyh_1 = new double[size]();
     double *C_eyh_2 = new double[size]();
 
+    fill_double_vector_with_zeros(C_eye,size);
+    fill_double_vector_with_zeros(C_eyh_1,size);
+    fill_double_vector_with_zeros(C_eyh_2,size);
+
     // Electric field Ez:
     size = grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2];
     double *C_eze   = new double[size]();
     double *C_ezh_1 = new double[size]();
     double *C_ezh_2 = new double[size]();
+
+    fill_double_vector_with_zeros(C_eze,size);
+    fill_double_vector_with_zeros(C_ezh_1,size);
+    fill_double_vector_with_zeros(C_ezh_2,size);
 
 
     /**
@@ -834,6 +860,8 @@ void AlgoElectro_NEW::update(
         firstprivate(Exz0, Exz1)\
         firstprivate(Eyz0, Eyz1)
     {
+        printf("\t >>>> MPI %d enters the parallel region.\n",grid.MPI_communicator.getRank());
+        MPI_Barrier(MPI_COMM_WORLD);
 
         bool MODULATE_SOURCE = false;
         double MIN_GAUSS_BEFORE_LET_BE = 1E-100;
@@ -920,14 +948,11 @@ void AlgoElectro_NEW::update(
         struct timeval end___while_iter;
         double         total_while_iter = 0.0;
 
-		if(this->VERBOSITY >= 3){
-			printf("\t>[MPI %d] - Entering while loop of update (EM).\n",
-					grid.MPI_communicator.getRank());
-		}
+        printf("\t >>> MPI %d enters the while loop.\n",grid.MPI_communicator.getRank());
+
         while(current_time < grid.input_parser.get_stopTime()
                 && currentStep < grid.input_parser.maxStepsForOneCycleOfElectro){
-			printf("\t>[MPI %d] - Entered while loop of update (EM).\n",
-					grid.MPI_communicator.getRank());
+
             gettimeofday( &start_while_iter , NULL);
 
             // Updating the magnetic field Hx.
@@ -944,13 +969,16 @@ void AlgoElectro_NEW::update(
 
             #ifndef NDEBUG
                 #pragma omp master
-                printf("%s>>> %s!!! WARNING !!!%s 'NDEBUG' is not defined. You are in debug mode."
-                       " Be aware that the code is subsequently much slower. As an example,"
-                       " a lot of asserts and printf's are performed.%s\n",
-                        ANSI_COLOR_RED,
-                        ANSI_COLOR_YELLOW,
-                        ANSI_COLOR_GREEN,
-                        ANSI_COLOR_RESET);
+                {
+                    if(grid.MPI_communicator.getRank() == 0)
+                    printf("%s>>> %s!!! WARNING !!!%s 'NDEBUG' is not defined. You are in debug mode."
+                        " Be aware that the code is subsequently much slower. As an example,"
+                        " a lot of asserts and printf's are performed.%s\n",
+                            ANSI_COLOR_RED,
+                            ANSI_COLOR_YELLOW,
+                            ANSI_COLOR_GREEN,
+                            ANSI_COLOR_RESET);
+                }
             #endif
 
             #pragma omp for schedule(static) collapse(3) nowait
@@ -983,9 +1011,15 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
-			fflush_stdout();
-			printf("\t>[MPI %d] - Hx ok(EM).\n",
-					grid.MPI_communicator.getRank());
+            #pragma omp master
+            {
+                fflush_stdout();
+                MPI_Barrier(MPI_COMM_WORLD);
+                printf("\t>[MPI %d] - Hx ok(EM) [step %zu].\n",
+					grid.MPI_communicator.getRank(),currentStep);
+            }
+            #pragma omp barrier
+			
 
             // Updating the magnetic field Hy.
             // Don't update neighboors ! Start at 1. Go to size-1.
@@ -1027,10 +1061,14 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
-			fflush_stdout();
-			printf("\t>[MPI %d] - Hy ok(EM).\n",
-					grid.MPI_communicator.getRank());
-			MPI_Barrier(MPI_COMM_WORLD);
+			#pragma omp master
+            {
+                fflush_stdout();
+                MPI_Barrier(MPI_COMM_WORLD);
+                printf("\t>[MPI %d] - Hy ok(EM) [step %zu].\n",
+					grid.MPI_communicator.getRank(),currentStep);
+            }
+            #pragma omp barrier
 
             // Updating the magnetic field Hz.
             // Don't update neighboors ! Start at 1. Go to size-1.
@@ -1065,8 +1103,8 @@ void AlgoElectro_NEW::update(
                         ASSERT(index_2Plus,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
                         ASSERT(index_2Moins,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 						
-						if(grid.MPI_communicator.getRank() == 0)
-							printf("Coucou Hz mpi 0 [%zu,%zu,%zu,%zu,%zu] / size[%zu,%zu,%zu]\n",
+						if(false && grid.MPI_communicator.getRank() == 0){
+							/*printf("Coucou Hz mpi 0 [%zu,%zu,%zu,%zu,%zu] / size[%zu,%zu,%zu]\n",
 									index,
 									index_1Plus,
 									index_1Moins,
@@ -1074,7 +1112,11 @@ void AlgoElectro_NEW::update(
 									index_2Moins,
 									grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2],
 									grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2],
-									grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
+									grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);*/
+                            printf("Access to H_z_tmp[%zu] %lf.\n",index,H_z_tmp[index]);
+                            printf("Access to C_hzh[%zu]   %lf.\n",index,C_hzh[index]);
+                            printf("Access to C_hze_1[%zu] %lf.\n",index,C_hze_1[index]);
+                        }
 
                         H_z_tmp[index] = C_hzh[index] * H_z_tmp[index]
                                 + C_hze_1[index] * (E_x_tmp[index_1Plus] - E_x_tmp[index_1Moins])
@@ -1082,10 +1124,14 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
-			fflush_stdout();
-			MPI_Barrier(MPI_COMM_WORLD);
-			printf("\t>[MPI %d] - Hz ok(EM).\n",
-					grid.MPI_communicator.getRank());
+			#pragma omp master
+            {
+                fflush_stdout();
+                MPI_Barrier(MPI_COMM_WORLD);
+                printf("\t>[MPI %d] - Hz ok(EM) [step %zu].\n",
+					grid.MPI_communicator.getRank(),currentStep);
+            }
+            #pragma omp barrier
 			
 
             /////////////////////////////////////////////////////

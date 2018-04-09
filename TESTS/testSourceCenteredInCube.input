@@ -33,11 +33,11 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=0.008
-		deltaY_Electro=0.008
-		deltaZ_Electro=0.008
+		deltaX_Electro=0.01
+		deltaY_Electro=0.01
+		deltaZ_Electro=0.01
 		delta_Thermal=0.1
-		ratio_EM_TH_delta=0.08
+		ratio_EM_TH_delta=0.1
 	$DELTAS
 		
 	// Boundaries of the domain
@@ -67,7 +67,7 @@ $MESH
 		/// Either 'DIPOLE' or 'SIMPLE' (for simple antenna):
 		/// If set to dipole, length is proportional to lambda = 3E8/freq
 		///
-		IMPOSED=SIMPLE;
+		IMPOSED=DIPOLE;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
 		SOURCE_TIME=SINE
 		// Default with Gaussian is (MEAN,STD)=(0*period,period/10) where period=c/frequency, c=3e8
@@ -87,7 +87,8 @@ $MESH
 				    3) H=GLOBAL puts the indices I J K globals
 					in each components of the magnetic field*/
 		//TEST_PARAVIEW_MPI=(TEMP=RANK,E=GLOBAL,H=GLOBAL)
-		USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/Multi_layered_spherical_brain.geometry}
+		//USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/Multi_layered_spherical_brain.geometry}
+		USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/air_only.geometry}
 		MATERIAL_DATA_FILE={OLD=data_air.csv,ELECTRO=tissueproperties_900E6_HZ.csv}
 		MATERIAL_DIRECTORY=TISSUES_PROPERTIES
 	$MATERIALS
@@ -140,7 +141,7 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=100calc
+		SAMPLING_FREQ_ELECTRO=1
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING

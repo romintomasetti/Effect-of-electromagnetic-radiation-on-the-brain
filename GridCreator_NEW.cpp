@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include "omp.h"
 
+#include "UTILS/vector_utilities.hpp"
+
 #include <algorithm>
 
 #include "CSV_parser.hpp"
@@ -263,6 +265,11 @@ void GridCreator_NEW::meshInitialization(void){
     this->E_x_eps             = new double[size]();
     this->E_x_electrical_cond = new double [size]();
 
+    fill_double_vector_with_zeros(this->E_x,size);
+    fill_unchar_vector_with_zeros(this->E_x_material,size);
+    fill_double_vector_with_zeros(this->E_x_eps,size);
+    fill_double_vector_with_zeros(this->E_x_electrical_cond,size);
+
     // Size of E_y is  M × (N − 1) × P. Add 2 nodes in each direction for the neighboors.
     if(this->MPI_communicator.must_add_one_to_E_Y_along_XYZ[0] == true){
         this->size_Ey[0] = M + 2 - REMOVE_ONE;
@@ -288,6 +295,11 @@ void GridCreator_NEW::meshInitialization(void){
     this->E_y_material        = new unsigned char[size]();
     this->E_y_eps             = new double[size]();
     this->E_y_electrical_cond = new double[size]();
+
+    fill_double_vector_with_zeros(this->E_y,size);
+    fill_unchar_vector_with_zeros(this->E_y_material,size);
+    fill_double_vector_with_zeros(this->E_y_eps,size);
+    fill_double_vector_with_zeros(this->E_y_electrical_cond,size);
 
     // Size of E_z is  M × N × (P − 1). Add 2 nodes in each direction for the neighboors.
 
@@ -315,6 +327,11 @@ void GridCreator_NEW::meshInitialization(void){
     this->E_z_material        = new unsigned char[size]();
     this->E_z_eps             = new double[size]();
     this->E_z_electrical_cond = new double[size]();
+
+    fill_double_vector_with_zeros(this->E_z,size);
+    fill_unchar_vector_with_zeros(this->E_z_material,size);
+    fill_double_vector_with_zeros(this->E_z_eps,size);
+    fill_double_vector_with_zeros(this->E_z_electrical_cond,size);
 
     /* ALLOCATE SPACE FOR THE MAGNETIC FIELDS */
 
@@ -347,6 +364,11 @@ void GridCreator_NEW::meshInitialization(void){
     this->H_x_magnetic_cond = new double[size]();
     this->H_x_mu            = new double[size]();
 
+    fill_double_vector_with_zeros(this->H_x,size);
+    fill_unchar_vector_with_zeros(this->H_x_material,size);
+    fill_double_vector_with_zeros(this->H_x_mu,size);
+    fill_double_vector_with_zeros(this->H_x_magnetic_cond,size);
+
     // Size of H_y is  (M − 1) × N × (P − 1). Add 2 nodes in each direction for the neighboors.
 
     if(this->MPI_communicator.must_add_one_to_H_Y_along_XYZ[0] == true){
@@ -376,6 +398,11 @@ void GridCreator_NEW::meshInitialization(void){
     this->H_y_mu            = new double[size]();
     this->H_y_magnetic_cond = new double[size]();
 
+    fill_double_vector_with_zeros(this->H_y,size);
+    fill_unchar_vector_with_zeros(this->H_y_material,size);
+    fill_double_vector_with_zeros(this->H_y_mu,size);
+    fill_double_vector_with_zeros(this->H_y_magnetic_cond,size);
+
     // Size of H_z is  (M − 1) × (N − 1) × P. Add 2 nodes in each direction for the nieghboors.
     if(this->MPI_communicator.must_add_one_to_H_Z_along_XYZ[0] == true){
         this->size_Hz[0] = M + 2 - REMOVE_ONE;
@@ -403,6 +430,11 @@ void GridCreator_NEW::meshInitialization(void){
     this->H_z_material      = new unsigned char[size]();
     this->H_z_mu            = new double[size]();
     this->H_z_magnetic_cond = new double[size]();
+
+    fill_double_vector_with_zeros(this->H_z,size);
+    fill_unchar_vector_with_zeros(this->H_z_material,size);
+    fill_double_vector_with_zeros(this->H_z_mu,size);
+    fill_double_vector_with_zeros(this->H_z_magnetic_cond,size);
 
     /* ALLOCATE SPACE FOR THE TEMPERATURE FIELD */
 
@@ -1514,14 +1546,14 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
         #pragma omp barrier
         #pragma omp single nowait
         {
-            #ifndef NDEBUG
+            /*#ifndef NDEBUG
                 printf("\n\n>>> FOR %s :: Index goes from (%zu,%zu) to (%zu,%zu)\n\n",
                     type.c_str(),
                     I_min[std::distance(I_min.begin(),std::min_element(I_min.begin(), I_min.end()))],
                     J_min[std::distance(J_min.begin(),std::min_element(J_min.begin(), J_min.end()))],
                     I_max[std::distance(I_max.begin(),std::max_element(I_max.begin(), I_max.end()))],
                     J_max[std::distance(J_max.begin(),std::max_element(J_max.begin(), J_max.end()))]);
-            #endif
+            #endif*/
         }
         
         // Assemble all the results in one vector:
@@ -1725,6 +1757,8 @@ void GridCreator_NEW::fillIn_material_with_geometry_file(void){
                     centers,
                     materials_inside_cubes,
                     "CUBES");
+            }else if(kind_of_geometries[forms] == ""){
+                // do nothing
             }else{
                 DISPLAY_ERROR_ABORT(
                     "No geometricalform corresponding to %s is coded yet !",

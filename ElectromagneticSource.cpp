@@ -217,18 +217,17 @@ std::string ElectromagneticSource::is_inside_source_Romin(
 			if(isOnFace_e_x == true && isOnFace_e_y == true){
 				// Impose none of Ex and Ey, return false:
 				if( type == "Ex" || type == "Ey" ){
-					//printf("Sur l'arête : (%zu,%zu,%zu)\n",I_gl,J_gl,K_gl);
 					return "false";
 				}
 			}else if(isOnFace_e_x == true){
 				if(type == "Ex"){
 					return "false";
 				}else if(type == "Ey"){
-					return "0";
+					return "true";
 				}
 			}else if(isOnFace_e_y == true){
 				if(type == "Ex"){
-					return "0";
+					return "true";
 				}else if(type == "Ey"){
 					return "false";
 				}
@@ -305,6 +304,13 @@ std::string ElectromagneticSource::is_inside_source_Romin(
 			}
 			if(Y_coord - deltas_Electro[1] <= (this->centerY[ID_Source] - length_Y/2.)+EPS){
 				isOnFace_e_MinusY = true;
+			}
+
+			if(Z_coord + deltas_Electro[2] >= (this->centerZ[ID_Source] + length_Z/2.)+EPS){
+				isOnFace_e_PlusZ = true;
+			}
+			if(Z_coord + deltas_Electro[2] <= (this->centerZ[ID_Source] - length_Z/2.)+EPS){
+				isOnFace_e_MinusZ = true;
 			}
 
 			if(    (isOnFace_e_PlusX  == true && isOnFace_e_PlusY  == true)

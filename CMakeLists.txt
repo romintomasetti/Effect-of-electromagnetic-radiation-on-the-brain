@@ -21,7 +21,6 @@ include(CheckCXXCompilerFlag)
 set(EXEC_NAME main)
 
 option(BUILD_DOC "Build documentation" ON)
-set(THREADS_PREFER_PTHREAD_FLAG On)
 
 IF(NOT CMAKE_BUILD_TYPE)
     #SET( CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
@@ -32,14 +31,9 @@ IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 ENDIF()
 
 check_cxx_compiler_flag("-std=c++11" STDCXX11)
-  if(STDCXX11)
+if(STDCXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-  endif(STDCXX11)
-
-# ADDING OPTIMIZATION:
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Ofast -Wall -Wextra -g")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -frerun-loop-opt -fexpensive-optimizations")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -funroll-loops")
+endif(STDCXX11)
 
 
 # ADDING WARNINGS
@@ -74,7 +68,7 @@ endif()
 
 set(BoostVersion 1.66.0)
 set(Boost_VERSION 106600)
-find_package(Boost ${BoostVersion} COMPONENTS system regex filesystem QUIET) 
+find_package(Boost COMPONENTS system regex filesystem QUIET) 
 if(Boost_FOUND)
 	message(STATUS "Boost found in ${Boost_INCLUDE_DIRS} / ${BoostSourceDir}")
 else()
