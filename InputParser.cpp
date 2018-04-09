@@ -698,7 +698,8 @@ void InputParser::readHeader_MESH (ifstream &file){
 									abort();
 								#endif
 							}
-							if(this->source_time == std::string())
+							if(this->source_time.empty() || 
+									this->source_time.size() != this->source.get_number_of_sources())
 								DISPLAY_ERROR_ABORT(
 									"You must specify source type ! (GAUSSIAN, SINE)"
 								);
@@ -815,13 +816,35 @@ void InputParser::readHeader_MESH (ifstream &file){
 							}
 							
 						}else if(propName == "SOURCE_TIME"){
-							if(propGiven != "GAUSSIAN" && propGiven != "SINE"){
+							/// Find the semi-colons:
+							std::vector<size_t> pos_semi_col
+								= findCharacterInsideString(propGiven, ";");
+							if(pos_semi_col.size() != this->source.get_number_of_sources()){
 								DISPLAY_ERROR_ABORT(
-									"The given property is different from GAUSSIAN or SINE (has %s).",
+									"You must provided as many semi-colon(s)"
+									" as there are source(s) (has %u source(s) and %s.",
+									this->source.get_number_of_sources(),
 									propGiven.c_str()
 								);
 							}
-							this->source_time = propGiven;
+							for(size_t i = 0 ; i < pos_semi_col.size() ; i ++){
+								size_t beg, length;
+								if(i==0){beg = 0; length = pos_semi_col[0];}
+								else{
+									beg = pos_semi_col[i-1]+1;
+									length = pos_semi_col[i]-pos_semi_col[i-1]-1;
+								}
+								std::string given = 
+									propGiven.substr(beg,length);
+								if(given != "GAUSSIAN" && given != "SINE"){
+									DISPLAY_ERROR_ABORT(
+										"The given property is different from GAUSSIAN or SINE (has %s).",
+										given.c_str()
+									);
+								}
+								this->source_time.push_back(given);
+							}
+							
 
 						}else{
 							printf("InputParser::readHeader_MESH:: You didn't provide a ");

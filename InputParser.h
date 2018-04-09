@@ -105,7 +105,7 @@ class InputParser{
 		std::vector<probed_point> points_to_be_probed;
 
 		/// Linked to the source behaviour:
-		std::string source_time = string();
+		std::vector<std::string> source_time;
 
 		/// Name of the file containing the materials' data:
 		std::vector<std::string> material_data_files;

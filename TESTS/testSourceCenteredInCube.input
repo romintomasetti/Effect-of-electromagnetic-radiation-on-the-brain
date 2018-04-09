@@ -53,23 +53,23 @@ $MESH
 	
 	// Information on the source
 	$SOURCE
-		NBR_SOURCES=1
+		NBR_SOURCES=2
 		// Length of the source in each direction
-		L_X=0.1;
-		L_Y=0.1;
-		L_Z=0.1;
+		L_X=0.1;0.1;
+		L_Y=0.1;0.1;
+		L_Z=0.1;0.1;
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=0.5;
-		C_Y=0.5;
-		C_Z=0.5;
+		C_X=0.3;0.7;
+		C_Y=0.5;0.5;
+		C_Z=0.5;0.5;
 		// Frequency [Hz]
-		FRQCY=900E6;
+		FRQCY=900E6;900E6;
 		/// Either 'DIPOLE' or 'SIMPLE' (for simple antenna):
 		/// If set to dipole, length is proportional to lambda = 3E8/freq
 		///
-		IMPOSED=DIPOLE;
+		IMPOSED=DIPOLE;DIPOLE;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
-		SOURCE_TIME=SINE
+		SOURCE_TIME=SINE;SINE;
 		// Default with Gaussian is (MEAN,STD)=(0*period,period/10) where period=c/frequency, c=3e8
 	$SOURCE
 	
@@ -106,7 +106,7 @@ $RUN_INFOS
 		// The simulation will stop after... (in sec)
 		stopTime=10
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=500
+		maxStepsForOneCycleOfElectro=100
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
 		maxStepsForOneCycleOfThermal=5E5 
@@ -141,7 +141,7 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=5
+		SAMPLING_FREQ_ELECTRO=1
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING

@@ -879,12 +879,16 @@ void AlgoElectro_NEW::update(
         }
         #pragma omp barrier*/
 
-        bool MODULATE_SOURCE = false;
-        double MIN_GAUSS_BEFORE_LET_BE = 1E-100;
-        if(grid.input_parser.source_time == "GAUSSIAN"){
-            MODULATE_SOURCE =true;
-            MIN_GAUSS_BEFORE_LET_BE = 1E-5;
-        }
+		double MIN_GAUSS_BEFORE_LET_BE = 1E-100;
+        std::vector<bool> MODULATE_SOURCE(grid.input_parser.source.get_number_of_sources());
+		for(size_t i = 0 ; i < MODULATE_SOURCE.size() ; i++){
+			if(grid.input_parser.source_time[i] == "GAUSSIAN"){
+				MODULATE_SOURCE[i] =true;
+				MIN_GAUSS_BEFORE_LET_BE = 1E-5;
+			}else{
+				MODULATE_SOURCE[i] = false;
+			}
+		}
 
         // Temporary pointers, to avoid doing grid.sthg !
         double *H_x_tmp = grid.H_x;
@@ -1419,7 +1423,7 @@ void AlgoElectro_NEW::update(
 
                     frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
 
-                    if(MODULATE_SOURCE == true){
+                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
                         double period    = 2*M_PI/frequency;
                         double MEAN      = 0*period;
                         double STD       = period/10;
@@ -1453,7 +1457,7 @@ void AlgoElectro_NEW::update(
 
                     frequency = local_nodes_inside_source_FREQ[ID_Source[1][it]];
 
-                    if(MODULATE_SOURCE == true){
+                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
                         double period    = 2*M_PI/frequency;
                         double MEAN      = 0*period;
                         double STD       = period/10;
@@ -1484,7 +1488,7 @@ void AlgoElectro_NEW::update(
                 }else{
                     frequency = local_nodes_inside_source_FREQ[ID_Source[0][it]];
 
-                    if(MODULATE_SOURCE == true){
+                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
                         double period    = 2*M_PI/frequency;
                         double MEAN      = 0*period;
                         double STD       = period/10;
