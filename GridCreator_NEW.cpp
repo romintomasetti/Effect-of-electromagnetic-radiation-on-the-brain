@@ -1433,11 +1433,11 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
 
     std::vector<size_t> I_min(omp_get_max_threads());
     for(size_t it = 0 ; it < I_min.size() ; it++ )
-        I_min[it] = 5E5;
+        I_min[it] = SIZE_MAX;
 
     std::vector<size_t> J_min(omp_get_max_threads());
     for(size_t it = 0 ; it < J_min.size() ; it++ )
-        J_min[it] = 5E5;
+        J_min[it] = SIZE_MAX;
 
     #pragma omp parallel default(none)\
         shared(numbers_for_nodes)\

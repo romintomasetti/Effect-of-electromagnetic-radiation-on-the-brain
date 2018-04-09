@@ -860,8 +860,14 @@ void AlgoElectro_NEW::update(
         firstprivate(Exz0, Exz1)\
         firstprivate(Eyz0, Eyz1)
     {
-        printf("\t >>>> MPI %d enters the parallel region.\n",grid.MPI_communicator.getRank());
-        MPI_Barrier(MPI_COMM_WORLD);
+        #pragma omp master
+        {
+            fflush_stdout();
+            MPI_Barrier(MPI_COMM_WORLD);
+            printf("\t >>>> MPI %d enters the parallel region.\n",grid.MPI_communicator.getRank());
+            fflush_stdout();
+        }
+        #pragma omp barrier
 
         bool MODULATE_SOURCE = false;
         double MIN_GAUSS_BEFORE_LET_BE = 1E-100;
@@ -948,10 +954,17 @@ void AlgoElectro_NEW::update(
         struct timeval end___while_iter;
         double         total_while_iter = 0.0;
 
-        printf("\t >>> MPI %d enters the while loop.\n",grid.MPI_communicator.getRank());
-
         while(current_time < grid.input_parser.get_stopTime()
                 && currentStep < grid.input_parser.maxStepsForOneCycleOfElectro){
+
+            #pragma omp master
+            {
+                fflush_stdout();
+                MPI_Barrier(MPI_COMM_WORLD);
+                printf("\t >>> MPI %d enters the while loop.\n",grid.MPI_communicator.getRank());
+                fflush_stdout();
+            }
+            #pragma omp barrier
 
             gettimeofday( &start_while_iter , NULL);
 
