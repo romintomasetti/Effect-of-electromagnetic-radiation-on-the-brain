@@ -869,11 +869,6 @@ void InputParser::readHeader_MESH (ifstream &file){
 					this->RemoveAnyBlankSpaceInStr(currentLine);
 					// If the string is "$DELTAS" it means the section ends.
 					if(currentLine == "$MATERIALS"){
-						if(this->material_data_files.size() <= 1){
-							DISPLAY_ERROR_ABORT(
-								" You *MUST* provide TWO material data files."
-							);
-						}
 						if(!is_directory(this->material_data_directory)){
 							DISPLAY_ERROR_ABORT(
 								"You mus provide a valid material data directory. Has %s.",
