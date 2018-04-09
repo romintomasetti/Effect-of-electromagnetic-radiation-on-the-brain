@@ -676,10 +676,15 @@ void AlgoElectro_NEW::update(
     std::vector<double>        local_nodes_inside_source_FREQ    ;
 
     std::vector<std::string> TYPE = {"Ex","Ey","Ez"};
-
-	if(VERBOSITY >= 1)
+	
+	if(this->VERBOSITY >= 1){
+		fflush_stdout();
+		MPI_Barrier(MPI_COMM_WORLD);
 		printf("\t> [MPI %d] - Computing nodes inside sources...\n",
 				grid.MPI_communicator.getRank());
+		fflush_stdout();
+	}
+	
     for(unsigned int i = 0 ; i < TYPE.size() ; i ++){
         grid.Compute_nodes_inside_sources(
             local_nodes_inside_source_NUMBER[i],
@@ -688,17 +693,15 @@ void AlgoElectro_NEW::update(
             TYPE[i]
         );
         if(local_nodes_inside_source_NUMBER[i].size() != ID_Source[i].size()){
-            fprintf(stderr,"In function %s :: wrong sizes !\n",__FUNCTION__);
-            fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
-            #ifdef MPI_COMM_WORLD
-            MPI_Abort(MPI_COMM_WORLD,-1);
-            #else
-            abort();
-            #endif
+            DISPLAY_ERROR_ABORT(
+				"Sizes do not match (has %zu and %zu).",
+				local_nodes_inside_source_NUMBER[i].size(),
+				ID_Source[i].size()
+			);
         }
     }
 	/// Verify that there is at least one emitting element:
-	int at_least_one_node = 0;
+	int at_least_one_node = 1;
 	for(size_t I = 0 ; I < grid.input_parser.source.get_number_of_sources() ; I++){
 		if(grid.input_parser.source.there_is_at_least_one_element_non_zero_in_source[I]){
 			at_least_one_node = 1;
@@ -706,7 +709,8 @@ void AlgoElectro_NEW::update(
 		}
 	}
 	/// Communicate between MPI processes to check if there is a source somewhere:
-	int checking_at_least_one_node[grid.MPI_communicator.getNumberOfMPIProcesses()];
+	int *checking_at_least_one_node 
+		= (int*)malloc(sizeof(int)*grid.MPI_communicator.getNumberOfMPIProcesses());
 	MPI_Gather(
 		&at_least_one_node,
 		1,
@@ -729,19 +733,25 @@ void AlgoElectro_NEW::update(
 			);
 		}
 	}
-	MPI_Barrier(MPI_COMM_WORLD);
+	
+	if(this->VERBOSITY >= 1){
+		fflush_stdout();
+		MPI_Barrier(MPI_COMM_WORLD);
+		printf("\t> [MPI %d] - Computing nodes inside sources...\n",
+				grid.MPI_communicator.getRank());
+		fflush_stdout();
+	}
 
     /// Assign frequencies:
     local_nodes_inside_source_FREQ = grid.input_parser.source.frequency;
     
     /// Clean the output:
-    fflush(stdout);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(omp_get_thread_num() == 0 
-        && grid.MPI_communicator.isRootProcess() != INT_MIN)
+    if(grid.MPI_communicator.isRootProcess() == 0)
         {
+			fflush(stdout);
             printf(">>> FDTD scheme started with time step of %.15lf seconds.\n",
                 dt);
+			fflush_stdout();
         }
 
     ///////////////////////////////////////////
@@ -860,14 +870,14 @@ void AlgoElectro_NEW::update(
         firstprivate(Exz0, Exz1)\
         firstprivate(Eyz0, Eyz1)
     {
-        #pragma omp master
+        /*#pragma omp master
         {
             fflush_stdout();
             MPI_Barrier(MPI_COMM_WORLD);
             printf("\t >>>> MPI %d enters the parallel region.\n",grid.MPI_communicator.getRank());
             fflush_stdout();
         }
-        #pragma omp barrier
+        #pragma omp barrier*/
 
         bool MODULATE_SOURCE = false;
         double MIN_GAUSS_BEFORE_LET_BE = 1E-100;
@@ -957,14 +967,14 @@ void AlgoElectro_NEW::update(
         while(current_time < grid.input_parser.get_stopTime()
                 && currentStep < grid.input_parser.maxStepsForOneCycleOfElectro){
 
-            #pragma omp master
+            /*#pragma omp master
             {
                 fflush_stdout();
                 MPI_Barrier(MPI_COMM_WORLD);
                 printf("\t >>> MPI %d enters the while loop.\n",grid.MPI_communicator.getRank());
                 fflush_stdout();
             }
-            #pragma omp barrier
+            #pragma omp barrier*/
 
             gettimeofday( &start_while_iter , NULL);
 
@@ -1024,14 +1034,14 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
-            #pragma omp master
+            /*#pragma omp master
             {
                 fflush_stdout();
                 MPI_Barrier(MPI_COMM_WORLD);
                 printf("\t>[MPI %d] - Hx ok(EM) [step %zu].\n",
 					grid.MPI_communicator.getRank(),currentStep);
             }
-            #pragma omp barrier
+            #pragma omp barrier*/
 			
 
             // Updating the magnetic field Hy.
@@ -1074,14 +1084,14 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
-			#pragma omp master
+			/*#pragma omp master
             {
                 fflush_stdout();
                 MPI_Barrier(MPI_COMM_WORLD);
                 printf("\t>[MPI %d] - Hy ok(EM) [step %zu].\n",
 					grid.MPI_communicator.getRank(),currentStep);
             }
-            #pragma omp barrier
+            #pragma omp barrier*/
 
             // Updating the magnetic field Hz.
             // Don't update neighboors ! Start at 1. Go to size-1.
@@ -1137,14 +1147,14 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
-			#pragma omp master
+			/*#pragma omp master
             {
                 fflush_stdout();
                 MPI_Barrier(MPI_COMM_WORLD);
                 printf("\t>[MPI %d] - Hz ok(EM) [step %zu].\n",
 					grid.MPI_communicator.getRank(),currentStep);
             }
-            #pragma omp barrier
+            #pragma omp barrier*/
 			
 
             /////////////////////////////////////////////////////

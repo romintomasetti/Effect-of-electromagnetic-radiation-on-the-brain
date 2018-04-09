@@ -33,11 +33,11 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=0.01
-		deltaY_Electro=0.01
-		deltaZ_Electro=0.01
+		deltaX_Electro=0.001
+		deltaY_Electro=0.001
+		deltaZ_Electro=0.001
 		delta_Thermal=0.1
-		ratio_EM_TH_delta=0.1
+		ratio_EM_TH_delta=0.01
 	$DELTAS
 		
 	// Boundaries of the domain
@@ -106,7 +106,7 @@ $RUN_INFOS
 		// The simulation will stop after... (in sec)
 		stopTime=10
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=1000
+		maxStepsForOneCycleOfElectro=200
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
 		maxStepsForOneCycleOfThermal=5E5 
@@ -141,7 +141,7 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=1
+		SAMPLING_FREQ_ELECTRO=10
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING
