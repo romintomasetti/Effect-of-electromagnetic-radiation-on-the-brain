@@ -19,7 +19,6 @@
 *.tiff
 #
 build/*
-TESTS/*
 boost_*/*
 .vscode/*
 vscode/*
