@@ -1144,6 +1144,8 @@ void InputParser::readHeader_MESH (ifstream &file){
 						}
 
 					}else{
+						if(propName == "MATERIAL_DATA_FILE")
+							continue;
 						printf("InputParser::readHeader_MESH:: You didn't provide a ");
 						printf("good member for $MESH$MATERIALS (has %s).\nAborting.\n",propName.c_str());
 						cout << propName << endl;
