@@ -14,7 +14,7 @@ endif()
 
 cmake_minimum_required (VERSION ${MinimalCmakeVersion})
 
-project (Effect-of-electromagnetic-radiation-on-the-brain CXX)
+project(Effect-of-electromagnetic-radiation-on-the-brain CXX)
 
 include(CheckCXXCompilerFlag)
 

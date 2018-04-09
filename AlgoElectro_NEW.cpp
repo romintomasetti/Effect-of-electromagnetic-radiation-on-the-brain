@@ -701,7 +701,7 @@ void AlgoElectro_NEW::update(
         }
     }
 	/// Verify that there is at least one emitting element:
-	int at_least_one_node = 1;
+	int at_least_one_node = 0;
 	for(size_t I = 0 ; I < grid.input_parser.source.get_number_of_sources() ; I++){
 		if(grid.input_parser.source.there_is_at_least_one_element_non_zero_in_source[I]){
 			at_least_one_node = 1;
@@ -1167,10 +1167,10 @@ void AlgoElectro_NEW::update(
             /////////////////////////
             /// MPI COMMUNICATION ///
             /////////////////////////
-			if(this->VERBOSITY >= 3 && omp_get_thread_num() == 0 && grid.MPI_communicator.getRank() == 0){
+			/*if(this->VERBOSITY >= 3 && omp_get_thread_num() == 0 && grid.MPI_communicator.getRank() == 0){
 				printf("[MPI %d] - While loop: communication of H.\n",
 						grid.MPI_communicator.getRank());
-			}	
+			}	*/
             gettimeofday( &start_mpi_comm, NULL);
             /// Prepare the array to send:
             if(has_neighboor){
@@ -1593,10 +1593,10 @@ void AlgoElectro_NEW::update(
             #pragma omp barrier
             #pragma omp master
             {
-				MPI_Barrier(MPI_COMM_WORLD);
+				/*MPI_Barrier(MPI_COMM_WORLD);
 				fflush_stdout();
 				MPI_Barrier(MPI_COMM_WORLD);
-				printf("[MPI %d] - Starting ABC.\n",grid.MPI_communicator.getRank());
+				printf("[MPI %d] - Starting ABC.\n",grid.MPI_communicator.getRank());*/
             this->abc(grid,
                 E_x_tmp, E_y_tmp, E_z_tmp, 
                 Eyx0, Ezx0, 
@@ -1607,9 +1607,9 @@ void AlgoElectro_NEW::update(
                 Exz1, Eyz1,
                 dt
                 );
-				fflush_stdout();
+				/*fflush_stdout();
 				MPI_Barrier(MPI_COMM_WORLD);
-				printf("[MPI %d] - Ending ABC.\n",grid.MPI_communicator.getRank());
+				printf("[MPI %d] - Ending ABC.\n",grid.MPI_communicator.getRank());*/
             }
             #pragma omp barrier
 

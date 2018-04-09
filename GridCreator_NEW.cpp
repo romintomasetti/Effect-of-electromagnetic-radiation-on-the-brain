@@ -1119,7 +1119,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                     // Determine the material ID:
                     unsigned int mat_ID   = ref_obj->E_x_material[index];
                     // Determine material name:
-                    std::string  mat_name = ref_obj->materials.materialName_FromMaterialID_unified[mat_ID];
+                    //std::string  mat_name = ref_obj->materials.materialName_FromMaterialID_unified[mat_ID];
                     // Get the properties:
                     double elec_cond = 
                         ref_obj->materials
@@ -1153,7 +1153,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                     // Determine the material ID:
                     unsigned int mat_ID   = ref_obj->E_y_material[index];
                     // Determine material name:
-                    std::string  mat_name = ref_obj->materials.materialName_FromMaterialID_unified[mat_ID];
+                    //std::string  mat_name = ref_obj->materials.materialName_FromMaterialID_unified[mat_ID];
                     // Get the properties:
                     double elec_cond = 
                         ref_obj->materials
@@ -1187,7 +1187,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                     // Determine the material ID:
                     unsigned int mat_ID   = ref_obj->E_z_material[index];
                     // Determine material name:
-                    std::string  mat_name = ref_obj->materials.materialName_FromMaterialID_unified[mat_ID];
+                    //std::string  mat_name = ref_obj->materials.materialName_FromMaterialID_unified[mat_ID];
                     // Get the properties:
                     double elec_cond = 
                         ref_obj->materials
@@ -1438,6 +1438,8 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
     std::vector<size_t> J_min(omp_get_max_threads());
     for(size_t it = 0 ; it < J_min.size() ; it++ )
         J_min[it] = SIZE_MAX;
+	
+	const std::vector<double> DELTAS_ELECTROMAGN = this->delta_Electromagn;
 
     #pragma omp parallel default(none)\
         shared(numbers_for_nodes)\
@@ -1445,8 +1447,9 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
         shared(ID_for_nodes)\
         shared(local_nodes_inside_source_NUMBER)\
         shared(ID_Source)\
-        shared(SIZES,type)\
-        shared(I_min,I_max,J_min,J_max)
+        firstprivate(SIZES)\
+        shared(I_min,I_max,J_min,J_max)\
+		firstprivate(DELTAS_ELECTROMAGN,type)
     {
         std::vector<size_t> SIZES_PRIVATE = SIZES;
 
@@ -1482,7 +1485,7 @@ void GridCreator_NEW::Compute_nodes_inside_sources(
                             global[0],
                             global[1],
                             global[2],
-                            this->delta_Electromagn,
+                            DELTAS_ELECTROMAGN,
                             type,
 							this->input_parser.conditionsInsideSources[id],
                             id,
