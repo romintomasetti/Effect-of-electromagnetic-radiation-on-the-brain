@@ -31,11 +31,11 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=0.005
-		deltaY_Electro=0.005
-		deltaZ_Electro=0.005
+		deltaX_Electro=0.01
+		deltaY_Electro=0.01
+		deltaZ_Electro=0.01
 		delta_Thermal=0.1
-		ratio_EM_TH_delta=0.05
+		ratio_EM_TH_delta=0.1
 	$DELTAS
 		
 	// Boundaries of the domain
@@ -57,9 +57,9 @@ $MESH
 		L_Y=0.1;0.1;
 		L_Z=0.1;0.1;
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=0.3;0.7;
-		C_Y=0.5;0.5;
-		C_Z=0.5;0.5;
+		C_X=0.7;1.3;
+		C_Y=1;1;
+		C_Z=1;1;
 		// Frequency [Hz]
 		FRQCY=900E6;900E6;
 		/// Either 'DIPOLE' or 'SIMPLE' (for simple antenna):
