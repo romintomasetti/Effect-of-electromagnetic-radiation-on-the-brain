@@ -1,3 +1,4 @@
+#Use a recent version of CMake:
 set(MinimalCmakeVersion 3.5.0)
 if(${CMAKE_VERSION} VERSION_LESS ${MinimalCmakeVersion}) 
     message(STATUS "Please consider to switch to CMake ${MinimalCmakeVersion}")
@@ -10,58 +11,51 @@ if(${CMAKE_VERSION} VERSION_LESS ${MinimalCmakeVersion})
 	message(STATUS "> Then, do: gmake")
 	message(STATUS "> Note that 'gmake' might take a while, so you can speed it up with gmake - j NBR_PROC")
 	message(STATUS "> Use an alias for this new installation (i.e.: $HOME/cmake-${MinimalCmakeVersion}/bin/cmake)")
+	message(FATAL_ERROR "Exit.")
 endif()
 
 cmake_minimum_required (VERSION ${MinimalCmakeVersion})
 
+#Project name:
 project(Effect-of-electromagnetic-radiation-on-the-brain CXX)
 
-include(CheckCXXCompilerFlag)
-
-set(EXEC_NAME main)
-
+#Build documentation:
 option(BUILD_DOC "Build documentation" ON)
 
+#Set the build type (Release/Debug):
 IF(NOT CMAKE_BUILD_TYPE)
     SET( CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
+#Set executable name:
+set(EXEC_NAME main)
+
+#Add CXX compiler flags:
+include(CheckCXXCompilerFlag)
 # OPTIMIZATION (only if release mode)
 string(COMPARE EQUAL "${CMAKE_BUILD_TYPE}" Release _cmp)
 if (_cmp)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
 	message(STATUS "Build type is 'Release'. Using -Ofast flag for C++ compiler")
 endif()
-
-
-IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    add_definitions(-Wno-literal-suffix)
-ENDIF()
-
+#Use C++11:
 check_cxx_compiler_flag("-std=c++11" STDCXX11)
 if(STDCXX11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif(STDCXX11)
 
+#Suppresses a warning on the NIC4 cluster:
+IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    add_definitions(-Wno-literal-suffix)
+ENDIF()
 
 # ADDING WARNINGS
-if(MSVC)
-    # Force to always compile with W4
-    if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-    string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
-    endif()
-elseif(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
   # Update if necessary
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long")
 endif()
 
-
-IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	add_definitions(-Wno-literal-suffix)
-ENDIF()
-
+#Add files to be compiled:
 FILE(GLOB SRCS *.h *.hpp *.cpp *.c)
 ADD_EXECUTABLE(${EXEC_NAME} ${SRCS})
 
@@ -74,6 +68,7 @@ else()
 	MESSAGE(FATAL_ERROR "OpenMP was not found !")
 endif()
 
+#Boost:
 set(BoostVersion 1.66.0)
 set(Boost_VERSION 106600)
 find_package(Boost ${BoostVersion} COMPONENTS system filesystem QUIET) 
@@ -125,7 +120,7 @@ IF( MINGW )
     add_definitions(-DMSMPI_NO_SAL)
 ENDIF()
 
-
+#Zlib:
 FIND_PACKAGE(ZLIB)
 IF(ZLIB_FOUND)
     add_definitions(-DUSE_ZLIB)
@@ -157,9 +152,14 @@ else (DOXYGEN_FOUND)
 endif (DOXYGEN_FOUND)
 # ------------------------------------------------------------------------
 
+#Enable testing:
 enable_testing()
 
+###########################
+## ADDING SUBDIRECTORIES ##
+###########################
 
+############ JSON #########
 ADD_SUBDIRECTORY( JSON )
 
 find_path(
@@ -172,12 +172,27 @@ if(NOT RAPIDJSON_INCLUDE_DIRS)
 endif()
 include_directories(${RAPIDJSON_INCLUDE_DIRS})
 
+######## DISC_INTEGR ######
 ADD_SUBDIRECTORY( DISC_INTEGR )
 INCLUDE_DIRECTORIES( DISC_INTEGR)
 
+########### UTILS #########
 ADD_SUBDIRECTORY   ( UTILS )
 INCLUDE_DIRECTORIES( UTILS )
 
+##### THERMO ##############
+ADD_SUBDIRECTORY(thermo)
+INCLUDE_DIRECTORIES(thermo)
 
-TARGET_LINK_LIBRARIES(${EXEC_NAME} json disc_integr utils)
+##### VTL_BOMAN #################
+ADD_SUBDIRECTORY(vtl_boman)
+#INCLUDE_DIRECTORIES(vtl_boman)
+
+##### VTL_ROMIN #################
+
+
+###########################
+## LINKING LIBRARIES ######
+###########################
+TARGET_LINK_LIBRARIES(${EXEC_NAME} json disc_integr utils vtl)
 TARGET_LINK_LIBRARIES(${EXEC_NAME} ${Boost_LIBRARIES})
