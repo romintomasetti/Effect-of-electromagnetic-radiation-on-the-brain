@@ -1,0 +1,10 @@
+FILE(GLOB SRCS *.hpp *.cpp *.h *.c)
+ADD_LIBRARY(vtl_romin SHARED ${SRCS})
+
+
+FIND_PACKAGE(ZLIB)
+IF(ZLIB_FOUND)
+    add_definitions(-DUSE_ZLIB)
+    INCLUDE_DIRECTORIES( ${ZLIB_INCLUDE_DIR} )
+    TARGET_LINK_LIBRARIES(vtl_romin ${ZLIB_LIBRARY} )
+ENDIF()

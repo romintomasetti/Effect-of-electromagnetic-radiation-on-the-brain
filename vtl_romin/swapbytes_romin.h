@@ -1,5 +1,5 @@
-#ifndef SWAPBYTES_H
-#define SWAPBYTES_H
+#ifndef SWAPBYTES_ROMIN_H
+#define SWAPBYTES_ROMIN_H
 
 // from http://stackoverflow.com/questions/2182002/convert-big-endian-to-little-endian-in-c-without-using-provided-func
 
