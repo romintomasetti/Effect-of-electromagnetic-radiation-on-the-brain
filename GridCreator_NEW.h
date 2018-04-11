@@ -9,9 +9,9 @@
 #include "InputParser.h"
 #include "ProfilingClass.h"
 
-#include "vtl.h"
-#include "vtlVec3.h"
-#include "vtlSPoints.h" 
+#include "vtl_romin.h"
+#include "vtlVec3_romin.h"
+#include "vtlSPoints_romin.h" 
 
 enum Geometrical_Forms
 {
@@ -123,8 +123,8 @@ class GridCreator_NEW{
         std::vector<size_t> originIndices_Thermal = {0,0,0};
 
         // Origin of the whole simulation, for EM and TH grids:
-		vtl::Vec3d originOfWholeSimulation_Electro = vtl::Vec3d(0.0,0.0,0.0);
-        vtl::Vec3d originOfWholeSimulation_Thermal = vtl::Vec3d(0.0,0.0,0.0);
+		vtl_romin::Vec3d originOfWholeSimulation_Electro = vtl_romin::Vec3d(0.0,0.0,0.0);
+        vtl_romin::Vec3d originOfWholeSimulation_Thermal = vtl_romin::Vec3d(0.0,0.0,0.0);
 
         /* FUNCTIONS */
 

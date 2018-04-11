@@ -1,5 +1,5 @@
 #include "InterfaceToParaviewer.h"
-#include "vtlSPoints.h"
+#include "vtlSPoints_romin.h"
 
 #include "unistd.h"
 
@@ -62,11 +62,11 @@ void InterfaceToParaviewer::initializeAll(void){
     this->grid_Electro.o = this->grid_Creator_NEW.originOfWholeSimulation_Electro;
     this->grid_Thermal.o = this->grid_Creator_NEW.originOfWholeSimulation_Thermal;
 
-    this->grid_Electro.dx = vtl::Vec3d(dx_Electro,dy_Electro,dz_Electro);
-    this->grid_Thermal.dx = vtl::Vec3d(delta_thermal,delta_thermal,delta_thermal);
+    this->grid_Electro.dx = vtl_romin::Vec3d(dx_Electro,dy_Electro,dz_Electro);
+    this->grid_Thermal.dx = vtl_romin::Vec3d(delta_thermal,delta_thermal,delta_thermal);
     
-    this->grid_Electro.np1 = vtl::Vec3i(0,0,0); 
-    this->grid_Thermal.np1 = vtl::Vec3i(0,0,0);
+    this->grid_Electro.np1 = vtl_romin::Vec3i(0,0,0); 
+    this->grid_Thermal.np1 = vtl_romin::Vec3i(0,0,0);
 
     double length_X_whole_dom_electro = 0.0;
     double length_Y_whole_dom_electro = 0.0;
@@ -86,13 +86,13 @@ void InterfaceToParaviewer::initializeAll(void){
     size_t nodesWholeDom_Y_Electro = length_Y_whole_dom_electro / dy_Electro +1;
     size_t nodesWholeDom_Z_Electro = length_Z_whole_dom_electro / dz_Electro +1;
 
-    this->grid_Electro.np2 = vtl::Vec3i(nodesWholeDom_X_Electro,nodesWholeDom_Y_Electro,nodesWholeDom_Z_Electro);
+    this->grid_Electro.np2 = vtl_romin::Vec3i(nodesWholeDom_X_Electro,nodesWholeDom_Y_Electro,nodesWholeDom_Z_Electro);
 
     size_t nodesWholeDom_X_Thermal = length_x_whole_dom_thermal / delta_thermal +1;
     size_t nodesWholeDom_Y_Thermal = length_y_whole_dom_thermal / delta_thermal +1;
     size_t nodesWholeDom_Z_Thermal = length_z_whole_dom_thermal / delta_thermal +1;
     
-    this->grid_Thermal.np2 = vtl::Vec3i(nodesWholeDom_X_Thermal,nodesWholeDom_Y_Thermal,nodesWholeDom_Z_Thermal);
+    this->grid_Thermal.np2 = vtl_romin::Vec3i(nodesWholeDom_X_Thermal,nodesWholeDom_Y_Thermal,nodesWholeDom_Z_Thermal);
 
     // Initialize the subgrid if I am the root process:
     if(this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess){
@@ -120,8 +120,8 @@ void InterfaceToParaviewer::initializeAll(void){
             this->sgrids_Thermal[I].id = I;
 
             // Giving the spacing to the element sgrids[I]:
-            this->sgrids_Electro[I].dx = vtl::Vec3d(dx_Electro,dy_Electro,dz_Electro);
-            this->sgrids_Thermal[I].dx = vtl::Vec3d(delta_thermal,delta_thermal,delta_thermal);
+            this->sgrids_Electro[I].dx = vtl_romin::Vec3d(dx_Electro,dy_Electro,dz_Electro);
+            this->sgrids_Thermal[I].dx = vtl_romin::Vec3d(delta_thermal,delta_thermal,delta_thermal);
 
             // Setting the origin:
             this->sgrids_Electro[I].o = this->grid_Creator_NEW.originOfWholeSimulation_Electro;
@@ -360,7 +360,7 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
                         this->grid_Thermal, 
                         this->mygrid_Thermal,
                         this->grid_Creator_NEW, 
-                        vtl::ZIPPED);
+                        vtl_romin::ZIPPED);
 
         /* ONLY THE ROOT PROCESS CALLS THE FOLLOWING FUNCTION */
         if (this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess)
@@ -374,7 +374,7 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
                                 this->mygrid_Thermal, 
                                 this->sgrids_Thermal, 
                                 //this->grid_Creator_NEW,
-                                vtl::ZIPPED);
+                                vtl_romin::ZIPPED);
         }
 
         /* END OF THERMAL GRID SAVING */
@@ -388,7 +388,7 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
                         this->grid_Electro, 
                         this->mygrid_Electro,
                         this->grid_Creator_NEW, 
-                        vtl::ZIPPED);
+                        vtl_romin::ZIPPED);
 
         /* ONLY THE ROOT PROCESS CALLS THE FOLLOWING FUNCTION */
         if (this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess)
@@ -401,7 +401,7 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
                                 this->mygrid_Electro, 
                                 this->sgrids_Electro, 
                                 //this->grid_Creator_NEW,
-                                vtl::ZIPPED);
+                                vtl_romin::ZIPPED);
         }
 
         /* END OF ELECTROMAGNETIC GRID SAVING */

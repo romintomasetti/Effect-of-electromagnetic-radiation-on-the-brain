@@ -104,7 +104,7 @@ ProcessorCount(N)
 message("Your computer has ${N} cores.")
 if(NOT IS_DIRECTORY "${BoostSourceDir}/bin.v2")
 set(BOOTSTRP_COMMAND1 "--prefix=${BoostSourceDir}")
-set(BOOTSTRP_COMMAND2 "--with-libraries=filesystem,regex,system")
+set(BOOTSTRP_COMMAND2 "--with-libraries=filesystem,system")
 execute_process(COMMAND ${BoostSourceDir}/bootstrap.sh ${BOOTSTRP_COMMAND1}
 		WORKING_DIRECTORY ${BoostSourceDir})
 execute_process(COMMAND ${BoostSourceDir}/bootstrap.sh ${BOOTSTRP_COMMAND2}

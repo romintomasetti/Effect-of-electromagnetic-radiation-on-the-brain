@@ -4,7 +4,7 @@
 
 #include "GridCreator_NEW.h"
 
-#include "vtl.h"
+#include "vtl_romin.h"
 #include "Array_3D_Template.h"
 
 #include <cstring>
@@ -18,22 +18,22 @@ class InterfaceToParaviewer{
         MPI_Initializer &MPI_communicator;
         
         // List of subgrids to pass at pvti file encoder, for electromagnetic grid:
-        std::vector<vtl::SPoints> sgrids_Electro;
+        std::vector<vtl_romin::SPoints> sgrids_Electro;
 
         // List of subgrids to pass at pvti file encoder, for thermal grid:
-        std::vector<vtl::SPoints> sgrids_Thermal;
+        std::vector<vtl_romin::SPoints> sgrids_Thermal;
 
         // Whole electromagnetic grid:
-        vtl::SPoints grid_Electro;
+        vtl_romin::SPoints grid_Electro;
 
         // Whole thermal grid:
-        vtl::SPoints grid_Thermal;
+        vtl_romin::SPoints grid_Thermal;
 
         // My electromagnetic grid:
-        vtl::SPoints mygrid_Electro;
+        vtl_romin::SPoints mygrid_Electro;
 
         // My thermal grid:
-        vtl::SPoints mygrid_Thermal;
+        vtl_romin::SPoints mygrid_Thermal;
 
     public:
         // Default constructor:

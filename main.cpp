@@ -36,8 +36,8 @@
 
 #include "UTILS/directory_searching.hpp"
 
-#include "vtl.h"
-#include "vtlSPoints.h"
+#include "vtl_romin.h"
+#include "vtlSPoints_romin.h"
 
 #include "InterfaceToParaviewer.h"
 
