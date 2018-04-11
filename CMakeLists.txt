@@ -186,13 +186,14 @@ INCLUDE_DIRECTORIES(thermo)
 
 ##### VTL_BOMAN #################
 ADD_SUBDIRECTORY(vtl_boman)
-#INCLUDE_DIRECTORIES(vtl_boman)
+INCLUDE_DIRECTORIES(vtl_boman)
 
 ##### VTL_ROMIN #################
-
+ADD_SUBDIRECTORY(vtl_romin)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/vtl_romin)
 
 ###########################
 ## LINKING LIBRARIES ######
 ###########################
-TARGET_LINK_LIBRARIES(${EXEC_NAME} json disc_integr utils vtl)
+TARGET_LINK_LIBRARIES(${EXEC_NAME} json disc_integr utils vtl vtl_romin)
 TARGET_LINK_LIBRARIES(${EXEC_NAME} ${Boost_LIBRARIES})

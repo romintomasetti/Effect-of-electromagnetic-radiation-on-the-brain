@@ -9,9 +9,9 @@
 #include "InputParser.h"
 #include "ProfilingClass.h"
 
-#include "vtl_romin.h"
-#include "vtlVec3_romin.h"
-#include "vtlSPoints_romin.h" 
+#include "vtl_romin/vtl_romin.h"
+#include "vtl_romin/vtlVec3_romin.h"
+#include "vtl_romin/vtlSPoints_romin.h" 
 
 enum Geometrical_Forms
 {
