@@ -29,6 +29,12 @@ typedef struct probed_point{
 	std::string filename;
 }probed_point;
 
+typedef struct probed_line{
+	std::string type_field;
+	std::vector<double> coords;
+	std::string filename;
+}probed_line;
+
 enum stringDollar_Header1{
     INFOS,
 	MESH,
@@ -103,6 +109,9 @@ class InputParser{
 
 		/// Probed points:
 		std::vector<probed_point> points_to_be_probed;
+		
+		/// Probed lines:
+		std::vector<probed_line> lines_to_be_probed;
 
 		/// Linked to the source behaviour:
 		std::vector<std::string> source_time;

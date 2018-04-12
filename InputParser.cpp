@@ -1751,7 +1751,13 @@ void InputParser::readHeader_POST_PROCESSING(ifstream &file){
 							outfile << "," << coord[1] << "," << coord[2] << ")" << std::endl;
 							outfile.close();
 						}
-
+					}else if(propName == "probe_line"){
+						/**
+						 * @brief Parse the input file when the user wants to probe lines.
+						 */
+						// Example: probe_line={Ex,x=1,y=ALL,z=1}
+						// This will probe Ex on the line (x=1,z=1) and y varying.
+						DISPLAY_ERROR_ABORT("Not yet implemented.");
 					}else{
 						DISPLAY_ERROR_ABORT(
 							"In $PROBING_POINTS :: no property corresponds to %s.",

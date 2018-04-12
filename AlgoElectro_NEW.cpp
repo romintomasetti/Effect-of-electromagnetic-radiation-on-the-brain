@@ -4056,14 +4056,6 @@ void probe_a_field(
     double dt
 )
 {
-    if(electro_deltas[0] < 0){
-        DISPLAY_ERROR_ABORT(
-            "You didn't specified a valid electro delta ! (has (%lf,%lf,%lf).",
-            electro_deltas[0],
-            electro_deltas[1],
-            electro_deltas[2]
-        );
-    }
     if(which_form_to_probe == "point"){
         /**
          * @brief Probing the value of the field at a given point.
@@ -4149,7 +4141,18 @@ void probe_a_field(
                 return;
             }
         }
-    }
+	}else if(which_form_to_probe == "line"){
+		/**
+		 * @brief Export the value of a field over a specified line.
+		 *	The informations must be given in terms of coordinates.
+		 */
+		DISPLAY_ERROR_ABORT("Not yet implemented.");
+    }else{
+		DISPLAY_ERROR_ABORT(
+			"There is no option corresponding to %s.",
+			which_form_to_probe.c_str()
+		);
+	}
 }
 
 /*! Try to get lock. Return its file descriptor or -1 if failed.
