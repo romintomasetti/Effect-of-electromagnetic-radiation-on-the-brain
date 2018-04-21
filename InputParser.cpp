@@ -1757,6 +1757,29 @@ void InputParser::readHeader_POST_PROCESSING(ifstream &file){
 						 */
 						// Example: probe_line={Ex,x=1,y=ALL,z=1}
 						// This will probe Ex on the line (x=1,z=1) and y varying.
+						/// Detect delimiters:
+						std::vector<size_t> pos_commas
+							= findCharacterInsideString(propGiven,",");
+						std::vector<size_t> pos_accol_open
+							= findCharacterInsideString(propGiven,"{");
+						std::vector<size_t> pos_accol_close
+							= findCharacterInsideString(propGiven,"}");
+						if(	   pos_commas.size()     != 3
+							|| pos_accol_open.size() != 1
+							|| pos_accol_close.size()!= 1)
+						{
+							std::string example = "probe_line={Ex,x=1,y=ALL,z=1}";
+							DISPLAY_ERROR_ABORT(
+								"Wrong input for probing line."
+								" Has %s. Expecting something like "
+								"%s.",
+								propGiven.c_str(),
+								example.c_str()
+							);
+						}
+						/// Parse:
+						
+						
 						DISPLAY_ERROR_ABORT("Not yet implemented.");
 					}else{
 						DISPLAY_ERROR_ABORT(
