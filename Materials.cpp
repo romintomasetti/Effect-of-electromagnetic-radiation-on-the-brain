@@ -4,7 +4,7 @@
 #include <algorithm>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/range/algorithm.hpp>
+//#include <boost/range/algorithm.hpp>
 
 #include "CSV_parser.hpp"
 #include "header_with_all_defines.hpp"
@@ -16,6 +16,23 @@ inline bool is_inside(std::vector<T> &vector, T item){
 	}else{
 		return false;
 	}
+}
+
+/**
+ * @brief Comparison between two strings, not case sensitive.
+ */
+bool string_compare_case_insensitive (std::string str1, std::string str2)
+{
+  size_t i = 0;
+  while ((i < str1.length()) && (i < str2.length()))
+  {
+    if (tolower (str1[i]) < tolower (str2[i])) return true;
+    else if (tolower (str1[i]) > tolower (str2[i])) return false;
+    i++;
+  }
+
+  if (str1.length() < str2.length()) return true;
+  else return false;
 }
 
 inline void Materials::remove_duplicated_material_names(std::string &mat){
@@ -90,14 +107,14 @@ void Materials::unification_of_data_files(void){
 	}
 	this->unique_vector(materials_list_unique);
 	/// Sort by alphabetical order:
-	boost::sort(materials_list_unique);
-	/*
-	printf("There are %zu different materials.\n",materials_list_unique.size());
+    sort(materials_list_unique.begin(),materials_list_unique.end(),string_compare_case_insensitive);
+	
+	/*printf("There are %zu different materials.\n",materials_list_unique.size());
 	for(size_t I = 0 ; I < materials_list_unique.size() ; I++)
 		printf("\t>Material %zu is %s.\n",I,materials_list_unique[I].c_str());
 	for(size_t I = 0 ; I < materials_prop_unique.size() ; I++)
 		printf("\t>Property %zu is %s.\n",I,materials_prop_unique[I].c_str());
-	*/
+	abort();*/
 	/**
 	 * Create the final list of materials and properties.
 	 */
