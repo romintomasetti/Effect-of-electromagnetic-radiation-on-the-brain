@@ -1479,7 +1479,7 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
 
 					if(propName == "CHECK_EVERY_POINT"){
-
+                        this->SteadyState_CheckEveryPoint = std::stol(propGiven);
 					}else{
 						DISPLAY_ERROR_ABORT(
 							"In ELECTRO_STEADY_STATE :: nothing corresponds to %s.",
@@ -1764,9 +1764,12 @@ void InputParser::readHeader_POST_PROCESSING(ifstream &file){
 							= findCharacterInsideString(propGiven,"{");
 						std::vector<size_t> pos_accol_close
 							= findCharacterInsideString(propGiven,"}");
+                        std::vector<size_t> pos_equal
+                            = findCharacterInsideString(propGiven,"=");
 						if(	   pos_commas.size()     != 3
 							|| pos_accol_open.size() != 1
-							|| pos_accol_close.size()!= 1)
+							|| pos_accol_close.size()!= 1
+                            || pos_equal.size()      != 3)
 						{
 							std::string example = "probe_line={Ex,x=1,y=ALL,z=1}";
 							DISPLAY_ERROR_ABORT(
@@ -1778,9 +1781,76 @@ void InputParser::readHeader_POST_PROCESSING(ifstream &file){
 							);
 						}
 						/// Parse:
-						
-						
-						DISPLAY_ERROR_ABORT("Not yet implemented.");
+                        std::string field_type = 
+                            propGiven.substr(pos_accol_open[0]+1,
+                                pos_commas[0]-pos_accol_open[0]-1);
+                        std::string x = 
+                            propGiven.substr(pos_equal[0]+1,
+                                pos_commas[1]-pos_equal[0]-1);
+                        std::string y = 
+                            propGiven.substr(pos_equal[1]+1,
+                                pos_commas[2]-pos_equal[1]-1);
+                        std::string z = 
+                            propGiven.substr(pos_equal[2]+1,
+                                pos_accol_close[0]-pos_equal[2]-1);
+                                
+                        probed_line temp;
+                        temp.type_field = field_type;
+                        temp.ALL.push_back(x);
+                        temp.ALL.push_back(y);
+                        temp.ALL.push_back(z);
+                        if(strcmp(x.c_str(),"ALL") != 0){
+                            temp.coords.push_back(std::stod(x));
+                        }else{
+                            temp.coords.push_back(nan(""));
+                        }
+                        if(strcmp(y.c_str(),"ALL") != 0){
+                            temp.coords.push_back(std::stod(y));
+                        }else{
+                            temp.coords.push_back(nan(""));
+                        }
+                        if(strcmp(z.c_str(),"ALL") != 0){
+                            temp.coords.push_back(std::stod(z));
+                        }else{
+                            temp.coords.push_back(nan(""));
+                        }
+                        
+                        std::string filename = "probe_line/";
+                        filename.append(field_type);
+                        filename.append("_");
+                        filename.append(x);
+                        filename.append("_");
+                        filename.append(y);
+                        filename.append("_");
+                        filename.append(z);
+                        filename.append(".txt");
+                        
+                        temp.filename = filename;
+                        
+						this->lines_to_be_probed.push_back(temp);
+                        
+                        if(this->MPI_rank == 0){
+							const std::string dir = "probe_line";
+							directory_exists(dir,true);
+
+							/// Check that no file with the same name exists. If there is one, delete it.
+							if(is_file_exist(filename)){
+								remove(filename.c_str());
+							}
+							/// Create the file:
+							std::ofstream outfile (filename,std::ofstream::out);
+							if(!outfile.is_open()){
+								DISPLAY_ERROR_ABORT(
+									"Cannot create file %s.",filename.c_str()
+								);
+							}
+							char buff[DTTMSZ];
+							outfile << "Created on " << getDtTm (buff);
+							outfile << " | contains the field " + temp.type_field;
+							outfile << " at line(" + x + ";" + y + ";" + z + ")" << std::endl;
+							outfile.close();
+						}
+                        
 					}else{
 						DISPLAY_ERROR_ABORT(
 							"In $PROBING_POINTS :: no property corresponds to %s.",

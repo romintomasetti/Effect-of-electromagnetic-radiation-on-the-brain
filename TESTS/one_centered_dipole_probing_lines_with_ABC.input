@@ -64,7 +64,7 @@ $MESH
 		///
 		IMPOSED=DIPOLE;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
-		SOURCE_TIME=SINE;
+		SOURCE_TIME=GAUSSIAN;
 		// Default with Gaussian is (MEAN,STD)=(0*period,period/10) where period=c/frequency, c=3e8
 	$SOURCE
 	
@@ -121,7 +121,7 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=10
+		SAMPLING_FREQ_ELECTRO=1000
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING

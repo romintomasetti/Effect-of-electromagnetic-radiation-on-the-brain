@@ -16,6 +16,8 @@
 #include <limits.h>
 #include <unistd.h>
 
+#include <cmath>
+
 #include "DISC_INTEGR/discrete_integration_util.hpp"
 
 #include <assert.h>
@@ -757,6 +759,15 @@ void AlgoElectro_NEW::update(
     ///////////////////////////////////////////
     /// VARIABLES FOR STEADY-STATE CHECKING ///
     ///////////////////////////////////////////
+    /* For the Ex field */
+    size_t checkEvery = grid.input_parser.SteadyState_CheckEveryPoint;
+    size_t nbr_pointsX = grid.size_Ex[0]/checkEvery;
+    size_t nbr_pointsY = grid.size_Ex[1]/checkEvery;
+    size_t nbr_pointsZ = grid.size_Ex[2]/checkEvery;
+    size_t nbr_points  = nbr_pointsX * nbr_pointsY * nbr_pointsZ;
+    std::vector<double> cumtrapz(nbr_points);
+    std::vector<double> cummmean(nbr_points);
+    std::vector<double> derivati(nbr_points);
     DISPLAY_WARNING("Steadiness : en cours de construction.");
 
 
@@ -1409,6 +1420,7 @@ void AlgoElectro_NEW::update(
             /// IMPOSING THE SOURCES ///
             ////////////////////////////
             double frequency = 0.0;
+            double false_freq = 0.0;
             double gauss     = 0.0;
             #pragma omp for schedule(static) nowait
             for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[2].size() ; it ++){
@@ -1418,7 +1430,24 @@ void AlgoElectro_NEW::update(
 
                 if(ID_Source[2][it] == UCHAR_MAX){
                     frequency = 0;
-                    E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
+                    // False frequency is used to stop imposing zero.
+                    false_freq = local_nodes_inside_source_FREQ[0];
+                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
+                        double period    = 2*M_PI/false_freq;
+                        double MEAN      = 0*period;
+                        double STD       = period/10;
+                                        
+                        double t = current_time;
+                        
+                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                            // do nothing
+                        }else{
+                            E_z_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
+                        }
+                    }else{
+                        E_z_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
+                    }
                 }else{
 
                     frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
@@ -1452,7 +1481,23 @@ void AlgoElectro_NEW::update(
 
                 if(ID_Source[1][it] == UCHAR_MAX){
                     frequency = 0;
-                    E_y_tmp[index] = sin(2*M_PI*frequency*current_time);
+                    false_freq = local_nodes_inside_source_FREQ[0];
+                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
+                        double period    = 2*M_PI/frequency;
+                        double MEAN      = 0*period;
+                        double STD       = period/10;
+                                        
+                        double t = current_time;
+                        
+                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                            // do nothing
+                        }else{
+                            E_y_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
+                        }
+                    }else{
+						E_y_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
+					}
                 }else{
 
                     frequency = local_nodes_inside_source_FREQ[ID_Source[1][it]];
@@ -1484,7 +1529,24 @@ void AlgoElectro_NEW::update(
 
                 if(ID_Source[0][it] == UCHAR_MAX){
                     frequency = 0;
-                    E_x_tmp[index] = sin(2*M_PI*frequency*current_time);
+                    false_freq = local_nodes_inside_source_FREQ[0];
+                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
+                        double period    = 2*M_PI/frequency;
+                        double MEAN      = 0*period;
+                        double STD       = period/10;
+                                        
+                        double t = current_time;
+                        
+                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+
+                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                            // do nothing
+                        }else{
+                            E_x_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
+                        }
+                    }else{
+						E_x_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
+					}
                 }else{
                     frequency = local_nodes_inside_source_FREQ[ID_Source[0][it]];
 
@@ -1647,6 +1709,32 @@ void AlgoElectro_NEW::update(
                                 which_form_to_probe,
                                 //std::vector<double> &infoOnForm
                                 grid.input_parser.points_to_be_probed[curr_pt].coordinates,
+                                //std::vector<double> &electro_deltas
+                                grid.delta_Electromagn,
+                                //double current_time
+                                current_time,
+                                //double dt
+                                dt
+                            );
+                        }
+                }
+                /// PROBE LINES IF NECESSARY
+                if(!grid.input_parser.lines_to_be_probed.empty()){
+                    for(size_t curr_pt = 0 ; curr_pt < grid.input_parser.lines_to_be_probed.size();
+                                curr_pt ++)
+                        {
+                            std::string which_form_to_probe = "line";
+                            probe_a_field(
+                                //GridCreator_NEW &grid
+                                grid,
+                                //std::string &which_field
+                                grid.input_parser.lines_to_be_probed[curr_pt].type_field,
+                                //std::string &filename
+                                grid.input_parser.lines_to_be_probed[curr_pt].filename,
+                                //std::string &which_form_to_probe
+                                which_form_to_probe,
+                                //std::vector<double> &infoOnForm
+                                grid.input_parser.lines_to_be_probed[curr_pt].coords,
                                 //std::vector<double> &electro_deltas
                                 grid.delta_Electromagn,
                                 //double current_time
@@ -4076,6 +4164,7 @@ void probe_a_field(
            && round(infoOnForm[2]) == infoOnForm[2])
         {
             /// The info on the point is given as node number.
+            DISPLAY_ERROR_ABORT("Not implemented.");
         }else{
             /// The info on the point is given as coordinates.
             /// Compute global node number and check if it is inside the current MPI process:
@@ -4146,7 +4235,144 @@ void probe_a_field(
 		 * @brief Export the value of a field over a specified line.
 		 *	The informations must be given in terms of coordinates.
 		 */
-		DISPLAY_ERROR_ABORT("Not yet implemented.");
+        if(infoOnForm.size() != 3){
+            DISPLAY_ERROR_ABORT("You didn't provide 3 infos for a lines.");
+        }
+        
+        /// In which case are we?
+        unsigned int direction = 10;
+        double longueur = -1;
+        size_t global_nbr[3];
+        size_t local[3];
+        
+        if(       std::isnan(infoOnForm[0])){
+            direction = 0;
+            longueur = grid.input_parser.lengthX_WholeDomain_Electro;
+            global_nbr[1] = infoOnForm[1] / electro_deltas[1];
+            global_nbr[2] = infoOnForm[2] / electro_deltas[2];
+            printf("Case ALL along x. Direction %u. Length %lf. global_nbr{%zu,%zu,%zu}\n",
+                direction,
+                longueur,
+                global_nbr[0],global_nbr[1],global_nbr[2]);
+        }else if( std::isnan(infoOnForm[1])){
+            direction = 1;
+            longueur = grid.input_parser.lengthY_WholeDomain_Electro;
+            global_nbr[0] = infoOnForm[0] / electro_deltas[0];
+            global_nbr[2] = infoOnForm[2] / electro_deltas[2];
+            printf("Case ALL along y. Direction %u. Length %lf. global_nbr{%zu,%zu,%zu}\n",
+                direction,
+                longueur,
+                global_nbr[0],global_nbr[1],global_nbr[2]);
+        }else if( std::isnan(infoOnForm[2])){
+            direction = 2;
+            longueur = grid.input_parser.lengthZ_WholeDomain_Electro;
+            global_nbr[0] = infoOnForm[0] / electro_deltas[0];
+            global_nbr[1] = infoOnForm[1] / electro_deltas[1];
+            printf("Case ALL along z. Direction %u. Length %lf. global_nbr{%zu,%zu,%zu}\n",
+                direction,
+                longueur,
+                global_nbr[0],global_nbr[1],global_nbr[2]);
+        }else{
+            printf("infoOnForm[%lf,%lf,%lf].\n",
+                infoOnForm[0],
+                infoOnForm[1],
+                infoOnForm[2]);
+            DISPLAY_ERROR_ABORT("I don't understand what you want.");
+        }
+        
+        /// Retrieve size of field to probe:
+        std::string size = "size_";
+        size.append(which_field);
+        std::vector<size_t> sizes = grid.get_fields_size(size);
+        
+        std::vector<double> data;
+        std::vector<size_t> NBR;
+        
+        /// Loop in the direction needed:
+        for(size_t I = 0 ; I < longueur/electro_deltas[direction] +1 ; I ++){
+            global_nbr[direction] = I;
+            /// Check if the global node is inside the MPI process:
+            if(grid.is_global_inside_me(global_nbr[0],global_nbr[1],global_nbr[2]) == true){
+                /// Get local node number:
+                bool is_ok = false;
+                grid.get_local_from_global_electro(
+                    global_nbr[0],global_nbr[1],global_nbr[2],
+                    &local[0],&local[1],&local[2],
+                    &is_ok
+                );
+                if(!is_ok){
+                    DISPLAY_ERROR_ABORT(
+                        "There was an error inside get_local_from_global."
+                    );
+                }
+                size_t index = local[0] + sizes[0] * (local[1] + sizes[1] * local[2]);
+                data.push_back(grid.get_fields(which_field)[index]);
+                NBR.push_back(I);
+            }
+        }
+        
+        /*for(size_t I = 0 ; I < data.size() ; I ++){
+            printf("DATA[%zu] = %lf.\n",I,data[I]);
+        }*/
+        
+        /// MPI safe file writing:
+        int TAG = 15;
+        if(grid.MPI_communicator.getRank() == grid.MPI_communicator.rootProcess){
+            /// The root process starts
+            /// Open the file:
+            int fd = -1;
+            while (fd == -1) fd = tryGetLock(filename.c_str());
+
+            FILE *file = NULL;
+            if(NULL == (file = fopen(filename.c_str(),"a"))){
+                DISPLAY_ERROR_ABORT(
+                    "Cannot open the file %s.",filename.c_str()
+                );
+            }
+            /// Write:
+            for(size_t K = 0 ; K < data.size() ; K ++){
+                if(       direction == 0){
+                    global_nbr[0]    = NBR[K];
+                }else if( direction == 1){
+                    global_nbr[1]    = NBR[K];
+                }else if( direction == 2){
+                    global_nbr[2]    = NBR[K];
+                }
+                fprintf(file,"%s at (%.10g,%.10g,%.10g) is %.10g at t = %.10g | step %zu | dt = %.10g.\n",
+                    which_field.c_str(),
+                    global_nbr[0]*electro_deltas[0],
+                    global_nbr[1]*electro_deltas[1],
+                    global_nbr[2]*electro_deltas[2],
+                    data[K],
+                    current_time,
+                    (size_t)(current_time/dt),
+                    dt);
+            }
+            /// Close file:
+            fclose(file);
+            releaseLock(fd);
+            
+            int OK = 1;
+            if(grid.MPI_communicator.getNumberOfMPIProcesses() >= 2)
+                MPI_Send(&OK,1,MPI_INT,
+                         grid.MPI_communicator.getRank()+1,
+                         TAG,MPI_COMM_WORLD);
+            
+        }else{
+            /// Wait for previous MPI to finish:
+            int OK = 1;
+            MPI_Recv(&OK,1,MPI_INT,
+                     grid.MPI_communicator.getRank()-1,
+                     TAG,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            if(grid.MPI_communicator.getRank() != grid.MPI_communicator.getNumberOfMPIProcesses()-1){
+                MPI_Send(&OK,1,MPI_INT,
+                     grid.MPI_communicator.getRank()+1,
+                     TAG,MPI_COMM_WORLD);
+            }
+        }
+            
+        
+		//DISPLAY_ERROR_ABORT("Not yet implemented.");
     }else{
 		DISPLAY_ERROR_ABORT(
 			"There is no option corresponding to %s.",

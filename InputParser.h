@@ -30,9 +30,18 @@ typedef struct probed_point{
 }probed_point;
 
 typedef struct probed_line{
-	std::string type_field;
-	std::vector<double> coords;
-	std::string filename;
+	std::string              type_field;
+	std::vector<double>      coords;
+    std::vector<std::string> ALL;
+	std::string              filename;
+    
+    void print(void){
+        printf("\t> Field:    %s.\n",type_field.c_str());
+        printf("\t> Coords:   [%lf,%lf,%lf].\n",coords[0],coords[1],coords[2]);
+        printf("\t> ALL:      {%s,%s,%s}.\n",ALL[0].c_str(),ALL[1].c_str(),ALL[2].c_str());
+        printf("\t> Filename: %s.\n",filename.c_str());
+    }
+    
 }probed_line;
 
 enum stringDollar_Header1{
@@ -215,6 +224,9 @@ class InputParser{
 		/// Example: access BC type of face 0 by THERMAL_FACE_BC_TYPE[0].
 		map<size_t,std::string> THERMAL_FACE_BC_TYPE;
 		map<size_t,double>      THERMAL_FACE_BC_VALUE;
+        
+        /// For the steady-state detection:
+        size_t SteadyState_CheckEveryPoint = 0;
 };
 
 #endif
