@@ -1,20 +1,4 @@
-#Use a recent version of CMake:
-set(MinimalCmakeVersion 3.5.0)
-if(${CMAKE_VERSION} VERSION_LESS ${MinimalCmakeVersion}) 
-    message(STATUS "Please consider to switch to CMake ${MinimalCmakeVersion}")
-	message(STATUS "> You can easily install a second version of cmake in parallel.")
-	message(STATUS "> Go to your home directory.")
-	message(STATUS "> First, get the sources with: wget https://cmake.org/files/v3.5/cmake-3.5.0.tar.gz")
-	message(STATUS "> Then, do: tar xzf cmake-${MinimalCmakeVersion}.tar.gz")
-	message(STATUS "> Then, do: cd cmake-${MinimalCmakeVersion}")
-	message(STATUS "> Then, do: ./bootstrap --system-curl")
-	message(STATUS "> Then, do: gmake")
-	message(STATUS "> Note that 'gmake' might take a while, so you can speed it up with gmake - j NBR_PROC")
-	message(STATUS "> Use an alias for this new installation (i.e.: $HOME/cmake-${MinimalCmakeVersion}/bin/cmake)")
-	message(FATAL_ERROR "Exit.")
-endif()
-
-cmake_minimum_required (VERSION ${MinimalCmakeVersion})
+cmake_minimum_required (FATAL_ERROR VERSION 2.8)
 
 #Project name:
 project(Effect-of-electromagnetic-radiation-on-the-brain CXX)
@@ -32,12 +16,14 @@ set(EXEC_NAME main)
 
 #Add CXX compiler flags:
 include(CheckCXXCompilerFlag)
+
 # OPTIMIZATION (only if release mode)
 string(COMPARE EQUAL "${CMAKE_BUILD_TYPE}" Release _cmp)
 if (_cmp)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
 	message(STATUS "Build type is 'Release'. Using -Ofast flag for C++ compiler")
 endif()
+
 #Use C++11:
 check_cxx_compiler_flag("-std=c++11" STDCXX11)
 if(STDCXX11)
@@ -69,29 +55,12 @@ else()
 endif()
 
 #Boost:
-set(BoostVersion 1.66.0)
-set(Boost_VERSION 106600)
-find_package(Boost ${BoostVersion} COMPONENTS system filesystem QUIET) 
+set(Boost_NO_BOOST_CMAKE ON) #Workaround for old boost versions like the one on NIC4.
+find_package(Boost REQUIRED COMPONENTS system filesystem) 
 if(Boost_FOUND)
 	message(STATUS "Boost found in ${Boost_INCLUDE_DIRS} / ${BoostSourceDir}")
 else()
-	################################################################################
-	#Install required boost libs:
-	include(cmake_modules/add_boost.cmake)
-	################################################################################
-	# Boost
-	set(Boost_USE_STATIC_LIBS OFF) 
-	set(Boost_USE_MULTITHREADED ON)  
-	set(Boost_USE_STATIC_RUNTIME OFF) 
-	message("In main cmakelists boostsourcedir is ${BoostSourceDir}")
-	set( BOOST_ROOT "${BoostSourceDir}" )
-	set( Boost_NO_SYSTEM_PATHS on CACHE BOOL "Do not search system for Boost" )
-	find_package(Boost ${BoostVersion} REQUIRED COMPONENTS system filesystem QUIET) 
-	if(NOT Boost_FOUND)
-		message(FATAL_ERROR "Boost not found")
-	else()
-		message(STATUS "After install : Boost ${BoostVersion} found in ${Boost_INCLUDE_DIRS}.")
-	endif()
+	message(FATAL_ERROR "Cannot find any installation of boost.")
 endif()
 include_directories(${Boost_INCLUDE_DIRS})
 TARGET_LINK_LIBRARIES(${EXEC_NAME} ${Boost_LIBRARIES})
