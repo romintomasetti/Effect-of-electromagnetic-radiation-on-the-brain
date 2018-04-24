@@ -24,6 +24,15 @@ if (_cmp)
 	message(STATUS "Build type is 'Release'. Using -Ofast flag for C++ compiler")
 endif()
 
+string(COMPARE EQUAL "${CMAKE_BUILD_TYPE}" Debug _cmp)
+if(_cmp)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_GLIBCXX_DEBUG")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
+	message(STATUS "CMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
+endif()
+
+
 #Use C++11:
 check_cxx_compiler_flag("-std=c++11" STDCXX11)
 if(STDCXX11)
@@ -166,3 +175,4 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/vtl_romin)
 ###########################
 TARGET_LINK_LIBRARIES(${EXEC_NAME} json disc_integr utils vtl vtl_romin)
 TARGET_LINK_LIBRARIES(${EXEC_NAME} ${Boost_LIBRARIES})
+
