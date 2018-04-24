@@ -2171,7 +2171,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
                 // c = 1.0/(sqrt(grid.E_x_eps[index]*grid.H_x_mu[index]));
                 abccoef = (c*dt/delta_Electromagn[2] -1) / (c*dt/delta_Electromagn[2] +1);
                 Ex[index] = Exz0[indexTmp] +
-                abccoef * (Ex[index] - Ex[index]);
+                abccoef * (Ex[index_1Plus] - Ex[index]);
                 Exz0[indexTmp] = Ex[index_1Plus];
  
             }
