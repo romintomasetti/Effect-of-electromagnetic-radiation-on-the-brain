@@ -22,6 +22,9 @@
 
 using namespace std;
 
+/**
+ * @brief Structure that contains all relevant informations about a given material.
+ */
 typedef struct material_struct{
 	std::string name;
 	unsigned int ID;
@@ -36,32 +39,31 @@ typedef struct material_struct{
 	}
 }material_struct;
 
+
+/**
+ * @brief Class materials. Used to parse the material data files and to create a structure
+ * 		for later use of these data.
+ */
 class Materials{
+
+	/** Private objects and fields **/
 	private:
+		/** Rank of the MPI process. **/
 		int MPI_RANK = INT_MIN;
+		/** Rank of the root process **/
 		int MPI_root = INT_MIN;
+		/** Verbosity. **/
 		unsigned int VERBOSITY = 0;
-	
+		/** Check that unification of all material files was performed sccessfully. **/
 		bool unification_done = false;
-		// Contains all the properties of all materials:
-		Array_3D_Template<double> properties;
-		// Number of properties:
-		unsigned int numberOfProperties = 0;
 		
-		// Maximum number of temperature specifications:
-		unsigned int maxNumberOfTemp    = 0;
-		// Dictionary with the materials and the chosen unsigned char assigned to it:
-		//map<string,unsigned char> materialID_FromMaterialName;
-		
-		
-		vector<unsigned int> numberOFTempForTheMaterial;
-	
-		// Free the properties array (called in the destructor):
-		//void   freeProperties(void);
+	/** Public functions and objects and fields. **/
 	public:
 
+		/** Print the material structure generated from all data files. **/
 		void printf_list_of_mat_from_dir(void);
 
+		/** Reads data files from a directory and create a clean structure. **/
 		void get_properties_from_directory(
 			boost::filesystem::path pathToData
 		);
@@ -70,34 +72,19 @@ class Materials{
 		std::vector<material_struct> unified_material_list;
 		std::map<std::string,unsigned int> materialID_FromMaterialName_unified;
 		std::map<unsigned int,std::string> materialName_FromMaterialID_unified;
+
 		void unification_of_data_files(void);
 
 		map<std::string,std::vector<material_struct> > list_of_mat_from_dir;
+
+		/** List of all material data files. **/
 		std::vector<std::string> list_of_mat_files;
+
 		// First, give file name, then material name:
 		map<std::string,map<std::string,unsigned char> > materialID_FromMaterialName_from_dir;
 		// First, give file name, then material ID:
 		map<std::string,map<unsigned char,std::string> > materialName_FromMaterialID_from_dir;
 
-		std::vector<material_struct> list_of_materials_ELECTRO;
-		std::vector<std::string> list_of_properties_of_list_of_materials_ELECTRO;
-
-		map<string,unsigned char> materialID_FromMaterialName;
-		map<unsigned char,string> materialName_FromMaterialID;
-
-		map<string,unsigned char> materialID_FromMaterialName_ELECTRO;
-		map<unsigned char,string> materialName_FromMaterialID_ELECTRO;
-
-		// Get all the properties specified in a file, and put them in a 3D array:
-		void   getPropertiesFromFile(string,string);
-		// Get a property for a given material at a given temperature:
-		double getProperty(double, unsigned char, unsigned char,bool interpolation = false);
-		// Print all the properties:
-		void   printAllProperties(void);
-		// Print the number of temperature lines per material:
-		void   printNumberOfTempLinePerMat(void);
-		// Number of materials (pour AlgoElectro.cpp)
-		unsigned int numberOfMaterials  = 0;
 
 		inline double get_init_temp(std::string const &mat_name);
 
@@ -111,18 +98,23 @@ class Materials{
 			std::string dir,
 			map<std::string,double> GetInitTemp_FromMaterialName
 		){
+			// Set verbosity:
 			this->VERBOSITY = VERBOSITY;
+			// Set the MPI process rank and the root's rank:
 			this->MPI_RANK = MPI_RANK;
 			this->MPI_root = MPI_root;
+			// Gt the initial temperatures:
 			this->GetInitTemp_FromMaterialName = GetInitTemp_FromMaterialName;
+			// Read the data files nd create the structure of materials:
 			this->get_properties_from_directory(dir);
+			// Check that all was done properly:
 			if(this->unification_done != true)
 				DISPLAY_ERROR_ABORT(
 					"Unification of material data files failed."
 				);
 		};
-		// Destructor:
-		~Materials();
+		/** Destructor. **/
+		~Materials(void);
 		// Get Dictionnary with the materials and the chosen unsigned char assigned to it:
 		map<string,unsigned char> get_dictionnary_MaterialToID(void);
 		map<unsigned char,string> get_dictionnary_IDToMaterial(void);
