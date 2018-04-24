@@ -39,8 +39,8 @@ if(OPENMP_FOUND)
 endif()
 
 # MUMPS -- 
-
-SET(MUMPSDIR $ENV{HOME}/MUMPS_5.1.2)
+SET(MUMPSDIR /home/users/r/t/rtoma/MUMPS_5.1.2)
+#SET(MUMPSDIR $ENV{HOME}/MUMPS_5.1.2)
 #SET(MUMPSDIR /home/boman/src/mumps-5.1.2)
 #SET(MUMPSDIR C:/mingw-w64/src/mumps-5.1.2)
 
@@ -61,6 +61,7 @@ message(STATUS "COMMONLIB=" ${COMMONLIB})
 message(STATUS "PORDLIB=" ${PORDLIB})
 
 target_link_libraries(TEST_MUMPS ${DMUMPSLIB} ${COMMONLIB} ${PORDLIB})
+
 # ubuntu
 #target_link_libraries(TEST_MUMPS -lgfortran)
 #target_link_libraries(TEST_MUMPS -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_scalapack_lp64 -lmkl_gf_lp64 -lmkl_gnu_thread -lmkl_core -lmkl_blacs_openmpi_lp64 -lgomp -lpthread -lm -ldl)
