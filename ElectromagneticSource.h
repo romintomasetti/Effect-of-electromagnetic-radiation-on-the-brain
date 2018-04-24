@@ -147,7 +147,7 @@ class ElectromagneticSource{
 				fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
 				abort();
 			}
-			std::vector<std::string> avail_source_types = {"DIPOLE","SIMPLE"};
+			std::vector<std::string> avail_source_types = {"DIPOLE","SIMPLE","FACE_EX"};
 			bool source_types_is_ok = false;
 			if(std::find(avail_source_types.begin(), avail_source_types.end(), source_type) 
 					!= avail_source_types.end()) {
@@ -260,7 +260,7 @@ class ElectromagneticSource{
 					&& Z_coord <= (this->centerZ[ID_Source] + length_Z/2.)+EPS)
 				{
 					/// Check if Ez is inside the airgap:
-					if( abs(Z_coord - this->centerZ[ID_Source] ) < EPS ){
+					if( abs(Z_coord - this->centerZ[ID_Source] ) <= 2*EPS ){
 						if( type == "Ez"){
 							this->there_is_at_least_one_element_non_zero_in_source[ID_Source] = true;
 							return "true";
@@ -323,7 +323,7 @@ class ElectromagneticSource{
 						}
 					}else if(isOnFace_e_MinusZ == true || isOnFace_e_PlusZ == true){
 						// Face with normal (+z) or (-z). Impose Ex=Ey=0.
-						if( type == "Ex" || type == "Ey" ){
+						if( type == "Ex" || type == "Ey" || type == "Ez" ){
 							return "0";
 						}else{
 							return "false";
@@ -334,6 +334,15 @@ class ElectromagneticSource{
 					return "0";
 				}
 				
+			}else if(source_type == "FACE_EX"){
+				/**
+				 * @brief Put a source on the face with normal
+				 */
+			}else{
+				DISPLAY_ERROR_ABORT(
+					"The source type %s doesn't match any source implementation.",
+					source_type.c_str()
+				);
 			}
 			
 			/// By default, return false.
