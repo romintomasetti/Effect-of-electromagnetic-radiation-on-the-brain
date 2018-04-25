@@ -129,7 +129,7 @@ class InputParser{
 		std::vector<std::string> material_data_files;
 		
 		/**
-		 * Either 'dipole' or 'simple'
+		 * Either 'dipole' or 'simple' or 'FACE_EX'
 		 */		
 		std::vector<std::string> conditionsInsideSources;
 
