@@ -236,18 +236,9 @@ class ElectromagneticSource{
 				double length_Y = lambda/4;
 				double length_Z = 2 * lambda/4 + deltas_Electro[2];
 
-				double shift_X = 0.0;
-				double shift_Y = 0.0;
-
-				//if(type == "Ex")
-					//shift_X = -deltas_Electro[0];
-
-				//if(type == "Ey")
-					//shift_Y = -deltas_Electro[1];
-
 				/// Compute the coordinates of the node w.r.t. the origin of the whole grid:
-				double X_coord = origin_whole_grid[0] + I_gl * deltas_Electro[0] + shift_X;
-				double Y_coord = origin_whole_grid[1] + J_gl * deltas_Electro[1] + shift_Y;
+				double X_coord = origin_whole_grid[0] + I_gl * deltas_Electro[0];
+				double Y_coord = origin_whole_grid[1] + J_gl * deltas_Electro[1];
 				double Z_coord = origin_whole_grid[2] + K_gl * deltas_Electro[2];
 
 				double EPS = deltas_Electro[0]*1E-5;
@@ -279,21 +270,21 @@ class ElectromagneticSource{
 					if(X_coord + deltas_Electro[0] >= (this->centerX[ID_Source] + length_X/2.)+EPS){
 						isOnFace_e_PlusX  = true;
 					}
-					if(X_coord - deltas_Electro[0] <= (this->centerX[ID_Source] - length_X/2.)-EPS){
+					if(X_coord - 0*deltas_Electro[0] <= (this->centerX[ID_Source] - length_X/2.)-EPS){
 						isOnFace_e_MinusX = true;
 					}
 
 					if(Y_coord + deltas_Electro[1] >= (this->centerY[ID_Source] + length_Y/2.)+EPS){
 						isOnFace_e_PlusY = true;
 					}
-					if(Y_coord - deltas_Electro[1] <= (this->centerY[ID_Source] - length_Y/2.)+EPS){
+					if(Y_coord - 0*deltas_Electro[1] <= (this->centerY[ID_Source] - length_Y/2.)-EPS){
 						isOnFace_e_MinusY = true;
 					}
 
 					if(Z_coord + deltas_Electro[2] >= (this->centerZ[ID_Source] + length_Z/2.)+EPS){
 						isOnFace_e_PlusZ = true;
 					}
-					if(Z_coord + deltas_Electro[2] <= (this->centerZ[ID_Source] - length_Z/2.)+EPS){
+					if(Z_coord + deltas_Electro[2] <= (this->centerZ[ID_Source] - length_Z/2.)-EPS){
 						isOnFace_e_MinusZ = true;
 					}
 
@@ -305,7 +296,7 @@ class ElectromagneticSource{
 						if( type == "Ex" || type == "Ey"){
 							return "false";
 						}
-					}else if(isOnFace_e_PlusX == true || isOnFace_e_MinusX){
+					}else if(isOnFace_e_PlusX == true || isOnFace_e_MinusX == true){
 						// Face with normal (+x) or (-x). Impose Ey and Ez to zero.
 						if( type == "Ey" || type == "Ez" ){
 							return "0";
@@ -336,8 +327,11 @@ class ElectromagneticSource{
 				
 			}else if(source_type == "FACE_EX"){
 				/**
-				 * @brief Put a source on the face with normal
+				 * @brief Put a source on the face with normal.
+				 * 	This kind of source has been hardcoded !
 				 */
+				this->there_is_at_least_one_element_non_zero_in_source[ID_Source] = true;
+				return "false";
 			}else{
 				DISPLAY_ERROR_ABORT(
 					"The source type %s doesn't match any source implementation.",
