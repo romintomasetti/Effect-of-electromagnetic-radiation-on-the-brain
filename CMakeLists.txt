@@ -74,6 +74,9 @@ endif()
 include_directories(${Boost_INCLUDE_DIRS})
 TARGET_LINK_LIBRARIES(${EXEC_NAME} ${Boost_LIBRARIES})
 
+# vtl_romin.h depends on GridCreator_NEW.h
+include_directories(${PROJECT_SOURCE_DIR})
+
 # MPI --
 # --------------------------------------------------------------
 # Finds MPI (including MSMPI)
