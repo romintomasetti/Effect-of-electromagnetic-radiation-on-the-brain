@@ -1432,6 +1432,7 @@ void AlgoElectro_NEW::update(
                     frequency = 0;
                     // False frequency is used to stop imposing zero.
                     false_freq = local_nodes_inside_source_FREQ[0];
+                    
                     if(MODULATE_SOURCE[ID_Source[0][it]] == true){
                         double period    = 2*M_PI/false_freq;
                         double MEAN      = 0*period;
@@ -1817,7 +1818,7 @@ void AlgoElectro_NEW::update(
 
 
     /* FREE MEMORY */
-    
+    /*
     delete[] local_nodes_inside_source_NUMBER;
     delete[] ID_Source;
     
@@ -1857,7 +1858,7 @@ void AlgoElectro_NEW::update(
     delete[] C_eze;
     delete[] C_ezh_1;
     delete[] C_ezh_2;
-
+*/
     /**
      * @brief Freeing memory of ABC conditions.
      * 
@@ -1865,7 +1866,7 @@ void AlgoElectro_NEW::update(
      *      if(ptr != NULL) {delete[] ptr;}
      * but simply do delete[] ptr;
      */
-    delete[] Eyx0;
+  /*  delete[] Eyx0;
     delete[] Eyx1;
     delete[] Ezx0;
     delete[] Ezx1;
@@ -1893,7 +1894,7 @@ void AlgoElectro_NEW::update(
     if(Electric_field_to_recv != NULL){free(Electric_field_to_recv);}
     if(Magnetic_field_to_send != NULL){free(Magnetic_field_to_send);}
     if(Magnetic_field_to_recv != NULL){free(Magnetic_field_to_recv);}
-
+*/
     /// Compute total elapsed time inside UPDATE:
     gettimeofday(&end, NULL);
 
@@ -1901,7 +1902,7 @@ void AlgoElectro_NEW::update(
                         (end.tv_usec - start.tv_usec) / 1.e6;
 
     grid.profiler.incrementTimingInput("AlgoElectro_NEW_UPDATE_gettimeofday",delta);
-    //std::cout << "AlgoElectro_NEW_UPDATE => Time: " << delta << " s" << std::endl;
+    std::cout << "AlgoElectro_NEW_UPDATE => Time: " << delta << " s" << std::endl;
 }
 
 void AlgoElectro_NEW::check_OMP_DYNAMIC_envVar(void){
@@ -1958,7 +1959,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
 
 
-    
+
 
 
     /*  Dans cette section, on va considérer que les dimensions dans chaque direction
@@ -4428,4 +4429,851 @@ bool AlgoElectro_NEW::SteadyStateAnalyser(void){
         "Not implemented yet."
     );
     return false;
+}
+
+
+std::vector<double> AlgoElectro_NEW::ComputeNormEsquare(GridCreator_NEW &grid)
+{
+    // Those indices will serve to go through all the nodes of the domain
+    size_t i = 0;
+    size_t j = 0;
+    size_t k = 0;
+
+    // This vector will contain the norm of the electric field at each node
+    std::vector<double> SquareModulusE;
+
+    // Number of centers for Ex along the 3 directions of space
+    size_t NbCentersExx = grid.size_Ex[0] - 1;
+    size_t NbCentersExy = grid.size_Ex[1] - 1;
+    size_t NbCentersExz = grid.size_Ex[2] - 1;
+    printf("NbCentersExx = %zu\n", NbCentersExx);
+    printf("NbCentersExy = %zu\n", NbCentersExy);
+    printf("NbCentersExz = %zu\n", NbCentersExz);
+
+    // Number of centers for Ey along the 3 directions of space
+    size_t NbCentersEyx = grid.size_Ey[0] - 1;
+    size_t NbCentersEyy = grid.size_Ey[1] - 1;
+    size_t NbCentersEyz = grid.size_Ey[2] - 1;
+    printf("NbCentersEyx = %zu\n", NbCentersEyx);
+    printf("NbCentersEyy = %zu\n", NbCentersEyy);
+    printf("NbCentersEyz = %zu\n", NbCentersEyz);
+    
+    // Number of centers for Ez along the 3 directions of space
+    size_t NbCentersEzx = grid.size_Ez[0] - 1;
+    size_t NbCentersEzy = grid.size_Ez[1] - 1;
+    size_t NbCentersEzz = grid.size_Ez[2] - 1;
+    printf("NbCentersEzx = %zu\n", NbCentersEzx);
+    printf("NbCentersEzy = %zu\n", NbCentersEzy);
+    printf("NbCentersEzz = %zu\n", NbCentersEzz);
+    
+
+    size_t x1 = 0; // Correspond to point (i+1, j-1, k-1)
+    size_t x2 = 0; // Correspond to point (i-1, j-1, k-1)
+    size_t x3 = 0; // Correspond to point (i+1, j-1, k+1)
+    size_t x4 = 0; // Correspond to point (i-1, j-1, k+1)
+    size_t x5 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t x6 = 0; // Correspond to point (i-1, j+1, k-1)
+    size_t x7 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t x8 = 0; // Correspond to point (i+1, j+1, k+1)
+
+    size_t y1 = 0; // Correspond to point (i+1, j-1, k-1)
+    size_t y2 = 0; // Correspond to point (i-1, j-1, k-1)
+    size_t y3 = 0; // Correspond to point (i+1, j-1, k+1)
+    size_t y4 = 0; // Correspond to point (i-1, j-1, k+1)
+    size_t y5 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t y6 = 0; // Correspond to point (i-1, j+1, k-1)
+    size_t y7 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t y8 = 0; // Correspond to point (i+1, j+1, k+1)
+
+    size_t z1 = 0; // Correspond to point (i+1, j-1, k-1)
+    size_t z2 = 0; // Correspond to point (i-1, j-1, k-1)
+    size_t z3 = 0; // Correspond to point (i+1, j-1, k+1)
+    size_t z4 = 0; // Correspond to point (i-1, j-1, k+1)
+    size_t z5 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t z6 = 0; // Correspond to point (i-1, j+1, k-1)
+    size_t z7 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t z8 = 0; // Correspond to point (i+1, j+1, k+1)
+
+    // Will contain the interpolation for a given cube
+    double interpolationEx = 0.0;
+    double interpolationEy = 0.0;
+    double interpolationEz = 0.0;
+
+    // Will contain the interpolation for each cube
+    std::vector<double> allInterpolationEx;
+    std::vector<double> allInterpolationEy;
+    std::vector<double> allInterpolationEz;
+
+
+
+    size_t counter_x = 0; // Permet de se balader dans les bons noeuds (pas les coins)
+    i=0;
+    int count_y = 0; // Permet de savoir dans quelle colonne y on se trouve
+    while(counter_x < NbCentersExx*NbCentersExy*NbCentersExz)
+    {
+        int tmp = floor(i/NbCentersExx*NbCentersExy); // Permet de se ramener dans un plan z=0
+        int value_testx = i - tmp*NbCentersExx*NbCentersExy; // Permet de savoir ou on se trouve dans le plan
+        
+        if(count_y == 0 && value_testx < NbCentersExx)
+        {
+            // Normal de ne rien avoir ici
+        }
+        else if(count_y == 0 && value_testx >= NbCentersExx*NbCentersExy - NbCentersExx)
+        {
+            // Normal de ne rien faire
+        }
+        else if(count_y == NbCentersExx-1 && value_testx < NbCentersExx)
+        {
+            // Normal de ne rien faire
+        }
+        else if(count_y == NbCentersExx-1 && value_testx >= NbCentersExx*NbCentersExy - NbCentersExx)
+        {
+            // Normal de ne rien faire
+        }
+        else
+        {
+            x1 = i+1;
+            x2 = i;
+            x3 = (i+1) + NbCentersExx*NbCentersExy;
+            x4 = i + NbCentersExx*NbCentersExy;
+            x5 = (i+1) + NbCentersExx;
+            x6 = i + NbCentersExx;
+            x7 = (i+1) + NbCentersExx + NbCentersExx*NbCentersExy;
+            x8 = i + NbCentersExx + NbCentersExx*NbCentersExy;
+
+            interpolationEx = interpolationX(x1, x2, x3, x4, x5, x6, x7, x8, grid);
+
+            allInterpolationEx.push_back(interpolationEx);
+            counter_x++;
+        }
+
+        i++;
+        count_y++;
+
+        if(count_y == NbCentersExx)
+            count_y == 0;
+    }
+    
+    
+    counter_x = 0;
+    i=0;
+    count_y = 0; // Permet de savoir dans quelle colonne y on se trouve
+    while(counter_x < NbCentersEyx*NbCentersEyy*NbCentersEyz)
+    {
+        int tmp = floor(i/NbCentersEyx*NbCentersEyy); // Permet de se ramener dans un plan z=0
+        int value_testx = i - tmp*NbCentersEyx*NbCentersEyy; // Permet de savoir ou on se trouve dans le plan
+        
+        if(count_y == 0 && value_testx < NbCentersEyx)
+        {
+            // Normal de ne rien avoir ici
+        }
+        else if(count_y == 0 && value_testx >= NbCentersEyx*NbCentersEyy - NbCentersEyx)
+        {
+            // Normal de ne rien faire
+        }
+        else if(count_y == NbCentersEyx-1 && value_testx < NbCentersEyx)
+        {
+            // Normal de ne rien faire
+        }
+        else if(count_y == NbCentersEyx-1 && value_testx >= NbCentersEyx*NbCentersEyy - NbCentersEyx)
+        {
+            // Normal de ne rien faire
+        }
+        else
+        {
+            y1 = i+1;
+            y2 = i;
+            y3 = (i+1) + NbCentersEyx*NbCentersEyy;
+            y4 = i + NbCentersEyx*NbCentersEyy;
+            y5 = (i+1) + NbCentersEyx;
+            y6 = i + NbCentersEyx;
+            y7 = (i+1) + NbCentersEyx + NbCentersEyx*NbCentersEyy;
+            y8 = i + NbCentersEyx + NbCentersEyx*NbCentersEyy;
+
+            interpolationEy = interpolationY(y1, y2, y3, y4, y5, y6, y7, y8, grid);
+
+            allInterpolationEy.push_back(interpolationEy);
+            counter_x++;
+        }
+
+        i++;
+        count_y++;
+
+        if(count_y == NbCentersEyx)
+            count_y == 0;
+    }
+    
+
+    counter_x = 0;
+    i=0;
+    count_y = 0; // Permet de savoir dans quelle colonne y on se trouve
+    while(counter_x < NbCentersEzx*NbCentersEzy*NbCentersEzz)
+    {
+        int tmp = floor(i/NbCentersEzx*NbCentersEzy); // Permet de se ramener dans un plan z=0
+        int value_testx = i - tmp*NbCentersEzx*NbCentersEzy; // Permet de savoir ou on se trouve dans le plan
+        
+        if(count_y == 0 && tmp == 0)
+        {
+            // Normal de ne rien avoir ici
+        }
+        else if(count_y == NbCentersEzx-1 && tmp == 0)
+        {
+            // Normal de ne rien faire
+        }
+        else if(count_y == NbCentersEzx-1 && tmp == NbCentersEzz-1)
+        {
+            // Normal de ne rien faire
+        }
+        else if(count_y == 0 && tmp == NbCentersEzz-1)
+        {
+            // Normal de ne rien faire
+        }
+        else
+        {
+            z1 = i+1;
+            z2 = i;
+            z3 = (i+1) + NbCentersEzx*NbCentersEzy;
+            z4 = i + NbCentersEzx*NbCentersEzy;
+            z5 = (i+1) + NbCentersEzx;
+            z6 = i + NbCentersEzx;
+            z7 = (i+1) + NbCentersEzx + NbCentersEzx*NbCentersEzy;
+            z8 = i + NbCentersEzx + NbCentersEzx*NbCentersEzy;
+
+            interpolationEz = interpolationZ(z1, z2, z3, z4, z5, z6, z7, z8, grid);
+
+            allInterpolationEz.push_back(interpolationEz);
+            counter_x++;
+        }
+
+        i++;
+        count_y++;
+
+        if(count_y == NbCentersEzx)
+            count_y == 0;
+    }
+
+    printf("allInterpolationEx.size = %zu\n", allInterpolationEx.size());
+    printf("allInterpolationEy.size = %zu\n", allInterpolationEy.size());
+    printf("allInterpolationEz.size = %zu\n", allInterpolationEz.size());
+    abort();
+
+    
+    size_t lengthInterpX = 0;
+    size_t lengthInterpY = 0;
+    size_t lengthInterpZ = 0;
+
+
+    // for(lengthInterpX=0; lengthInterpX<allInterpolationEx.size(); lengthInterpX++)
+    // {
+    //     for(lengthInterpY=0; lengthInterpY<allInterpolationEy.size(); lengthInterpY++)
+    //     {
+    //         for(lengthInterpZ=0; lengthInterpZ<allInterpolationEz.size(); lengthInterpZ++)
+    //         {
+    //             // Recall : modulus = sqrt(x1^2 + x2^2 + x3^2)
+    //             ModulusE.push_back(sqrt(allInterpolationEx[lengthInterpX]*allInterpolationEx[lengthInterpX]
+    //                                     + allInterpolationEy[lengthInterpY]*allInterpolationEy[lengthInterpY]
+    //                                     + allInterpolationEz[lengthInterpZ]*allInterpolationEz[lengthInterpZ]));
+    //         }
+    //     }
+    // }
+    
+    size_t NbCenters = 0;
+    size_t TotalNbCenters = allInterpolationEx.size() * allInterpolationEy.size() * allInterpolationEz.size();
+    printf("TotalNbCenters = %zu\n", TotalNbCenters);
+    abort();
+    for(NbCenters=0; NbCenters<TotalNbCenters; NbCenters++)
+    {
+        SquareModulusE.push_back( allInterpolationEx[NbCenters]*allInterpolationEx[NbCenters]
+                            + allInterpolationEy[NbCenters]*allInterpolationEy[NbCenters]
+                            + allInterpolationEz[NbCenters]*allInterpolationEz[NbCenters]);
+    }
+
+    return SquareModulusE;
+}
+
+
+double AlgoElectro_NEW::interpolationX(size_t x1, size_t x2, size_t x3,
+                                      size_t x4, size_t x5, size_t x6,
+                                      size_t x7, size_t x8,  GridCreator_NEW &grid)
+{
+    
+    double valueInterpolationX = 0.0;
+
+    double c_000_Ex = grid.E_x[x1];
+    double c_001_Ex = grid.E_x[x2];
+    double c_010_Ex = grid.E_x[x3];
+    double c_011_Ex = grid.E_x[x4];
+    double c_100_Ex = grid.E_x[x5];
+    double c_101_Ex = grid.E_x[x6];
+    double c_110_Ex = grid.E_x[x7];
+    double c_111_Ex = grid.E_x[x8];
+
+    double Mean15_x = (c_000_Ex + c_100_Ex) / 2;
+    double Mean26_x = (c_001_Ex + c_101_Ex) / 2;
+    double Mean37_x = (c_010_Ex + c_110_Ex) / 2;
+    double Mean48_x = (c_011_Ex + c_111_Ex) / 2;
+
+    double Mean1537_x = (Mean15_x + Mean37_x) / 2;
+    double Mean2648_x = (Mean26_x + Mean48_x) / 2;
+
+    valueInterpolationX = (Mean1537_x + Mean2648_x) / 2;
+
+    return valueInterpolationX;
+}
+
+
+double AlgoElectro_NEW::interpolationY(size_t y1, size_t y2, size_t y3,
+                                      size_t y4, size_t y5, size_t y6,
+                                      size_t y7, size_t y8,  GridCreator_NEW &grid)
+{
+    
+    double valueInterpolationY = 0.0;
+    
+    
+    // Will contain the value of Ex along the 3 direction of space that will be used to compute the modulus
+    // double *EyForModulus = (double *)calloc(3, sizeof(double));
+    
+    // if(EyForModulus == NULL)
+    // {
+    //     printf("The pointer EyForModulus could not be allocated.\n");
+    //     printf("This error comes from line %d from file %s\n", __LINE__, __FILE__);
+    //     printf("Aborting...");
+    //     exit(EXIT_FAILURE);
+    // }
+
+    double c_000_Ey = grid.E_y[y1];
+    double c_001_Ey = grid.E_y[y2];
+    double c_010_Ey = grid.E_y[y3];
+    double c_011_Ey = grid.E_y[y4];
+    double c_100_Ey = grid.E_y[y5];
+    double c_101_Ey = grid.E_y[y6];
+    double c_110_Ey = grid.E_y[y7];
+    double c_111_Ey = grid.E_y[y8];
+
+    double Mean15_y = (c_000_Ey + c_100_Ey) / 2;
+    double Mean26_y = (c_001_Ey + c_101_Ey) / 2;
+    double Mean37_y = (c_010_Ey + c_110_Ey) / 2;
+    double Mean48_y = (c_011_Ey + c_111_Ey) / 2;
+
+    double Mean1537_y = (Mean15_y + Mean37_y) / 2;
+    double Mean2648_y = (Mean26_y + Mean48_y) / 2;
+
+    valueInterpolationY = (Mean1537_y + Mean2648_y) / 2;
+
+    return valueInterpolationY;
+}
+
+
+double AlgoElectro_NEW::interpolationZ(size_t z1, size_t z2, size_t z3,
+                                      size_t z4, size_t z5, size_t z6,
+                                      size_t z7, size_t z8,  GridCreator_NEW &grid)
+{
+    
+    double valueInterpolationZ = 0.0;
+    
+    double c_000_Ez = grid.E_z[z1];
+    double c_001_Ez = grid.E_z[z2];
+    double c_010_Ez = grid.E_z[z3];
+    double c_011_Ez = grid.E_z[z4];
+    double c_100_Ez = grid.E_z[z5];
+    double c_101_Ez = grid.E_z[z6];
+    double c_110_Ez = grid.E_z[z7];
+    double c_111_Ez = grid.E_z[z8];
+
+    double Mean15_z = (c_000_Ez + c_100_Ez) / 2;
+    double Mean26_z = (c_001_Ez + c_101_Ez) / 2;
+    double Mean37_z = (c_010_Ez + c_110_Ez) / 2;
+    double Mean48_z = (c_011_Ez + c_111_Ez) / 2;
+
+    double Mean1537_z = (Mean15_z + Mean37_z) / 2;
+    double Mean2648_z = (Mean26_z + Mean48_z) / 2;
+
+    valueInterpolationZ = (Mean1537_z + Mean2648_z) / 2;
+
+    return valueInterpolationZ;
+}
+
+
+
+
+
+std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
+                                                   std::vector<double> Ey, std::vector<double> Ez)
+{
+    // Those indices will serve to go through all the nodes of the domain
+    size_t i = 0;
+    size_t j = 0;
+    size_t k = 0;
+
+    // This vector will contain the norm of the electric field at each node
+    std::vector<double> ModulusE;
+
+    // Number of centers for Ex along the 3 directions of space
+    size_t NbCentersExx = 1;
+    size_t NbCentersExy = 1;
+    size_t NbCentersExz = 1;
+
+    // Number of centers for Ey along the 3 directions of space
+    size_t NbCentersEyx = 1;
+    size_t NbCentersEyy = 1;
+    size_t NbCentersEyz = 1;
+
+    // Number of centers for Ez along the 3 directions of space
+    size_t NbCentersEzx = 1;
+    size_t NbCentersEzy = 1;
+    size_t NbCentersEzz = 1;
+
+    size_t x1 = 0; // Correspond to point (i+1, j-1, k-1)
+    size_t x2 = 0; // Correspond to point (i-1, j-1, k-1)
+    size_t x3 = 0; // Correspond to point (i+1, j-1, k+1)
+    size_t x4 = 0; // Correspond to point (i-1, j-1, k+1)
+    size_t x5 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t x6 = 0; // Correspond to point (i-1, j+1, k-1)
+    size_t x7 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t x8 = 0; // Correspond to point (i+1, j+1, k+1)
+
+    size_t y1 = 0; // Correspond to point (i+1, j-1, k-1)
+    size_t y2 = 0; // Correspond to point (i-1, j-1, k-1)
+    size_t y3 = 0; // Correspond to point (i+1, j-1, k+1)
+    size_t y4 = 0; // Correspond to point (i-1, j-1, k+1)
+    size_t y5 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t y6 = 0; // Correspond to point (i-1, j+1, k-1)
+    size_t y7 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t y8 = 0; // Correspond to point (i+1, j+1, k+1)
+
+    size_t z1 = 0; // Correspond to point (i+1, j-1, k-1)
+    size_t z2 = 0; // Correspond to point (i-1, j-1, k-1)
+    size_t z3 = 0; // Correspond to point (i+1, j-1, k+1)
+    size_t z4 = 0; // Correspond to point (i-1, j-1, k+1)
+    size_t z5 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t z6 = 0; // Correspond to point (i-1, j+1, k-1)
+    size_t z7 = 0; // Correspond to point (i+1, j+1, k-1)
+    size_t z8 = 0; // Correspond to point (i+1, j+1, k+1)
+
+    // Will contain the interpolation for a given cube
+    double interpolationEx = 0.0;
+    double interpolationEy = 0.0;
+    double interpolationEz = 0.0;
+
+    // Will contain the interpolation for each cube
+    std::vector<double> allInterpolationEx;
+    std::vector<double> allInterpolationEy;
+    std::vector<double> allInterpolationEz;
+
+    printf("Ex.size = %d\n", Ex.size());
+    size_t Nx = 1;
+    size_t Ny = 1;
+    size_t Nz = 1;
+    // Computations for Ex
+    for(i=0; i<NbCentersExx; i++)
+    {
+        for(j=0; j<NbCentersExy; j++)
+        {
+            for(k=0; k<NbCentersExz; k++)
+            {
+                // x1 = (i+1) + Nx * (j + k * Ny);
+                // x2 = i + Nx * (j + k * Ny);
+                // x3 = (i+1) + Nx * (j + (k+1) * Ny);
+                // x4 = i + Nx * (j + (k+1) * Ny);
+                // x5 = i+1 + j + 2*Nx + k;
+                // x6 = i + Nx * ((j+1) + k * Ny);
+                // x7 = (i+1) + Nx * ((j+1) + k * Ny);
+                // x8 = (i+1) + Nx * ((j+1) + (k+1) * Ny);
+                x1 = 0;
+                x2 = 1;
+                x4 = 5;
+                x3 = 4;
+                x6 = 3;
+                x5 = 2;
+                x8 = 7;
+                x7 = 6;
+
+                interpolationEx = interpolationX2(x1, x2, x3, x4, x5, x6, x7, x8, Ex);
+
+                printf("Valuex = %lf\n", interpolationEx);
+
+                allInterpolationEx.push_back(interpolationEx);
+            }
+        }
+    }
+
+    // Computations for Ey
+    for(i=0; i<NbCentersEyx; i++)
+    {
+        for(j=0; j<NbCentersEyy; j++)
+        {
+            for(k=0; k<NbCentersEyz; k++)
+            {
+                // y1 = (i+1) + Ey.size() * (j + k * Ey.size());
+                // y2 = i + Ey.size() * (j + k * Ey.size());
+                // y3 = (i+1) + Ey.size() * (j + (k+1) * Ey.size());
+                // y4 = i + Ey.size() * (j + (k+1) * Ey.size());
+                // y5 = (i+1) + Ey.size() * ((j+1) + k * Ey.size());
+                // y6 = i + Ey.size() * ((j+1) + k * Ey.size());
+                // y7 = (i+1) + Ey.size() * ((j+1) + k * Ey.size());
+                // y8 = (i+1) + Ey.size() * ((j+1) + (k+1) * Ey.size());
+                y1 = 1;
+                y2 = 0;
+                y3 = 5;
+                y4 = 4;
+                y5 = 3;
+                y6 = 2;
+                y7 = 7;
+                y8 = 6;
+
+                interpolationEy = interpolationY2(y1, y2, y3, y4, y5, y6, y7, y8, Ey);
+
+                printf("Valuey = %lf\n", interpolationEy);
+
+                allInterpolationEy.push_back(interpolationEy);
+            }
+        }
+    }
+
+
+    // Computations for Ez
+    for(i=0; i<NbCentersEzx; i++)
+    {
+        for(j=0; j<NbCentersEzy; j++)
+        {
+            for(k=0; k<NbCentersEzz; k++)
+            {
+                // z1 = (i+1) + Ez.size() * (j + k * Ez.size());
+                // z2 = i + Ez.size() * (j + k * Ez.size());
+                // z3 = (i+1) + Ez.size() * (j + (k+1) * Ez.size());
+                // z4 = i + Ez.size() * (j + (k+1) * Ez.size());
+                // z5 = (i+1) + Ez.size() * ((j+1) + k * Ez.size());
+                // z6 = i + Ez.size() * ((j+1) + k * Ez.size());
+                // z7 = (i+1) + Ez.size() * ((j+1) + k * Ez.size());
+                // z8 = (i+1) + Ez.size() * ((j+1) + (k+1) * Ez.size());
+                z1 = 1;
+                z2 = 0;
+                z3 = 5;
+                z4 = 4;
+                z5 = 3;
+                z6 = 2;
+                z7 = 7;
+                z8 = 6;
+
+                interpolationEz = interpolationZ2(z1, z2, z3, z4, z5, z6, z7, z8, Ez);
+
+                allInterpolationEz.push_back(interpolationEz);
+                printf("Valuez = %lf\n", interpolationEz);
+            }
+        }
+    }
+
+    size_t lengthInterpX = 0;
+    size_t lengthInterpY = 0;
+    size_t lengthInterpZ = 0;
+
+    for(lengthInterpX=0; lengthInterpX<allInterpolationEx.size(); lengthInterpX++)
+    {
+        for(lengthInterpY=0; lengthInterpY<allInterpolationEy.size(); lengthInterpY++)
+        {
+            for(lengthInterpZ=0; lengthInterpZ<allInterpolationEz.size(); lengthInterpZ++)
+            {
+                // Recall : modulus = sqrt(x1^2 + x2^2 + x3^2)
+                ModulusE.push_back(allInterpolationEx[lengthInterpX]*allInterpolationEx[lengthInterpX]
+                                   + allInterpolationEy[lengthInterpY]*allInterpolationEy[lengthInterpY]
+                                   + allInterpolationEz[lengthInterpZ]*allInterpolationEz[lengthInterpZ]);
+            }
+        }
+    }
+
+    int iiiiii=0;
+    for(iiiiii=0; iiiiii<1; iiiiii++)
+        printf("Modulus = %lf\n", ModulusE[iiiiii]);
+    
+    
+    return ModulusE;
+}
+
+
+double AlgoElectro_NEW::interpolationX2(size_t x1, size_t x2, size_t x3,
+                        size_t x4, size_t x5, size_t x6,
+                        size_t x7, size_t x8,  std::vector<double> Ex)
+{
+    double valueInterpolationX = 0.0;
+
+    // printf("In interpolationX2 \n");
+    // printf("x1 = %zu\n", x1);
+    // printf("x2 = %zu\n", x2);
+    // printf("x3 = %zu\n", x3);
+    // printf("x4 = %zu\n", x4);
+    // printf("x5 = %zu\n", x5);
+    // printf("x6 = %zu\n", x6);
+    // printf("x7 = %zu\n", x7);
+    // printf("x8 = %zu\n", x8);
+
+    double c_000_Ex = Ex[x1];
+    double c_001_Ex = Ex[x2];
+    double c_010_Ex = Ex[x3];
+    double c_011_Ex = Ex[x4];
+    double c_100_Ex = Ex[x5];
+    double c_101_Ex = Ex[x6];
+    double c_110_Ex = Ex[x7];
+    double c_111_Ex = Ex[x8];
+    printf("x1 = %lf\n", Ex[x1]);
+    printf("x2 = %lf\n", Ex[x2]);
+    printf("x3 = %lf\n", Ex[x3]);
+    printf("x4 = %lf\n", Ex[x4]);
+    printf("x5 = %lf\n", Ex[x5]);
+    printf("x6 = %lf\n", Ex[x6]);
+    printf("x7 = %lf\n", Ex[x7]);
+    printf("x8 = %lf\n", Ex[x8]);
+
+    double Mean15_x = (c_000_Ex + c_100_Ex) / 2;
+    double Mean26_x = (c_001_Ex + c_101_Ex) / 2;
+    double Mean37_x = (c_010_Ex + c_110_Ex) / 2;
+    double Mean48_x = (c_011_Ex + c_111_Ex) / 2;
+
+    double Mean1537_x = (Mean15_x + Mean37_x) / 2;
+    double Mean2648_x = (Mean26_x + Mean48_x) / 2;
+
+    valueInterpolationX = (Mean1537_x + Mean2648_x) / 2;
+
+    printf("Mean15x = %lf\n", Mean15_x);
+    printf("Mean26x = %lf\n", Mean26_x);
+    printf("Mean37x = %lf\n", Mean37_x);
+    printf("Mean48x = %lf\n", Mean48_x);
+    printf("Mean1537x = %lf\n", Mean1537_x);
+    printf("Mean2648x = %lf\n", Mean2648_x);
+    printf("valueInterpolationX = %lf\n", valueInterpolationX);
+    
+    return valueInterpolationX;
+}
+
+double AlgoElectro_NEW::interpolationY2(size_t y1, size_t y2, size_t y3,
+                        size_t y4, size_t y5, size_t y6,
+                        size_t y7, size_t y8,  std::vector<double> Ey)
+{
+     double valueInterpolationY = 0.0;
+    
+    double c_000_Ey = Ey[y1];
+    double c_001_Ey = Ey[y2];
+    double c_010_Ey = Ey[y3];
+    double c_011_Ey = Ey[y4];
+    double c_100_Ey = Ey[y5];
+    double c_101_Ey = Ey[y6];
+    double c_110_Ey = Ey[y7];
+    double c_111_Ey = Ey[y8];
+
+    double Mean15_y = (c_000_Ey + c_100_Ey) / 2;
+    double Mean26_y = (c_001_Ey + c_101_Ey) / 2;
+    double Mean37_y = (c_010_Ey + c_110_Ey) / 2;
+    double Mean48_y = (c_011_Ey + c_111_Ey) / 2;
+
+    double Mean1537_y = (Mean15_y + Mean37_y) / 2;
+    double Mean2648_y = (Mean26_y + Mean48_y) / 2;
+
+    valueInterpolationY = (Mean1537_y + Mean2648_y) / 2;
+
+    printf("Mean15y = %lf\n", Mean15_y);
+    printf("Mean26y = %lf\n", Mean26_y);
+    printf("Mean37y = %lf\n", Mean37_y);
+    printf("Mean48y = %lf\n", Mean48_y);
+    printf("Mean1537y = %lf\n", Mean1537_y);
+    printf("Mean2648y = %lf\n", Mean2648_y);
+    printf("valueInterpolationY = %lf\n", valueInterpolationY);
+
+    return valueInterpolationY;
+}
+
+double AlgoElectro_NEW::interpolationZ2(size_t z1, size_t z2, size_t z3,
+                        size_t z4, size_t z5, size_t z6,
+                        size_t z7, size_t z8,  std::vector<double> Ez)
+{
+    double valueInterpolationZ = 0.0;
+    
+    double c_000_Ez = Ez[z1];
+    double c_001_Ez = Ez[z2];
+    double c_010_Ez = Ez[z3];
+    double c_011_Ez = Ez[z4];
+    double c_100_Ez = Ez[z5];
+    double c_101_Ez = Ez[z6];
+    double c_110_Ez = Ez[z7];
+    double c_111_Ez = Ez[z8];
+
+    double Mean15_z = (c_000_Ez + c_100_Ez) / 2;
+    double Mean26_z = (c_001_Ez + c_101_Ez) / 2;
+    double Mean37_z = (c_010_Ez + c_110_Ez) / 2;
+    double Mean48_z = (c_011_Ez + c_111_Ez) / 2;
+
+    double Mean1537_z = (Mean15_z + Mean37_z) / 2;
+    double Mean2648_z = (Mean26_z + Mean48_z) / 2;
+
+    valueInterpolationZ = (Mean1537_z + Mean2648_z) / 2;
+
+    printf("Mean15z = %lf\n", Mean15_z);
+    printf("Mean26z = %lf\n", Mean26_z);
+    printf("Mean37z = %lf\n", Mean37_z);
+    printf("Mean48z = %lf\n", Mean48_z);
+    printf("Mean1537z = %lf\n", Mean1537_z);
+    printf("Mean2648z = %lf\n", Mean2648_z);
+    printf("valueInterpolationZ = %lf\n", valueInterpolationZ);
+
+    return valueInterpolationZ;
+}
+
+
+
+
+std::vector<double> AlgoElectro_NEW::ComputeNormEsquareBIS(GridCreator_NEW &grid)
+{
+    if(grid.MPI_communicator.getNumberOfMPIProcesses() != 1)
+    {
+        DISPLAY_ERROR_ABORT("More than one process is used. The functino is intended for only one");
+    }
+
+    size_t M = grid.sizes_EH[0];
+    size_t N = grid.sizes_EH[1];
+    size_t P = grid.sizes_EH[2];
+
+    printf("M = %zu, N = %zu, P = %zu\n", M, N, P);
+
+    // Will serve to go through the grid
+    size_t i,j,k;
+
+    // This vector will contain the norm of the electric field at each node
+    std::vector<double> SquareModulusE;
+
+    // Will contain the interpolation for a given cube
+    double interpolationEx = 0.0;
+    double interpolationEy = 0.0;
+    double interpolationEz = 0.0;
+
+    // Will contain the interpolation for each cube
+    std::vector<double> allInterpolationEx;
+    std::vector<double> allInterpolationEy;
+    std::vector<double> allInterpolationEz;
+
+    // Will serve to have the 8 corners of the cube
+    size_t x1 = 0;
+    size_t x2 = 0;
+    size_t x3 = 0;
+    size_t x4 = 0;
+    size_t x5 = 0;
+    size_t x6 = 0;
+    size_t x7 = 0;
+    size_t x8 = 0;
+
+    // Will serve to have the 8 corners of the cube
+    size_t y1 = 0;
+    size_t y2 = 0;
+    size_t y3 = 0;
+    size_t y4 = 0;
+    size_t y5 = 0;
+    size_t y6 = 0;
+    size_t y7 = 0;
+    size_t y8 = 0;
+
+    // Will serve to have the 8 corners of the cube
+    size_t z1 = 0;
+    size_t z2 = 0;
+    size_t z3 = 0;
+    size_t z4 = 0;
+    size_t z5 = 0;
+    size_t z6 = 0;
+    size_t z7 = 0;
+    size_t z8 = 0;
+
+    size_t count_ex = 0;
+    size_t count_ey = 0;
+    size_t count_ez = 0;
+
+    
+    // Computation for Ex
+    for(i=0; i<M-2; i++)
+    {
+        for(j=0; j<N-2; j++)
+        {
+            for(k=0; k<P-2; k++)
+            {
+                x1 = (i+1) + (N-2) * (j + k * (P-2));           // Correspond to point (i+1, j, k)
+                x2 = i + (N-2) * (j + k * (P-2));               // Correspond to point (i, j, k)
+                x3 = (i+1) + (N-2) * (j + (k+1) * (P-2));       // Correspond to point (i+1, j, k+1)
+                x4 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
+                x5 = (i+1) + (N-2) * ((j+1) + k * (P-2));       // Correspond to point (i+1, j+1, k)
+                x6 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
+                x7 = (i+1) + (N-2) * ((j+1) + (k+1) * (P-2));   // Correspond to point (i+1, j+1, k+1)
+                x8 = i + (N-2) * ((j+1) + (k+1) * (P-2));       // Correspond to point (i, j+1, k+1)
+
+                interpolationEx = interpolationX(x1, x2, x3, x4, x5, x6, x7, x8, grid);
+
+                allInterpolationEx.push_back(interpolationEx);
+                count_ex++;
+            }
+        }
+    }
+
+    // Computation for Ey
+    for(i=0; i<M-2; i++)
+    {
+        for(j=0; j<N-2; j++)
+        {
+            for(k=0; k<P-2; k++)
+            {
+                y1 = (i+1) + (N-2) * (j + k * (P-2));           // Correspond to point (i+1, j, k)
+                y2 = i + (N-2) * (j + k * (P-2));               // Correspond to point (i, j, k)
+                y3 = (i+1) + (N-2) * (j + (k+1) * (P-2));       // Correspond to point (i+1, j, k+1)
+                y4 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
+                y5 = (i+1) + (N-2) * ((j+1) + k * (P-2));       // Correspond to point (i+1, j+1, k)
+                y6 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
+                y7 = (i+1) + (N-2) * ((j+1) + (k+1) * (P-2));   // Correspond to point (i+1, j+1, k+1)
+                y8 = i + (N-2) * ((j+1) + (k+1) * (P-2));       // Correspond to point (i, j+1, k+1)
+
+                interpolationEy = interpolationY(y1, y2, y3, y4, y5, y6, y7, y8, grid);
+
+                allInterpolationEy.push_back(interpolationEy);
+                count_ey++;
+            }
+        }
+    }
+
+    // Computation for Ez
+    for(i=0; i<M-2; i++)
+    {
+        for(j=0; j<N-2; j++)
+        {
+            for(k=0; k<P-2; k++)
+            {
+                z1 = (i+1) + (N-2) * (j + k * (P-2));           // Correspond to point (i+1, j, k)
+                z2 = i + (N-2) * (j + k * (P-2));               // Correspond to point (i, j, k)
+                z3 = (i+1) + (N-2) * (j + (k+1) * (P-2));       // Correspond to point (i+1, j, k+1)
+                z4 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
+                z5 = (i+1) + (N-2) * ((j+1) + k * (P-2));       // Correspond to point (i+1, j+1, k)
+                z6 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
+                z7 = (i+1) + (N-2) * ((j+1) + (k+1) * (P-2));   // Correspond to point (i+1, j+1, k+1)
+                z8 = i + (N-2) * ((j+1) + (k+1) * (P-2));       // Correspond to point (i, j+1, k+1)
+
+                interpolationEz = interpolationZ(z1, z2, z3, z4, z5, z6, z7, z8, grid);
+
+                allInterpolationEz.push_back(interpolationEz);
+                count_ez++;
+            }
+        }
+    }
+
+    printf("There were %zu loop iterations for the Ex interpolations\n", count_ex);
+    printf("There were %zu loop iterations for the Ey interpolations\n", count_ey);
+    printf("There were %zu loop iterations for the Ez interpolations\n", count_ez);
+
+    size_t Centers = 0;
+
+    for(Centers = 0; Centers < (M-2)*(N-2)*(P-2); Centers++)
+    {
+        SquareModulusE.push_back(allInterpolationEx[Centers]*allInterpolationEx[Centers]
+                                + allInterpolationEy[Centers]*allInterpolationEy[Centers]
+                                + allInterpolationEz[Centers]*allInterpolationEz[Centers]);
+    }
+
+    printf("Size of the vector with the Ex interpolations = %zu\n", allInterpolationEx.size());
+    printf("Size of the vector with the Ex interpolations = %zu\n", allInterpolationEy.size());
+    printf("Size of the vector with the Ex interpolations = %zu\n", allInterpolationEz.size());
+    printf("Size of the vector with all the moduli = %zu\n", SquareModulusE.size());
+    // abort();
+
+    
+    return SquareModulusE;
 }
