@@ -1,0 +1,8 @@
+{
+    "file.info"      : "This file is the geometrical representation of two materials.",
+    "geometriesAre"  : ["cubes"],
+    "cubes.howMany"  : 2,
+    "cubes.sides"    : [0.5,0.5],
+    "cubes.centers"  : [0.15,0.15,0.25,0.15,0.75,0.15],
+    "cubes.materials": ["air","water"]
+}
