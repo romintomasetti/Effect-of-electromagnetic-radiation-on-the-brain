@@ -365,6 +365,7 @@ size_t write_vectorXML_custom_GridCreatorNew(
                         
 
                         index = I + grid.size_Ex[0] * ( J + grid.size_Ex[1] * K );
+                        
                         ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
 
                         buff_index = I-1 + grid.sizes_EH[0] * ( J-1 + grid.sizes_EH[1] * (K-1) );
