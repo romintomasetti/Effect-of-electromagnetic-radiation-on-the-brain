@@ -121,7 +121,10 @@ class Materials{
 
 		void get_properties_from_file_ELECTRO(std::string const &filename_ELECTRO_PROPS);
 
-		void get_properties_from_file_ALL(std::string const &filename);
+		void get_properties_from_file_ALL(
+			std::string const &filename,
+			double frequency
+		);
 
 		/**
 		 * @brief Print all informations knows in list_of_mat_from_dir 
@@ -153,6 +156,12 @@ class Materials{
 		 * 	If not found, returns a nan.
 		 */
 		double get_mean_prop_from_dir(std::string const &mat, std::string const &prop);
+
+		/**
+		 * @brief The function reads the filename. If the frequency is specified, it
+		 * 		returns the frequency;
+		 */
+		double find_frequency_from_mat_file_name(std::string filename);
 };
 
 #endif

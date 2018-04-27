@@ -3,6 +3,9 @@
 #include <cstring>
 #include <algorithm>
 
+#include <limits.h>
+#include <float.h>
+
 #include <boost/algorithm/string.hpp>
 //#include <boost/range/algorithm.hpp>
 
@@ -134,6 +137,75 @@ void Materials::unification_of_data_files(void){
 			std::pair<std::string,double> temp_pair(propName,propValue);
 			temp_mat.properties.insert(temp_pair);
 		}
+
+		/** COMPUTE DIELECTRIC PERMITTIVITY **/
+		std::map<std::string,double>::iterator it;
+
+		// Find frequency:
+		it = temp_mat.properties.find("FREQUENCY(HZ)");
+		if( it == temp_mat.properties.end()){
+			DISPLAY_ERROR_ABORT(
+				"Can't find FREQUENCY(HZ) for material %s.\n",
+				temp_mat.name.c_str()
+			);
+		}
+		double frequency = temp_mat.properties["FREQUENCY(HZ)"];
+
+		// Find relative permittivity:
+		it = temp_mat.properties.find("RELATIVEPERMITTIVITY");
+		if( it == temp_mat.properties.end()){
+			DISPLAY_ERROR_ABORT(
+				"Can't find RELATIVEPERMITTIVITY for material %s.\n",
+				temp_mat.name.c_str()
+			);
+		}
+		double rel_permittivity = temp_mat.properties["RELATIVEPERMITTIVITY"];
+
+		// Find loss tangent:
+		it = temp_mat.properties.find("LOSSTANGENT");
+		if( it == temp_mat.properties.end()){
+			DISPLAY_ERROR_ABORT(
+				"Can't find LOSSTANGENT for material %s.\n",
+				temp_mat.name.c_str()
+			);
+		}
+		double loss_tangent = temp_mat.properties["LOSSTANGENT"];
+
+		// Find electric conductivity:
+		it = temp_mat.properties.find("ELECTRICALCONDUCTIVITY(S/M)");
+		if( it == temp_mat.properties.end()){
+			DISPLAY_ERROR_ABORT(
+				"Can't find ELECTRICALCONDUCTIVITY(S/M) for material %s.\n",
+				temp_mat.name.c_str()
+			);
+		}
+		double elec_cond = temp_mat.properties["ELECTRICALCONDUCTIVITY(S/M)"];
+
+		printf("\t> For material %s, I found:\n"
+					"\t\t> Frequency (Hz) is                %.9g.\n"
+					"\t\t> Relative permittivity is         %.9g.\n"
+					"\t\t> Loss tangent is                  %.9g.\n"
+					"\t\t> Electrical conductivity (S/M) is %.9g.\n",
+					temp_mat.name.c_str(),
+					frequency,
+					rel_permittivity,
+					loss_tangent,
+					elec_cond);
+
+		double dielectric_permittivity 
+			= (loss_tangent *frequency * 
+						VACUUM_PERMITTIVITY * rel_permittivity - elec_cond)/(frequency);
+
+		printf("\t\t> Dielectric permittivity is %.9g.\n",dielectric_permittivity);
+
+		std::pair<std::string,double> temp_pair("DIELECTRICPERMITTIVITY",propValue);
+			temp_mat.properties.insert(temp_pair);
+		
+			/*double eps_dielectric 
+				= ( frequency * VACUUM_PERMITTIVITY 
+					* eps_rel * propValue - electric_cond) / frequency;*/
+		
+
 		//temp_mat.printf_mat();
 		this->unified_material_list.push_back(temp_mat);
 		this->materialID_FromMaterialName_unified
@@ -179,8 +251,12 @@ double Materials::get_mean_prop_from_dir(std::string const &mat, std::string con
 				map<std::string,double> props = it_files->second[it_mat].properties;
 				for(auto it_props = props.cbegin();it_props != props.cend(); it_props++){
 					if(it_props->first == prop){
-						// The property is ound:
-						found_values.push_back(it_props->second);
+						// The property is found:
+						if( std::isnan(it_props->second) == false){
+							/*printf("Adding %s = %lf\n",
+								it_props->first.c_str(),it_props->second);*/
+							found_values.push_back(it_props->second);
+						}
 					}
 				}
 			}
@@ -292,8 +368,8 @@ inline void Materials::format_property_string_for_uniformity(std::string &prop)
 		return;
 	}
 	/// Frequency:
-	if(boost::iequals(prop,"Frequency[Hz]")){
-		prop = "Frequency[Hz]";
+	if(boost::iequals(prop,"Frequency[Hz]") || boost::iequals(prop,"Frequency(Hz)")){
+		prop = "Frequency(Hz)";
 		boost::to_upper(prop);
 		return;
 	}
@@ -336,6 +412,8 @@ void Materials::get_properties_from_directory(
 		list_material_files
 	);
 
+	double frequency;
+
 	for(size_t I = 0 ; I < list_material_files.size() ; I++){
 		/// Consider only .csv files !
 		if(boost::filesystem::extension(list_material_files[I]) != ".csv"){
@@ -343,19 +421,70 @@ void Materials::get_properties_from_directory(
 		}else{
 			this->list_of_mat_files.push_back(list_material_files[I]);
 			//printf("Material file %zu is %s.\n",I,list_material_files[I].c_str());
+			/// Look for the frequency, which is specified in the file's name:
+			frequency = nan("");
+			if(this->find_frequency_from_mat_file_name(list_material_files[I]) != -1){
+				frequency = this->find_frequency_from_mat_file_name(list_material_files[I]);
+			}
 			/// Read the file:
 			this->get_properties_from_file_ALL(
-				list_material_files[I]
+				list_material_files[I],
+				frequency
 			);
+			
 		}
 	}
-	
+
 	//this->printf_list_of_mat_from_dir();
 	//this->printf_all_on_one_mat_from_dir("Air");
 	this->unification_of_data_files();
 
 	this->unification_done = true;
 
+}
+
+/**
+ * @brief Find all occurences of a character in a string.
+ */
+void findLocation(const string& sample, const char findIt, vector<size_t>& resultList)
+{
+    const int sz = sample.size();
+
+    for(int i =0; i < sz; i++)
+    {
+        if(sample[i] == findIt)
+        {
+            resultList.push_back(i);
+        }
+    }
+}
+
+double Materials::find_frequency_from_mat_file_name(std::string filename)
+{
+	//printf("Filename is %s.\n",filename.c_str());
+	double freq_num = -1;
+	/* Read only the filename, not the path. */
+	std::string name = filename.substr(filename.find_last_of("/")+1);
+	std::vector<size_t> positions_underscores;
+	findLocation(name,'_',positions_underscores);
+	for(size_t i = 0 ; i < positions_underscores.size()-1 ; i ++){
+		std::string temp = name.substr(
+					positions_underscores[i]+1,
+					positions_underscores[i+1] - positions_underscores[i]-1);
+		if( temp == "HZ" || temp == "hz" || temp == "Hz"){
+			//printf("Found %s.\n",temp.c_str());
+			if( i == 0){
+				return freq_num;
+			}
+			std::string freq = name.substr(
+									positions_underscores[i-1] + 1,
+									positions_underscores[i] - positions_underscores[i-1] -1);
+			freq_num = std::stod(freq);
+			//printf("\t> Real filename is %s.\n",name.c_str());
+			//printf("\t> freq is %lf.\n",freq_num);
+		}
+	}
+	return freq_num;
 }
 
 /**
@@ -410,7 +539,7 @@ void Materials::printf_list_of_mat_from_dir(void){
 }
 
 void Materials::get_properties_from_file_ALL(
-	std::string const &filename)
+	std::string const &filename, double frequency)
 {
 	/// Check that the file is a CSV file:
 	if(filename.substr(filename.find(".")+1) != "csv"){
@@ -426,6 +555,7 @@ void Materials::get_properties_from_file_ALL(
 			filename.c_str()
 		);
 	}
+
 	/// Count the number of different materials:
 	size_t nbr_mat = 0;
 	std::string current_mat = data[1][0];
@@ -537,6 +667,10 @@ void Materials::get_properties_from_file_ALL(
 				this->list_of_mat_from_dir[filename][ID].properties[propName] = propVal;
 				counter++;
 			}
+			
+			this->list_of_mat_from_dir[filename][ID].properties.insert(
+				std::pair<std::string,double>("FREQUENCY(HZ)",frequency)
+			);
 		}
 	}
 }
