@@ -65,6 +65,42 @@ class AlgoElectro_NEW{
 
         bool SteadyStateAnalyser(void);
 
+
+        std::vector<double> ComputeNormEsquare(GridCreator_NEW &grid);
+
+        std::vector<double> ComputeNormE2square(std::vector<double> Ex,
+                                          std::vector<double> Ey, std::vector<double> Ez);
+
+
+        double interpolationX(size_t x1, size_t x2, size_t x3,
+                              size_t x4, size_t x5, size_t x6,
+                              size_t x7, size_t x8,  GridCreator_NEW &grid);
+
+        double interpolationX2(size_t x1, size_t x2, size_t x3,
+                              size_t x4, size_t x5, size_t x6,
+                              size_t x7, size_t x8,  std::vector<double> Ex);
+
+        
+        double interpolationY(size_t y1, size_t y2, size_t y3,
+                              size_t y4, size_t y5, size_t y6,
+                              size_t y7, size_t y8,  GridCreator_NEW &grid);
+
+        double interpolationY2(size_t y1, size_t y2, size_t y3,
+                              size_t y4, size_t y5, size_t y6,
+                              size_t y7, size_t y8,  std::vector<double> Ey);
+
+
+        double interpolationZ(size_t z1, size_t z2, size_t z3,
+                              size_t z4, size_t z5, size_t z6,
+                              size_t z7, size_t z8,  GridCreator_NEW &grid);
+
+        double interpolationZ2(size_t z1, size_t z2, size_t z3,
+                              size_t z4, size_t z5, size_t z6,
+                              size_t z7, size_t z8,  std::vector<double> Ez);
+
+
+        std::vector<double> ComputeNormEsquareBIS(GridCreator_NEW &grid);
+
 };
 
 #endif

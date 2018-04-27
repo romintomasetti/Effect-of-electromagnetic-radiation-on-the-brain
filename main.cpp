@@ -161,7 +161,27 @@ int main(int argc, char *argv[]){
 
 	
 	AlgoElectro_NEW algoElectro_newTst(VERBOSITY);
+
+	// printf("SUCCESS Coucou1\n");
+	// std::vector<double> Ex (8,1); // The vector will contain 8 times the value 1
+	// std::vector<double> Ey (8,1); // The vector will contain 8 times the value 1
+	// std::vector<double> Ez (8,1); // The vector will contain 8 times the value 1
+
+	// printf("SUCCESS Coucou2\n");
+	// std::vector<double> Norm = algoElectro_newTst.ComputeNormE2(Ex, Ey, Ez);
+	// // std::vector<double> Norm = algoElectro_newTst.ComputeNormE(gridTest);
+	// printf("SUCCESS Coucou3\n");
+	// // abort();
+
+	printf("SUCCESS\n");
+	printf("You successfully reach the point before the update and the norm computations\n");
 	algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
+	printf("SUCCESS\n");
+	printf("You successfully reach the point after the update and before the norm computations\n");
+	std::vector<double> Norm = algoElectro_newTst.ComputeNormEsquareBIS(gridTest);
+	printf("SUCCESS\n");
+	printf("You successfully reach the point after the update and the norm computations\n");
+	
 
 	profiler.probeMaxRSS();
 	profiler.writeToOutputFile();
