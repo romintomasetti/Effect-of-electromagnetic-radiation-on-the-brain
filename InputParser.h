@@ -129,7 +129,7 @@ class InputParser{
 		std::vector<std::string> material_data_files;
 		
 		/**
-		 * Either 'dipole' or 'simple'
+		 * Either 'dipole' or 'simple' or 'FACE_EX'
 		 */		
 		std::vector<std::string> conditionsInsideSources;
 
@@ -169,7 +169,9 @@ class InputParser{
 		// Constructor:
 		InputParser(string file_name);
 		// Destructor:
-		~InputParser(void){};
+		~InputParser(void){
+			printf("[MPI %d] - InputParser destructor.\n",this->MPI_rank);
+		};
 		
 		// Default parser, using the field 'filename' of the class:
 		void defaultParsingFromFile(int MPI_RANK = 0);

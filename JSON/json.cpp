@@ -36,6 +36,7 @@ JSON_API void read_json(std::string fname, rapidjson::Document &d)
         str << "ERROR [read_json]: json document cannot be parsed!" << std::endl;
         str << "\t Parse Error " << d.GetParseError() << " (" << GetParseError_En(d.GetParseError()) << ")" << std::endl;
         str << "\t Error offset = " << d.GetErrorOffset() << '\n';
+	free(readBuffer);
         throw std::runtime_error(str.str());
     }    
 
@@ -43,8 +44,10 @@ JSON_API void read_json(std::string fname, rapidjson::Document &d)
     {
         std::stringstream str;
         str << "ERROR [read_json]: json document is not an object!";
+	free(readBuffer);
         throw std::runtime_error(str.str());
     }
+    free(readBuffer);
 }
 
 JSON_API bool read_bool(rapidjson::Document const &d, char const *name, bool def)

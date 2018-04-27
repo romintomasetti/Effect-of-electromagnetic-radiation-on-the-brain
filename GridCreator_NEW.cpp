@@ -75,7 +75,8 @@ GridCreator_NEW::GridCreator_NEW(unsigned int VERBOSITY,
 /* DESTRUCTOR */
 GridCreator_NEW::~GridCreator_NEW(void){
     #ifndef NDEBUG
-        std::cout << "GridCreator_NEW::~GridCreator_NEW::IN" << std::endl;
+        printf("[MPI %d] - GridCreator_NEW::~GridCreator_NEW::IN\n",
+		this->MPI_communicator.getRank());
     #endif
     /* FREE ALLOCATED SPACE */
 
@@ -198,7 +199,8 @@ GridCreator_NEW::~GridCreator_NEW(void){
         delete[] this->thermal_diffusivity;
     }
     #ifndef NDEBUG
-        std::cout << "GridCreator_NEW::~GridCreator_NEW::OUT" << std::endl;
+        printf("[MPI %d] - GridCreator_NEW::~GridCreator_NEW::OUT\n",
+		this->MPI_communicator.getRank());
     #endif
 }
 
@@ -547,10 +549,20 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
             int  RANK_MPI                             = ref_obj->MPI_communicator.getRank() + 1;
             bool is_LOCAL_TEST_PARAVIEW_MPI_ELECTRIC  = false;
 
-            std::map<std::basic_string<char>, unsigned char> materialID_FromMaterialName = ref_obj->materials.materialID_FromMaterialName;
+	    std::map<std::string,unsigned int> materialID_FromMaterialName
+		= ref_obj->materials.materialID_FromMaterialName_unified;
+
 
             if(ref_obj->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
                 is_USE_AIR_EVERYWHERE = true;
+		/// Check that air exists:
+		std::map<std::string,unsigned int>::iterator it;
+		it = materialID_FromMaterialName.find("AIR");
+		if( it == materialID_FromMaterialName.end()){
+			DISPLAY_ERROR_ABORT(
+				"Cannot find air in the list of materials."
+			);
+		}
 
             }else if(ref_obj->input_parser.get_SimulationType() == "TEST_PARAVIEW"){
                 is_TEST_PARAVIEW      = true;
@@ -986,21 +998,34 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
 
         size_t index;
 
-        // Retrieve the air temperature:
-        double air_init_temp = this->input_parser.GetInitTemp_FromMaterialName["AIR"];
-        unsigned char mat    = this->materials.materialID_FromMaterialName["AIR"];
-        double eps           = this->materials.getProperty(air_init_temp,
-                                                            mat,
-                                                            COLUMN_PERMITTIVITY);
-        double electric_cond = this->materials.getProperty(air_init_temp,
-                                                            mat,
-                                                            COLUMN_ELEC_CONDUC);
-        double mu            = this->materials.getProperty(air_init_temp,
-                                                            mat,
-                                                            COLUMN_PERMEABILITY);
-        double magnetic_cond = this->materials.getProperty(air_init_temp,
-                                                            mat,
-                                                            COLUMN_MAGN_CONDUC);
+	std::map<std::string,double>::iterator it;
+
+        // Retrieve the air initial temperature, permttivity, etc.
+        unsigned char mat    = this->materials.materialID_FromMaterialName_unified["AIR"];
+
+	double eps           = -1;
+        it                   = this->materials.unified_material_list[mat].properties.find("RELATIVEPERMITTIVITY");
+	if(it == this->materials.unified_material_list[mat].properties.end()){
+		/// Use default permittivity:
+		eps = VACUUM_PERMITTIVITY;
+		DISPLAY_WARNING("Using vacuum permittivity.");
+	}else{
+		eps = VACUUM_PERMITTIVITY * this->materials.unified_material_list[mat].properties["RELATIVEPERMITTIVITY"];
+	}
+
+	double electric_cond = -1.0;
+	it = this->materials.unified_material_list[mat].properties.find("ELECTRICALCONDUCTIVITY(S/M)");
+	if( it == this->materials.unified_material_list[mat].properties.end()){
+		/// Abort:
+		DISPLAY_ERROR_ABORT("Cannot find electrical conductivity(S/M) for air.");
+	}else{
+		electric_cond = this->materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY(S/M)"];
+	}
+        
+
+	DISPLAY_WARNING("We use vacuum permeability and 0 for the magnetic conductivity.");
+        double mu            = VACUUM_PERMEABILITY;
+        double magnetic_cond = 0;
 
         #pragma omp parallel num_threads(nbr_omp_threads)
         {

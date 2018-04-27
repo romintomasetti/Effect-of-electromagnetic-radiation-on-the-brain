@@ -16,17 +16,17 @@ void ElectromagneticSource::set_number_of_sources(const unsigned int nbrSources)
 		
 		this->number_of_sources = nbrSources;
 
-		this->lengthsAlreadySet.reserve(this->number_of_sources.get());
-		this->centersAlreadySet.reserve(this->number_of_sources.get());
+		this->lengthsAlreadySet.resize(this->number_of_sources.get());
+		this->centersAlreadySet.resize(this->number_of_sources.get());
 
-		this->lengthX.reserve(this->number_of_sources.get());
-		this->lengthY.reserve(this->number_of_sources.get());
-		this->lengthZ.reserve(this->number_of_sources.get());
-		this->centerX.reserve(this->number_of_sources.get());
-		this->centerY.reserve(this->number_of_sources.get());
-		this->centerZ.reserve(this->number_of_sources.get());
+		this->lengthX.resize(this->number_of_sources.get());
+		this->lengthY.resize(this->number_of_sources.get());
+		this->lengthZ.resize(this->number_of_sources.get());
+		this->centerX.resize(this->number_of_sources.get());
+		this->centerY.resize(this->number_of_sources.get());
+		this->centerZ.resize(this->number_of_sources.get());
 		
-		this->there_is_at_least_one_element_non_zero_in_source.reserve(this->number_of_sources.get());
+		this->there_is_at_least_one_element_non_zero_in_source.resize(this->number_of_sources.get());
 		for(size_t I = 0 ; I < this->number_of_sources.get() ; I ++)
 			this->there_is_at_least_one_element_non_zero_in_source[I] = false;
 		

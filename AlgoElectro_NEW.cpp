@@ -707,6 +707,9 @@ void AlgoElectro_NEW::update(
 	for(size_t I = 0 ; I < grid.input_parser.source.get_number_of_sources() ; I++){
 		if(grid.input_parser.source.there_is_at_least_one_element_non_zero_in_source[I]){
 			at_least_one_node = 1;
+			printf("[MPI %d over %d] - There is at least one node !\n",
+				grid.MPI_communicator.getRank(),
+				grid.MPI_communicator.getNumberOfMPIProcesses());
 			break;
 		}
 	}
@@ -717,8 +720,8 @@ void AlgoElectro_NEW::update(
 		&at_least_one_node,
 		1,
 		MPI_INT,
-		checking_at_least_one_node,
-		grid.MPI_communicator.getNumberOfMPIProcesses(),
+		(int*)checking_at_least_one_node,
+		1,//grid.MPI_communicator.getNumberOfMPIProcesses(),
 		MPI_INT,
 		grid.MPI_communicator.rootProcess,
 		MPI_COMM_WORLD);
@@ -733,8 +736,14 @@ void AlgoElectro_NEW::update(
 			DISPLAY_ERROR_ABORT(
 				"There is no node emitting anything. Your solution will remain zero everywhere."
 			);
+		}else{
+			DISPLAY_WARNING("Ok, there is at least on node inside your sources.");
 		}
 	}
+	free(checking_at_least_one_node);
+	fflush(stdout);
+	MPI_Barrier(MPI_COMM_WORLD);
+	
 	
 	if(this->VERBOSITY >= 1){
 		fflush_stdout();
@@ -894,7 +903,7 @@ void AlgoElectro_NEW::update(
         std::vector<bool> MODULATE_SOURCE(grid.input_parser.source.get_number_of_sources());
 		for(size_t i = 0 ; i < MODULATE_SOURCE.size() ; i++){
 			if(grid.input_parser.source_time[i] == "GAUSSIAN"){
-				MODULATE_SOURCE[i] =true;
+				MODULATE_SOURCE[i]      = true;
 				MIN_GAUSS_BEFORE_LET_BE = 1E-5;
 			}else{
 				MODULATE_SOURCE[i] = false;
@@ -1419,24 +1428,27 @@ void AlgoElectro_NEW::update(
             ////////////////////////////
             /// IMPOSING THE SOURCES ///
             ////////////////////////////
-            double frequency = 0.0;
+            double frequency  = 0.0;
             double false_freq = 0.0;
-            double gauss     = 0.0;
-            #pragma omp for schedule(static) nowait
-            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[2].size() ; it ++){
+            double gauss      = 0.0;
+            double COEF_MEAN  = 1./3.;
+            double COEF_STD   = 1./10.;
 
-                index = local_nodes_inside_source_NUMBER[2][it];
+            int FIELD = 2;
+            #pragma omp for schedule(static) nowait
+            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[FIELD].size() ; it ++){
+
+                index = local_nodes_inside_source_NUMBER[FIELD][it];
                 ASSERT(index,<,grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]);
 
-                if(ID_Source[2][it] == UCHAR_MAX){
+                if(ID_Source[FIELD][it] == UCHAR_MAX){
                     frequency = 0;
                     // False frequency is used to stop imposing zero.
                     false_freq = local_nodes_inside_source_FREQ[0];
-                    
-                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
+                    if(MODULATE_SOURCE[0] == true){
                         double period    = 2*M_PI/false_freq;
-                        double MEAN      = 0*period;
-                        double STD       = period/10;
+                        double MEAN      = period*COEF_MEAN;
+                        double STD       = period*COEF_STD;
                                         
                         double t = current_time;
                         
@@ -1451,42 +1463,58 @@ void AlgoElectro_NEW::update(
                     }
                 }else{
 
-                    frequency = local_nodes_inside_source_FREQ[ID_Source[2][it]];
-
-                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
+                    frequency = local_nodes_inside_source_FREQ[ID_Source[FIELD][it]];
+                    if(ID_Source[FIELD][it] >= MODULATE_SOURCE.size()){
+                        printf("Out of bound !\n%s:%d\n",__FILE__,__LINE__);
+                        std::abort();
+                    }
+                    if(MODULATE_SOURCE[ID_Source[FIELD][it]] == true){
                         double period    = 2*M_PI/frequency;
-                        double MEAN      = 0*period;
-                        double STD       = period/10;
+                        double MEAN      = period*COEF_MEAN;
+                        double STD       = period*COEF_STD;
                                         
                         double t = current_time;
                         
                         gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                        /*printf("GAUSS : %.10g | MEAN %.10g | "
+                                "STD %.10g | period %.10g | frequency %.10g | "
+                                "should be %.10g | coef_std %.10g.\n",
+                            gauss,
+                            MEAN,
+                            STD,
+                            period,
+                            frequency,
+                            period*COEF_STD,
+                            COEF_STD);*/
                         if(gauss < MIN_GAUSS_BEFORE_LET_BE){
                             // do nothing
                         }else{
                             E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                            //printf("Applying.\n");
                         }
                     }else{
 						E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
+                        //printf("Case pas modulated.\n");
 					}
 
                 }                
             }
 
 
+            FIELD = 1;
             #pragma omp for schedule(static) nowait
-            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[1].size() ; it ++){
+            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[FIELD].size() ; it ++){
 
-                index = local_nodes_inside_source_NUMBER[1][it];
+                index = local_nodes_inside_source_NUMBER[FIELD][it];
                 ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 
-                if(ID_Source[1][it] == UCHAR_MAX){
+                if(ID_Source[FIELD][it] == UCHAR_MAX){
                     frequency = 0;
                     false_freq = local_nodes_inside_source_FREQ[0];
-                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
+                    if(MODULATE_SOURCE[0] == true){
                         double period    = 2*M_PI/frequency;
-                        double MEAN      = 0*period;
-                        double STD       = period/10;
+                        double MEAN      = period*COEF_MEAN;
+                        double STD       = period*COEF_STD;
                                         
                         double t = current_time;
                         
@@ -1501,12 +1529,15 @@ void AlgoElectro_NEW::update(
 					}
                 }else{
 
-                    frequency = local_nodes_inside_source_FREQ[ID_Source[1][it]];
-
-                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
+                    frequency = local_nodes_inside_source_FREQ[ID_Source[FIELD][it]];
+                    if(ID_Source[FIELD][it] >= MODULATE_SOURCE.size()){
+                        printf("Out of bound !\n%s:%d\n",__FILE__,__LINE__);
+                        std::abort();
+                    }
+                    if(MODULATE_SOURCE[ID_Source[FIELD][it]] == true){
                         double period    = 2*M_PI/frequency;
-                        double MEAN      = 0*period;
-                        double STD       = period/10;
+                        double MEAN      = period*COEF_MEAN;
+                        double STD       = period*COEF_STD;
                                         
                         double t = current_time;
                         
@@ -1522,19 +1553,20 @@ void AlgoElectro_NEW::update(
                 }
             }
 
+            FIELD = 0;
             #pragma omp for schedule(static) nowait
-            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[0].size() ; it ++){
+            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[FIELD].size() ; it ++){
 
-                index = local_nodes_inside_source_NUMBER[0][it];
+                index = local_nodes_inside_source_NUMBER[FIELD][it];
                 ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
 
-                if(ID_Source[0][it] == UCHAR_MAX){
+                if(ID_Source[FIELD][it] == UCHAR_MAX){
                     frequency = 0;
                     false_freq = local_nodes_inside_source_FREQ[0];
-                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
+                    if(MODULATE_SOURCE[0] == true){
                         double period    = 2*M_PI/frequency;
-                        double MEAN      = 0*period;
-                        double STD       = period/10;
+                        double MEAN      = period*COEF_MEAN;
+                        double STD       = period*COEF_STD;
                                         
                         double t = current_time;
                         
@@ -1549,12 +1581,15 @@ void AlgoElectro_NEW::update(
 						E_x_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
 					}
                 }else{
-                    frequency = local_nodes_inside_source_FREQ[ID_Source[0][it]];
-
-                    if(MODULATE_SOURCE[ID_Source[0][it]] == true){
+                    frequency = local_nodes_inside_source_FREQ[ID_Source[FIELD][it]];
+                    if(ID_Source[FIELD][it] >= MODULATE_SOURCE.size()){
+                        printf("Out of bound !\n%s:%d\n",__FILE__,__LINE__);
+                        std::abort();
+                    }
+                    if(MODULATE_SOURCE[ID_Source[FIELD][it]] == true){
                         double period    = 2*M_PI/frequency;
-                        double MEAN      = 0*period;
-                        double STD       = period/10;
+                        double MEAN      = period*COEF_MEAN;
+                        double STD       = period*COEF_STD;
                                         
                         double t = current_time;
                         
