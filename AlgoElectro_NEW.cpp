@@ -768,12 +768,15 @@ void AlgoElectro_NEW::update(
     ///////////////////////////////////////////
     /// VARIABLES FOR STEADY-STATE CHECKING ///
     ///////////////////////////////////////////
-    /* For the Ex field */
+
+    /* For the Ez field */
+    /* Pour le moment c'est uniquement dans le case 1 D et je vérifie sur une ligne (x,y,z)=(1,ALL,1)*/
     size_t checkEvery = grid.input_parser.SteadyState_CheckEveryPoint;
-    size_t nbr_pointsX = grid.size_Ex[0]/checkEvery;
-    size_t nbr_pointsY = grid.size_Ex[1]/checkEvery;
-    size_t nbr_pointsZ = grid.size_Ex[2]/checkEvery;
-    size_t nbr_points  = nbr_pointsX * nbr_pointsY * nbr_pointsZ;
+    //size_t nbr_pointsX = grid.size_Ez[0]/checkEvery;
+    size_t nbr_pointsY = grid.size_Ez[1]/checkEvery;
+    //size_t nbr_pointsZ = grid.size_Ez[2]/checkEvery;
+    //size_t nbr_points  = nbr_pointsX * nbr_pointsY * nbr_pointsZ;
+    size_t nbr_points = nbr_pointsY;
     std::vector<double> cumtrapz(nbr_points);
     std::vector<double> cummmean(nbr_points);
     std::vector<double> derivati(nbr_points);
@@ -890,6 +893,15 @@ void AlgoElectro_NEW::update(
         firstprivate(Exz0, Exz1)\
         firstprivate(Eyz0, Eyz1)
     {
+        /**
+         * @brief Determine if the simulation must be 1D.
+         */
+        bool IS_1D_FACE_EX = false;
+        if(grid.input_parser.conditionsInsideSources[0] == "FACE_EX"){
+            printf(">>> [MPI %d] - Using 1D with face EX.\n",
+                grid.MPI_communicator.getRank());
+            IS_1D_FACE_EX = true;
+        }
         /*#pragma omp master
         {
             fflush_stdout();
@@ -990,7 +1002,7 @@ void AlgoElectro_NEW::update(
 
         while(current_time < grid.input_parser.get_stopTime()
                 && currentStep < grid.input_parser.maxStepsForOneCycleOfElectro){
-
+            #pragma omp barrier
             /*#pragma omp master
             {
                 fflush_stdout();
@@ -1004,15 +1016,6 @@ void AlgoElectro_NEW::update(
 
             // Updating the magnetic field Hx.
             // Don't update neighboors ! Start at 1. Go to size-1.
-
-            size_x = grid.size_Hx[0];
-            size_y = grid.size_Hx[1];
-
-            size_x_1 = grid.size_Ey[0];
-            size_y_1 = grid.size_Ey[1];
-
-            size_x_2 = grid.size_Ez[0];
-            size_y_2 = grid.size_Ez[1];
 
             #ifndef NDEBUG
                 #pragma omp master
@@ -1028,7 +1031,16 @@ void AlgoElectro_NEW::update(
                 }
             #endif
 
-            #pragma omp for schedule(static) collapse(3) nowait
+            size_x = grid.size_Hx[0];
+            size_y = grid.size_Hx[1];
+
+            size_x_1 = grid.size_Ey[0];
+            size_y_1 = grid.size_Ey[1];
+
+            size_x_2 = grid.size_Ez[0];
+            size_y_2 = grid.size_Ez[1];
+
+            #pragma omp for //schedule(static) collapse(3) nowait
             for (K = 1 ; K < grid.size_Hx[2]-1 ; K++){
                 for(J = 1 ; J < grid.size_Hx[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Hx[0]-1 ; I++){
@@ -1058,6 +1070,7 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
+            #pragma omp barrier
             /*#pragma omp master
             {
                 fflush_stdout();
@@ -1080,7 +1093,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ex[0];
             size_y_2 = grid.size_Ex[1];
 
-            #pragma omp for schedule(static) collapse(3) nowait
+            #pragma omp for //schedule(static) collapse(3) nowait
             for(K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
                 for(J = 1 ; J < grid.size_Hy[1]-1 ; J ++){
                     for(I = 1; I < grid.size_Hy[0]-1 ; I ++){
@@ -1104,10 +1117,10 @@ void AlgoElectro_NEW::update(
                         H_y_tmp[index] = C_hyh[index] * H_y_tmp[index]
                                 + C_hye_1[index] * (E_z_tmp[index_1Plus] - E_z_tmp[index_1Moins])
                                 - C_hye_2[index] * (E_x_tmp[index_2Plus] - E_x_tmp[index_2Moins]);
-
                     }
                 }
             }
+            #pragma omp barrier
 			/*#pragma omp master
             {
                 fflush_stdout();
@@ -1129,7 +1142,7 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Ey[0];
             size_y_2 = grid.size_Ey[1];
 
-            #pragma omp for schedule(static) collapse(3) nowait
+            #pragma omp for //schedule(static) collapse(3) nowait
             for(K = 1 ; K < grid.size_Hz[2]-1  ; K ++){
                 for(J = 1 ; J < grid.size_Hz[1]-1 ; J ++){
                     for(I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
@@ -1150,27 +1163,13 @@ void AlgoElectro_NEW::update(
                         ASSERT(index_2Plus,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
                         ASSERT(index_2Moins,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 						
-						if(false && grid.MPI_communicator.getRank() == 0){
-							/*printf("Coucou Hz mpi 0 [%zu,%zu,%zu,%zu,%zu] / size[%zu,%zu,%zu]\n",
-									index,
-									index_1Plus,
-									index_1Moins,
-									index_2Plus,
-									index_2Moins,
-									grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2],
-									grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2],
-									grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);*/
-                            printf("Access to H_z_tmp[%zu] %lf.\n",index,H_z_tmp[index]);
-                            printf("Access to C_hzh[%zu]   %lf.\n",index,C_hzh[index]);
-                            printf("Access to C_hze_1[%zu] %lf.\n",index,C_hze_1[index]);
-                        }
-
                         H_z_tmp[index] = C_hzh[index] * H_z_tmp[index]
                                 + C_hze_1[index] * (E_x_tmp[index_1Plus] - E_x_tmp[index_1Moins])
                                 - C_hze_2[index] * (E_y_tmp[index_2Plus] - E_y_tmp[index_2Moins]);
                     }
                 }
             }
+            #pragma omp barrier
 			/*#pragma omp master
             {
                 fflush_stdout();
@@ -1185,6 +1184,101 @@ void AlgoElectro_NEW::update(
             /// OPENMP barrier because we must ensure all the ///
             /// magnetic fields have been updated.            ///
             /////////////////////////////////////////////////////
+            #pragma omp barrier
+
+
+            ///////////////////////////////////////
+            // 1D CASE - ONLY WITH 1 MPI PROCESS //
+            ///////////////////////////////////////
+            #pragma omp master
+            {
+                if(IS_1D_FACE_EX == true){
+                    if(grid.MPI_communicator.getNumberOfMPIProcesses() != 1){
+                        printf("For the 1D case, use only 1 MPI process.\n");
+                        std::abort();
+                    }
+                    /**
+                     * What will be imposed:
+                     *  1) On faces with normal e_x:
+                     *          - Hx is zero.
+                     *          - Hy is zero.
+                     *  2) On faces with normal e_z:
+                     *          - Hx is zero.
+                     *          - Hy is zero.
+                     */
+                    size_t i, k, index;
+
+                    /** IMPOSING HX ON FACE WITH NORMAL E_X **/
+                    if(false){
+                        printf("Imposing HX on E_X...\n");
+                        for(size_t j = 1 ; j < grid.size_Hx[1] - 1 ; j ++ ){
+                            for(size_t k = 1 ; k < grid.size_Hx[2] - 1 ; k ++){
+
+                                i = 1;
+                                index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
+                                H_x_tmp[index] = 0;
+
+                                i = grid.size_Hx[0] - 2;
+                                index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
+                                H_x_tmp[index] = 0;
+                            }
+                        }
+                    }
+
+                    /** IMPOSING HY ON FACE WITH NORMAL E_X **/
+                    if(true){
+                        printf("Imposing HY on E_X...\n");
+                        for(size_t j = 1 ; j < grid.size_Hy[1] - 1 ; j ++ ){
+                            for(size_t k = 1 ; k < grid.size_Hy[2] - 1 ; k ++){
+
+                                i = 1;
+                                index = i + grid.size_Hy[0] * ( j + grid.size_Hy[1] * k);
+                                H_y_tmp[index] = 0;
+
+                                i = grid.size_Hy[0] - 2;
+                                index = i + grid.size_Hy[0] * ( j + grid.size_Hy[1] * k);
+                                H_y_tmp[index] = 0;
+                            }
+                        }
+                    }
+
+                    /** IMPOSING HX ON FACE WITH NORMAL E_Z **/
+                    if(false){
+                        printf("Imposing HX on E_Z...\n");
+                        for(size_t i = 1 ; i < grid.size_Hx[0] - 1 ; i ++ ){
+                            for(size_t j = 1 ; j < grid.size_Hx[1] - 1 ; j ++){
+
+                                k = 1;
+                                index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
+                                H_x_tmp[index] = 0;
+
+                                k = grid.size_Hx[2] - 2;
+                                index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
+                                H_x_tmp[index] = 0;
+                            }
+                        }
+                    }
+
+                    /** IMPOSING HY ON FACE WITH NORMAL E_Z **/
+                    if(false){
+                        printf("Imposing HY on E_Z...\n");
+                        for(size_t i = 1 ; i < grid.size_Hy[0] - 1 ; i ++ ){
+                            for(size_t j = 1 ; j < grid.size_Hy[1] - 1 ; j ++){
+
+                                k = 1;
+                                index = i + grid.size_Hy[0] * ( j + grid.size_Hy[1] * k);
+                                H_y_tmp[index] = 0;
+
+                                k = grid.size_Hy[2] - 2;
+                                index = i + grid.size_Hy[0] * ( j + grid.size_Hy[1] * k);
+                                H_y_tmp[index] = 0;
+                            }
+                        }
+                    }
+
+
+                }
+            }
             #pragma omp barrier
 
 
@@ -1284,15 +1378,15 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Hy[1];
 
 
-            #pragma omp for schedule(static) collapse(3) nowait
+            #pragma omp for //schedule(static) collapse(3) nowait
             for(K = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ ;
                     K < grid.size_Ex[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; 
                     K ++){
                 for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY ; 
                         J < grid.size_Ex[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY ; 
                         J ++){
-                    for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
-                            I < grid.size_Ex[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX; 
+                    for(I = 1  /*+ IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX*/; 
+                            I < grid.size_Ex[0]-1 /*- IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX*/; 
                             I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
@@ -1326,6 +1420,7 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
+            #pragma omp barrier
 
             // Updating the electric field Ey.
             // Don't update neighboors ! Start at 1. Go to size-1.
@@ -1339,10 +1434,16 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hz[0];
             size_y_2 = grid.size_Hz[1];
 
-            #pragma omp for schedule(static) collapse(3) nowait
-            for(K = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ ; K < grid.size_Ey[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; K ++){
-                for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY; J < grid.size_Ey[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY ; J ++){
-                    for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX ; I < grid.size_Ey[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX ; I ++){
+            #pragma omp for //schedule(static) collapse(3) nowait
+            for(K = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ ; 
+                    K < grid.size_Ey[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; 
+                    K ++){
+                for(J = 1  /*+ IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY*/; 
+                        J < grid.size_Ey[1]-1 /*- IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY*/ ; 
+                        J ++){
+                    for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX ; 
+                            I < grid.size_Ey[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX ; 
+                            I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Hx(mm, nn, pp)
@@ -1375,6 +1476,7 @@ void AlgoElectro_NEW::update(
                     }
                 }
             }
+            #pragma omp barrier
 
             // Updating the electric field Ez.
             // Don't update neighboors ! Start at 1. Go to size-1.
@@ -1388,10 +1490,16 @@ void AlgoElectro_NEW::update(
             size_x_2 = grid.size_Hx[0];
             size_y_2 = grid.size_Hx[1];
 
-            #pragma omp for schedule(static) collapse(3) nowait
-            for(K = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; K < grid.size_Ez[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; K ++){
-                for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY ; J < grid.size_Ez[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY ; J ++){
-                    for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX ; I < grid.size_Ez[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX ; I ++){
+            #pragma omp for //schedule(static) collapse(3) nowait
+            for(K = 1  /*+ IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ*/;
+                     K < grid.size_Ez[2]-1 /*- IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ*/ ; 
+                     K ++){
+                for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY ; 
+                        J < grid.size_Ez[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY ; 
+                        J ++){
+                    for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX ; 
+                            I < grid.size_Ez[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX ; 
+                            I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Hy(mm, nn, pp)
@@ -1425,6 +1533,151 @@ void AlgoElectro_NEW::update(
             }
             #pragma omp barrier
 
+            ///////////////////////////////////////
+            // 1D CASE - ONLY WITH 1 MPI PROCESS //
+            ///////////////////////////////////////
+            #pragma omp master
+            {
+                if(IS_1D_FACE_EX == true){
+                    if(grid.MPI_communicator.getNumberOfMPIProcesses() != 1){
+                        printf("For the 1D case, use only 1 MPI process.\n");
+                        std::abort();
+                    }
+                    /**
+                     * What will be imposed:
+                     *  1) On faces with normal e_x:
+                     *          - Ex is zero.
+                     *          - Ey is zero.
+                     *  2) On faces with normal e_z:
+                     *          - Ex is zero.
+                     *          - Ey is zero.
+                     *  3) On face with normal -e_y:
+                     *          - gaussian modulated sinusoidal source for Ez.
+                     *          - Ex and Ey are imposed to zero.
+                     */
+                    size_t i, j, k, index;
+                    if(true){
+                        /** IMPOSING EX ON FACE WITH NORMAL E_X **/
+                        if(true){
+                            printf("Imposing EX on E_X...\n");
+                            for(size_t j = 1 ; j < grid.size_Ex[1] - 1 ; j ++ ){
+                                for(size_t k = 1  ; k < grid.size_Ex[2] - 1; k ++){
+
+                                    i = 1;
+                                    index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
+                                    E_x_tmp[index] = 0;
+
+                                    i = grid.size_Ex[0] - 2;
+                                    index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
+                                    E_x_tmp[index] = 0;
+                                }
+                            }
+                        }
+
+                        /** IMPOSING EY ON FACE WITH NORMAL E_X **/
+                        if(false){
+                            printf("Imposing EY on E_X...\n");
+                            for(size_t j = 1 ; j < grid.size_Ey[1] - 1 ; j ++ ){
+                                for(size_t k = 1 ; k < grid.size_Ey[2] - 1 ; k ++){
+
+                                    i = 1;
+                                    index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                                    E_y_tmp[index] = 0;
+
+                                    i = grid.size_Ey[0] - 2;
+                                    index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                                    E_y_tmp[index] = 0;
+                                }
+                            }
+                        }
+
+                        /** IMPOSING EX ON FACE WITH NORMAL E_Z **/
+                        if(false){
+                            printf("Imposing EX on E_Z...\n");
+                            for(size_t i = 1 ; i < grid.size_Ex[0] - 1 ; i ++ ){
+                                for(size_t j = 1 ; j < grid.size_Ex[1] - 1 ; j ++){
+
+                                    k = 1;
+                                    index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
+                                    E_x_tmp[index] = 0;
+
+                                    k = grid.size_Ex[2] - 2;
+                                    index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
+                                    E_x_tmp[index] = 0;
+                                }
+                            }
+                        }
+
+                        /** IMPOSING EY ON FACE WITH NORMAL E_Z **/
+                        if(false){
+                            printf("Imposing EY on E_Z...\n");
+                            for(size_t i = 1 ; i < grid.size_Ey[0] - 1 ; i ++ ){
+                                for(size_t j = 1 ; j < grid.size_Ey[1] - 1 ; j ++){
+
+                                    k = 1;
+                                    index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                                    E_y_tmp[index] = 0;
+
+                                    k = grid.size_Ey[2] - 2;
+                                    index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                                    E_y_tmp[index] = 0;
+                                }
+                            }
+                        }
+
+                        /** Imposing Ex to zero on face with normal -e_y. **/
+                        printf("Imposing EX on -E_Y...\n");
+                        for(size_t i = 1 ; i < grid.size_Ex[0] - 1 ; i ++){
+                            for(size_t k = 1 ; k < grid.size_Ex[2] - 1 ; k ++){
+
+                                j = 1;
+                                index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
+                                E_x_tmp[index] = 0;
+
+                            }
+                        }
+
+                        /** Imposing Ey to zero on face with normal -e_y. **/
+                        printf("Imposing Ey on -e_y...\n");
+                        for(size_t i = 1 ; i < grid.size_Ey[0] - 1 ; i ++){
+                            for(size_t k = 1 ; k < grid.size_Ey[2] - 1 ; k ++){
+
+                                j = 1;
+                                index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                                E_y_tmp[index] = 0;
+                            }
+                        }
+                    }
+
+                    /** Imposing gaussian modulated source **/
+                    /** We impose on face with normal -e_y. **/
+                    double frequency = 900E7;
+                    double period    = 1 / frequency * 10;
+                    double MEAN      = 2*period;
+                    double STD       = period / 4.;
+                    double gauss     
+                            = exp( - (current_time-MEAN)*(current_time-MEAN) / (2*STD*STD));
+                    j = 1;
+                    for(size_t i = 1 ; i < grid.size_Ez[0] -1; i ++){
+                        for(size_t k = 1 ; k < grid.size_Ez[2] - 1 ; k ++){
+                            //gauss = 1.0;
+                            index = i + grid.size_Ez[0] * ( j + grid.size_Ez[1] * k);
+                            if(false && gauss < 1E-5){
+                                // do nothing
+                            }else{
+                                if(true || current_time < period/2){
+                                    E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                                }else{
+                                    //E_z_tmp[index] = 0;
+                                }
+                            }
+                        }
+                    }
+                    //printf("Period %.9g, freq %.9g, dt %.9g\n",period,frequency,dt);
+                }
+            }
+            #pragma omp barrier
+
             ////////////////////////////
             /// IMPOSING THE SOURCES ///
             ////////////////////////////
@@ -1434,175 +1687,178 @@ void AlgoElectro_NEW::update(
             double COEF_MEAN  = 1./3.;
             double COEF_STD   = 1./10.;
 
-            int FIELD = 2;
-            #pragma omp for schedule(static) nowait
-            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[FIELD].size() ; it ++){
+            // Do sources only if 3D case.
+            if(IS_1D_FACE_EX == false && false){
+                int FIELD = 2;
+                #pragma omp for schedule(static) nowait
+                for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[FIELD].size() ; it ++){
 
-                index = local_nodes_inside_source_NUMBER[FIELD][it];
-                ASSERT(index,<,grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]);
+                    index = local_nodes_inside_source_NUMBER[FIELD][it];
+                    ASSERT(index,<,grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]);
 
-                if(ID_Source[FIELD][it] == UCHAR_MAX){
-                    frequency = 0;
-                    // False frequency is used to stop imposing zero.
-                    false_freq = local_nodes_inside_source_FREQ[0];
-                    if(MODULATE_SOURCE[0] == true){
-                        double period    = 2*M_PI/false_freq;
-                        double MEAN      = period*COEF_MEAN;
-                        double STD       = period*COEF_STD;
-                                        
-                        double t = current_time;
-                        
-                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
-                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
-                            // do nothing
+                    if(ID_Source[FIELD][it] == UCHAR_MAX){
+                        frequency = 0;
+                        // False frequency is used to stop imposing zero.
+                        false_freq = local_nodes_inside_source_FREQ[0];
+                        if(MODULATE_SOURCE[0] == true){
+                            double period    = 1/false_freq;
+                            double MEAN      = period*COEF_MEAN;
+                            double STD       = period*COEF_STD;
+                                            
+                            double t = current_time;
+                            
+                            gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                            if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                                // do nothing
+                            }else{
+                                E_z_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
+                            }
                         }else{
                             E_z_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
                         }
                     }else{
-                        E_z_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
-                    }
-                }else{
 
-                    frequency = local_nodes_inside_source_FREQ[ID_Source[FIELD][it]];
-                    if(ID_Source[FIELD][it] >= MODULATE_SOURCE.size()){
-                        printf("Out of bound !\n%s:%d\n",__FILE__,__LINE__);
-                        std::abort();
-                    }
-                    if(MODULATE_SOURCE[ID_Source[FIELD][it]] == true){
-                        double period    = 2*M_PI/frequency;
-                        double MEAN      = period*COEF_MEAN;
-                        double STD       = period*COEF_STD;
-                                        
-                        double t = current_time;
-                        
-                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
-                        /*printf("GAUSS : %.10g | MEAN %.10g | "
-                                "STD %.10g | period %.10g | frequency %.10g | "
-                                "should be %.10g | coef_std %.10g.\n",
-                            gauss,
-                            MEAN,
-                            STD,
-                            period,
-                            frequency,
-                            period*COEF_STD,
-                            COEF_STD);*/
-                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
-                            // do nothing
-                        }else{
-                            E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
-                            //printf("Applying.\n");
+                        frequency = local_nodes_inside_source_FREQ[ID_Source[FIELD][it]];
+                        if(ID_Source[FIELD][it] >= MODULATE_SOURCE.size()){
+                            printf("Out of bound !\n%s:%d\n",__FILE__,__LINE__);
+                            std::abort();
                         }
-                    }else{
-						E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
-                        //printf("Case pas modulated.\n");
-					}
+                        if(MODULATE_SOURCE[ID_Source[FIELD][it]] == true){
+                            double period    = 1/frequency;
+                            double MEAN      = period*COEF_MEAN;
+                            double STD       = period*COEF_STD;
+                                            
+                            double t = current_time;
+                            
+                            gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                            /*printf("GAUSS : %.10g | MEAN %.10g | "
+                                    "STD %.10g | period %.10g | frequency %.10g | "
+                                    "should be %.10g | coef_std %.10g.\n",
+                                gauss,
+                                MEAN,
+                                STD,
+                                period,
+                                frequency,
+                                period*COEF_STD,
+                                COEF_STD);*/
+                            if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                                // do nothing
+                            }else{
+                                E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                                //printf("Applying.\n");
+                            }
+                        }else{
+                            E_z_tmp[index] = sin(2*M_PI*frequency*current_time);
+                            //printf("Case pas modulated.\n");
+                        }
 
-                }                
-            }
+                    }                
+                }
 
 
-            FIELD = 1;
-            #pragma omp for schedule(static) nowait
-            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[FIELD].size() ; it ++){
+                FIELD = 1;
+                #pragma omp for schedule(static) nowait
+                for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[FIELD].size() ; it ++){
 
-                index = local_nodes_inside_source_NUMBER[FIELD][it];
-                ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
+                    index = local_nodes_inside_source_NUMBER[FIELD][it];
+                    ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
 
-                if(ID_Source[FIELD][it] == UCHAR_MAX){
-                    frequency = 0;
-                    false_freq = local_nodes_inside_source_FREQ[0];
-                    if(MODULATE_SOURCE[0] == true){
-                        double period    = 2*M_PI/frequency;
-                        double MEAN      = period*COEF_MEAN;
-                        double STD       = period*COEF_STD;
-                                        
-                        double t = current_time;
-                        
-                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
-                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
-                            // do nothing
+                    if(ID_Source[FIELD][it] == UCHAR_MAX){
+                        frequency = 0;
+                        false_freq = local_nodes_inside_source_FREQ[0];
+                        if(MODULATE_SOURCE[0] == true){
+                            double period    = 1/frequency;
+                            double MEAN      = period*COEF_MEAN;
+                            double STD       = period*COEF_STD;
+                                            
+                            double t = current_time;
+                            
+                            gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                            if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                                // do nothing
+                            }else{
+                                E_y_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
+                            }
                         }else{
                             E_y_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
                         }
                     }else{
-						E_y_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
-					}
-                }else{
 
-                    frequency = local_nodes_inside_source_FREQ[ID_Source[FIELD][it]];
-                    if(ID_Source[FIELD][it] >= MODULATE_SOURCE.size()){
-                        printf("Out of bound !\n%s:%d\n",__FILE__,__LINE__);
-                        std::abort();
-                    }
-                    if(MODULATE_SOURCE[ID_Source[FIELD][it]] == true){
-                        double period    = 2*M_PI/frequency;
-                        double MEAN      = period*COEF_MEAN;
-                        double STD       = period*COEF_STD;
-                                        
-                        double t = current_time;
-                        
-                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
-                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
-                            // do nothing
-                        }else{
-                            E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                        frequency = local_nodes_inside_source_FREQ[ID_Source[FIELD][it]];
+                        if(ID_Source[FIELD][it] >= MODULATE_SOURCE.size()){
+                            printf("Out of bound !\n%s:%d\n",__FILE__,__LINE__);
+                            std::abort();
                         }
-                    }else{
-						E_y_tmp[index] = sin(2*M_PI*frequency*current_time);
-					}
+                        if(MODULATE_SOURCE[ID_Source[FIELD][it]] == true){
+                            double period    = 1 / frequency;
+                            double MEAN      = period*COEF_MEAN;
+                            double STD       = period*COEF_STD;
+                                            
+                            double t = current_time;
+                            
+                            gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                            if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                                // do nothing
+                            }else{
+                                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                            }
+                        }else{
+                            E_y_tmp[index] = sin(2*M_PI*frequency*current_time);
+                        }
+                    }
                 }
-            }
 
-            FIELD = 0;
-            #pragma omp for schedule(static) nowait
-            for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[FIELD].size() ; it ++){
+                FIELD = 0;
+                #pragma omp for schedule(static) nowait
+                for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[FIELD].size() ; it ++){
 
-                index = local_nodes_inside_source_NUMBER[FIELD][it];
-                ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
+                    index = local_nodes_inside_source_NUMBER[FIELD][it];
+                    ASSERT(index,<,grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]);
 
-                if(ID_Source[FIELD][it] == UCHAR_MAX){
-                    frequency = 0;
-                    false_freq = local_nodes_inside_source_FREQ[0];
-                    if(MODULATE_SOURCE[0] == true){
-                        double period    = 2*M_PI/frequency;
-                        double MEAN      = period*COEF_MEAN;
-                        double STD       = period*COEF_STD;
-                                        
-                        double t = current_time;
-                        
-                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+                    if(ID_Source[FIELD][it] == UCHAR_MAX){
+                        frequency = 0;
+                        false_freq = local_nodes_inside_source_FREQ[0];
+                        if(MODULATE_SOURCE[0] == true){
+                            double period    = 1 / frequency;
+                            double MEAN      = period*COEF_MEAN;
+                            double STD       = period*COEF_STD;
+                                            
+                            double t = current_time;
+                            
+                            gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
 
-                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
-                            // do nothing
+                            if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                                // do nothing
+                            }else{
+                                E_x_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
+                            }
                         }else{
                             E_x_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
                         }
                     }else{
-						E_x_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
-					}
-                }else{
-                    frequency = local_nodes_inside_source_FREQ[ID_Source[FIELD][it]];
-                    if(ID_Source[FIELD][it] >= MODULATE_SOURCE.size()){
-                        printf("Out of bound !\n%s:%d\n",__FILE__,__LINE__);
-                        std::abort();
-                    }
-                    if(MODULATE_SOURCE[ID_Source[FIELD][it]] == true){
-                        double period    = 2*M_PI/frequency;
-                        double MEAN      = period*COEF_MEAN;
-                        double STD       = period*COEF_STD;
-                                        
-                        double t = current_time;
-                        
-                        gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
-
-                        if(gauss < MIN_GAUSS_BEFORE_LET_BE){
-                            // do nothing
-                        }else{
-                            E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                        frequency = local_nodes_inside_source_FREQ[ID_Source[FIELD][it]];
+                        if(ID_Source[FIELD][it] >= MODULATE_SOURCE.size()){
+                            printf("Out of bound !\n%s:%d\n",__FILE__,__LINE__);
+                            std::abort();
                         }
-                    }else{
-						E_x_tmp[index] = sin(2*M_PI*frequency*current_time);
-					}
+                        if(MODULATE_SOURCE[ID_Source[FIELD][it]] == true){
+                            double period    = 1 / frequency;
+                            double MEAN      = period*COEF_MEAN;
+                            double STD       = period*COEF_STD;
+                                            
+                            double t = current_time;
+                            
+                            gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
+
+                            if(gauss < MIN_GAUSS_BEFORE_LET_BE){
+                                // do nothing
+                            }else{
+                                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                            }
+                        }else{
+                            E_x_tmp[index] = sin(2*M_PI*frequency*current_time);
+                        }
+                    }
                 }
             }
 
@@ -1699,23 +1955,22 @@ void AlgoElectro_NEW::update(
 				fflush_stdout();
 				MPI_Barrier(MPI_COMM_WORLD);
 				printf("[MPI %d] - Starting ABC.\n",grid.MPI_communicator.getRank());*/
-            this->abc(grid,
-                E_x_tmp, E_y_tmp, E_z_tmp, 
-                Eyx0, Ezx0, 
-                Eyx1, Ezx1, 
-                Exy0, Ezy0, 
-                Exy1, Ezy1, 
-                Exz0, Eyz0, 
-                Exz1, Eyz1,
-                dt
-                );
+                this->abc(grid,
+                    E_x_tmp, E_y_tmp, E_z_tmp, 
+                    Eyx0, Ezx0, 
+                    Eyx1, Ezx1, 
+                    Exy0, Ezy0, 
+                    Exy1, Ezy1, 
+                    Exz0, Eyz0, 
+                    Exz1, Eyz1,
+                    dt,
+                    IS_1D_FACE_EX
+                    );
 				/*fflush_stdout();
 				MPI_Barrier(MPI_COMM_WORLD);
 				printf("[MPI %d] - Ending ABC.\n",grid.MPI_communicator.getRank());*/
             }
             #pragma omp barrier
-
-            #pragma omp master
 
 
             gettimeofday( &end___while_iter , NULL);
@@ -1725,7 +1980,7 @@ void AlgoElectro_NEW::update(
             currentStep ++;
 
             
-
+            #pragma omp barrier
             #pragma omp master
             {
                 /// PROBE POINTS IF NECESSARY
@@ -1970,7 +2225,8 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
             double *Exy1, double *Ezy1, 
             double *Exz0, double *Eyz0,
             double *Exz1, double *Eyz1,
-            double dt
+            double dt,
+            bool   IS_1D_FACE_EX
         )
 {
     size_t i, j, k;
@@ -2018,7 +2274,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
     /* ABC at "x0" */
 
-    if(grid.MPI_communicator.RankNeighbour[1] == -1){
+    if(grid.MPI_communicator.RankNeighbour[1] == -1 && IS_1D_FACE_EX == false){
         i = 1;
 
         size_x = grid.size_Ey[0];
@@ -2061,7 +2317,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
 /* ABC at "x1" */   
 
-    if(grid.MPI_communicator.RankNeighbour[0] == -1){
+    if(grid.MPI_communicator.RankNeighbour[0] == -1 && IS_1D_FACE_EX == false){
         
         size_x = grid.size_Ey[0];
         size_y = grid.size_Ey[1];
@@ -2105,7 +2361,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
     /* ABC at "y0" */
 
-    if(grid.MPI_communicator.RankNeighbour[2] == -1){
+    if(grid.MPI_communicator.RankNeighbour[2] == -1 && IS_1D_FACE_EX == false){
         j = 1;
 
         size_x = grid.size_Ex[0];
@@ -2191,7 +2447,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
     /* ABC at "z0" (bottom) */
 
-    if(grid.MPI_communicator.RankNeighbour[4] == -1){
+    if(grid.MPI_communicator.RankNeighbour[4] == -1 && IS_1D_FACE_EX == false){
         k = 1;
 
 
@@ -2234,7 +2490,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
     /* ABC at "z1" (top) */
 
-    if(grid.MPI_communicator.RankNeighbour[5] == -1){
+    if(grid.MPI_communicator.RankNeighbour[5] == -1 && IS_1D_FACE_EX == false){
 
         size_x = grid.size_Ex[0];
         size_y = grid.size_Ex[1];

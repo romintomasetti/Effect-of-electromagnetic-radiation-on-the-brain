@@ -46,7 +46,8 @@ class AlgoElectro_NEW{
                 double *Exy1, double *Ezy1, 
                 double *Exz0, double *Eyz0, 
                 double *Exz1, double *Eyz1,
-                double dt
+                double dt,
+                bool   IS_1D_FACE_EX
         );
         
 
