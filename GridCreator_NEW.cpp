@@ -6,6 +6,7 @@
 #include "omp.h"
 
 #include "UTILS/vector_utilities.hpp"
+#include "UTILS/stringSearch.hpp"
 
 #include <algorithm>
 
@@ -549,20 +550,22 @@ void GridCreator_NEW::Assign_A_Material_To_Each_Node(){
             int  RANK_MPI                             = ref_obj->MPI_communicator.getRank() + 1;
             bool is_LOCAL_TEST_PARAVIEW_MPI_ELECTRIC  = false;
 
-	    std::map<std::string,unsigned int> materialID_FromMaterialName
-		= ref_obj->materials.materialID_FromMaterialName_unified;
+            std::map<std::string,unsigned int> materialID_FromMaterialName
+                = ref_obj->materials.materialID_FromMaterialName_unified;
 
 
             if(ref_obj->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
                 is_USE_AIR_EVERYWHERE = true;
-		/// Check that air exists:
-		std::map<std::string,unsigned int>::iterator it;
-		it = materialID_FromMaterialName.find("AIR");
-		if( it == materialID_FromMaterialName.end()){
-			DISPLAY_ERROR_ABORT(
-				"Cannot find air in the list of materials."
-			);
-		}
+            /// Check that air exists:
+            std::map<std::string,unsigned int>::iterator it;
+            it = materialID_FromMaterialName.find("AIR");
+            if( it == materialID_FromMaterialName.end()){
+                printf("Size of materialID_FromMaterialName_unified is %zu.\n",
+                    ref_obj->materials.materialID_FromMaterialName_unified.size());
+                DISPLAY_ERROR_ABORT(
+                    "Cannot find air in the list of materials."
+                );
+            }
 
             }else if(ref_obj->input_parser.get_SimulationType() == "TEST_PARAVIEW"){
                 is_TEST_PARAVIEW      = true;
@@ -998,32 +1001,34 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
 
         size_t index;
 
-	std::map<std::string,double>::iterator it;
+	    std::map<std::string,double>::iterator it;
 
         // Retrieve the air initial temperature, permttivity, etc.
         unsigned char mat    = this->materials.materialID_FromMaterialName_unified["AIR"];
 
-	double eps           = -1;
+	    double eps           = -1;
         it                   = this->materials.unified_material_list[mat].properties.find("RELATIVEPERMITTIVITY");
-	if(it == this->materials.unified_material_list[mat].properties.end()){
-		/// Use default permittivity:
-		eps = VACUUM_PERMITTIVITY;
-		DISPLAY_WARNING("Using vacuum permittivity.");
-	}else{
-		eps = VACUUM_PERMITTIVITY * this->materials.unified_material_list[mat].properties["RELATIVEPERMITTIVITY"];
-	}
+        if(it == this->materials.unified_material_list[mat].properties.end()){
+            /// Use default permittivity:
+            eps = VACUUM_PERMITTIVITY;
+            DISPLAY_WARNING("Using vacuum permittivity.");
+        }else{
+            eps = VACUUM_PERMITTIVITY * this->materials.unified_material_list[mat].properties["RELATIVEPERMITTIVITY"];
+        }
 
-	double electric_cond = -1.0;
-	it = this->materials.unified_material_list[mat].properties.find("ELECTRICALCONDUCTIVITY(S/M)");
-	if( it == this->materials.unified_material_list[mat].properties.end()){
-		/// Abort:
-		DISPLAY_ERROR_ABORT("Cannot find electrical conductivity(S/M) for air.");
-	}else{
-		electric_cond = this->materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY(S/M)"];
-	}
+        double electric_cond = -1.0;
+        it = this->materials.unified_material_list[mat].properties.find("ELECTRICALCONDUCTIVITY(S/M)");
+        if( it == this->materials.unified_material_list[mat].properties.end()){
+            /// Abort:
+            DISPLAY_ERROR_ABORT("Cannot find electrical conductivity(S/M) for air.");
+        }else{
+            electric_cond = this->materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY(S/M)"];
+        }
+
+        
         
 
-	DISPLAY_WARNING("We use vacuum permeability and 0 for the magnetic conductivity.");
+	    DISPLAY_WARNING("We use vacuum permeability and 0 for the magnetic conductivity.");
         double mu            = VACUUM_PERMEABILITY;
         double magnetic_cond = 0;
 
@@ -1156,7 +1161,7 @@ void GridCreator_NEW::Initialize_Electromagnetic_Properties(std::string whatToDo
                             .properties["RELATIVEPERMITTIVITY"]
                         * VACUUM_PERMITTIVITY;
                     ref_obj->E_x_electrical_cond[index] = elec_cond;
-                    ref_obj->E_x_eps[index]             = permittivity;                   
+                    ref_obj->E_x_eps[index]             = permittivity;                 
                 }
             }
         }
@@ -1749,17 +1754,17 @@ void GridCreator_NEW::fillIn_material_with_geometry_file(void){
                 size_t numberOf = static_cast<size_t> (read_int(
                     geometryFileJSON,"cubes.howMany",0));
                 std::vector<double> sides
-                    = read_vector_double(geometryFileJSON,"cubes.side",std::vector<double>(0));
+                    = read_vector_double(geometryFileJSON,"cubes.sides",std::vector<double>(0));
                 std::vector<double> centers
-                    = read_vector_double(geometryFileJSON,"cubes.center",std::vector<double>(0));
+                    = read_vector_double(geometryFileJSON,"cubes.centers",std::vector<double>(0));
                 std::vector<std::string> materials_inside_cubes
-                    = read_vector_string(geometryFileJSON,"cubes.material",std::vector<std::string>(0));
+                    = read_vector_string(geometryFileJSON,"cubes.materials",std::vector<std::string>(0));
                 
                 /// Check the sizes of provided data:
                 if(sides.size() != numberOf || centers.size() != 3*numberOf || materials_inside_cubes.size() != numberOf){
                     DISPLAY_ERROR_ABORT(
-                        "You specified %zu cubes but either 'cubes.radius' (size %zu, should be %zu)"
-                        " or 'cubes.center' (size %zu, should be %zu) or 'cubes.material'"
+                        "You specified %zu cubes but either 'cubes.sides' (size %zu, should be %zu)"
+                        " or 'cubes.centers' (size %zu, should be %zu) or 'cubes.materials'"
                         " (size %zu, should be %zu) is not well-defined.",
                         numberOf,sides.size(),numberOf,centers.size(),3*numberOf,
                         materials_inside_cubes.size(),numberOf
@@ -1814,7 +1819,7 @@ void GridCreator_NEW::fillInMat_forms(
     const size_t numberOf,
     std::vector<double> const &radius,
     std::vector<double> const &centers,
-    std::vector<std::string> const &material_inside,
+    std::vector<std::string> &material_inside,
     std::string type_form
 )
 {
@@ -1831,11 +1836,56 @@ void GridCreator_NEW::fillInMat_forms(
 
     bool FALSE_VAR = false;
 
+    /**Verify that materials exist: **/
+    std::map<std::string,unsigned int>::iterator it;
+    for(size_t I = 0 ; I < material_inside.size() ; I ++){
+        printf("Looking for material %s.\n",material_inside[I].c_str());
+        it = this->materials.materialID_FromMaterialName_unified.find(material_inside[I]);
+
+        if(it == this->materials.materialID_FromMaterialName_unified.end()){
+            printf("Material %s not found !\n",material_inside[I].c_str());
+
+            /// Find nearest material name:
+            size_t nearest = 1E10;
+            std::string nearestMatName;
+            for(size_t J = 0 ; J < this->materials.unified_material_list.size() ; J ++){
+                //this->materials.unified_material_list[I].printf_mat();
+                size_t res = ComputeLevenshteinDistance(
+                    material_inside[I],
+                    this->materials.unified_material_list[J].name
+                );
+                if(res < nearest){
+                    nearestMatName = this->materials.unified_material_list[J].name;
+                    printf("Comparison between %s and %s gives %zu.\n",
+                    material_inside[I].c_str(),
+                    this->materials.unified_material_list[J].name.c_str(),
+                    res
+                    );
+                    nearest = res;
+                }
+            }
+            printf("\n\t>> Material you named %s is in fact %s !\n\n",
+                material_inside[I].c_str(),
+                nearestMatName.c_str()
+                );
+            material_inside[I] = nearestMatName;
+            unsigned int ID_mat_new = this->materials.materialID_FromMaterialName_unified[nearestMatName];
+            this->materials.unified_material_list[ID_mat_new].printf_mat();
+        }
+    }
+    
     /**
      * @brief This function uses spheres to fill in the materials.
      */
     std::vector<double> coord(3);
     std::vector<double> center_temp(3);
+
+    FILE *mat_out = fopen("materials_output.txt","w+");
+    if(mat_out == NULL){
+        DISPLAY_ERROR_ABORT(
+            "Cannot open material file !"
+        );
+    }
 
     /**
      * Field Ex
@@ -1889,6 +1939,16 @@ void GridCreator_NEW::fillInMat_forms(
                         unsigned int ID  = this->materials.materialID_FromMaterialName_unified[mat];
                         size_t index = I + this->size_Ex[0]*(J+K*this->size_Ex[1]);
                         this->E_x_material[index] = ID;
+                        std::string tmpStr = "Ex(" 
+                                            + to_string(I) 
+                                            + "," 
+                                            + to_string(J) 
+                                            + "," 
+                                            + to_string(K)
+                                            + ") = " 
+                                            + to_string(ID);
+                        //printf(">>> %s.\n",tmpStr.c_str());
+                        fprintf(mat_out,"%s\n",tmpStr.c_str());
 
                     }
                 }
@@ -1897,6 +1957,16 @@ void GridCreator_NEW::fillInMat_forms(
                     unsigned int ID  = this->materials.materialID_FromMaterialName_unified["Air"];
                     size_t index = I + this->size_Ex[0]*(J+K*this->size_Ex[1]);
                     this->E_x_material[index] = ID;
+                    std::string tmpStr = "Ex(" 
+                                            + to_string(I) 
+                                            + "," 
+                                            + to_string(J) 
+                                            + "," 
+                                            + to_string(K)
+                                            + ") = " 
+                                            + to_string(ID);
+                        //printf(">>> %s.\n",tmpStr.c_str());
+                        fprintf(mat_out,"%s\n",tmpStr.c_str());
                 }
 
             }
@@ -1967,6 +2037,7 @@ void GridCreator_NEW::fillInMat_forms(
                     unsigned int ID  = this->materials.materialID_FromMaterialName_unified["Air"];
                     size_t index = I + this->size_Ey[0]*(J+K*this->size_Ey[1]);
                     this->E_y_material[index] = ID;
+                    
                 }
 
             }
@@ -2254,6 +2325,9 @@ void GridCreator_NEW::fillInMat_forms(
 		printf("\t\t\t\t>>>> [MPI %d] - Form %s for Hz - DONE.\n",
 				this->MPI_communicator.getRank(),type_form.c_str());
 	}
+
+    /** Close the file wherein we put the materials. **/
+    fclose(mat_out);
 }
 
 void GridCreator_NEW::Display_size_fields(void){

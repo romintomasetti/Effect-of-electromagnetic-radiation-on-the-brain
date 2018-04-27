@@ -211,7 +211,7 @@ class GridCreator_NEW{
             const size_t numberOf,
             std::vector<double> const &radius,
             std::vector<double> const &centers,
-            std::vector<std::string> const &material_inside,
+            std::vector<std::string> &material_inside,
             std::string type_form
         );
 
