@@ -2108,7 +2108,7 @@ void AlgoElectro_NEW::update(
 
 
     /* FREE MEMORY */
-    /*
+    
     delete[] local_nodes_inside_source_NUMBER;
     delete[] ID_Source;
     
@@ -2148,7 +2148,7 @@ void AlgoElectro_NEW::update(
     delete[] C_eze;
     delete[] C_ezh_1;
     delete[] C_ezh_2;
-*/
+
     /**
      * @brief Freeing memory of ABC conditions.
      * 
@@ -2156,7 +2156,7 @@ void AlgoElectro_NEW::update(
      *      if(ptr != NULL) {delete[] ptr;}
      * but simply do delete[] ptr;
      */
-  /*  delete[] Eyx0;
+    delete[] Eyx0;
     delete[] Eyx1;
     delete[] Ezx0;
     delete[] Ezx1;
@@ -2184,7 +2184,7 @@ void AlgoElectro_NEW::update(
     if(Electric_field_to_recv != NULL){free(Electric_field_to_recv);}
     if(Magnetic_field_to_send != NULL){free(Magnetic_field_to_send);}
     if(Magnetic_field_to_recv != NULL){free(Magnetic_field_to_recv);}
-*/
+
     /// Compute total elapsed time inside UPDATE:
     gettimeofday(&end, NULL);
 
