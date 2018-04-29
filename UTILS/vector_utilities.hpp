@@ -12,9 +12,17 @@
 #endif
 
 #include <stdlib.h>
+#include <string>
+#include <vector>
 
 UTILS_API void fill_double_vector_with_zeros(double *vec,size_t size);
 
 UTILS_API void fill_unchar_vector_with_zeros(unsigned char *vec,size_t size);
+
+UTILS_API std::string vector_string_to_one_string(
+	std::vector<std::string> vec, 
+	std::string sep_beg,
+	std::string sep_end
+);
 
 #endif
