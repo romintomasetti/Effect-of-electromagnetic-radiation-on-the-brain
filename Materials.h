@@ -12,8 +12,6 @@
 
 #include "header_with_all_defines.hpp"
 
-#include "Array_3D_Template.h"
-
 #include "UTILS/directory_searching.hpp"
 
 #include <boost/filesystem.hpp>

@@ -28,7 +28,6 @@
 #include <vector>
 
 #include "Materials.h"
-#include "Array_3D_Template.h"
 #include "MPI_Initializer.h"
 #include "SetOnceVariable_Template.h"
 #include "InputParser.h"
@@ -200,7 +199,6 @@ void check_input_file_name_given(int argc, char *argv[],map<std::string,std::str
 			}
 			inputs.insert(std::pair<std::string,std::string>("-v",argv[++I]));
 		}else{
-			printf("COUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU :: %s\n",argv[I]);
 			DISPLAY_ERROR_ABORT(
 				"The input argument %s is not known.",
 				argv[I]
