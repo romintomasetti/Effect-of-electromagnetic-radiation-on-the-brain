@@ -110,20 +110,7 @@ int main(int argc, char *argv[]){
 		input_parser.material_data_directory.string(),
 		input_parser.GetInitTemp_FromMaterialName
 	);
-	
-	/*allMat.getPropertiesFromFile(
-		input_parser.material_data_files[0],
-		input_parser.material_data_files[1]
-	);*/
-	//allMat.printAllProperties();
-	/*cout << "Print number of temp per mat::IN" << endl;
-	allMat.printNumberOfTempLinePerMat();
-	cout << "Print number of temp per mat::OUT" << endl;
-	cout << "For material 0 at 25K, property 1 is ";
-	cout << allMat.getProperty(25.,0,1) << endl;*/
 
-	
-	
 
 	
 	std::string profilingName;
@@ -133,10 +120,6 @@ int main(int argc, char *argv[]){
 	profiler.setOutputFileName(profilingName);
 	
 
-	
-	
-	/*printf("Initial temperature for AIR is %f.\n",
-				input_parser.GetInitTemp_FromMaterialName["AIR"]);*/	
 
 	GridCreator_NEW gridTest(
 		VERBOSITY,
