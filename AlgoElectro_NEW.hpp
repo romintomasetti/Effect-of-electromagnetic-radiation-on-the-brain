@@ -70,9 +70,6 @@ class AlgoElectro_NEW{
 
         bool SteadyStateAnalyser(void);
 
-
-        std::vector<double> ComputeNormEsquare(GridCreator_NEW &grid);
-
         std::vector<double> ComputeNormE2square(std::vector<double> Ex,
                                           std::vector<double> Ey, std::vector<double> Ez);
 
