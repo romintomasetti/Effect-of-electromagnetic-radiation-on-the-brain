@@ -83,6 +83,21 @@
 /**
  * DISPLAY A MESSAGE AND ABORT
  */
+#define DISPLAY_ERROR_ABORT_CLASS(...){              \
+        FPRINTF(stderr,"%sIn %s::%s :: ERROR :: %s",      \
+                    ANSI_COLOR_RED,                   \
+                    typeid(*this).name(),              \
+                    __FUNCTION__,                     \
+                    ANSI_COLOR_GREEN);                \
+        fprintf(stderr,__VA_ARGS__);           \
+        fprintf(stderr,"%s Aborting.%s\nIn %s:%d\n",   \
+                    ANSI_COLOR_YELLOW,                \
+                    ANSI_COLOR_RESET,                 \
+                    __FILE__,                         \
+                    __LINE__);                        \
+        ABORT_MPI(-1);                                \
+        }
+
 #define DISPLAY_ERROR_ABORT(...){              \
         FPRINTF(stderr,"%sIn %s :: ERROR :: %s",      \
                     ANSI_COLOR_RED,                   \
