@@ -4,7 +4,7 @@
 
 $INFOS
 	$NAME
-		output=RESULTS/OUTPUT_FILES
+		output=RESULTS8/OUTPUT_FILES
 		error=ERROR_LOG
 		profile=PROFILING
 	$NAME
@@ -28,19 +28,19 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=0.001
-		deltaY_Electro=0.001
-		deltaZ_Electro=0.001
+		deltaX_Electro=0.0005
+		deltaY_Electro=0.0005
+		deltaZ_Electro=0.0005
 		delta_Thermal=0.1
-		ratio_EM_TH_delta=0.01
+		ratio_EM_TH_delta=0.005
 	$DELTAS
 		
 	// Boundaries of the domain
 	$DOMAIN_SIZE
 		// Length of the domain in each direction
 		L_X_ELECTRO=0.01
-		L_Y_ELECTRO=1
-		L_Z_ELECTRO=0.01
+		L_Y_ELECTRO=0.01
+		L_Z_ELECTRO=1
 		L_X_THERMAL=1
 		L_Y_THERMAL=1
 		L_Z_THERMAL=1
@@ -62,7 +62,12 @@ $MESH
 		/// Either 'DIPOLE' or 'SIMPLE' or FACE_EX (for simple antenna):
 		/// If set to dipole, length is proportional to lambda = 3E8/freq
 		///
-		IMPOSED=FACE_EX;
+		//IMPOSED=FACE_EX;
+		//IMPOSED=FACE_EY;
+		//IMPOSED=FACE_EZ;
+		//IMPOSED=FACE_Minus_EX;
+		//IMPOSED=FACE_Minus_EY;
+		IMPOSED=FACE_Minus_EZ;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
 		SOURCE_TIME=GAUSSIAN;
 		// Default with Gaussian is (MEAN,STD)=(0*period,period/10) where period=c/frequency, c=3e8
@@ -88,7 +93,7 @@ $RUN_INFOS
 		// The simulation will stop after... (in sec)
 		stopTime=10
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=10000
+		maxStepsForOneCycleOfElectro=100
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
 		maxStepsForOneCycleOfThermal=5E5 
@@ -123,7 +128,7 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=5
+		SAMPLING_FREQ_ELECTRO=1
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING
