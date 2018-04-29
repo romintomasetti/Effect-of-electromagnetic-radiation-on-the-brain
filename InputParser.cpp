@@ -803,22 +803,26 @@ void InputParser::readHeader_MESH (ifstream &file){
 								//printf("Has : %s \n",str.c_str());
 								if(		str != "DIPOLE" 
 									&&  str != "SIMPLE" 
-									&&  str != "FACE_EX"
-									&&  str != "FACE_EY"
-									&&  str != "FACE_EZ"
-									&&  str != "FACE_Minus_EX"
-									&&  str != "FACE_Minus_EY"
-									&&  str != "FACE_Minus_EZ"){
-									fprintf(stderr,"In %s :: ERROR :: Imposed condition on source"
-												" should be either 'DIPOLE' or 'SIMPLE'"
-												" or FACE_[Minus_]E(X,Y,Z). Aborting.\n",
-												__FUNCTION__);
-									fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
-									#ifdef MPI_COMM_WORLD
-										MPI_Abort(MPI_COMM_WORLD,-1);
-									#else
-										abort();
-									#endif
+									&&  str != "FACE_EX_Electric_along_Y"
+									&&  str != "FACE_EX_Electric_along_Z"
+									&&  str != "FACE_EY_Electric_along_X"
+									&&  str != "FACE_EY_Electric_along_Z"
+									&&  str != "FACE_EZ_Electric_along_X"
+									&&  str != "FACE_EZ_Electric_along_Y"
+									&&  str != "FACE_Minus_EX_Electric_along_Y"
+									&&  str != "FACE_Minus_EY_Electric_along_X"
+									&&  str != "FACE_Minus_EZ_Electric_along_X"
+									&&  str != "FACE_Minus_EX_Electric_along_Z"
+									&&  str != "FACE_Minus_EY_Electric_along_Z"
+									&&  str != "FACE_Minus_EZ_Electric_along_Y"){
+									DISPLAY_ERROR_ABORT_CLASS(
+										"Imposed condition on source"
+										" should be either 'DIPOLE' or 'SIMPLE'"
+										" or FACE_[Minus_]E(X,Y,Z) or"
+										" FACE_[Minus_]E(X,Y,Z)[_Electric_along_(X,Y,Z)]."
+										" Has %s.",
+										str.c_str()
+									);
 								}
 								this->conditionsInsideSources.push_back(str);
 							}

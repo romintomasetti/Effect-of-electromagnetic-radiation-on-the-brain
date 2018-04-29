@@ -153,12 +153,18 @@ class ElectromagneticSource{
 				= {
 						"DIPOLE",
 						"SIMPLE",
-						"FACE_EX",
-						"FACE_EY",
-						"FACE_EZ",
-						"FACE_Minus_EX",
-						"FACE_Minus_EY",
-						"FACE_Minus_EZ"
+						"FACE_EX_Electric_along_Y",
+						"FACE_EX_Electric_along_Z",
+						"FACE_EY_Electric_along_X",
+						"FACE_EY_Electric_along_Z",
+						"FACE_EZ_Electric_along_X",
+						"FACE_EZ_Electric_along_Y",
+						"FACE_Minus_EX_Electric_along_Y",
+						"FACE_Minus_EY_Electric_along_X",
+						"FACE_Minus_EZ_Electric_along_X",
+						"FACE_Minus_EX_Electric_along_Z",
+						"FACE_Minus_EY_Electric_along_Z",
+						"FACE_Minus_EZ_Electric_along_Y"
 				};
 			bool source_types_is_ok = false;
 			if(std::find(avail_source_types.begin(), avail_source_types.end(), source_type) 
@@ -335,12 +341,18 @@ class ElectromagneticSource{
 				}
 				
 			}else if(
-				   source_type == "FACE_EX"
-				|| source_type == "FACE_EY"
-				|| source_type == "FACE_EZ"
-				|| source_type == "FACE_Minus_EX"
-				|| source_type == "FACE_Minus_EY"
-				|| source_type == "FACE_Minus_EZ"){
+				   source_type == "FACE_EX_Electric_along_Z"
+				|| source_type == "FACE_EX_Electric_along_Y"
+				|| source_type == "FACE_EY_Electric_along_Z"
+				|| source_type == "FACE_EY_Electric_along_X"
+				|| source_type == "FACE_EZ_Electric_along_Y"
+				|| source_type == "FACE_EZ_Electric_along_X"
+				|| source_type == "FACE_Minus_EX_Electric_along_Z"
+				|| source_type == "FACE_Minus_EX_Electric_along_Y"
+				|| source_type == "FACE_Minus_EY_Electric_along_Z"
+				|| source_type == "FACE_Minus_EY_Electric_along_X"
+				|| source_type == "FACE_Minus_EZ_Electric_along_X"
+				|| source_type == "FACE_Minus_EZ_Electric_along_Y"){
 				/**
 				 * @brief Put a source on the face with normal.
 				 * 	This kind of source has been hardcoded !

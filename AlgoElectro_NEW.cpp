@@ -291,12 +291,18 @@ double AlgoElectro_NEW::Compute_dt(GridCreator_NEW &mesh){
 			"There was an error because dt == DBL_MAX is true."
 		);
 	}
-    if(    mesh.input_parser.conditionsInsideSources[0] == "FACE_Minus_EZ"
-        || mesh.input_parser.conditionsInsideSources[0] == "FACE_EZ"
-        || mesh.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY"
-        || mesh.input_parser.conditionsInsideSources[0] == "FACE_EY"
-        || mesh.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX"
-        || mesh.input_parser.conditionsInsideSources[0] == "FACE_EX")
+    if(    mesh.input_parser.conditionsInsideSources[0] == "FACE_EX_Electric_along_Z"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_EX_Electric_along_Y"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_EY_Electric_along_Z"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_EY_Electric_along_X"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_EZ_Electric_along_Y"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_EZ_Electric_along_X"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX_Electric_along_Z"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX_Electric_along_Y"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY_Electric_along_Z"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY_Electric_along_X"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_Minus_EZ_Electric_along_X"
+        || mesh.input_parser.conditionsInsideSources[0] == "FACE_Minus_EZ_Electric_along_Y")
         {
             double c = 1/(sqrt(VACUUM_PERMEABILITY*VACUUM_PERMITTIVITY));
             dt = dx / c;
@@ -680,6 +686,22 @@ void AlgoElectro_NEW::update(
     //      1) Call GridCreator_NEW                    //
     //      2) GridCreator_NEW calls its source object //
     /////////////////////////////////////////////////////
+    bool DO_3D_SOURCE = true;
+    if(    grid.input_parser.conditionsInsideSources[0] == "FACE_EX_Electric_along_Z"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_EX_Electric_along_Y"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_EY_Electric_along_Z"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_EY_Electric_along_X"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_EZ_Electric_along_Y"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_EZ_Electric_along_X"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX_Electric_along_Z"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX_Electric_along_Y"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY_Electric_along_Z"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY_Electric_along_X"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EZ_Electric_along_X"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EZ_Electric_along_Y")
+        {
+            DO_3D_SOURCE = false;
+        }
     
     // Size 3 because 3 E components:
     std::vector<size_t>        *local_nodes_inside_source_NUMBER ;
@@ -701,62 +723,64 @@ void AlgoElectro_NEW::update(
 		fflush_stdout();
 	}
 	
-    for(unsigned int i = 0 ; i < TYPE.size() ; i ++){
-        grid.Compute_nodes_inside_sources(
-            local_nodes_inside_source_NUMBER[i],
-            ID_Source[i],
-            local_nodes_inside_source_FREQ,
-            TYPE[i]
-        );
-        if(local_nodes_inside_source_NUMBER[i].size() != ID_Source[i].size()){
-            DISPLAY_ERROR_ABORT(
-				"Sizes do not match (has %zu and %zu).",
-				local_nodes_inside_source_NUMBER[i].size(),
-				ID_Source[i].size()
-			);
+    if(DO_3D_SOURCE == true){
+        for(unsigned int i = 0 ; i < TYPE.size() ; i ++){
+            grid.Compute_nodes_inside_sources(
+                local_nodes_inside_source_NUMBER[i],
+                ID_Source[i],
+                local_nodes_inside_source_FREQ,
+                TYPE[i]
+            );
+            if(local_nodes_inside_source_NUMBER[i].size() != ID_Source[i].size()){
+                DISPLAY_ERROR_ABORT(
+                    "Sizes do not match (has %zu and %zu).",
+                    local_nodes_inside_source_NUMBER[i].size(),
+                    ID_Source[i].size()
+                );
+            }
         }
+        /// Verify that there is at least one emitting element:
+        int at_least_one_node = 0;
+        for(size_t I = 0 ; I < grid.input_parser.source.get_number_of_sources() ; I++){
+            if(grid.input_parser.source.there_is_at_least_one_element_non_zero_in_source[I]){
+                at_least_one_node = 1;
+                printf("[MPI %d over %d] - There is at least one node !\n",
+                    grid.MPI_communicator.getRank(),
+                    grid.MPI_communicator.getNumberOfMPIProcesses());
+                break;
+            }
+        }
+        /// Communicate between MPI processes to check if there is a source somewhere:
+        int *checking_at_least_one_node 
+            = (int*)malloc(sizeof(int)*grid.MPI_communicator.getNumberOfMPIProcesses());
+        MPI_Gather(
+            &at_least_one_node,
+            1,
+            MPI_INT,
+            (int*)checking_at_least_one_node,
+            1,//grid.MPI_communicator.getNumberOfMPIProcesses(),
+            MPI_INT,
+            grid.MPI_communicator.rootProcess,
+            MPI_COMM_WORLD);
+        int counter_false = 0;
+        if(grid.MPI_communicator.getRank() == grid.MPI_communicator.rootProcess){
+            for(int i = 0 ; i < grid.MPI_communicator.getNumberOfMPIProcesses() ; i++){
+                if(checking_at_least_one_node[i] == 0){
+                    counter_false++;
+                }
+            }
+            if(counter_false == grid.MPI_communicator.getNumberOfMPIProcesses()){
+                DISPLAY_ERROR_ABORT(
+                    "There is no node emitting anything. Your solution will remain zero everywhere."
+                );
+            }else{
+                DISPLAY_WARNING("Ok, there is at least on node inside your sources.");
+            }
+        }
+        free(checking_at_least_one_node);
+        fflush(stdout);
+        MPI_Barrier(MPI_COMM_WORLD);
     }
-	/// Verify that there is at least one emitting element:
-	int at_least_one_node = 0;
-	for(size_t I = 0 ; I < grid.input_parser.source.get_number_of_sources() ; I++){
-		if(grid.input_parser.source.there_is_at_least_one_element_non_zero_in_source[I]){
-			at_least_one_node = 1;
-			printf("[MPI %d over %d] - There is at least one node !\n",
-				grid.MPI_communicator.getRank(),
-				grid.MPI_communicator.getNumberOfMPIProcesses());
-			break;
-		}
-	}
-	/// Communicate between MPI processes to check if there is a source somewhere:
-	int *checking_at_least_one_node 
-		= (int*)malloc(sizeof(int)*grid.MPI_communicator.getNumberOfMPIProcesses());
-	MPI_Gather(
-		&at_least_one_node,
-		1,
-		MPI_INT,
-		(int*)checking_at_least_one_node,
-		1,//grid.MPI_communicator.getNumberOfMPIProcesses(),
-		MPI_INT,
-		grid.MPI_communicator.rootProcess,
-		MPI_COMM_WORLD);
-	int counter_false = 0;
-	if(grid.MPI_communicator.getRank() == grid.MPI_communicator.rootProcess){
-		for(int i = 0 ; i < grid.MPI_communicator.getNumberOfMPIProcesses() ; i++){
-			if(checking_at_least_one_node[i] == 0){
-				counter_false++;
-			}
-		}
-		if(counter_false == grid.MPI_communicator.getNumberOfMPIProcesses()){
-			DISPLAY_ERROR_ABORT(
-				"There is no node emitting anything. Your solution will remain zero everywhere."
-			);
-		}else{
-			DISPLAY_WARNING("Ok, there is at least on node inside your sources.");
-		}
-	}
-	free(checking_at_least_one_node);
-	fflush(stdout);
-	MPI_Barrier(MPI_COMM_WORLD);
 	
 	
 	if(this->VERBOSITY >= 1){
@@ -926,50 +950,108 @@ void AlgoElectro_NEW::update(
          * 
          * Note: the convention for normal is unit outward normal.
          */
-        bool IS_1D_FACE_EX       = false;
-        bool IS_1D_FACE_Minus_EX = false;
-        bool IS_1D_FACE_EY       = false;
-        bool IS_1D_FACE_Minus_EY = false;
-        bool IS_1D_FACE_EZ       = false;
-        bool IS_1D_FACE_Minus_EZ = false;
+        bool IS_1D_FACE_EX_Electric_along_Z       = false;
+        bool IS_1D_FACE_EX_Electric_along_Y       = false;
+        bool IS_1D_FACE_EY_Electric_along_Z       = false;
+        bool IS_1D_FACE_EY_Electric_along_X       = false;
+        bool IS_1D_FACE_EZ_Electric_along_Y       = false;
+        bool IS_1D_FACE_EZ_Electric_along_X       = false;
+        bool IS_1D_FACE_Minus_EX_Electric_along_Z = false;
+        bool IS_1D_FACE_Minus_EX_Electric_along_Y = false;
+        bool IS_1D_FACE_Minus_EY_Electric_along_Z = false;
+        bool IS_1D_FACE_Minus_EY_Electric_along_X = false;
+        bool IS_1D_FACE_Minus_EZ_Electric_along_X = false;
+        bool IS_1D_FACE_Minus_EZ_Electric_along_Y = false;
+
+        bool IS_1D_PROPAGATION_IN_X = false;
+        bool IS_1D_PROPAGATION_IN_Y = false;
+        bool IS_1D_PROPAGATION_IN_Z = false;
 
         bool IS_3D_CASE = true;
 
-        if(grid.input_parser.conditionsInsideSources[0] == "FACE_EX"){
-            printf(">>> [MPI %d] - Using 1D with face EX.\n",
+        if(grid.input_parser.conditionsInsideSources[0] == "FACE_EX_Electric_along_Z"){
+            printf(">>> [MPI %d] - Using 1D with FACE_EX_Electric_along_Z.\n",
                 grid.MPI_communicator.getRank());
-            IS_1D_FACE_EX = true;
-            IS_3D_CASE    = false;
+            IS_1D_FACE_EX_Electric_along_Z = true;
+            IS_3D_CASE                     = false;
+            IS_1D_PROPAGATION_IN_X         = true;
+        
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_EX_Electric_along_Y"){
+            printf(">>> [MPI %d] - Using 1D with FACE_EX_Electric_along_Y.\n",
+                grid.MPI_communicator.getRank());
+            IS_1D_FACE_EX_Electric_along_Y = true;
+            IS_3D_CASE                     = false;
+            IS_1D_PROPAGATION_IN_X         = true;
 
-        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX"){
-            printf(">>> [MPI %d] - Using 1D with face minus EX.\n",
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX_Electric_along_Z"){
+            printf(">>> [MPI %d] - Using 1D with FACE_Minus_EX_Electric_along_Z.\n",
                 grid.MPI_communicator.getRank());
-            IS_1D_FACE_Minus_EX = true;
-            IS_3D_CASE    = false;
+            IS_1D_FACE_Minus_EX_Electric_along_Z = true;
+            IS_3D_CASE                           = false;
+            IS_1D_PROPAGATION_IN_X               = true;
 
-        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_EY"){
-            printf(">>> [MPI %d] - Using 1D with face EY.\n",
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX_Electric_along_Y"){
+            printf(">>> [MPI %d] - Using 1D with FACE_Minus_EX_Electric_along_Y.\n",
                 grid.MPI_communicator.getRank());
-            IS_1D_FACE_EY = true;
-            IS_3D_CASE    = false;
+            IS_1D_FACE_Minus_EX_Electric_along_Y = true;
+            IS_3D_CASE                           = false;
+            IS_1D_PROPAGATION_IN_X               = true;
 
-        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY"){
-            printf(">>> [MPI %d] - Using 1D with face minus EY.\n",
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_EY_Electric_along_Z"){
+            printf(">>> [MPI %d] - Using 1D with FACE_EY_Electric_along_Z.\n",
                 grid.MPI_communicator.getRank());
-            IS_1D_FACE_Minus_EY = true;
-            IS_3D_CASE    = false;
+            IS_1D_FACE_EY_Electric_along_Z = true;
+            IS_3D_CASE                     = false;
+            IS_1D_PROPAGATION_IN_Y         = true;
 
-        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_EZ"){
-            printf(">>> [MPI %d] - Using 1D with face EZ.\n",
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_EY_Electric_along_X"){
+            printf(">>> [MPI %d] - Using 1D with FACE_EY_Electric_along_X.\n",
                 grid.MPI_communicator.getRank());
-            IS_1D_FACE_EZ = true;
-            IS_3D_CASE    = false;
+            IS_1D_FACE_EY_Electric_along_X = true;
+            IS_3D_CASE                     = false;
+            IS_1D_PROPAGATION_IN_Y         = true;
 
-        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EZ"){
-            printf(">>> [MPI %d] - Using 1D with face minus EX.\n",
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY_Electric_along_Z"){
+            printf(">>> [MPI %d] - Using 1D with FACE_Minus_EY_Electric_along_Z.\n",
                 grid.MPI_communicator.getRank());
-            IS_1D_FACE_Minus_EZ = true;
-            IS_3D_CASE    = false;
+            IS_1D_FACE_Minus_EY_Electric_along_Z = true;
+            IS_3D_CASE                           = false;
+            IS_1D_PROPAGATION_IN_Y               = true;
+
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY_Electric_along_X"){
+            printf(">>> [MPI %d] - Using 1D with FACE_Minus_EY_Electric_along_X.\n",
+                grid.MPI_communicator.getRank());
+            IS_1D_FACE_Minus_EY_Electric_along_X = true;
+            IS_3D_CASE                           = false;
+            IS_1D_PROPAGATION_IN_Y               = true;
+
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_EZ_Electric_along_Y"){
+            printf(">>> [MPI %d] - Using 1D with FACE_EZ_Electric_along_Y.\n",
+                grid.MPI_communicator.getRank());
+            IS_1D_FACE_EZ_Electric_along_Y = true;
+            IS_3D_CASE                     = false;
+            IS_1D_PROPAGATION_IN_Z         = true;
+
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_EZ_Electric_along_X"){
+            printf(">>> [MPI %d] - Using 1D with FACE_EZ_Electric_along_X.\n",
+                grid.MPI_communicator.getRank());
+            IS_1D_FACE_EZ_Electric_along_X = true;
+            IS_3D_CASE                     = false;
+            IS_1D_PROPAGATION_IN_Z         = true;
+
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EZ_Electric_along_Y"){
+            printf(">>> [MPI %d] - Using 1D with FACE_Minus_EZ_Electric_along_ZY.\n",
+                grid.MPI_communicator.getRank());
+            IS_1D_FACE_Minus_EZ_Electric_along_Y = true;
+            IS_3D_CASE                           = false;
+            IS_1D_PROPAGATION_IN_Z               = true;
+
+        }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY_Electric_along_X"){
+            printf(">>> [MPI %d] - Using 1D with FACE_Minus_EZ_Electric_along_X.\n",
+                grid.MPI_communicator.getRank());
+            IS_1D_FACE_Minus_EY_Electric_along_X = true;
+            IS_3D_CASE                           = false;
+            IS_1D_PROPAGATION_IN_Z               = true;
         }
         
         /*#pragma omp master
@@ -1026,27 +1108,55 @@ void AlgoElectro_NEW::update(
         size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 0;
 
         if(grid.MPI_communicator.MPI_POSITION[0] == grid.MPI_communicator.MPI_MAX_POSI[0]){
-            IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = 1;
+            if(   IS_1D_FACE_EY_Electric_along_Z){
+                // Do nothing.
+            }else{
+                IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = 1;
+            }
         }
 
         if(grid.MPI_communicator.MPI_POSITION[1] == grid.MPI_communicator.MPI_MAX_POSI[1]){
-            IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = 1;
+            if(   IS_1D_FACE_EX_Electric_along_Z 
+               || IS_1D_FACE_Minus_EX_Electric_along_Z){
+                // Do nothing.
+            }else{
+                IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = 1;
+            }
         }
 
         if(grid.MPI_communicator.MPI_POSITION[2] == grid.MPI_communicator.MPI_MAX_POSI[2]){
-            IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = 1;
+            if( IS_1D_FACE_EX_Electric_along_Y
+             || IS_1D_FACE_Minus_EX_Electric_along_Y){
+                // Do nothing.
+            }else{
+                IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = 1;
+            }
         }
 
         if(grid.MPI_communicator.MPI_POSITION[0] == 0){
-            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 1;
+            if(   IS_1D_FACE_EY_Electric_along_Z){
+                // Do nothing.
+            }else{
+                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 1;
+            }
         }
 
         if(grid.MPI_communicator.MPI_POSITION[1] == 0){
-            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 1;
+            if(   IS_1D_FACE_EX_Electric_along_Z
+               || IS_1D_FACE_Minus_EX_Electric_along_Z){
+                // Do nothing.
+            }else{
+                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 1;
+            }
         }
 
         if(grid.MPI_communicator.MPI_POSITION[2] == 0){
-            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
+            if( IS_1D_FACE_EX_Electric_along_Y
+             || IS_1D_FACE_Minus_EX_Electric_along_Y){
+                // Do nothing.
+            }else{
+                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
+            }
         }
 
         bool has_neighboor = false;
@@ -1264,12 +1374,18 @@ void AlgoElectro_NEW::update(
             {
                 if(IS_3D_CASE == false){
                     this->apply_1D_case_on_magnetic_field(
-                        IS_1D_FACE_EX,
-                        IS_1D_FACE_EY,
-                        IS_1D_FACE_EZ,
-                        IS_1D_FACE_Minus_EX,
-                        IS_1D_FACE_Minus_EY,
-                        IS_1D_FACE_Minus_EZ,
+                        IS_1D_FACE_EX_Electric_along_Z,      
+                        IS_1D_FACE_EX_Electric_along_Y ,     
+                        IS_1D_FACE_EY_Electric_along_Z  ,     
+                        IS_1D_FACE_EY_Electric_along_X   ,    
+                        IS_1D_FACE_EZ_Electric_along_Y    ,   
+                        IS_1D_FACE_EZ_Electric_along_X     , 
+                        IS_1D_FACE_Minus_EX_Electric_along_Z, 
+                        IS_1D_FACE_Minus_EX_Electric_along_Y ,
+                        IS_1D_FACE_Minus_EY_Electric_along_Z ,
+                        IS_1D_FACE_Minus_EY_Electric_along_X ,
+                        IS_1D_FACE_Minus_EZ_Electric_along_X ,
+                        IS_1D_FACE_Minus_EZ_Electric_along_Y,
                         grid,
                         H_x_tmp,
                         H_y_tmp,
@@ -1538,12 +1654,18 @@ void AlgoElectro_NEW::update(
             {
                 if(IS_3D_CASE == false){
                     this->apply_1D_case_on_electric_field(
-                        IS_1D_FACE_EX,
-                        IS_1D_FACE_EY,
-                        IS_1D_FACE_EZ,
-                        IS_1D_FACE_Minus_EX,
-                        IS_1D_FACE_Minus_EY,
-                        IS_1D_FACE_Minus_EZ,
+                        IS_1D_FACE_EX_Electric_along_Z,      
+                        IS_1D_FACE_EX_Electric_along_Y ,     
+                        IS_1D_FACE_EY_Electric_along_Z  ,     
+                        IS_1D_FACE_EY_Electric_along_X   ,    
+                        IS_1D_FACE_EZ_Electric_along_Y    ,   
+                        IS_1D_FACE_EZ_Electric_along_X     , 
+                        IS_1D_FACE_Minus_EX_Electric_along_Z, 
+                        IS_1D_FACE_Minus_EX_Electric_along_Y ,
+                        IS_1D_FACE_Minus_EY_Electric_along_Z ,
+                        IS_1D_FACE_Minus_EY_Electric_along_X ,
+                        IS_1D_FACE_Minus_EZ_Electric_along_X ,
+                        IS_1D_FACE_Minus_EZ_Electric_along_Y,
                         current_time,
                         grid,
                         E_x_tmp,
@@ -1840,12 +1962,18 @@ void AlgoElectro_NEW::update(
                     Exz0, Eyz0, 
                     Exz1, Eyz1,
                     dt,
-                    IS_1D_FACE_EX,
-                    IS_1D_FACE_Minus_EX,
-                    IS_1D_FACE_EY,
-                    IS_1D_FACE_Minus_EY,
-                    IS_1D_FACE_EZ,
-                    IS_1D_FACE_Minus_EZ
+                    IS_1D_FACE_EX_Electric_along_Z  ,    
+                    IS_1D_FACE_EX_Electric_along_Y,      
+                    IS_1D_FACE_EY_Electric_along_Z ,      
+                    IS_1D_FACE_EY_Electric_along_X  ,     
+                    IS_1D_FACE_EZ_Electric_along_Y   ,    
+                    IS_1D_FACE_EZ_Electric_along_X    ,  
+                    IS_1D_FACE_Minus_EX_Electric_along_Z, 
+                    IS_1D_FACE_Minus_EX_Electric_along_Y ,
+                    IS_1D_FACE_Minus_EY_Electric_along_Z ,
+                    IS_1D_FACE_Minus_EY_Electric_along_X ,
+                    IS_1D_FACE_Minus_EZ_Electric_along_X ,
+                    IS_1D_FACE_Minus_EZ_Electric_along_Y
                 );
 				/*fflush_stdout();
 				MPI_Barrier(MPI_COMM_WORLD);
@@ -2107,12 +2235,18 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
             double *Exz0, double *Eyz0,
             double *Exz1, double *Eyz1,
             double dt,
-            bool   IS_1D_FACE_EX,
-            bool   IS_1D_FACE_Minus_EX,
-            bool   IS_1D_FACE_EY,
-            bool   IS_1D_FACE_Minus_EY,
-            bool   IS_1D_FACE_EZ,
-            bool   IS_1D_FACE_Minus_EZ
+            bool IS_1D_FACE_EX_Electric_along_Z  ,
+            bool IS_1D_FACE_EX_Electric_along_Y ,
+            bool IS_1D_FACE_EY_Electric_along_Z ,
+            bool IS_1D_FACE_EY_Electric_along_X  ,
+            bool IS_1D_FACE_EZ_Electric_along_Y , 
+            bool IS_1D_FACE_EZ_Electric_along_X  ,
+            bool IS_1D_FACE_Minus_EX_Electric_along_Z ,
+            bool IS_1D_FACE_Minus_EX_Electric_along_Y,
+            bool IS_1D_FACE_Minus_EY_Electric_along_Z ,
+            bool IS_1D_FACE_Minus_EY_Electric_along_X ,
+            bool IS_1D_FACE_Minus_EZ_Electric_along_X ,
+            bool IS_1D_FACE_Minus_EZ_Electric_along_Y
         )
 {
     size_t i, j, k;
@@ -2144,7 +2278,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
     // Convention: unit OUTWARD normal.
 
-    if( IS_1D_FACE_Minus_EY){
+    if( IS_1D_FACE_Minus_EY_Electric_along_Z || IS_1D_FACE_Minus_EY_Electric_along_X){
         // Propagation in +Y direction. Apply ABC on y1.
         apply_x0_ABC = false;
         apply_x1_ABC = false;
@@ -2154,7 +2288,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         apply_z1_ABC = false;
         printf("\t> In ABC : applying only y1.\n");
 
-    }else if( IS_1D_FACE_EY){
+    }else if( IS_1D_FACE_EY_Electric_along_Z || IS_1D_FACE_EY_Electric_along_X){
         // Propagation in -Y direction. Apply ABC on y0.
         apply_x0_ABC = false;
         apply_x1_ABC = false;
@@ -2164,7 +2298,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         apply_z1_ABC = false;
         printf("\t> In ABC : applying only y0.\n");
     
-    }else if( IS_1D_FACE_Minus_EX){
+    }else if( IS_1D_FACE_Minus_EX_Electric_along_Z || IS_1D_FACE_Minus_EX_Electric_along_Y){
         // Propagation in +X direction. Apply ABC on x1.
         apply_x0_ABC = false;
         apply_x1_ABC = true;
@@ -2174,7 +2308,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         apply_z1_ABC = false;
         printf("\t> In ABC : applying only x1.\n");
 
-    }else if( IS_1D_FACE_EX){
+    }else if( IS_1D_FACE_EX_Electric_along_Z || IS_1D_FACE_EX_Electric_along_Y){
         // Propagation in -X direction. Apply ABC on x0.
         apply_x0_ABC = true;
         apply_x1_ABC = false;
@@ -2184,7 +2318,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         apply_z1_ABC = false;
         printf("\t> In ABC : applying only x0.\n");
 
-    }else if( IS_1D_FACE_Minus_EZ){
+    }else if( IS_1D_FACE_Minus_EZ_Electric_along_Y || IS_1D_FACE_Minus_EZ_Electric_along_X){
         // Propagation in +Z direction. Apply ABC on z1.
         apply_x0_ABC = false;
         apply_x1_ABC = false;
@@ -2194,7 +2328,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         apply_z1_ABC = true;
         printf("\t> In ABC : applying only z1.\n");
 
-    }else if( IS_1D_FACE_EZ){
+    }else if( IS_1D_FACE_EZ_Electric_along_Y || IS_1D_FACE_EZ_Electric_along_X){
         // Propagation in -Z direction. Apply ABC on z0.
         apply_x0_ABC = false;
         apply_x1_ABC = false;
@@ -5415,12 +5549,18 @@ std::vector<double> AlgoElectro_NEW::ComputeNormEsquareBIS(GridCreator_NEW &grid
  * @brief Apply 1D conditions to the magnetic field.
  */
 void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
-    bool IS_1D_FACE_EX,
-    bool IS_1D_FACE_EY,
-    bool IS_1D_FACE_EZ,
-    bool IS_1D_FACE_Minus_EX,
-    bool IS_1D_FACE_Minus_EY,
-    bool IS_1D_FACE_Minus_EZ,
+    bool IS_1D_FACE_EX_Electric_along_Z  ,
+    bool IS_1D_FACE_EX_Electric_along_Y ,
+    bool IS_1D_FACE_EY_Electric_along_Z ,
+    bool IS_1D_FACE_EY_Electric_along_X  ,
+    bool IS_1D_FACE_EZ_Electric_along_Y , 
+    bool IS_1D_FACE_EZ_Electric_along_X  ,
+    bool IS_1D_FACE_Minus_EX_Electric_along_Z ,
+    bool IS_1D_FACE_Minus_EX_Electric_along_Y,
+    bool IS_1D_FACE_Minus_EY_Electric_along_Z ,
+    bool IS_1D_FACE_Minus_EY_Electric_along_X ,
+    bool IS_1D_FACE_Minus_EZ_Electric_along_X ,
+    bool IS_1D_FACE_Minus_EZ_Electric_along_Y ,
     GridCreator_NEW &grid,
     double *H_x_tmp,
     double *H_y_tmp,
@@ -5437,17 +5577,29 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
 
     // Check that only one boolean is true:
     size_t counterBooleanTrue = 0;
-    if( IS_1D_FACE_EX == true){
+    if(       IS_1D_FACE_EX_Electric_along_Y == true){
         counterBooleanTrue ++;
-    }else if( IS_1D_FACE_Minus_EX == true){
+    }else if( IS_1D_FACE_EX_Electric_along_Z == true){
         counterBooleanTrue ++;
-    }else if( IS_1D_FACE_EY == true){
+    }else if( IS_1D_FACE_Minus_EX_Electric_along_Z == true){
         counterBooleanTrue ++;
-    }else if( IS_1D_FACE_Minus_EY == true){
+    }else if( IS_1D_FACE_Minus_EX_Electric_along_Y == true){
         counterBooleanTrue ++;
-    }else if( IS_1D_FACE_EZ == true){
+    }else if( IS_1D_FACE_EY_Electric_along_X == true){
         counterBooleanTrue ++;
-    }else if( IS_1D_FACE_Minus_EZ == true){
+    }else if( IS_1D_FACE_EY_Electric_along_Z == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_Minus_EY_Electric_along_X == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_Minus_EY_Electric_along_Z == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_EZ_Electric_along_X == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_EZ_Electric_along_Y == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_Minus_EZ_Electric_along_X == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_Minus_EZ_Electric_along_Y == true){
         counterBooleanTrue ++;
     }
     if(counterBooleanTrue != 1){
@@ -5457,7 +5609,7 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
         );
     }
 
-    if(IS_1D_FACE_Minus_EY == true){       
+    if(IS_1D_FACE_Minus_EY_Electric_along_Z){       
         /**
          * What will be imposed:
          *  1) On faces with normal e_x or -e_x:
@@ -5479,7 +5631,7 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
             }
         }
 
-    }else if(IS_1D_FACE_EY){
+    }else if(IS_1D_FACE_EY_Electric_along_Z){
         /**
          * What will be imposed:
          *  1) On faces with normal e_x or -e_x:
@@ -5501,14 +5653,14 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
             }
         }
 
-    }else if(IS_1D_FACE_Minus_EX){
+    }else if(IS_1D_FACE_Minus_EX_Electric_along_Z){
         /**
          * What wil be imposed:
          *  1) On faces with normal +e_y or -e_y:
          *          - Hx is zero.
          */
         size_t j, index;
-        printf("\t> > 1D case is IS_1D_FACE_Minus_EX.\n");
+        printf("\t> > 1D case is IS_1D_FACE_Minus_EX_Electric_along_Z.\n");
         printf("\t\t> Imposing HX on faces with normal +e_y and -e_y...\n");
         for(size_t i = 1 ; i < grid.size_Hx[0] - 1 ; i ++){
             for(size_t k = 1 ; k < grid.size_Hx[2] - 1 ; k ++){
@@ -5522,28 +5674,74 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
                 H_x_tmp[index] = 0;
             }
         }
-    }else if(IS_1D_FACE_EX){
+
+    }else if(IS_1D_FACE_Minus_EX_Electric_along_Y){
         /**
-         * What wil be imposed:
+         * What will be imposed:
          *  1) On faces with normal +e_y or -e_y:
          *          - Hx is zero.
          */
         size_t j, index;
-        printf("\t> > 1D case is IS_1D_FACE_EX.\n");
+        printf("\t> > 1D case is IS_1D_FACE_Minus_EX_Electric_along_Y.\n");
         printf("\t\t> Imposing HX on faces with normal +e_y and -e_y...\n");
         for(size_t i = 1 ; i < grid.size_Hx[0] - 1 ; i ++){
             for(size_t k = 1 ; k < grid.size_Hx[2] - 1 ; k ++){
 
                 j = 1;
                 index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
-                H_y_tmp[index] = 0;
+                //H_x_tmp[index] = 0;
 
                 j = grid.size_Hx[1] - 2 ;
                 index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
-                H_y_tmp[index] = 0;
+                //H_x_tmp[index] = 0;
             }
         }
-    }else if(IS_1D_FACE_Minus_EZ){
+
+    }else if(IS_1D_FACE_EX_Electric_along_Z){
+        /**
+         * What wil be imposed:
+         *  1) On faces with normal +e_y or -e_y:
+         *          - Hx is zero.
+         */
+        size_t j, index;
+        printf("\t> > 1D case is IS_1D_FACE_EX_Electric_along_Z.\n");
+        printf("\t\t> Imposing HX on faces with normal +e_y and -e_y...\n");
+        for(size_t i = 1 ; i < grid.size_Hx[0] - 1 ; i ++){
+            for(size_t k = 1 ; k < grid.size_Hx[2] - 1 ; k ++){
+
+                j = 1;
+                index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
+                H_x_tmp[index] = 0;
+
+                j = grid.size_Hx[1] - 2 ;
+                index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
+                H_x_tmp[index] = 0;
+            }
+        }
+
+    }else if(IS_1D_FACE_EX_Electric_along_Y){
+        /**
+         * What wil be imposed:
+         *  1) On faces with normal +e_z or -e_z:
+         *          - Hx is zero.
+         */
+        size_t k, index;
+        printf("\t> > 1D case is IS_1D_FACE_EX_Electric_along_Y.\n");
+        printf("\t\t> Imposing HX on faces with normal +e_z and -e_z...\n");
+        for(size_t i = 1 ; i < grid.size_Hx[0] - 1 ; i ++){
+            for(size_t j = 1 ; j < grid.size_Hx[1] - 1 ; j ++){
+
+                k = 1;
+                index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
+                H_x_tmp[index] = 0;
+
+                k = grid.size_Hx[2] - 2 ;
+                index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
+                H_x_tmp[index] = 0;
+            }
+        }
+
+    }else if(IS_1D_FACE_Minus_EZ_Electric_along_Y){
         /**
          * What wil be imposed:
          *  1) On faces with normal +e_x or -e_x:
@@ -5565,9 +5763,9 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
             }
         }
 
-    }else if(IS_1D_FACE_EZ){
+    }else if(IS_1D_FACE_EZ_Electric_along_Y){
         /**
-         * What wil be imposed:
+         * What will be imposed:
          *  1) On faces with normal +e_x or -e_x:
          *          - Hz is zero.
          */
@@ -5587,6 +5785,29 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
             }
         }
 
+    }else if(IS_1D_FACE_Minus_EY_Electric_along_X){
+        /**
+         * Propagation of electric field Ex in the +Y direction.
+         * Propagation of magnetic field Hz in the +Y direction.
+         * What will be applied:
+         *  1) On faces with normal +e_z and -e_z:
+         *          - Hy is imposedto zero.
+         */
+        size_t k, index;
+        printf("\t> > 1D case is IS_1D_FACE_Minus_EY_Electric_along_X.\n");
+        printf("\t\t> Imposing Hy on faces with normal +e_z and -e_z...\n");
+        for(size_t i = 1 ; i < grid.size_Hy[0] - 1 ; i ++){
+            for(size_t j = 1 ; j < grid.size_Hy[1] - 1 ; j ++){
+                k = 1;
+                index = i + grid.size_Hy[0] * ( j + k * grid.size_Hy[1]);
+                H_y_tmp[index] = 0;
+
+                k = grid.size_Hy[2] - 2;
+                index = i + grid.size_Hy[0] * ( j + k * grid.size_Hy[1]);
+                H_y_tmp[index] = 0;
+            }
+        }
+    
     }else{
         DISPLAY_ERROR_ABORT_CLASS(
             "None of the boolean values is true."
@@ -5598,12 +5819,18 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
  * @brief Apply 1D conditions to the electric field.
  */
 void AlgoElectro_NEW::apply_1D_case_on_electric_field(
-    bool IS_1D_FACE_EX,
-    bool IS_1D_FACE_EY,
-    bool IS_1D_FACE_EZ,
-    bool IS_1D_FACE_Minus_EX,
-    bool IS_1D_FACE_Minus_EY,
-    bool IS_1D_FACE_Minus_EZ,
+    bool IS_1D_FACE_EX_Electric_along_Z  ,
+    bool IS_1D_FACE_EX_Electric_along_Y ,
+    bool IS_1D_FACE_EY_Electric_along_Z ,
+    bool IS_1D_FACE_EY_Electric_along_X  ,
+    bool IS_1D_FACE_EZ_Electric_along_Y , 
+    bool IS_1D_FACE_EZ_Electric_along_X  ,
+    bool IS_1D_FACE_Minus_EX_Electric_along_Z ,
+    bool IS_1D_FACE_Minus_EX_Electric_along_Y,
+    bool IS_1D_FACE_Minus_EY_Electric_along_Z ,
+    bool IS_1D_FACE_Minus_EY_Electric_along_X ,
+    bool IS_1D_FACE_Minus_EZ_Electric_along_X ,
+    bool IS_1D_FACE_Minus_EZ_Electric_along_Y ,
     double current_time,
     GridCreator_NEW &grid,
     double *E_x_tmp,
@@ -5619,17 +5846,29 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
     }
     // Check that only one boolean is true:
     size_t counterBooleanTrue = 0;
-    if( IS_1D_FACE_EX == true){
+    if(       IS_1D_FACE_EX_Electric_along_Y == true){
         counterBooleanTrue ++;
-    }else if( IS_1D_FACE_Minus_EX == true){
+    }else if( IS_1D_FACE_EX_Electric_along_Z == true){
         counterBooleanTrue ++;
-    }else if( IS_1D_FACE_EY == true){
+    }else if( IS_1D_FACE_Minus_EX_Electric_along_Z == true){
         counterBooleanTrue ++;
-    }else if( IS_1D_FACE_Minus_EY == true){
+    }else if( IS_1D_FACE_Minus_EX_Electric_along_Y == true){
         counterBooleanTrue ++;
-    }else if( IS_1D_FACE_EZ == true){
+    }else if( IS_1D_FACE_EY_Electric_along_X == true){
         counterBooleanTrue ++;
-    }else if( IS_1D_FACE_Minus_EZ == true){
+    }else if( IS_1D_FACE_EY_Electric_along_Z == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_Minus_EY_Electric_along_X == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_Minus_EY_Electric_along_Z == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_EZ_Electric_along_X == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_EZ_Electric_along_Y == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_Minus_EZ_Electric_along_X == true){
+        counterBooleanTrue ++;
+    }else if( IS_1D_FACE_Minus_EZ_Electric_along_Y == true){
         counterBooleanTrue ++;
     }
 
@@ -5651,7 +5890,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             = exp( - (current_time-MEAN)*(current_time-MEAN) / (2*STD*STD));
     //printf("Period %.9g, freq %.9g, dt %.9g\n",period,frequency,dt);
 
-    if(IS_1D_FACE_Minus_EY == true){          
+    if(      IS_1D_FACE_Minus_EY_Electric_along_Z){          
         /**
          * What will be imposed:
          *  1) On faces with normal e_x:
@@ -5713,7 +5952,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             }
         }
 
-    }else if(IS_1D_FACE_EY){
+    }else if(IS_1D_FACE_EY_Electric_along_Z){
         /**
          * What will be imposed:
          *  1) On faces with normal +e_x and -e_x:
@@ -5775,7 +6014,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             }
         }
 
-    }else if(IS_1D_FACE_Minus_EX){
+    }else if(IS_1D_FACE_Minus_EX_Electric_along_Z){
         /**
          * What will be imposed:
          *  1) On faces with normal +e_y and -e_y:
@@ -5837,7 +6076,70 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             }
         }
 
-    }else if(IS_1D_FACE_EX){
+    }else if(IS_1D_FACE_Minus_EX_Electric_along_Y){
+        /**
+         * What will be imposed:
+         *  1) On faces with normal +e_y and -e_y:
+         *          - Ey is zero.
+         *  3) On face with normal -e_x:
+         *          - gaussian modulated sinusoidal source for Ey.
+         *          - Ex and Ez are imposed to zero.
+         */
+        printf("\t> > 1D case is IS_1D_FACE_Minus_EX_Electric_along_Y.\n");
+        size_t i, j, index;
+        /** IMPOSING EY ON FACE WITH NORMAL E_Y **/
+        printf("\t\t> Imposing EY on faces with normal +e_y and -e_y...\n");
+        for(size_t i = 1 ; i < grid.size_Ey[0] - 1 ; i ++ ){
+            for(size_t k = 1  ; k < grid.size_Ey[2] - 1; k ++){
+
+                j = 1;
+                index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                //E_y_tmp[index] = 0;
+
+                j = grid.size_Ey[1] - 2;
+                index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                //E_y_tmp[index] = 0;
+            }
+        }
+
+        /** Imposing Ex to zero on face with normal -e_x. **/
+        printf("\t\t> Imposing EX on face with normal -e_x...\n");
+        i = 1;
+        for(size_t j = 1 ; j < grid.size_Ex[1] - 1 ; j ++){
+            for(size_t k = 1 ; k < grid.size_Ex[2] - 1 ; k ++){
+
+                index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
+                E_x_tmp[index] = 0;
+
+            }
+        }
+
+        /** Imposing gaussian modulated source **/
+        /** We impose on face with normal -e_x. **/
+        printf("\t\t> Imposing the source EY on face with normal -e_x...\n");
+        i = 1;
+        for(size_t j = 1 ; j < grid.size_Ey[1] - 1 ; j ++){
+            for(size_t k = 1 ; k < grid.size_Ey[2] - 1 ; k ++){
+
+                index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+            }
+        }
+        printf(">>> Imposed is %.9g.\n",
+            gauss * sin(2*M_PI*frequency*current_time));
+
+        /** Imposing Ey to zero on face with normal -e_x. **/
+        printf("\t\t> Imposing Ez on face with normal -e_x...\n");
+        i = 1;
+        for(size_t j = 1 ; j < grid.size_Ez[1] -1; j ++){
+            for(size_t k = 1 ; k < grid.size_Ez[2] - 1 ; k ++){
+
+                index = i + grid.size_Ez[0] * ( j + grid.size_Ez[1] * k);
+                E_z_tmp[index] = 0;
+            }
+        }
+
+    }else if(IS_1D_FACE_EX_Electric_along_Z){
         /**
          * What will be imposed:
          *  1) On faces with normal +e_y and -e_y:
@@ -5846,7 +6148,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
          *          - gaussian modulated sinusoidal source for Ez.
          *          - Ex and Ey are imposed to zero.
          */
-        printf("\t> > 1D case is IS_1D_FACE_EX.\n");
+        printf("\t> > 1D case is IS_1D_FACE_EX_Electric_along_Z.\n");
         size_t i, j, index;
         /** IMPOSING EY ON FACE WITH NORMAL E_Y **/
         printf("\t\t> Imposing EY on faces with normal +e_y and -e_y...\n");
@@ -5865,10 +6167,10 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
 
         /** Imposing Ex to zero on face with normal e_x. **/
         printf("\t\t> Imposing EX on face with normal e_x...\n");
+        i = grid.size_Ex[0] - 2;
         for(size_t j = 1 ; j < grid.size_Ex[1] - 1 ; j ++){
             for(size_t k = 1 ; k < grid.size_Ex[2] - 1 ; k ++){
 
-                i = grid.size_Ex[0] - 2;
                 index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
                 E_x_tmp[index] = 0;
 
@@ -5877,10 +6179,10 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
 
         /** Imposing Ey to zero on face with normal -e_x. **/
         printf("\t\t> Imposing Ey on face with normal -e_x...\n");
+        i = grid.size_Ey[0] - 2;
         for(size_t j = 1 ; j < grid.size_Ey[1] - 1 ; j ++){
             for(size_t k = 1 ; k < grid.size_Ey[2] - 1 ; k ++){
 
-                i = grid.size_Ey[0] - 2;
                 index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
                 E_y_tmp[index] = 0;
             }
@@ -5894,12 +6196,11 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             for(size_t k = 1 ; k < grid.size_Ez[2] - 1 ; k ++){
 
                 index = i + grid.size_Ez[0] * ( j + grid.size_Ez[1] * k);
-
                 E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
             }
         }
 
-    }else if(IS_1D_FACE_Minus_EZ){
+    }else if(IS_1D_FACE_Minus_EZ_Electric_along_Y){
         /**
          * What will be imposed:
          *  1) On faces with normal +e_y and -e_y:
@@ -5960,7 +6261,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             }
         }
 
-    }else if(IS_1D_FACE_EZ){
+    }else if(IS_1D_FACE_EZ_Electric_along_Y){
         /**
          * What will be imposed:
          *  1) On faces with normal +e_y and -e_y:
@@ -6014,6 +6315,130 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
         k = grid.size_Ez[2] - 2;
         for(size_t j = 1 ; j < grid.size_Ez[1] -1; j ++){
             for(size_t i = 1 ; i < grid.size_Ez[0] - 1 ; i ++){
+
+                index = i + grid.size_Ez[0] * ( j + grid.size_Ez[1] * k);
+
+                E_z_tmp[index] = 0;
+            }
+        }
+
+    }else if(IS_1D_FACE_Minus_EY_Electric_along_X){
+        /**
+         * Propagation of Ex along +y direction.
+         * Propagation of Hz along +y direction.
+         * What will be imposed:
+         *      1) On face with normal -e_y:
+         *              - Ex is a gaussian modulated sine wave.
+         *              - Ey and Ez are imposed to zero.
+         *      2) On faces with normal +e_z and -e_z:
+         *              - Ez is imposed to zero.
+         */
+        size_t j, k, index;
+        printf("\t> > 1D case is IS_1D_FACE_Minus_EY_Electric_along_X.\n");
+
+        /** Imposing Ez on faces with normal +e_z and -e_z. **/
+        printf("\t\t> Imposing EZ to zero on faces with normal +e_z and -e_z...\n");
+        for(size_t i = 1 ; i < grid.size_Ez[0] - 1 ; i ++){
+            for(size_t j = 1 ; j < grid.size_Ez[1] - 1 ; j ++){
+
+                k = 1;
+                index = i + grid.size_Ez[0] * ( j + k * grid.size_Ez[1]);
+                E_z_tmp[index] = 0;
+
+                k = grid.size_Ez[2] - 2;
+                index = i + grid.size_Ez[0] * ( j + k * grid.size_Ez[1]);
+                E_z_tmp[index] = 0;
+            }
+        }
+
+        /** Imposing Ex to a gaussian modulated sine wave on face with normal -e_y. **/
+        j = 1;
+        printf("\t\t> Imposing the source EX on face with normal -e_y...\n");
+        for(size_t i = 1 ; i < grid.size_Ex[0] - 1 ; i ++){
+            for(size_t k = 1 ; k < grid.size_Ex[2] - 1 ; k ++){
+
+                index = i + grid.size_Ex[0] * ( j + k * grid.size_Ex[1]);
+                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+            }
+        }
+
+        /** Imposing Ey to zero on face with normal -e_y. **/
+        printf("\t\t> Imposing EY to zero on face with normal -e_y...\n");
+        for(size_t i = 1 ; i < grid.size_Ey[0] - 1 ; i ++){
+            for(size_t k = 1 ; k < grid.size_Ey[2] - 1 ; k ++){
+
+                index = i + grid.size_Ey[0] * ( j + k * grid.size_Ey[1]);
+                E_y_tmp[index] = 0;
+            }
+        }
+
+        /** Imposing Ez to zero on face with normal -e_y. **/
+        printf("\t\t> Imposing EZ to zero on face with normal -e_y...\n");
+        for(size_t i = 1 ; i < grid.size_Ez[0] - 1 ; i ++){
+            for(size_t k = 1 ; k < grid.size_Ez[2] - 1 ; k ++){
+
+                index = i + grid.size_Ez[0] * ( j + k * grid.size_Ez[1]);
+                E_z_tmp[index] = 0;
+            }
+        }
+
+    }else if(IS_1D_FACE_EX_Electric_along_Y){
+        // Propagation of electric field Ey along -x direction.
+        // Propagation of magnetic field Hz along -x direction.
+        /**
+         * What will be imposed:
+         *  1) On faces with normal +e_y and -e_y:
+         *          - Ey is zero.
+         *  3) On face with normal +e_x:
+         *          - gaussian modulated sinusoidal source for Ey.
+         *          - Ex and Ez are imposed to zero.
+         */
+        printf("\t> > 1D case is IS_1D_FACE_EX_Electric_along_Y.\n");
+        size_t i, j, index;
+        /** IMPOSING EY ON FACE WITH NORMAL E_Y **/
+        printf("\t\t> Imposing EY on faces with normal +e_y and -e_y...\n");
+        for(size_t i = 1 ; i < grid.size_Ey[0] - 1 ; i ++ ){
+            for(size_t k = 1  ; k < grid.size_Ey[2] - 1; k ++){
+
+                j = 1;
+                index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                //E_z_tmp[index] = 0;
+
+                j = grid.size_Ey[1] - 2;
+                index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                //E_z_tmp[index] = 0;
+            }
+        }
+
+        /** Imposing Ex to zero on face with normal e_x. **/
+        printf("\t\t> Imposing EX on face with normal e_x...\n");
+        i = grid.size_Ex[0] - 2;
+        for(size_t j = 1 ; j < grid.size_Ex[1] - 1 ; j ++){
+            for(size_t k = 1 ; k < grid.size_Ex[2] - 1 ; k ++){
+
+                index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
+                E_x_tmp[index] = 0;
+
+            }
+        }
+
+        /** Imposing gaussian modulated source **/
+        /** We impose on face with normal e_x. **/
+        printf("\t\t> Imposing the source EY on face with normal e_x...\n");
+        i = grid.size_Ey[0] - 2;
+        for(size_t j = 1 ; j < grid.size_Ey[1] - 1 ; j ++){
+            for(size_t k = 1 ; k < grid.size_Ey[2] - 1 ; k ++){
+
+                index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
+                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+            }
+        }
+
+        /** Imposing Ez to zero on face with normal -e_x. **/
+        printf("\t\t> Imposing Ez on face with normal -e_x...\n");
+        i = grid.size_Ez[0] - 2;
+        for(size_t j = 1 ; j < grid.size_Ez[1] -1; j ++){
+            for(size_t k = 1 ; k < grid.size_Ez[2] - 1 ; k ++){
 
                 index = i + grid.size_Ez[0] * ( j + grid.size_Ez[1] * k);
 
