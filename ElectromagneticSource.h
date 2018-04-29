@@ -10,6 +10,8 @@
 
 #include <climits>
 
+#include "UTILS/vector_utilities.hpp"
+
 //#include "GridCreator.h"
 
 using namespace std;
@@ -147,7 +149,17 @@ class ElectromagneticSource{
 				fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
 				abort();
 			}
-			std::vector<std::string> avail_source_types = {"DIPOLE","SIMPLE","FACE_EX"};
+			std::vector<std::string> avail_source_types 
+				= {
+						"DIPOLE",
+						"SIMPLE",
+						"FACE_EX",
+						"FACE_EY",
+						"FACE_EZ",
+						"FACE_Minus_EX",
+						"FACE_Minus_EY",
+						"FACE_Minus_EZ"
+				};
 			bool source_types_is_ok = false;
 			if(std::find(avail_source_types.begin(), avail_source_types.end(), source_type) 
 					!= avail_source_types.end()) {
@@ -156,14 +168,11 @@ class ElectromagneticSource{
 				source_types_is_ok = false;
 			}
 			if(source_type == "NOT_GIVEN" || !source_types_is_ok){
-				fprintf(stderr,"In %s :: ERROR :: wrong source type ! Aborting.\n",
-								__FUNCTION__);
-				fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
-				#ifdef MPI_COMM_WORLD
-					MPI_Abort(MPI_COMM_WORLD,-1);
-				#else
-					abort();
-				#endif
+				DISPLAY_ERROR_ABORT(
+					"Wrong source type. Has %s but accepted types are:\n%s.",
+					source_type.c_str(),
+					vector_string_to_one_string(avail_source_types,"\t>","\n").c_str()
+				);
 			}
 			if(source_type == "SIMPLE"){
 
@@ -325,7 +334,13 @@ class ElectromagneticSource{
 					return "0";
 				}
 				
-			}else if(source_type == "FACE_EX"){
+			}else if(
+				   source_type == "FACE_EX"
+				|| source_type == "FACE_EY"
+				|| source_type == "FACE_EZ"
+				|| source_type == "FACE_Minus_EX"
+				|| source_type == "FACE_Minus_EY"
+				|| source_type == "FACE_Minus_EZ"){
 				/**
 				 * @brief Put a source on the face with normal.
 				 * 	This kind of source has been hardcoded !
@@ -334,8 +349,10 @@ class ElectromagneticSource{
 				return "false";
 			}else{
 				DISPLAY_ERROR_ABORT(
-					"The source type %s doesn't match any source implementation.",
-					source_type.c_str()
+					"The source type %s doesn't match any source implementation."
+					"Available source types are:\n%s",
+					source_type.c_str(),
+					vector_string_to_one_string(avail_source_types,"\t>","\n").c_str()
 				);
 			}
 			
