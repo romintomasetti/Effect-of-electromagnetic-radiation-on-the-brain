@@ -1,0 +1,151 @@
+// Material :: only air.
+// One centered dipole with ABC boundary conditions.
+// 1D case: propagation of Ey in the -x direction.
+
+$INFOS
+	$NAME
+		output=RESULTS/OUTPUT_FILES
+		error=ERROR_LOG
+		profile=PROFILING
+	$NAME
+	
+	$REMOVE_EXISTING_FILES
+		remove_vti =true
+		remove_pvti=true
+	$REMOVE_EXISTING_FILES
+$INFOS
+
+$MESH
+	// Origins of the thermal and electromagnetic grids (in coordinates)
+	$ORIGINS
+		ORIGIN_ELECTRO_X=0.0
+		ORIGIN_ELECTRO_Y=0.0
+		ORIGIN_ELECTRO_Z=0.0
+		ORIGIN_THERMAL_X=0.0
+		ORIGIN_THERMAL_Y=0.0
+		ORIGIN_THERMAL_Z=0.0
+	$ORIGINS
+
+	// Size of the elements of the mesh:
+	$DELTAS
+		deltaX_Electro=0.001
+		deltaY_Electro=0.001
+		deltaZ_Electro=0.001
+		delta_Thermal=0.1
+		ratio_EM_TH_delta=0.01
+	$DELTAS
+		
+	// Boundaries of the domain
+	$DOMAIN_SIZE
+		// Length of the domain in each direction
+		L_X_ELECTRO=0.1
+		L_Y_ELECTRO=0.5
+		L_Z_ELECTRO=0.1
+		L_X_THERMAL=1
+		L_Y_THERMAL=1
+		L_Z_THERMAL=1
+	$DOMAIN_SIZE
+	
+	// Information on the source
+	$SOURCE
+		NBR_SOURCES=1
+		// Length of the source in each direction
+		L_X=0.1;
+		L_Y=0.1;
+		L_Z=0.1;
+		// Center of the source, (0,0,0) is in the lower left corner in front:
+		C_X=0.5;
+		C_Y=0.5;
+		C_Z=0.5;
+		// Frequency [Hz]
+		FRQCY=900E6;
+
+		IMPOSED=FACE_EY_Electric_along_X;
+		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
+		SOURCE_TIME=GAUSSIAN;
+	$SOURCE
+	
+	$MATERIALS
+		//USE_AIR_EVERYWHERE=true
+		USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/air_only.geometry}
+		//USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/two_materials.geometry}
+		MATERIAL_DIRECTORY=TISSUES_PROPERTIES
+	$MATERIALS
+	
+$MESH
+
+$RUN_INFOS
+
+	$TIME_STEP
+		/// Time step used in the thermal algorithm (accessible by input_parser.thermal_algo_time_step):
+		THERMAL_TIME_STEP=1
+	$TIME_STEP
+
+	$STOP_SIMUL_AFTER
+		// The simulation will stop after... (in sec)
+		stopTime=10
+		// The electromagnetic solver stops after this max number of steps parameter:
+		maxStepsForOneCycleOfElectro=20000
+		// input_parser.maxStepsForOneCycleOfElectro
+		// The thermal solver stops after this max number of steps:
+		maxStepsForOneCycleOfThermal=5E5 
+		// input_parser.maxStepsForOneCycleOfThermal
+
+	$STOP_SIMUL_AFTER
+	
+	// Initial temperatures:
+	$TEMP_INIT
+		INIT_TEMP_FILE=../initial_temperature_materials.initTemp
+	$TEMP_INIT
+
+	// State all your boundary conditions inside this region:
+	$BOUNDARY_CONDITIONS
+		// Thermal boundary condition of a parallelipipoid:
+		/*
+		  How to use these Boundary Conditions:
+			For Neumann:   {Neumann;value}
+			For Dirichlet: {Dirichlet;value} (value = temperature)
+		*/
+		BC_FACE_0={Neumann;0}
+		BC_FACE_1={Neumann;0}
+		BC_FACE_2={Dirichlet;50}
+		BC_FACE_3={Dirichlet;0}
+		BC_FACE_4={Dirichlet;0}
+		BC_FACE_5={Dirichlet;0}
+		// Accessible by input_parser.THERMAL_FACE_BC_TYPE
+		// Accessible by input_parser.THERMAL_FACE_BC_VALUE
+
+	$BOUNDARY_CONDITIONS
+
+	// Gives some information on the sampling frequency / number of steps before saving:
+	$OUTPUT_SAVING
+		// Sampling frequency for the electromagnetic algorithm:
+		SAMPLING_FREQ_ELECTRO=70
+		// Sampling frequency for the thermal algorithm:
+		SAMPLING_FREQ_THERMAL=1
+	$OUTPUT_SAVING
+
+	$ELECTRO_STEADY_STATE
+		/* We won't check for steady state at each point, but every 
+		   -specified by CHECK_EVERY_POINT- points */
+		CHECK_EVERY_POINT=10
+	$ELECTRO_STEADY_STATE
+	
+$RUN_INFOS
+
+// This section contains post-processing directives, such as probing data.
+$POST_PROCESSING
+
+	$PROBING_POINTS
+		//probe_line={Ez,x=0.5,y=ALL,z=0.5}
+		//probe_line={Ex,x=0.5,y=ALL,z=0.5}
+		//probe_line={Ey,x=0.5,y=ALL,z=0.5}
+		//probe_line={Ez,x=0.5,y=0.5,z=ALL}
+		//probe_line={Ex,x=0.5,y=0.5,z=ALL}
+		//probe_line={Ey,x=0.5,y=0.5,z=ALL}
+	$PROBING_POINTS
+
+$POST_PROCESSING
+
+
+	
