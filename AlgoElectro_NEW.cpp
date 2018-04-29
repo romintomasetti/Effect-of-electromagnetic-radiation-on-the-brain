@@ -933,35 +933,43 @@ void AlgoElectro_NEW::update(
         bool IS_1D_FACE_EZ       = false;
         bool IS_1D_FACE_Minus_EZ = false;
 
+        bool IS_3D_CASE = true;
+
         if(grid.input_parser.conditionsInsideSources[0] == "FACE_EX"){
             printf(">>> [MPI %d] - Using 1D with face EX.\n",
                 grid.MPI_communicator.getRank());
             IS_1D_FACE_EX = true;
+            IS_3D_CASE    = false;
 
         }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX"){
             printf(">>> [MPI %d] - Using 1D with face minus EX.\n",
                 grid.MPI_communicator.getRank());
             IS_1D_FACE_Minus_EX = true;
+            IS_3D_CASE    = false;
 
         }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_EY"){
             printf(">>> [MPI %d] - Using 1D with face EY.\n",
                 grid.MPI_communicator.getRank());
             IS_1D_FACE_EY = true;
+            IS_3D_CASE    = false;
 
         }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY"){
             printf(">>> [MPI %d] - Using 1D with face minus EY.\n",
                 grid.MPI_communicator.getRank());
             IS_1D_FACE_Minus_EY = true;
+            IS_3D_CASE    = false;
 
         }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_EZ"){
             printf(">>> [MPI %d] - Using 1D with face EZ.\n",
                 grid.MPI_communicator.getRank());
             IS_1D_FACE_EZ = true;
+            IS_3D_CASE    = false;
 
         }else if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EZ"){
             printf(">>> [MPI %d] - Using 1D with face minus EX.\n",
                 grid.MPI_communicator.getRank());
             IS_1D_FACE_Minus_EZ = true;
+            IS_3D_CASE    = false;
         }
         
         /*#pragma omp master
@@ -1254,18 +1262,20 @@ void AlgoElectro_NEW::update(
             ///////////////////////////////////////
             #pragma omp master
             {
-                this->apply_1D_case_on_magnetic_field(
-                    IS_1D_FACE_EX,
-                    IS_1D_FACE_EY,
-                    IS_1D_FACE_EZ,
-                    IS_1D_FACE_Minus_EX,
-                    IS_1D_FACE_Minus_EY,
-                    IS_1D_FACE_Minus_EZ,
-                    grid,
-                    H_x_tmp,
-                    H_y_tmp,
-                    H_z_tmp
-                );
+                if(IS_3D_CASE == false){
+                    this->apply_1D_case_on_magnetic_field(
+                        IS_1D_FACE_EX,
+                        IS_1D_FACE_EY,
+                        IS_1D_FACE_EZ,
+                        IS_1D_FACE_Minus_EX,
+                        IS_1D_FACE_Minus_EY,
+                        IS_1D_FACE_Minus_EZ,
+                        grid,
+                        H_x_tmp,
+                        H_y_tmp,
+                        H_z_tmp
+                    );
+                }
             }
             #pragma omp barrier
 
@@ -1526,19 +1536,21 @@ void AlgoElectro_NEW::update(
             ///////////////////////////////////////
             #pragma omp master
             {
-                this->apply_1D_case_on_electric_field(
-                    IS_1D_FACE_EX,
-                    IS_1D_FACE_EY,
-                    IS_1D_FACE_EZ,
-                    IS_1D_FACE_Minus_EX,
-                    IS_1D_FACE_Minus_EY,
-                    IS_1D_FACE_Minus_EZ,
-                    current_time,
-                    grid,
-                    E_x_tmp,
-                    E_y_tmp,
-                    E_z_tmp
-                );
+                if(IS_3D_CASE == false){
+                    this->apply_1D_case_on_electric_field(
+                        IS_1D_FACE_EX,
+                        IS_1D_FACE_EY,
+                        IS_1D_FACE_EZ,
+                        IS_1D_FACE_Minus_EX,
+                        IS_1D_FACE_Minus_EY,
+                        IS_1D_FACE_Minus_EZ,
+                        current_time,
+                        grid,
+                        E_x_tmp,
+                        E_y_tmp,
+                        E_z_tmp
+                    );
+                }
             }
             #pragma omp barrier
 
@@ -1552,7 +1564,7 @@ void AlgoElectro_NEW::update(
             double COEF_STD   = 1./10.;
 
             // Do sources only if 3D case.
-            if(IS_1D_FACE_EX == false && false){
+            if(IS_3D_CASE == true ){
                 int FIELD = 2;
                 #pragma omp for schedule(static) nowait
                 for(size_t it = 0 ; it < local_nodes_inside_source_NUMBER[FIELD].size() ; it ++){
@@ -1819,7 +1831,7 @@ void AlgoElectro_NEW::update(
 				fflush_stdout();
 				MPI_Barrier(MPI_COMM_WORLD);
 				printf("[MPI %d] - Starting ABC.\n",grid.MPI_communicator.getRank());*/
-                /*this->abc(grid,
+                this->abc(grid,
                     E_x_tmp, E_y_tmp, E_z_tmp, 
                     Eyx0, Ezx0, 
                     Eyx1, Ezx1, 
@@ -1834,7 +1846,7 @@ void AlgoElectro_NEW::update(
                     IS_1D_FACE_Minus_EY,
                     IS_1D_FACE_EZ,
                     IS_1D_FACE_Minus_EZ
-                );*/
+                );
 				/*fflush_stdout();
 				MPI_Barrier(MPI_COMM_WORLD);
 				printf("[MPI %d] - Ending ABC.\n",grid.MPI_communicator.getRank());*/
