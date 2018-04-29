@@ -301,21 +301,17 @@ std::string InterfaceToParaviewer::create_folder_and_go_in(std::string folderNam
             #else 
                 mkdir(folderName.c_str(), 0700); 
             #endif
-            if(0 == cd(folderName.c_str())){
-                #ifndef NDEBUG
-                    std::cout << "CWD changed to: " << cwd(buf, sizeof(buf)) << std::endl;
-                #endif
-            }else{
-                fprintf(stderr,"In %s :: Cannot create/change directory %s !\n",__FUNCTION__,folderName.c_str());
-                fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
-                #ifdef MPI_COMM_WORLD
-                    MPI_Abort(MPI_COMM_WORLD,-1);
-                #else
-                    abort();
-                #endif
-            }
         }
         MPI_Barrier(MPI_COMM_WORLD);
+        if(0 == cd(folderName.c_str())){
+            #ifndef NDEBUG
+                std::cout << "CWD changed to: " << cwd(buf, sizeof(buf)) << std::endl;
+            #endif
+        }else{
+            DISPLAY_ERROR_ABORT_CLASS(
+                "Cannot create/change directory %s !",folderName.c_str());
+            );
+        }
 	}
 
     return currentWorkingDir;
