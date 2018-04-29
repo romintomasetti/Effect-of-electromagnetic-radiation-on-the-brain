@@ -190,7 +190,7 @@ size_t write_vectorXML(std::ofstream &f, std::vector<double> const &pos, bool us
 
     // convert doubles to floats
     std::vector<float> buffer(pos.size());
-    for (int i = 0; i < pos.size(); ++i)
+    for (size_t i = 0; i < pos.size(); ++i)
         buffer[i] = (float)pos[i];
 
     if (!usez)
