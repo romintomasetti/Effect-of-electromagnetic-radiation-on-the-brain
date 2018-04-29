@@ -4944,6 +4944,49 @@ double AlgoElectro_NEW::interpolationX(size_t x1, size_t x2, size_t x3,
     
     double valueInterpolationX = 0.0;
 
+    size_t max_size_Ex = grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2];
+
+    if(x1 >= max_size_Ex){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ex avec x1."
+        );
+    }
+    if(x2 >= max_size_Ex){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ex avec x2."
+        );
+    }
+    if(x3 >= max_size_Ex){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ex avec x3."
+        );
+    }
+    if(x4 >= max_size_Ex){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ex avec x4."
+        );
+    }
+    if(x5 >= max_size_Ex){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ex avec x5."
+        );
+    }
+    if(x6 >= max_size_Ex){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ex avec x6."
+        );
+    }
+    if(x7 >= max_size_Ex){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ex avec x7."
+        );
+    }
+    if(x8 >= max_size_Ex){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ex avec x8."
+        );
+    }
+
     double c_000_Ex = grid.E_x[x1];
     double c_001_Ex = grid.E_x[x2];
     double c_010_Ex = grid.E_x[x3];
@@ -4973,6 +5016,49 @@ double AlgoElectro_NEW::interpolationY(size_t y1, size_t y2, size_t y3,
 {
     
     double valueInterpolationY = 0.0;
+    
+    size_t max_size_Ey = grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2];
+
+    if(y1 >= max_size_Ey){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ey avec y1."
+        );
+    }
+    if(y2 >= max_size_Ey){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ey avec y2."
+        );
+    }
+    if(y3 >= max_size_Ey){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ey avec y3."
+        );
+    }
+    if(y4 >= max_size_Ey){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ey avec y4."
+        );
+    }
+    if(y5 >= max_size_Ey){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ey avec y5."
+        );
+    }
+    if(y6 >= max_size_Ey){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ey avec y6."
+        );
+    }
+    if(y7 >= max_size_Ey){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ey avec y7."
+        );
+    }
+    if(y8 >= max_size_Ey){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ey avec y8."
+        );
+    }
     
     
     // Will contain the value of Ex along the 3 direction of space that will be used to compute the modulus
@@ -5015,6 +5101,49 @@ double AlgoElectro_NEW::interpolationZ(size_t z1, size_t z2, size_t z3,
 {
     
     double valueInterpolationZ = 0.0;
+
+    size_t max_size_Ez = grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2];
+
+    if(z1 >= max_size_Ez){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ez avec z1."
+        );
+    }
+    if(z2 >= max_size_Ez){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ez avec z2."
+        );
+    }
+    if(z3 >= max_size_Ez){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ez avec z3."
+        );
+    }
+    if(z4 >= max_size_Ez){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ez avec z4."
+        );
+    }
+    if(z5 >= max_size_Ez){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ez avec z5."
+        );
+    }
+    if(z6 >= max_size_Ez){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ez avec z6."
+        );
+    }
+    if(z7 >= max_size_Ez){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ez avec z7."
+        );
+    }
+    if(z8 >= max_size_Ez){
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Dépassement de tabeau pour Ez avec z8."
+        );
+    }
     
     double c_000_Ez = grid.E_z[z1];
     double c_001_Ez = grid.E_z[z2];
@@ -5435,14 +5564,14 @@ std::vector<double> AlgoElectro_NEW::ComputeNormEsquareBIS(GridCreator_NEW &grid
         {
             for(k=0; k<P-2; k++)
             {
-                x1 = (i+1) + (N-2) * (j + k * (P-2));           // Correspond to point (i+1, j, k)
-                x2 = i + (N-2) * (j + k * (P-2));               // Correspond to point (i, j, k)
-                x3 = (i+1) + (N-2) * (j + (k+1) * (P-2));       // Correspond to point (i+1, j, k+1)
-                x4 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
-                x5 = (i+1) + (N-2) * ((j+1) + k * (P-2));       // Correspond to point (i+1, j+1, k)
-                x6 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
-                x7 = (i+1) + (N-2) * ((j+1) + (k+1) * (P-2));   // Correspond to point (i+1, j+1, k+1)
-                x8 = i + (N-2) * ((j+1) + (k+1) * (P-2));       // Correspond to point (i, j+1, k+1)
+                x1 = (i+1) + grid.size_Ex[0] * (j + k * grid.size_Ex[1]);           // Correspond to point (i+1, j, k)
+                x2 = i     + grid.size_Ex[0] * (j + k * grid.size_Ex[1]);           // Correspond to point (i, j, k)
+                x3 = (i+1) + grid.size_Ex[0] * (j + (k+1) * grid.size_Ex[1]);       // Correspond to point (i+1, j, k+1)
+                x4 = i     + grid.size_Ex[0] * ((j+1) + k * grid.size_Ex[1]);       // Correspond to point (i, j+1, k)
+                x5 = (i+1) + grid.size_Ex[0] * ((j+1) + k * grid.size_Ex[1]);       // Correspond to point (i+1, j+1, k)
+                x6 = i     + grid.size_Ex[0] * ((j+1) + k * grid.size_Ex[1]);           // Correspond to point (i, j+1, k)
+                x7 = (i+1) + grid.size_Ex[0] * ((j+1) + (k+1) * grid.size_Ex[1]);   // Correspond to point (i+1, j+1, k+1)
+                x8 = i     + grid.size_Ex[0] * ((j+1) + (k+1) * grid.size_Ex[1]);       // Correspond to point (i, j+1, k+1)
 
                 interpolationEx = interpolationX(x1, x2, x3, x4, x5, x6, x7, x8, grid);
 
@@ -5459,14 +5588,14 @@ std::vector<double> AlgoElectro_NEW::ComputeNormEsquareBIS(GridCreator_NEW &grid
         {
             for(k=0; k<P-2; k++)
             {
-                y1 = (i+1) + (N-2) * (j + k * (P-2));           // Correspond to point (i+1, j, k)
-                y2 = i + (N-2) * (j + k * (P-2));               // Correspond to point (i, j, k)
-                y3 = (i+1) + (N-2) * (j + (k+1) * (P-2));       // Correspond to point (i+1, j, k+1)
-                y4 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
-                y5 = (i+1) + (N-2) * ((j+1) + k * (P-2));       // Correspond to point (i+1, j+1, k)
-                y6 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
-                y7 = (i+1) + (N-2) * ((j+1) + (k+1) * (P-2));   // Correspond to point (i+1, j+1, k+1)
-                y8 = i + (N-2) * ((j+1) + (k+1) * (P-2));       // Correspond to point (i, j+1, k+1)
+                y1 = (i+1) + grid.size_Ey[0] * (j + k * grid.size_Ey[1]);           // Correspond to point (i+1, j, k)
+                y2 = i     + grid.size_Ey[0] * (j + k * grid.size_Ey[1]);               // Correspond to point (i, j, k)
+                y3 = (i+1) + grid.size_Ey[0] * (j + (k+1) * grid.size_Ey[1]);       // Correspond to point (i+1, j, k+1)
+                y4 = i     + grid.size_Ey[0] * ((j+1) + k * grid.size_Ey[1]);           // Correspond to point (i, j+1, k)
+                y5 = (i+1) + grid.size_Ey[0] * ((j+1) + k * grid.size_Ey[1]);       // Correspond to point (i+1, j+1, k)
+                y6 = i     + grid.size_Ey[0] * ((j+1) + k * grid.size_Ey[1]);           // Correspond to point (i, j+1, k)
+                y7 = (i+1) + grid.size_Ey[0] * ((j+1) + (k+1) * grid.size_Ey[1]);   // Correspond to point (i+1, j+1, k+1)
+                y8 = i     + grid.size_Ey[0] * ((j+1) + (k+1) * grid.size_Ey[1]);       // Correspond to point (i, j+1, k+1)
 
                 interpolationEy = interpolationY(y1, y2, y3, y4, y5, y6, y7, y8, grid);
 
@@ -5483,14 +5612,14 @@ std::vector<double> AlgoElectro_NEW::ComputeNormEsquareBIS(GridCreator_NEW &grid
         {
             for(k=0; k<P-2; k++)
             {
-                z1 = (i+1) + (N-2) * (j + k * (P-2));           // Correspond to point (i+1, j, k)
-                z2 = i + (N-2) * (j + k * (P-2));               // Correspond to point (i, j, k)
-                z3 = (i+1) + (N-2) * (j + (k+1) * (P-2));       // Correspond to point (i+1, j, k+1)
-                z4 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
-                z5 = (i+1) + (N-2) * ((j+1) + k * (P-2));       // Correspond to point (i+1, j+1, k)
-                z6 = i + (N-2) * ((j+1) + k * (P-2));           // Correspond to point (i, j+1, k)
-                z7 = (i+1) + (N-2) * ((j+1) + (k+1) * (P-2));   // Correspond to point (i+1, j+1, k+1)
-                z8 = i + (N-2) * ((j+1) + (k+1) * (P-2));       // Correspond to point (i, j+1, k+1)
+                z1 = (i+1) + grid.size_Ez[0] * (j + k * grid.size_Ez[1]);           // Correspond to point (i+1, j, k)
+                z2 = i     + grid.size_Ez[0] * (j + k * grid.size_Ez[1]);               // Correspond to point (i, j, k)
+                z3 = (i+1) + grid.size_Ez[0] * (j + (k+1) * grid.size_Ez[1]);       // Correspond to point (i+1, j, k+1)
+                z4 = i     + grid.size_Ez[0] * ((j+1) + k * grid.size_Ez[1]);           // Correspond to point (i, j+1, k)
+                z5 = (i+1) + grid.size_Ez[0] * ((j+1) + k * grid.size_Ez[1]);       // Correspond to point (i+1, j+1, k)
+                z6 = i     + grid.size_Ez[0] * ((j+1) + k * grid.size_Ez[1]);           // Correspond to point (i, j+1, k)
+                z7 = (i+1) + grid.size_Ez[0] * ((j+1) + (k+1) * grid.size_Ez[1]);   // Correspond to point (i+1, j+1, k+1)
+                z8 = i     + grid.size_Ez[0] * ((j+1) + (k+1) * grid.size_Ez[1]);       // Correspond to point (i, j+1, k+1)
 
                 interpolationEz = interpolationZ(z1, z2, z3, z4, z5, z6, z7, z8, grid);
 
@@ -5508,6 +5637,21 @@ std::vector<double> AlgoElectro_NEW::ComputeNormEsquareBIS(GridCreator_NEW &grid
 
     for(Centers = 0; Centers < (M-2)*(N-2)*(P-2); Centers++)
     {
+        if(Centers >= allInterpolationEx.size()){
+            DISPLAY_ERROR_ABORT_CLASS(
+                "Dépassement de tableau sur allInterpolationEx."
+            );
+        }
+        if(Centers >= allInterpolationEy.size()){
+            DISPLAY_ERROR_ABORT_CLASS(
+                "Dépassement de tableau sur allInterpolationEy."
+            );
+        }
+        if(Centers >= allInterpolationEz.size()){
+            DISPLAY_ERROR_ABORT_CLASS(
+                "Dépassement de tableau sur allInterpolationEz."
+            );
+        }
         SquareModulusE.push_back(allInterpolationEx[Centers]*allInterpolationEx[Centers]
                                 + allInterpolationEy[Centers]*allInterpolationEy[Centers]
                                 + allInterpolationEz[Centers]*allInterpolationEz[Centers]);
