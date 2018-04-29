@@ -801,10 +801,17 @@ void InputParser::readHeader_MESH (ifstream &file){
 										(pos_semi_col[I]-pos_semi_col[I-1])-1);
 								}
 								//printf("Has : %s \n",str.c_str());
-								if(str != "DIPOLE" && str != "SIMPLE" && str != "FACE_EX"){
+								if(		str != "DIPOLE" 
+									&&  str != "SIMPLE" 
+									&&  str != "FACE_EX"
+									&&  str != "FACE_EY"
+									&&  str != "FACE_EZ"
+									&&  str != "FACE_Minus_EX"
+									&&  str != "FACE_Minus_EY"
+									&&  str != "FACE_Minus_EZ"){
 									fprintf(stderr,"In %s :: ERROR :: Imposed condition on source"
 												" should be either 'DIPOLE' or 'SIMPLE'"
-												" or FACE_EX. Aborting.\n",
+												" or FACE_[Minus_]E(X,Y,Z). Aborting.\n",
 												__FUNCTION__);
 									fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
 									#ifdef MPI_COMM_WORLD
