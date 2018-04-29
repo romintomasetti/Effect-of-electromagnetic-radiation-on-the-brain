@@ -309,7 +309,8 @@ std::string InterfaceToParaviewer::create_folder_and_go_in(std::string folderNam
             #endif
         }else{
             DISPLAY_ERROR_ABORT_CLASS(
-                "Cannot create/change directory %s !",folderName.c_str());
+                "Cannot create/change directory %s !",
+                folderName.c_str()
             );
         }
 	}
