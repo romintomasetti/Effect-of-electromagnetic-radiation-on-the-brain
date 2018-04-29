@@ -47,7 +47,12 @@ class AlgoElectro_NEW{
                 double *Exz0, double *Eyz0, 
                 double *Exz1, double *Eyz1,
                 double dt,
-                bool   IS_1D_FACE_EX
+                bool   IS_1D_FACE_EX,
+                bool   IS_1D_FACE_Minus_EX,
+                bool   IS_1D_FACE_EY,
+                bool   IS_1D_FACE_Minus_EY,
+                bool   IS_1D_FACE_EZ,
+                bool   IS_1D_FACE_Minus_EZ
         );
         
 
@@ -100,6 +105,39 @@ class AlgoElectro_NEW{
 
 
         std::vector<double> ComputeNormEsquareBIS(GridCreator_NEW &grid);
+
+        /**
+         * @brief Apply 1D conditions on the magnetic field.
+         */
+        void apply_1D_case_on_magnetic_field(
+            bool IS_1D_FACE_EX,
+            bool IS_1D_FACE_EY,
+            bool IS_1D_FACE_EZ,
+            bool IS_1D_FACE_Minus_EX,
+            bool IS_1D_FACE_Minus_EY,
+            bool IS_1D_FACE_Minus_EZ,
+            GridCreator_NEW &grid,
+            double *H_x_tmp,
+            double *H_y_tmp,
+            double *H_z_tmp
+        );
+
+        /**
+         * @brief Apply 1D conditions on the electric field.
+         */
+        void apply_1D_case_on_electric_field(
+            bool IS_1D_FACE_EX,
+            bool IS_1D_FACE_EY,
+            bool IS_1D_FACE_EZ,
+            bool IS_1D_FACE_Minus_EX,
+            bool IS_1D_FACE_Minus_EY,
+            bool IS_1D_FACE_Minus_EZ,
+            double current_time,
+            GridCreator_NEW &grid,
+            double *E_x_tmp,
+            double *E_y_tmp,
+            double *E_z_tmp
+        );
 
 };
 
