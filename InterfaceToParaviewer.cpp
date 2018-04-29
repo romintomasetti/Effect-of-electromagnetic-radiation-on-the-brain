@@ -275,7 +275,7 @@ std::vector<std::string> get_folder_from_name(std::string outputName){
  * 
  *  It also returns the parent folder's name.
  */
-std::string create_folder_and_go_in(std::string folderName){
+std::string InterfaceToParaviewer::create_folder_and_go_in(std::string folderName){
 
     char buf[4096];
 
@@ -292,27 +292,30 @@ std::string create_folder_and_go_in(std::string folderName){
             std::cout << "CWD changed to: " << cwd(buf, sizeof buf) << std::endl;
         #endif
     }else{
-        #ifndef NDEBUG
-            printf("Must create the directory %s...\n",folderName.c_str());
-        #endif
-        #if defined(_WIN32)
-            _mkdir(folderName.c_str());
-        #else 
-            mkdir(folderName.c_str(), 0700); 
-        #endif
-        if(0 == cd(folderName.c_str())){
+        if(this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess){
             #ifndef NDEBUG
-                std::cout << "CWD changed to: " << cwd(buf, sizeof(buf)) << std::endl;
+                printf("Must create the directory %s...\n",folderName.c_str());
             #endif
-        }else{
-            fprintf(stderr,"In %s :: Cannot create/change directory %s !\n",__FUNCTION__,folderName.c_str());
-            fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
-            #ifdef MPI_COMM_WORLD
-                MPI_Abort(MPI_COMM_WORLD,-1);
-            #else
-                abort();
+            #if defined(_WIN32)
+                _mkdir(folderName.c_str());
+            #else 
+                mkdir(folderName.c_str(), 0700); 
             #endif
+            if(0 == cd(folderName.c_str())){
+                #ifndef NDEBUG
+                    std::cout << "CWD changed to: " << cwd(buf, sizeof(buf)) << std::endl;
+                #endif
+            }else{
+                fprintf(stderr,"In %s :: Cannot create/change directory %s !\n",__FUNCTION__,folderName.c_str());
+                fprintf(stderr,"In %s:%d\n",__FILE__,__LINE__);
+                #ifdef MPI_COMM_WORLD
+                    MPI_Abort(MPI_COMM_WORLD,-1);
+                #else
+                    abort();
+                #endif
+            }
         }
+        MPI_Barrier(MPI_COMM_WORLD);
 	}
 
     return currentWorkingDir;
@@ -346,7 +349,7 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
 
     if(folderAndFileNames[0] != std::string()){
         /* A folder name was specified, go into it !*/
-        parentFolder = create_folder_and_go_in(folderAndFileNames[0]);
+        parentFolder = this->create_folder_and_go_in(folderAndFileNames[0]);
     }
 
     /* DETERMINE WHICH GRID TO SAVE */

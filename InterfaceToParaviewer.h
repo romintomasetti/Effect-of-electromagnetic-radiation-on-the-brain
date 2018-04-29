@@ -53,6 +53,8 @@ class InterfaceToParaviewer{
         // Convert and write output:
         void convertAndWriteData(unsigned long currentStep,
                 std::string type /*"thermal" or "electro", case sensitive*/);
+
+        std::string create_folder_and_go_in(std::string folderName);
 };
 
 #endif
