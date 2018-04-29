@@ -17,13 +17,6 @@ set(EXEC_NAME main)
 #Add CXX compiler flags:
 include(CheckCXXCompilerFlag)
 
-# OPTIMIZATION (only if release mode)
-string(COMPARE EQUAL "${CMAKE_BUILD_TYPE}" Release _cmp)
-if (_cmp)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast")
-	message(STATUS "Build type is 'Release'. Using -Ofast flag for C++ compiler")
-endif()
-
 string(COMPARE EQUAL "${CMAKE_BUILD_TYPE}" Debug _cmp)
 if(_cmp)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
