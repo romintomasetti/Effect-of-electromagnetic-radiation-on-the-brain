@@ -819,7 +819,8 @@ void InputParser::readHeader_MESH (ifstream &file){
 										"Imposed condition on source"
 										" should be either 'DIPOLE' or 'SIMPLE'"
 										" or FACE_[Minus_]E(X,Y,Z) or"
-										" FACE_[Minus_]E(X,Y,Z)[_Electric_along_(X,Y,Z)]."
+										" FACE_[Minus_]E(X,Y,Z)[_Electric_along_(X,Y,Z)]"
+										" or TEST_STEADY_STATE_1D."
 										" Has %s.",
 										str.c_str()
 									);
@@ -848,7 +849,9 @@ void InputParser::readHeader_MESH (ifstream &file){
 								}
 								std::string given = 
 									propGiven.substr(beg,length);
-								if(given != "GAUSSIAN" && given != "SINE"){
+								if(		given != "GAUSSIAN" 
+									&&  given != "SINE"
+									&&  given != "TEST_STEADY_STATE_1D"){
 									DISPLAY_ERROR_ABORT(
 										"The given property is different from GAUSSIAN or SINE (has %s).",
 										given.c_str()
