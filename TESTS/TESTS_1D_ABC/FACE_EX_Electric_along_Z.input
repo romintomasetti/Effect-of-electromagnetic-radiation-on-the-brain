@@ -58,7 +58,7 @@ $MESH
 		C_Y=0.5;
 		C_Z=0.5;
 		// Frequency [Hz]
-		FRQCY=900E6;
+		FRQCY=900E7;
 
 		IMPOSED=FACE_EX_Electric_along_Z;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE

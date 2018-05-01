@@ -58,7 +58,7 @@ $MESH
 		C_Y=0.5;
 		C_Z=0.5;
 		// Frequency [Hz]
-		FRQCY=900E6;
+		FRQCY=900E7;
 
 		IMPOSED=FACE_EX_Electric_along_Y;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
@@ -85,7 +85,7 @@ $RUN_INFOS
 		// The simulation will stop after... (in sec)
 		stopTime=10
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=20000
+		maxStepsForOneCycleOfElectro=1900
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
 		maxStepsForOneCycleOfThermal=5E5 
@@ -137,7 +137,7 @@ $RUN_INFOS
 $POST_PROCESSING
 
 	$PROBING_POINTS
-		//probe_line={Ez,x=0.5,y=ALL,z=0.5}
+		probe_line={Ey,x=ALL,y=0.05,z=0.05}
 		//probe_line={Ex,x=0.5,y=ALL,z=0.5}
 		//probe_line={Ey,x=0.5,y=ALL,z=0.5}
 		//probe_line={Ez,x=0.5,y=0.5,z=ALL}

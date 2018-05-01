@@ -38,9 +38,9 @@ $MESH
 	// Boundaries of the domain
 	$DOMAIN_SIZE
 		// Length of the domain in each direction
-		L_X_ELECTRO=0.1
+		L_X_ELECTRO=0.01
 		L_Y_ELECTRO=0.5
-		L_Z_ELECTRO=0.1
+		L_Z_ELECTRO=0.01
 		L_X_THERMAL=1
 		L_Y_THERMAL=1
 		L_Z_THERMAL=1
@@ -58,7 +58,7 @@ $MESH
 		C_Y=0.5;
 		C_Z=0.5;
 		// Frequency [Hz]
-		FRQCY=900E6;
+		FRQCY=900E7;
 
 		IMPOSED=FACE_Minus_EY_Electric_along_Z;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
@@ -120,7 +120,7 @@ $RUN_INFOS
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=70
+		SAMPLING_FREQ_ELECTRO=10
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING
