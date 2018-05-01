@@ -1839,11 +1839,12 @@ void GridCreator_NEW::fillInMat_forms(
     /**Verify that materials exist: **/
     std::map<std::string,unsigned int>::iterator it;
     for(size_t I = 0 ; I < material_inside.size() ; I ++){
-        printf("Looking for material %s.\n",material_inside[I].c_str());
+        printf("GridCreator_NEW::fillInMat_forms::Looking for material %s.\n",material_inside[I].c_str());
         it = this->materials.materialID_FromMaterialName_unified.find(material_inside[I]);
 
         if(it == this->materials.materialID_FromMaterialName_unified.end()){
-            printf("Material %s not found !\n",material_inside[I].c_str());
+            printf("GridCreator_NEW::fillInMat_forms::Material %s not found !\n",
+                material_inside[I].c_str());
 
             /// Find nearest material name:
             size_t nearest = 1E10;
@@ -1871,6 +1872,9 @@ void GridCreator_NEW::fillInMat_forms(
             material_inside[I] = nearestMatName;
             unsigned int ID_mat_new = this->materials.materialID_FromMaterialName_unified[nearestMatName];
             this->materials.unified_material_list[ID_mat_new].printf_mat();
+        }else{
+            printf("GridCreator_NEW::fillInMat_forms::Material %s found!\n",
+                material_inside[I].c_str());
         }
     }
     
