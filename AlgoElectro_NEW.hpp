@@ -74,7 +74,15 @@ class AlgoElectro_NEW{
             size_t * /*size_of_recv_vector*/
         );
 
-        bool SteadyStateAnalyser(void);
+        bool SteadyStateAnalyser(
+            const bool is_steady_state_for_this_MPI,
+            bool *is_steady_state_for_all_mpi,
+            GridCreator_NEW &grid,
+            const double time_beg,
+            const double time_end,
+            const std::vector<double> &Ez_trapz_absolute,
+            double dt
+        );
 
         std::vector<double> ComputeNormE2square(std::vector<double> Ex,
                                           std::vector<double> Ey, std::vector<double> Ez);
@@ -148,6 +156,7 @@ class AlgoElectro_NEW{
             bool IS_1D_FACE_Minus_EZ_Electric_along_X ,
             bool IS_1D_FACE_Minus_EZ_Electric_along_Y ,
             double current_time,
+            size_t currentStep,
             GridCreator_NEW &grid,
             double *E_x_tmp,
             double *E_y_tmp,

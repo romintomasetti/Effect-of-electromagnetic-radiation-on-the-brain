@@ -808,18 +808,45 @@ void AlgoElectro_NEW::update(
     ///////////////////////////////////////////
 
     /* For the Ez field */
-    /* Pour le moment c'est uniquement dans le case 1 D et je vérifie sur une ligne (x,y,z)=(1,ALL,1)*/
-    size_t checkEvery = grid.input_parser.SteadyState_CheckEveryPoint;
-    //size_t nbr_pointsX = grid.size_Ez[0]/checkEvery;
-    size_t nbr_pointsY = grid.size_Ez[1]/checkEvery;
-    //size_t nbr_pointsZ = grid.size_Ez[2]/checkEvery;
-    //size_t nbr_points  = nbr_pointsX * nbr_pointsY * nbr_pointsZ;
-    size_t nbr_points = nbr_pointsY;
-    std::vector<double> cumtrapz(nbr_points);
-    std::vector<double> cummmean(nbr_points);
-    std::vector<double> derivati(nbr_points);
-    DISPLAY_WARNING("Steadiness : en cours de construction.");
+    size_t nbr_points = grid.size_Ez[0] * grid.size_Ez[1] * grid.size_Ez[2];
+    std::vector<double> Ez_trapz_absolute(nbr_points,0);
+    /* Look over a given period of time, derived from the smallest source frequency **/
+    double min_frequency = DBL_MAX;
+    for(size_t I = 0 ; I < grid.input_parser.source.frequency.size() ; I ++){
+        if(grid.input_parser.source.frequency[I] < min_frequency)
+            min_frequency = grid.input_parser.source.frequency[I];
+    }
+        // Look over 35 periods of the signal:
+    double look_over_period_SS = 100 * 1 / min_frequency;
+    size_t look_over_steps__SS = std::floor(look_over_period_SS/dt);
+    size_t counter_step_____SS = 0;
+        // Number of nodes at steady state:
+    size_t number_of_points_EZ_at_speady_state = 0;
+        // Boolean value:
+    bool is_steady_state_for_all_mpi  = false;
+    bool is_steady_state_for_this_MPI = false;
+    size_t counter_steady_state_segments = 0;
+        // Begin and end time of the time period:
+    double time_beg = 0.0, time_end = 0.0;
+        // Wait that the wave has time to travel through the whole domain at least twice
+        // before checking for steadiness:
+    double max_length = 0.0;
+    double LX = grid.input_parser.lengthX_WholeDomain_Electro;
+    double LY = grid.input_parser.lengthY_WholeDomain_Electro;
+    double LZ = grid.input_parser.lengthZ_WholeDomain_Electro;
 
+    max_length = LX;
+    if(LX < LY || LX < LZ){
+        if(LY < LZ)
+            max_length = LZ;
+        else
+            max_length = LY;
+    }
+    double min_time_before_checking_steadiness
+        = 2* max_length / (1 / std::sqrt( VACUUM_PERMEABILITY * VACUUM_PERMITTIVITY));
+        // at least 2 segments must be steady:
+    bool is_previous_segment_steady = false;
+    size_t numero_du_segment_precedent = 1E9;
 
     ////////////////////////////////////////////////
     // UPDATE WHILE LOOP - PARALLELIZED WITH      //
@@ -929,7 +956,17 @@ void AlgoElectro_NEW::update(
         firstprivate(Exy0, Exy1)\
         firstprivate(Ezy0, Ezy1)\
         firstprivate(Exz0, Exz1)\
-        firstprivate(Eyz0, Eyz1)
+        firstprivate(Eyz0, Eyz1)\
+        firstprivate(Ez_trapz_absolute)\
+        shared(number_of_points_EZ_at_speady_state)\
+        shared(counter_step_____SS,look_over_steps__SS)\
+        shared(is_steady_state_for_all_mpi)\
+        shared(is_steady_state_for_this_MPI)\
+        shared(counter_steady_state_segments)\
+        shared(time_beg,time_end)\
+        shared(min_time_before_checking_steadiness)\
+        firstprivate(is_previous_segment_steady)\
+        firstprivate(numero_du_segment_precedent)
     {
         /**
          * @brief Determine if the simulation must be 1D.
@@ -1195,7 +1232,8 @@ void AlgoElectro_NEW::update(
         double         total_while_iter = 0.0;
 
         while(current_time < grid.input_parser.get_stopTime()
-                && currentStep < grid.input_parser.maxStepsForOneCycleOfElectro){
+                && currentStep < grid.input_parser.maxStepsForOneCycleOfElectro
+                && !is_steady_state_for_all_mpi){
             #pragma omp barrier
             /*#pragma omp master
             {
@@ -1653,10 +1691,90 @@ void AlgoElectro_NEW::update(
                         ASSERT(index_2Plus,<,grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]);
                         ASSERT(index_2Moins,<,grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]);
 
+                        double Ez_prev = E_z_tmp[index];
+
                         E_z_tmp[index] = C_eze[index] * E_z_tmp[index]
                                 + C_ezh_1[index] * (H_y_tmp[index_1Plus] - H_y_tmp[index_1Moins])
                                 - C_ezh_2[index] * (H_x_tmp[index_2Plus] - H_x_tmp[index_2Moins]);
+
+                        /** COMPUTE ABSOLUTE TRAPEZOIDAL INTEGRATION OF EZ **/
+                            
+                            double trapz_prev = Ez_trapz_absolute[index];
+                            trapz_without_dt(
+                                std::abs(Ez_prev),
+                                std::abs(E_z_tmp[index]),
+                                &Ez_trapz_absolute[index]
+                            );
+
+                            if(counter_step_____SS > 10){
+                                if(std::abs( 
+                                    Ez_trapz_absolute[index]/(double)counter_step_____SS
+                                        - trapz_prev/(double)(counter_step_____SS-1))
+                                    < 1E-3*Ez_trapz_absolute[index]/(double)counter_step_____SS)
+                                    {
+                                        #pragma omp critical
+                                        {
+                                            number_of_points_EZ_at_speady_state++;
+                                        }
+                                    }
+                            }
+
+                        /** END OF COMPUTE ABSOLUTE TRAPEZOIDAL INTEGRATION OF EZ **/
                     }
+                }
+            }
+            #pragma omp barrier
+
+            #pragma omp master
+            {
+                // Total size without neighboors:
+                size_t tmp = (grid.size_Ez[0]-4) * (grid.size_Ez[1]-2) * (grid.size_Ez[2]-2);
+                printf("\t>>> Number of Ez nodes that are in the steady state is %zu over %zu.\n",
+                            number_of_points_EZ_at_speady_state,
+                            tmp);
+                if(     number_of_points_EZ_at_speady_state >= std::floor(0.99 * tmp)-1
+                    &&  counter_step_____SS > 100){
+
+                            printf("\t>>> [MPI %d] - Steady state is reached!\n",
+                            grid.MPI_communicator.getRank());
+
+                            if(is_previous_segment_steady == true
+                                && numero_du_segment_precedent != counter_steady_state_segments){
+                                is_steady_state_for_this_MPI = true;
+                            }else{
+                                is_previous_segment_steady  = true;
+                                numero_du_segment_precedent = counter_steady_state_segments;
+                            }
+                    
+                }else{
+                    number_of_points_EZ_at_speady_state = 0;
+                }
+
+                if(counter_step_____SS >= look_over_steps__SS){
+                    for(size_t I = 0 ; I < Ez_trapz_absolute.size() ; I ++)
+                        Ez_trapz_absolute[I] = 0.0;
+                    counter_step_____SS = 1;
+                    printf("look_over_steps__SS %zu\n",look_over_steps__SS);
+                    counter_steady_state_segments++;
+                    time_beg = current_time;
+
+                }else{
+                    counter_step_____SS ++;
+                }
+
+                /* Communicate with other MPI's to know is everybody is in steady state: */
+                time_end = current_time;
+                /// Attention ! Check only after a given number of iterations !
+                if( current_time > min_time_before_checking_steadiness ){
+                    this->SteadyStateAnalyser(
+                        is_steady_state_for_this_MPI,
+                        &is_steady_state_for_all_mpi,
+                        grid,
+                        time_beg,
+                        time_end,
+                        Ez_trapz_absolute,
+                        dt
+                    );
                 }
             }
             #pragma omp barrier
@@ -1681,6 +1799,7 @@ void AlgoElectro_NEW::update(
                         IS_1D_FACE_Minus_EZ_Electric_along_X ,
                         IS_1D_FACE_Minus_EZ_Electric_along_Y,
                         current_time,
+                        currentStep,
                         grid,
                         E_x_tmp,
                         E_y_tmp,
@@ -4773,6 +4892,38 @@ void probe_a_field(
             MPI_Recv(&OK,1,MPI_INT,
                      grid.MPI_communicator.getRank()-1,
                      TAG,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            /// Open the file:
+            int fd = -1;
+            while (fd == -1) fd = tryGetLock(filename.c_str());
+
+            FILE *file = NULL;
+            if(NULL == (file = fopen(filename.c_str(),"a"))){
+                DISPLAY_ERROR_ABORT(
+                    "Cannot open the file %s.",filename.c_str()
+                );
+            }
+            /// Write:
+            for(size_t K = 0 ; K < data.size() ; K ++){
+                if(       direction == 0){
+                    global_nbr[0]    = NBR[K];
+                }else if( direction == 1){
+                    global_nbr[1]    = NBR[K];
+                }else if( direction == 2){
+                    global_nbr[2]    = NBR[K];
+                }
+                fprintf(file,"%s at (%.10g,%.10g,%.10g) is %.10g at t = %.10g | step %zu | dt = %.10g.\n",
+                    which_field.c_str(),
+                    global_nbr[0]*electro_deltas[0],
+                    global_nbr[1]*electro_deltas[1],
+                    global_nbr[2]*electro_deltas[2],
+                    data[K],
+                    current_time,
+                    (size_t)(current_time/dt),
+                    dt);
+            }
+            /// Close file:
+            fclose(file);
+            releaseLock(fd);
             if(grid.MPI_communicator.getRank() != grid.MPI_communicator.getNumberOfMPIProcesses()-1){
                 MPI_Send(&OK,1,MPI_INT,
                      grid.MPI_communicator.getRank()+1,
@@ -4820,23 +4971,121 @@ void releaseLock( int fd)
 }
 
 inline double absolute_value_sinus_func(double x){
-	return fabs(std::sin(x));
+	return std::abs(std::sin(x));
 }
 
 /**
- * @brief Steady-state analyser.
+ * @brief This function communicates with other MPI's to know is every MPI is in steady state.
+ *      Than, the amplitude of the electric field at each node is computed.
  */
-bool AlgoElectro_NEW::SteadyStateAnalyser(void){
+bool AlgoElectro_NEW::SteadyStateAnalyser(
+    const bool is_steady_state_for_this_MPI,
+    bool *is_steady_state_for_all_mpi,
+    GridCreator_NEW &grid,
+    const double time_beg,
+    const double time_end,
+    const std::vector<double> &Ez_trapz_absolute,
+    double dt
+){
 
+    /* Gather all the is_steady_state_for_this_MPI booleans */
+        // MPI cannot communicate boolean, use unsigned int instead:
+    std::vector<unsigned int> steady_state_per_MPI(
+        grid.MPI_communicator.getNumberOfMPIProcesses(),
+        0
+    );
+        // Transform the boolean value in an unsigned int:
+    unsigned int my_steady_state_boolean = 0;
+
+    if(is_steady_state_for_this_MPI){
+        my_steady_state_boolean = 1;
+    }
+    MPI_Allgather(
+        &my_steady_state_boolean,
+        1,
+        MPI_UNSIGNED,
+        &steady_state_per_MPI[0],
+        1,
+        MPI_UNSIGNED,
+        MPI_COMM_WORLD
+    );
+    unsigned int sum = 0;
+    for(size_t i = 0 ; i < steady_state_per_MPI.size() ; i ++)
+        sum += steady_state_per_MPI[i];
+
+    if(sum != steady_state_per_MPI.size()){
+        // At least one MPI is not in the steady state.
+        *is_steady_state_for_all_mpi = false;
+        return false;
+    }
+
+    /** Compute the amplitude of the signal at each node **/
+    // Integral(numerical) = Amplitude * integral(abs(sin(2*pi*f*t)) dt) 
+    //                     = Amplitude * Integral(analytical)
+    // The analytical integral is computed with GaussLobatto method.
+    
+    
     /// Compute the integral of the absolute value of a sine wave:
+    double frequency = grid.input_parser.source.frequency[0];
+    printf("\n>>> time_beg %.20g\n>>> time_end %.20g\n2*M_PI*freq %.20g\n",
+        time_beg,time_end,2*M_PI*frequency);
     double res = GaussLobattoInt(&absolute_value_sinus_func,
-					0, 10,
+					time_beg,time_end,
+                    2*M_PI*frequency,
 					1e-10,
 					1E5);
-    DISPLAY_ERROR_ABORT(
-        "Not implemented yet."
+
+    size_t index;
+
+    std::vector<double> amplitudes_Ez(
+          (grid.size_Ez[2])
+        * (grid.size_Ez[1])
+        * (grid.size_Ez[0])
     );
-    return false;
+
+    double average_amplitude = 0.0;
+
+    size_t counter = 0;
+
+    // Electric field along Z:
+    for(size_t K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
+        for(size_t J = 1 ; J < grid.size_Ez[1]-1 ; J ++){
+            for(size_t I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
+
+                index = I + grid.size_Ez[0] * ( J + grid.size_Ez[1] * K);
+
+                if(index >= amplitudes_Ez.size()){
+                    DISPLAY_ERROR_ABORT_CLASS(
+                        "Index out of bound..."
+                    );
+                }
+
+                amplitudes_Ez[index] = Ez_trapz_absolute[index] / res * dt;
+
+                if(I == 2 && J == 2 && K == 2){
+                    printf( "\n>>> res     %.20g"
+                            "\n>>> Ez_trap %.20g"
+                            "\n>>> Amplit  %.20g\n",
+                            res,
+                            Ez_trapz_absolute[index]*dt,
+                            amplitudes_Ez[index]);
+                }
+
+                if(counter == 0){
+                    average_amplitude = amplitudes_Ez[index];
+                }else{
+                    average_amplitude = average_amplitude * (counter-1) + amplitudes_Ez[index];
+                    average_amplitude /= counter;
+                }
+                counter++;
+
+            }
+        }
+    }
+
+    printf("\n\t>>> Average ampltide is %.15g.\n\n",average_amplitude);
+    *is_steady_state_for_all_mpi = true;
+    return true;
 }
 
 
@@ -5927,6 +6176,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
     bool IS_1D_FACE_Minus_EZ_Electric_along_X ,
     bool IS_1D_FACE_Minus_EZ_Electric_along_Y ,
     double current_time,
+    size_t currentStep,
     GridCreator_NEW &grid,
     double *E_x_tmp,
     double *E_y_tmp,
@@ -5977,13 +6227,58 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
     /////////////////////////////////
     /// IMPOSED SOURCE PARAMETERS ///
     /////////////////////////////////
-    double frequency = 900E7;
+    double frequency = grid.input_parser.source.frequency[0];
     double period    = 1 / frequency * 10;
     double MEAN      = 2*period;
     double STD       = period / 4.;
     double gauss     
             = exp( - (current_time-MEAN)*(current_time-MEAN) / (2*STD*STD));
-    //printf("Period %.9g, freq %.9g, dt %.9g\n",period,frequency,dt);
+    printf("\t> Using frequency %.9g for 1D source.\n",frequency);
+
+    std::vector<double> test_steady_frequencies = {
+        1.0,
+        0.7394,
+        1.9822,
+        0.9882,
+        1.9785,
+        0.0390,
+        2.1542,
+        1.1734,
+        0.1005
+    };
+    for(size_t i = 0 ; i < test_steady_frequencies.size() ; i ++){
+        test_steady_frequencies[i] = test_steady_frequencies[i]*frequency;
+    }
+    std::vector<double> test_steady_ampl = {
+        2.0,
+        3.2481,
+        5.7305,
+        7.3707,
+        7.8721,
+        7.8674,
+        7.1704,
+        6.9256,
+        6.4077
+    };
+
+    double source_value = 0.0;
+    if(grid.input_parser.source_time[0] == "GAUSSIAN"){
+        source_value = gauss * sin(2*M_PI*frequency*current_time);
+    }else if(grid.input_parser.source_time[0] == "SINE"){
+        source_value = sin(2*M_PI*frequency*current_time);
+    }else if(grid.input_parser.source_time[0] == "TEST_STEADY_STATE_1D"){
+        for(size_t I = 0 ; I < test_steady_frequencies.size() ; I ++){
+            source_value += test_steady_ampl[I]*sin(
+                                2*M_PI*current_time*test_steady_frequencies[I])
+                            * exp(-1E17*current_time*current_time*I);
+        }
+        printf(">>> test steady state source value is %lf.\n",source_value);
+    }else{
+        DISPLAY_ERROR_ABORT_CLASS(
+            "Unknown source time type %s.",
+            grid.input_parser.source_time[0].c_str()
+        );
+    }
 
     if(      IS_1D_FACE_Minus_EY_Electric_along_Z){          
         /**
@@ -6043,7 +6338,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
 
                 index = i + grid.size_Ez[0] * ( j + grid.size_Ez[1] * k);
 
-                E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_z_tmp[index] = source_value;
             }
         }
 
@@ -6105,7 +6400,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
 
                 index = i + grid.size_Ez[0] * ( j + grid.size_Ez[1] * k);
 
-                E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_z_tmp[index] = source_value;
             }
         }
 
@@ -6143,7 +6438,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             for(size_t k = 1 ; k < grid.size_Ex[2] - 1 ; k ++){
 
                 index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
-                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_x_tmp[index] = source_value;
 
             }
         }
@@ -6228,7 +6523,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
 
                 index = i + grid.size_Ez[0] * ( j + grid.size_Ez[1] * k);
 
-                E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_z_tmp[index] = source_value;
             }
         }
 
@@ -6278,7 +6573,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             for(size_t k = 1 ; k < grid.size_Ey[2] - 1 ; k ++){
 
                 index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
-                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_y_tmp[index] = source_value;
             }
         }
         printf(">>> Imposed is %.9g.\n",
@@ -6352,7 +6647,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             for(size_t k = 1 ; k < grid.size_Ez[2] - 1 ; k ++){
 
                 index = i + grid.size_Ez[0] * ( j + grid.size_Ez[1] * k);
-                E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_z_tmp[index] = source_value;
             }
         }
 
@@ -6401,7 +6696,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
 
                 k = 1;
                 index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
-                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_y_tmp[index] = source_value;
             }
         }
 
@@ -6462,7 +6757,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             for(size_t i = 1 ; i < grid.size_Ey[0] - 1 ; i ++){
 
                 index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
-                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_y_tmp[index] = source_value;
             }
         }
 
@@ -6512,7 +6807,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             for(size_t i = 1 ; i < grid.size_Ex[0] - 1 ; i ++){
 
                 index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
-                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_x_tmp[index] = source_value;
             }
         }
 
@@ -6573,7 +6868,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             for(size_t i = 1 ; i < grid.size_Ex[0] - 1 ; i ++){
 
                 index = i + grid.size_Ex[0] * ( j + grid.size_Ex[1] * k);
-                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_x_tmp[index] = source_value;
             }
         }
 
@@ -6636,7 +6931,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             for(size_t k = 1 ; k < grid.size_Ex[2] - 1 ; k ++){
 
                 index = i + grid.size_Ex[0] * ( j + k * grid.size_Ex[1]);
-                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_x_tmp[index] = source_value;
             }
         }
 
@@ -6708,7 +7003,7 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             for(size_t k = 1 ; k < grid.size_Ey[2] - 1 ; k ++){
 
                 index = i + grid.size_Ey[0] * ( j + grid.size_Ey[1] * k);
-                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
+                E_y_tmp[index] = source_value;
             }
         }
 
