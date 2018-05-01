@@ -17,6 +17,11 @@
 #include <iostream>
 #include <boost/format.hpp>
 
+DISC_INTEGR_API void trapz_without_dt(
+  double val_left,
+  double val_right, 
+  double *result
+);
 /**
  * @brief Integrate a function with a simple trapezoidal method.
  */
@@ -54,7 +59,8 @@ DISC_INTEGR_API double GaussLobattoIntStep(const boost::function<double (double)
 			   double fa, double fb,
 			   size_t &neval,
 			   size_t maxeval,
-			   double acc);
+			   double acc,
+         double frequency);
 
 // Following function is from http://www.bnikolic.co.uk/nqm/1dinteg/gausslobatto.html
 /** \brief Compute the Gauss-Lobatto integral
@@ -74,6 +80,7 @@ DISC_INTEGR_API double GaussLobattoIntStep(const boost::function<double (double)
  */
 DISC_INTEGR_API double GaussLobattoInt(const boost::function<double (double)>& f, 
 		       double a, double b,
+           double frequency,
 		       double abstol, 
 		       size_t maxeval);
 

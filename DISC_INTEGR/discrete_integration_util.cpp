@@ -1,6 +1,18 @@
 #include "discrete_integration_util.hpp"
 
 /**
+ * @brief Performs a trapezoidal integration step:
+ */
+DISC_INTEGR_API void trapz_without_dt(
+  double val_left,
+  double val_right, 
+  double *result
+)
+{
+	*result += (val_left + val_right)/2.;
+}
+
+/**
  * @brief Integrate a function with a simple trapezoidal method.
  */
 DISC_INTEGR_API double trapzIntegral(
@@ -43,7 +55,8 @@ DISC_INTEGR_API double GaussLobattoIntStep(const boost::function<double (double)
 			   double fa, double fb,
 			   size_t &neval,
 			   size_t maxeval,
-			   double acc)
+			   double acc,
+         double frequency)
 {
 
   // Constants used in the algorithm
@@ -67,11 +80,11 @@ DISC_INTEGR_API double GaussLobattoIntStep(const boost::function<double (double)
   const double mr =m+beta*h; 
   const double mrr=m+alpha*h;
   
-  const double fmll= f(mll);
-  const double fml = f(ml);
-  const double fm  = f(m);
-  const double fmr = f(mr);
-  const double fmrr= f(mrr);
+  const double fmll= f(mll * frequency);
+  const double fml = f(ml  * frequency);
+  const double fm  = f(m   * frequency);
+  const double fmr = f(mr  * frequency);
+  const double fmrr= f(mrr * frequency);
   neval+=5;
         
   // Both the 4-point and 7-point rule integrals are evaluted
@@ -98,12 +111,12 @@ DISC_INTEGR_API double GaussLobattoIntStep(const boost::function<double (double)
     return integral1;
   }
   else {
-    return  GaussLobattoIntStep(f, a, mll, fa, fmll, neval, maxeval, acc)  
-      + GaussLobattoIntStep(f, mll, ml, fmll, fml, neval, maxeval, acc)
-      + GaussLobattoIntStep(f, ml, m, fml, fm, neval, maxeval, acc)
-      + GaussLobattoIntStep(f, m, mr, fm, fmr, neval, maxeval, acc)
-      + GaussLobattoIntStep(f, mr, mrr, fmr, fmrr, neval, maxeval, acc)
-      + GaussLobattoIntStep(f, mrr, b, fmrr, fb, neval, maxeval, acc);
+    return  GaussLobattoIntStep(f, a, mll, fa, fmll, neval, maxeval, acc,frequency)  
+      + GaussLobattoIntStep(f, mll, ml, fmll, fml, neval, maxeval, acc,frequency)
+      + GaussLobattoIntStep(f, ml, m, fml, fm, neval, maxeval, acc,frequency)
+      + GaussLobattoIntStep(f, m, mr, fm, fmr, neval, maxeval, acc,frequency)
+      + GaussLobattoIntStep(f, mr, mrr, fmr, fmrr, neval, maxeval, acc,frequency)
+      + GaussLobattoIntStep(f, mrr, b, fmrr, fb, neval, maxeval, acc,frequency);
          
   }
 }
@@ -126,14 +139,16 @@ DISC_INTEGR_API double GaussLobattoIntStep(const boost::function<double (double)
  */
 DISC_INTEGR_API double GaussLobattoInt(const boost::function<double (double)>& f, 
 		       double a, double b,
+           double frequency,
 		       double abstol, 
 		       size_t maxeval) 
 {
-  const double tol_epsunit=abstol/std::numeric_limits<double>::epsilon();
+  const double tol_epsunit = abstol/std::numeric_limits<double>::epsilon();
   size_t neval=0;
   return GaussLobattoIntStep(f, a, b,
-			     f(a), f(b),
+			     f(frequency*a), f(frequency*b),
 			     neval,
 			     maxeval,
-			     tol_epsunit);
+			     tol_epsunit,
+           frequency);
 }
