@@ -808,8 +808,17 @@ void AlgoElectro_NEW::update(
     ///////////////////////////////////////////
 
     /* For the Ez field */
-    size_t nbr_points = grid.size_Ez[0] * grid.size_Ez[1] * grid.size_Ez[2];
-    std::vector<double> Ez_trapz_absolute(nbr_points,0);
+    size_t nbr_points_Ez = grid.size_Ez[0] * grid.size_Ez[1] * grid.size_Ez[2];
+    std::vector<double> Ez_trapz_absolute(nbr_points_Ez,0);
+
+    /* For the Ey field */
+    size_t nbr_points_Ey = grid.size_Ey[0] * grid.size_Ey[1] * grid.size_Ey[2];
+    std::vector<double> Ey_trapz_absolute(nbr_points_Ey,0);
+
+    /* For the Ey field */
+    size_t nbr_points_Ex = grid.size_Ex[0] * grid.size_Ex[1] * grid.size_Ex[2];
+    std::vector<double> Ex_trapz_absolute(nbr_points_Ex,0);
+
     /* Look over a given period of time, derived from the smallest source frequency **/
     double min_frequency = DBL_MAX;
     for(size_t I = 0 ; I < grid.input_parser.source.frequency.size() ; I ++){
@@ -847,6 +856,10 @@ void AlgoElectro_NEW::update(
         // at least 2 segments must be steady:
     bool is_previous_segment_steady = false;
     size_t numero_du_segment_precedent = 1E9;
+
+    ///////////////////////////////////////////
+    /// END VARIABLES FOR STEADY-STATE CHECKING ///
+    ///////////////////////////////////////////
 
     ////////////////////////////////////////////////
     // UPDATE WHILE LOOP - PARALLELIZED WITH      //
