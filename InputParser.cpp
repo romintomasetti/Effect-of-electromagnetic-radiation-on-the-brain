@@ -24,6 +24,8 @@ using namespace rapidjson;
 #define DTTMFMT "%Y-%m-%d %H:%M:%S "
 #define DTTMSZ 21
 
+#include "UTILS/miscelleneous.hpp" 
+
 static char *getDtTm (char *buff) {
     time_t t = time (0);
     strftime (buff, DTTMSZ, DTTMFMT, localtime (&t));
@@ -133,20 +135,21 @@ stringDollar_Header1 InputParser::hashit_Header1 (std::string const& inString) {
 	}
 }
 stringDollar_Header2 InputParser::hashit_Header2 (std::string const& inString) {
-    if (inString == "NAME")                  return NAME;
-	if (inString == "REMOVE_EXISTING_FILES") return REMOVE_EXISTING_FILES;
-    if (inString == "DELTAS")                return DELTAS;
-    if (inString == "DOMAIN_SIZE") 			 return DOMAIN_SIZE;
-	if (inString == "SOURCE")				 return SOURCE;
-	if (inString == "STOP_SIMUL_AFTER") 	 return STOP_SIMUL_AFTER;
-	if (inString == "TEMP_INIT") 			 return TEMP_INIT;
-	if (inString == "TIME_STEP") 			 return TIME_STEP;
-	if (inString == "BOUNDARY_CONDITIONS") 	 return BOUNDARY_CONDITIONS;
-	if (inString == "OUTPUT_SAVING") 		 return OUTPUT_SAVING;
-	if (inString == "MATERIALS") 			 return MATERIALS;
-	if (inString == "ORIGINS")   			 return ORIGINS;
-	if (inString == "PROBING_POINTS")        return PROBING_POINTS;
-	if (inString == "ELECTRO_STEADY_STATE")  return ELECTRO_STEADY_STATE;
+    if (inString == "NAME")                  		 return NAME;
+	if (inString == "REMOVE_EXISTING_FILES")		 return REMOVE_EXISTING_FILES;
+    if (inString == "DELTAS")               		 return DELTAS;
+    if (inString == "DOMAIN_SIZE") 					 return DOMAIN_SIZE;
+	if (inString == "SOURCE")				 		 return SOURCE;
+	if (inString == "STOP_SIMUL_AFTER") 	 		 return STOP_SIMUL_AFTER;
+	if (inString == "TEMP_INIT") 			 		 return TEMP_INIT;
+	if (inString == "TIME_STEP") 			 		 return TIME_STEP;
+	if (inString == "BOUNDARY_CONDITIONS_THERMO") 	 return BOUNDARY_CONDITIONS_THERMO;
+	if (inString == "BOUNDARY_CONDITIONS_ELECTRO") 	 return BOUNDARY_CONDITIONS_ELECTRO;
+	if (inString == "OUTPUT_SAVING") 		 		 return OUTPUT_SAVING;
+	if (inString == "MATERIALS") 					 return MATERIALS;
+	if (inString == "ORIGINS")   					 return ORIGINS;
+	if (inString == "PROBING_POINTS")      			 return PROBING_POINTS;
+	if (inString == "ELECTRO_STEADY_STATE")  		 return ELECTRO_STEADY_STATE;
 	else {
 		printf("In file %s at %d. Complain to Romin. Abort().\n",__FILE__,__LINE__);
 		cout << "Faulty string is ::" + inString + "::" << endl;
@@ -1544,7 +1547,7 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 				break;
 
 			
-			case BOUNDARY_CONDITIONS:
+			case BOUNDARY_CONDITIONS_THERMO:
 				// Read the given boundary conditions:
 				while(!file.eof()){
 					// Note: sections are ended by $the-section-name.
@@ -1555,7 +1558,7 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					// Remove any blank in the string:
 					this->RemoveAnyBlankSpaceInStr(currentLine);
 					// If the string is "$DELTAS" it means the section ends.
-					if(currentLine == "$BOUNDARY_CONDITIONS"){
+					if(currentLine == "$BOUNDARY_CONDITIONS_THERMO"){
 						break;
 					}
 					// If the string is empty, it was just a white space. Continue.
@@ -1605,11 +1608,130 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 											
 					}else{
 						printf("InputParser::readHeader_RUN_INFOS:: You didn't provide a ");
-						printf("good member for $RUN_INFOS$BOUNDARY_CONDITIONS.\nAborting.\n");
+						printf("good member for $RUN_INFOS$BOUNDARY_CONDITIONS_THERMO.\nAborting.\n");
 						cout << propName << endl;
 						printf("(in file %s at %d)\n",__FILE__,__LINE__);
 						abort();
 					}
+				}
+				break;
+
+			case BOUNDARY_CONDITIONS_ELECTRO:
+				// Read the given boundary conditions:
+				while(!file.eof()){
+					// Note: sections are ended by $the-section-name.
+					// Read line:
+					getline(file,currentLine);
+					// Get rid of comments:
+					this->checkLineISNotComment(file,currentLine);
+					// Remove any blank in the string:
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+					// If the string is "$DELTAS" it means the section ends.
+					if(currentLine == "$BOUNDARY_CONDITIONS_ELECTRO"){
+						if(this->apply_ABC_BCs == true && this->apply_PML_BCs == true){
+							DISPLAY_ERROR_ABORT_CLASS(
+								"You set both 'APPLY_ABC' and 'APPLY_PML' to true. You cannot do that."
+							);
+						}
+
+						if(this->apply_PML_BCs == true){
+							if( this->PML_order == std::numeric_limits<double>::max()){
+								DISPLAY_ERROR_ABORT_CLASS(
+									"The order of you PML is %.9g. You didn't give an acceptable value.",
+									this->PML_order
+								);
+							}
+							printf(">>> PML order %lf.\n",this->PML_order);
+							if( this->PML_sigma_M == std::numeric_limits<double>::max()){
+								DISPLAY_ERROR_ABORT_CLASS(
+									"Your PML_SIGMA_M is %.9g. You didn't give an acceptable value.",
+									this->PML_sigma_M
+								);
+							}
+							printf(">>> PML sigma M %lf.\n",this->PML_sigma_M);
+							if( this->thickness_PML_in_number_of_nodes == std::numeric_limits<std::size_t>::max()){
+								DISPLAY_ERROR_ABORT_CLASS(
+									"The tickness of your PML is %zu. You cannot.",
+									this->thickness_PML_in_number_of_nodes
+								);
+							}
+							printf(">>> PML thickness %zu.\n",this->thickness_PML_in_number_of_nodes);
+							abort();
+						}
+						break;
+					}
+					// If the string is empty, it was just a white space. Continue.
+					if(currentLine == string()){continue;}
+					// Find the position of the equal sign:
+					std::size_t posEqual  = currentLine.find("=");
+					// The property we want to set:
+					std::string propName  = currentLine.substr(0,posEqual);
+					// The property name the user gave:
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+
+					if( propName == "APPLY_ABC"){
+						if(boost::iequals(propGiven,"true")){
+							this->apply_ABC_BCs = true;
+						}else if(boost::iequals(propGiven,"false")){
+							this->apply_ABC_BCs = false;
+						}else{
+							DISPLAY_ERROR_ABORT_CLASS(
+								"The value of 'APPLY_ABC' must be either 'true' or 'false'."
+								" Has %s.",propGiven.c_str()
+							);
+						}
+
+					}else if(propName == "APPLY_PML"){
+						if(boost::iequals(propGiven,"true")){
+							this->apply_PML_BCs = true;
+						}else if(boost::iequals(propGiven,"false")){
+							this->apply_PML_BCs = false;
+						}else{
+							DISPLAY_ERROR_ABORT_CLASS(
+								"The value of 'APPLY_PML' must be either 'true' or 'false'."
+								" Has %s.",propGiven.c_str()
+							);
+						}
+
+					}else if(propName == "PML_ORDER"){
+						if( isValid<double>(propGiven) ){
+							this->PML_order = std::stod(propGiven);
+						}else{
+							DISPLAY_ERROR_ABORT_CLASS(
+								"The property 'PML_ORDER' must be a valid double."
+								" Has %s.",
+								propGiven.c_str()
+							);
+						}
+
+					}else if(propName == "PML_SIGMA_M"){
+						if( isValid<double>(propGiven) ){
+							this->PML_sigma_M = std::stod(propGiven);
+						}else{
+							DISPLAY_ERROR_ABORT_CLASS(
+								"The property 'PML_sigma_M' must be a valid double."
+								" Has %s.",
+								propGiven.c_str()
+							);
+						}
+
+					}else if(propName == "THICKNESS_PML_IN_NODES"){
+						if( isValid<std::size_t>(propGiven) ){
+							this->thickness_PML_in_number_of_nodes = std::stod(propGiven);
+						}else{
+							DISPLAY_ERROR_ABORT_CLASS(
+								"The property 'THICKNESS_PML_IN_NODES' must be a valid double."
+								" Has %s.",
+								propGiven.c_str()
+							);
+						}
+					}else{
+						DISPLAY_ERROR_ABORT_CLASS(
+							"In BOUNDARY_CONDITIONS_ELECTRO :: unknown parameter %s.",
+							propName.c_str()
+						);
+					}
+					
 				}
 				break;
 			

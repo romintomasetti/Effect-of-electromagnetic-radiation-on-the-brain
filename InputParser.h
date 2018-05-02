@@ -10,6 +10,7 @@
 #include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
+#include <boost/algorithm/string.hpp>
 
 #include "SetOnceVariable_Template.h"
 #include "ElectromagneticSource.h"
@@ -60,7 +61,8 @@ enum stringDollar_Header2{
 	OUTPUT_SAVING,
 	STOP_SIMUL_AFTER,
 	TEMP_INIT,
-	BOUNDARY_CONDITIONS,
+	BOUNDARY_CONDITIONS_THERMO,
+	BOUNDARY_CONDITIONS_ELECTRO,
 	MATERIALS,
 	ORIGINS,
 	PROBING_POINTS,
@@ -229,6 +231,25 @@ class InputParser{
         
         /// For the steady-state detection:
         size_t SteadyState_CheckEveryPoint = 0;
+
+		/////////////////////////////////////////////////
+		/// PARAMETER FOR THE ABC BOUNDARY CONDITIONS ///
+		/////////////////////////////////////////////////
+
+		bool   apply_ABC_BCs                    = false;
+
+		/////////////////////////////////////////////////
+		/// PARAMETERS FOR THE PML BOUNDARY CONDITONS ///
+		/////////////////////////////////////////////////
+
+		bool   apply_PML_BCs                    = false;
+		size_t thickness_PML_in_number_of_nodes = std::numeric_limits<std::size_t>::max();
+		double PML_order                        = std::numeric_limits<double>::max();
+		double PML_sigma_M                      = std::numeric_limits<double>::max();
+
+		/////////////////////////////////////////////////
+		/// END OF PARAMETERS FOR THE PML BOUNDARY CONDITONS ///
+		/////////////////////////////////////////////////
 };
 
 #endif
