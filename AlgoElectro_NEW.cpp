@@ -971,6 +971,8 @@ void AlgoElectro_NEW::update(
         firstprivate(Exz0, Exz1)\
         firstprivate(Eyz0, Eyz1)\
         firstprivate(Ez_trapz_absolute)\
+        firstprivate(Ey_trapz_absolute)\
+        firstprivate(Ex_trapz_absolute)\
         shared(number_of_points_EZ_at_speady_state)\
         shared(counter_step_____SS,look_over_steps__SS)\
         shared(is_steady_state_for_all_mpi)\
@@ -1592,9 +1594,20 @@ void AlgoElectro_NEW::update(
                         ASSERT(index_2Plus,<,grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]);
                         ASSERT(index_2Moins,<,grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]);
 
+                        double E_x_prev = E_x_tmp[index];
+
                         E_x_tmp[index] = C_exe[index] * E_x_tmp[index]
                                 + C_exh_1[index] * (H_z_tmp[index_1Plus] - H_z_tmp[index_1Moins])
                                 - C_exh_2[index] * (H_y_tmp[index_2Plus] - H_y_tmp[index_2Moins]);
+
+                        /* COMPUTE ABSOLUTE TRAPEZOIDAL INTEGRATION */
+                            trapz_without_dt(
+                                std::abs(E_x_prev),
+                                std::abs(E_x_tmp[index]),
+                                &Ex_trapz_absolute[index]
+                            );
+
+                        /* END OF COMPUTE ABSOLUTE TRAPEZOIDAL INTEGRATION */
 
                     }
                 }
@@ -1648,9 +1661,20 @@ void AlgoElectro_NEW::update(
                         ASSERT(index_1Plus,<,grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]);
                         ASSERT(index_1Moins,<,grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]);
 
+                        double E_y_prev = E_y_tmp[index];
+
                         E_y_tmp[index] = C_eye[index] * E_y_tmp[index]
                                 + C_eyh_1[index] * (H_x_tmp[index_1Plus] - H_x_tmp[index_1Moins])
                                 - C_eyh_2[index] * (H_z_tmp[index_2Plus] - H_z_tmp[index_2Moins]);
+
+                        /* COMPUTE ABSOLUTE TRAPEZOIDAL INTEGRATION */
+                            trapz_without_dt(
+                                std::abs(E_y_prev),
+                                std::abs(E_y_tmp[index]),
+                                &Ey_trapz_absolute[index]
+                            );
+
+                        /* END OF COMPUTE ABSOLUTE TRAPEZOIDAL INTEGRATION */
 
                     }
                 }
@@ -1786,6 +1810,8 @@ void AlgoElectro_NEW::update(
                         time_beg,
                         time_end,
                         Ez_trapz_absolute,
+                        Ey_trapz_absolute,
+                        Ex_trapz_absolute,
                         dt
                     );
                 }
@@ -4998,6 +5024,8 @@ bool AlgoElectro_NEW::SteadyStateAnalyser(
     const double time_beg,
     const double time_end,
     const std::vector<double> &Ez_trapz_absolute,
+    const std::vector<double> &Ey_trapz_absolute,
+    const std::vector<double> &Ex_trapz_absolute,
     double dt
 ){
 
@@ -5050,15 +5078,13 @@ bool AlgoElectro_NEW::SteadyStateAnalyser(
 
     size_t index;
 
-    std::vector<double> amplitudes_Ez(
-          (grid.size_Ez[2])
-        * (grid.size_Ez[1])
-        * (grid.size_Ez[0])
-    );
-
     double average_amplitude = 0.0;
 
     size_t counter = 0;
+
+    ////////////////////////////////////////////////////////////////
+    // WE DIRECTLY PUT THE AMPLITUDE IN THE ELECTRIC FIELD VECTOR //
+    ////////////////////////////////////////////////////////////////
 
     // Electric field along Z:
     for(size_t K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
@@ -5067,13 +5093,13 @@ bool AlgoElectro_NEW::SteadyStateAnalyser(
 
                 index = I + grid.size_Ez[0] * ( J + grid.size_Ez[1] * K);
 
-                if(index >= amplitudes_Ez.size()){
+                if(index >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
                     DISPLAY_ERROR_ABORT_CLASS(
                         "Index out of bound..."
                     );
                 }
 
-                amplitudes_Ez[index] = Ez_trapz_absolute[index] / res * dt;
+                grid.E_z[index] = Ez_trapz_absolute[index] / res * dt;
 
                 if(I == 2 && J == 2 && K == 2){
                     printf( "\n>>> res     %.20g"
@@ -5081,13 +5107,13 @@ bool AlgoElectro_NEW::SteadyStateAnalyser(
                             "\n>>> Amplit  %.20g\n",
                             res,
                             Ez_trapz_absolute[index]*dt,
-                            amplitudes_Ez[index]);
+                            grid.E_z[index]);
                 }
 
                 if(counter == 0){
-                    average_amplitude = amplitudes_Ez[index];
+                    average_amplitude = grid.E_z[index];
                 }else{
-                    average_amplitude = average_amplitude * (counter-1) + amplitudes_Ez[index];
+                    average_amplitude = average_amplitude * (counter-1) + grid.E_z[index];
                     average_amplitude /= counter;
                 }
                 counter++;
@@ -5096,7 +5122,93 @@ bool AlgoElectro_NEW::SteadyStateAnalyser(
         }
     }
 
-    printf("\n\t>>> Average ampltide is %.15g.\n\n",average_amplitude);
+    printf("\n\t>>> Average ampltide of Ez is %.15g.\n\n",average_amplitude);
+
+    average_amplitude = 0.0;
+
+    counter = 0;
+
+    // Electric field along X:
+    for(size_t K = 1 ; K < grid.size_Ex[2]-1 ; K ++){
+        for(size_t J = 1 ; J < grid.size_Ex[1]-1 ; J ++){
+            for(size_t I = 1 ; I < grid.size_Ex[0]-1 ; I ++){
+
+                index = I + grid.size_Ex[0] * ( J + grid.size_Ex[1] * K);
+
+                if(index >= grid.size_Ex[2]*grid.size_Ex[2]*grid.size_Ex[2]){
+                    DISPLAY_ERROR_ABORT_CLASS(
+                        "Index out of bound..."
+                    );
+                }
+
+                grid.E_x[index] = Ex_trapz_absolute[index] / res * dt;
+
+                if(I == 2 && J == 2 && K == 2){
+                    printf( "\n>>> res     %.20g"
+                            "\n>>> Ex_trap %.20g"
+                            "\n>>> Amplit  %.20g\n",
+                            res,
+                            Ex_trapz_absolute[index]*dt,
+                            grid.E_x[index]);
+                }
+
+                if(counter == 0){
+                    average_amplitude = grid.E_x[index];
+                }else{
+                    average_amplitude = average_amplitude * (counter-1) + grid.E_x[index];
+                    average_amplitude /= counter;
+                }
+                counter++;
+
+            }
+        }
+    }
+
+    printf("\n\t>>> Average ampltide of Ex is %.15g.\n\n",average_amplitude);
+
+    average_amplitude = 0.0;
+
+    counter = 0;
+
+    // Electric field along X:
+    for(size_t K = 1 ; K < grid.size_Ey[2]-1 ; K ++){
+        for(size_t J = 1 ; J < grid.size_Ey[1]-1 ; J ++){
+            for(size_t I = 1 ; I < grid.size_Ey[0]-1 ; I ++){
+
+                index = I + grid.size_Ey[0] * ( J + grid.size_Ey[1] * K);
+
+                if(index >= grid.size_Ey[2]*grid.size_Ey[2]*grid.size_Ey[2]){
+                    DISPLAY_ERROR_ABORT_CLASS(
+                        "Index out of bound..."
+                    );
+                }
+
+                grid.E_y[index] = Ey_trapz_absolute[index] / res * dt;
+
+                if(I == 2 && J == 2 && K == 2){
+                    printf( "\n>>> res     %.20g"
+                            "\n>>> Ey_trap %.20g"
+                            "\n>>> Amplit  %.20g\n",
+                            res,
+                            Ey_trapz_absolute[index]*dt,
+                            grid.E_y[index]);
+                }
+
+                if(counter == 0){
+                    average_amplitude = grid.E_y[index];
+                }else{
+                    average_amplitude = average_amplitude * (counter-1) + grid.E_y[index];
+                    average_amplitude /= counter;
+                }
+                counter++;
+
+            }
+        }
+    }
+
+    printf("\n\t>>> Average ampltide of Ey is %.15g.\n\n",average_amplitude);
+
+
     *is_steady_state_for_all_mpi = true;
     return true;
 }

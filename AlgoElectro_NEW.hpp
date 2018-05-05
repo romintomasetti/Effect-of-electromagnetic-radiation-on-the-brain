@@ -81,6 +81,8 @@ class AlgoElectro_NEW{
             const double time_beg,
             const double time_end,
             const std::vector<double> &Ez_trapz_absolute,
+            const std::vector<double> &Ey_trapz_absolute,
+            const std::vector<double> &Ex_trapz_absolute,
             double dt
         );
 
