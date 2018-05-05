@@ -243,7 +243,7 @@ class ElectromagneticSource{
 
 
 				/// Retrieve the frequency of the source:
-				double speedOfLight = 3E8;
+				double speedOfLight = 1/sqrt( VACUUM_PERMITTIVITY * VACUUM_PERMEABILITY );
 				double freq   = this->frequency[ID_Source];
 				double lambda = speedOfLight / freq;
 
