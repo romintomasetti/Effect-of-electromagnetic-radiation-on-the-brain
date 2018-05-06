@@ -158,6 +158,13 @@ INCLUDE_DIRECTORIES( UTILS )
 ADD_SUBDIRECTORY(thermo)
 INCLUDE_DIRECTORIES(thermo)
 
+##### Brain tests #########
+ADD_SUBDIRECTORY(BrainScans)
+INCLUDE_DIRECTORIES(BrainScans)
+
+##### CMake_tests #########
+ADD_SUBDIRECTORY(CMake_tests)
+
 ##### VTL_BOMAN #################
 ADD_SUBDIRECTORY(vtl_boman)
 INCLUDE_DIRECTORIES(vtl_boman)
