@@ -65,6 +65,12 @@ void check_input_file_name_given(int argc, char *argv[],map<std::string,std::str
 int main(int argc, char *argv[]){
 	
 	unsigned int VERBOSITY = 5;
+
+	char cwd[1024];
+	if (getcwd(cwd, sizeof(cwd)) != NULL)
+		fprintf(stdout, "Current working dir: %s\n", cwd);
+	else
+		perror("getcwd() error");
 	
 	omp_set_nested(1);
 	omp_set_dynamic(0);
@@ -172,7 +178,7 @@ int main(int argc, char *argv[]){
 		cout << "Calling all the destructors.\n";
 	#endif
 	
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 /**
@@ -183,6 +189,9 @@ void check_input_file_name_given(int argc, char *argv[],map<std::string,std::str
 	for(int I = 0 ; I < argc ; I ++){
 		if(strcmp(argv[I],"./main") == 0 || strcmp(argv[I],"main") == 0)
 			continue;
+		if(strstr(argv[I],"main") != NULL ){
+			continue;
+		}
 		//printf("Arg[%d] = %s\n",I,argv[I]);
 
 		/// If argv[I] is "-inputfile", use it:
