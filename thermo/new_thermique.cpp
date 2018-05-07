@@ -10,9 +10,8 @@
 #include "vtl.h"
 #include "vtlSPoints.h"
 
-#include "readInputGeometryFile.h"
-//#include <cblas.h>
-//#include <mkl.h>
+#include "../CREATE_GEOMETRY/readInputGeometryFile.h"
+
 #include <omp.h>
 #include "mpi.h"
 #include "dmumps_c.h"

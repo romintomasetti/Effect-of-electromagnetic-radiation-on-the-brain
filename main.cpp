@@ -57,7 +57,7 @@
 
 #include "boost/format.hpp"
 
-#include "algo_thermo.cpp"
+#include "algo_thermo.hpp"
 
 using namespace std;
 
@@ -173,6 +173,9 @@ int main(int argc, char *argv[]){
 	std::vector<double> Norm = algoElectro_newTst.ComputeNormEsquareBIS(gridTest);
 	printf("SUCCESS\n");
 	printf("You successfully reach the point after the update and the norm computations\n");
+	
+	// Call thermal solver:
+	algo_thermo(argc, argv, gridTest);
 	
 
 	profiler.probeMaxRSS();

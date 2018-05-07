@@ -140,7 +140,8 @@ int main(int argc, char *argv[]){
 	printf(">>> File %s is now closed... You can use your new geometry input file !\n",output_name.c_str());
 
 	/// Read the file and put it inside a vector:
-	unsigned int* material_at_nodes = read_input_geometry_file(output_name);
+	size_t size_verify = 0;
+	unsigned int* material_at_nodes = read_input_geometry_file(output_name,&size_verify);
 	printf(">>> DONE!\n");
 
 	size_t counter = 0;

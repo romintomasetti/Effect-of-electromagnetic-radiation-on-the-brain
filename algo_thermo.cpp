@@ -1,33 +1,17 @@
-#include <stdlib.h>
-#include <string>
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <map>
-#include <cmath>
-#include <mkl.h>
-#include <stdio.h>
-#include "vtl.h"
-#include "vtlSPoints.h"
+#include "algo_thermo.hpp"
 
-#include "readInputGeometryFile.h"
-//#include <cblas.h>
-//#include <mkl.h>
-#include <omp.h>
-#include "mpi.h"
-#include "dmumps_c.h"
 using namespace vtl;
 
 
 #ifndef M_PI
- #define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846
 #endif
 
 //Function get_my_rank
 int get_my_rank()
 {
     int myid;
-    int ierr = MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     return myid;
 }
 
@@ -1863,38 +1847,38 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
 
 
 
-int algo_thermo(int argc, char **argv, GridCreator_NEW & grid)
+int algo_thermo(int argc, char **argv, GridCreator_NEW & gridElectro)
 {
 
    // MPI_Init(&argc, &argv);
 
     //Size of the domain, in nodes
-    unsigned int N_x=(grid.input_parser.lengthX_WholeDomain_Thermal/grid.input_parser.delta_Thermal)+1;
-    unsigned int N_y=(grid.input_parser.lengthY_WholeDomain_Thermal/grid.input_parser.delta_Thermal)+1;
-    unsigned int N_z=(grid.input_parser.lengthZ_WholeDomain_Thermal/grid.input_parser.delta_Thermal)+1;
+    unsigned int N_x=(gridElectro.input_parser.lengthX_WholeDomain_Thermal/gridElectro.input_parser.delta_Thermal)+1;
+    unsigned int N_y=(gridElectro.input_parser.lengthY_WholeDomain_Thermal/gridElectro.input_parser.delta_Thermal)+1;
+    unsigned int N_z=(gridElectro.input_parser.lengthZ_WholeDomain_Thermal/gridElectro.input_parser.delta_Thermal)+1;
 
     //Spatial step [m]
-    double Delta = grid.input_parser.delta_Thermal;
+    double Delta = gridElectro.input_parser.delta_Thermal;
 
     //Time step [s]
-    double dt = grid.input_parser.thermal_algo_time_step;
+    double dt = gridElectro.input_parser.thermal_algo_time_step;
 
     //Parameter theta [-]
-    double theta =grid.input_parser.theta_parameter;  //!!!!!!!!!!!!!!
+    double theta =gridElectro.input_parser.theta_parameter;  //!!!!!!!!!!!!!!
 
     // Temperature air [K]
-    double T_infiny=grid.input_parser.temperature_ambiant;   //!!!!!!!!!!!!!!!!!!!!!!!
+    double T_infiny=gridElectro.materials.unified_material_list[0].initial_temperature;   //!!!!!!!!!!!!!!!!!!!!!!!
 
     // Convection Parameter
-    double h=grid.input_parser.convection_parameter;          //!!!!!!!!!!!!!!!!!!!!!!!!
+    double h=gridElectro.input_parser.convection_parameter;          //!!!!!!!!!!!!!!!!!!!!!!!!
 
     // Total number of nodes    
     unsigned int Number_total = N_x*N_y*N_z;
 
     //  temps de fin
-    double  t_final_thermal=grid.input_parser.t_final_thermal;
+    double  t_final_thermal=gridElectro.input_parser.t_final_thermal;
     //Type of simulation
-    char type_simulation[]=grid.input_parser.type_simulation_thermal;
+    char *type_simulation = gridElectro.input_parser.type_simulation_thermal;
 
     // Boundary  
     //  choose between "Neumann"  homogeneous Neumann condition, "Dirichlet" Dirichlet condition or "Convection" convection conditions
@@ -1917,10 +1901,11 @@ int algo_thermo(int argc, char **argv, GridCreator_NEW & grid)
 
     //Temperature initiale
     // Number of different materials
-    unsigned int numberofdiffents_material=grid.materials.unified_material_list.size();
+    unsigned int numberofdiffents_material = gridElectro.materials.unified_material_list.size();
 
     //Initilization of temperature
     double *temperature_initial= (double*) calloc(numberofdiffents_material,sizeof(double));
+
     if(temperature_initial == NULL){	 
         printf("The table is not calloc().This error comes from Line %d \n",__LINE__);
         abort();
@@ -1928,7 +1913,7 @@ int algo_thermo(int argc, char **argv, GridCreator_NEW & grid)
 
     //Recuperate the temperature
     for(unsigned int i=0 ;i<numberofdiffents_material;i++){
-        temperature_initial[i]=grid.materials.unified_material_list[i].initial_temperature;
+        temperature_initial[i]=gridElectro.materials.unified_material_list[i].initial_temperature;
     }
 
     //%%%%%%%%%%%%%%% Case of the brain %%%%%%%%%%%%%%%%%%%%%%%%%

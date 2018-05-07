@@ -46,6 +46,7 @@ endif()
 #Add files to be compiled:
 FILE(GLOB SRCS *.h *.hpp *.cpp *.c)
 ADD_EXECUTABLE(${EXEC_NAME} ${SRCS})
+message(${SRCS})
 
 # OpenMP --
 find_package(OpenMP REQUIRED)
@@ -155,8 +156,8 @@ ADD_SUBDIRECTORY   ( UTILS )
 INCLUDE_DIRECTORIES( UTILS )
 
 ##### THERMO ##############
-ADD_SUBDIRECTORY(thermo)
-INCLUDE_DIRECTORIES(thermo)
+#ADD_SUBDIRECTORY(thermo)
+#INCLUDE_DIRECTORIES(thermo)
 
 ##### Brain tests #########
 macro (CHECK_IF_DEBUG)
@@ -178,6 +179,10 @@ ADD_SUBDIRECTORY(CMake_tests)
 ##### VTL_BOMAN #################
 ADD_SUBDIRECTORY(vtl_boman)
 INCLUDE_DIRECTORIES(vtl_boman)
+
+##### CREATE_GEOMETRY ###########
+ADD_SUBDIRECTORY(CREATE_GEOMETRY)
+INCLUDE_DIRECTORIES(CREATE_GREOMTRY)
 
 ##### VTL_ROMIN #################
 ADD_SUBDIRECTORY(vtl_romin)
@@ -217,6 +222,6 @@ target_link_libraries(${EXEC_NAME} -pthread -I/cm/shared/apps/openmpi/1.6.4/gcc-
 ###########################
 ## LINKING LIBRARIES ######
 ###########################
-TARGET_LINK_LIBRARIES(${EXEC_NAME} json disc_integr utils vtl vtl_romin)
+TARGET_LINK_LIBRARIES(${EXEC_NAME} json disc_integr utils vtl vtl_romin create_geometry)
 TARGET_LINK_LIBRARIES(${EXEC_NAME} ${Boost_LIBRARIES})
 

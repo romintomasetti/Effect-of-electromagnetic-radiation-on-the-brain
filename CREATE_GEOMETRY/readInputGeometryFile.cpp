@@ -1,21 +1,6 @@
-#ifndef READINPUTGEOMETRYFILE_H
-#define READINPUTGEOMETRYFILE_H
+#include "readInputGeometryFile.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <string>
-#include <iostream>
-#include <vector>
-#include <fstream>
-
-#include <cctype>
-
-#include <sstream>
-
-using namespace std;
-
-unsigned int* read_input_geometry_file(std::string filename){
+CREATE_GEOMETRY_API unsigned int* read_input_geometry_file(std::string filename, size_t *size_read){
 
 	ifstream geoFile(filename.c_str());
 
@@ -53,7 +38,8 @@ unsigned int* read_input_geometry_file(std::string filename){
 	for(size_t K = 0 ; K < vector.size() ; K++)
 		vector_to_return[K] = vector[K];
 
+	*size_read = vector.size();
+
 	return vector_to_return;
 }
 
-#endif
