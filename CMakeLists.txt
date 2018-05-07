@@ -159,6 +159,16 @@ ADD_SUBDIRECTORY(thermo)
 INCLUDE_DIRECTORIES(thermo)
 
 ##### Brain tests #########
+macro (CHECK_IF_DEBUG)
+  if (NOT (CMAKE_BUILD_TYPE MATCHES Debug))
+    get_filename_component(THIS_DIR ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+    STRING(REGEX REPLACE " " "_" THIS_DIR ${THIS_DIR}) #Replace spaces with underscores
+    if (DEFINED DEBUG_${THIS_DIR})
+      message(STATUS "Note: Targets in directory ${THIS_DIR} will be built Debug") #A reminder
+      set (CMAKE_BUILD_TYPE Debug)
+    endif()
+  endif()
+endmacro()
 ADD_SUBDIRECTORY(BrainScans)
 INCLUDE_DIRECTORIES(BrainScans)
 
