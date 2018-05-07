@@ -33,6 +33,7 @@ typedef struct material_struct{
 		printf("\t> %s [ID %u]:\n",name.c_str(),ID);
 		for(auto it = properties.cbegin(); it != properties.cend() ; it ++)
 			printf("\t\t> %30s:%10lf\n",it->first.c_str(),it->second);
+		printf("\t\t> Initial temperature is %.9g.\n",initial_temperature);
 		printf("\n");
 	}
 }material_struct;
@@ -160,6 +161,8 @@ class Materials{
 		 * 		returns the frequency;
 		 */
 		double find_frequency_from_mat_file_name(std::string filename);
+
+		void printf_unified_material_list(void);
 };
 
 #endif

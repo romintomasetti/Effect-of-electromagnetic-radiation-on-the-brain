@@ -57,6 +57,7 @@
 
 #include "boost/format.hpp"
 
+#include "algo_thermo.cpp"
 
 using namespace std;
 
@@ -116,6 +117,9 @@ int main(int argc, char *argv[]){
 		input_parser.GetInitTemp_FromMaterialName
 	);
 
+	//allMat.printf_unified_material_list();
+	//printf("Number of materials is %zu.\n",allMat.unified_material_list.size());
+	//abort();
 
 	
 	std::string profilingName;

@@ -219,6 +219,12 @@ void Materials::unification_of_data_files(void){
 	}
 }
 
+void Materials::printf_unified_material_list(void){
+	for(size_t I = 0 ; I < this->unified_material_list.size() ; I ++){
+		this->unified_material_list[I].printf_mat();
+	}
+}
+
 std::string format_vector_double(std::vector<double> const &vec){
 	std::stringstream ret;
 	for(size_t I = 0 ; I < vec.size() ; I ++){

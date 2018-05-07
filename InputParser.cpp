@@ -1265,10 +1265,10 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					if(currentLine == "$STOP_SIMUL_AFTER"){
 						bool do_abort = false;
 						/// Check number of steps have been set different from zero:
-						if(this->maxStepsForOneCycleOfThermal == 0){
-							fprintf(stderr,"In %s :: ERROR :: max number of steps for the thermal"
-										" algorithm is equal to zero. Aborting.\n",
-										__FUNCTION__);
+						if(this->t_final_thermal == 0){
+							DISPLAY_ERROR_ABORT_CLASS(
+								"Final thermal time must be diff. from zero."
+							);
 							do_abort = true;
 						}
 						if(this->maxStepsForOneCycleOfElectro == 0){
@@ -1319,25 +1319,14 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 							abort();
 							#endif
 						}
-					}else if(propName == "maxStepsForOneCycleOfThermal"){
-						/**
-						 * This property is usefull to impose a maximum number of steps
-						 * for the electromagnetic solver before stopping.
-						 */
-						/// Transform the string in a size_t with std::stold and a cast:
-						this->maxStepsForOneCycleOfThermal = (size_t) std::stold(propGiven);
-						/*printf("max time step thermal %zu\n\n",
-							this->maxStepsForOneCycleOfThermal);*/
+					}else if(propName == "T_FINAL_THERMAL"){
 						
-						if(this->maxStepsForOneCycleOfThermal == 0){
-							fprintf(stderr,"In %s ::maxStepsForOneCycleOfThermal has been set to zero. Aborting.\n",
-								__FUNCTION__);
-							fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
-							#ifdef MPI_COMM_WORLD
-							MPI_Abort(MPI_COMM_WORLD,-1);
-							#else
-							abort();
-							#endif
+						this->t_final_thermal = std::stod(propGiven);
+						
+						if(this->t_final_thermal <= 0){
+							DISPLAY_ERROR_ABORT_CLASS(
+								"The final time for thermal is not greater than zero."
+							);
 						}
 
 					}else{
@@ -1463,6 +1452,9 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					if(propName == "THERMAL_TIME_STEP"){
 						this->thermal_algo_time_step = std::stod(propGiven);
 						
+					}else if(propName == "THETA_THERMAL"){
+						this->theta_parameter = std::stod(propGiven);
+					
 					}else{
 						printf("InputParser::readHeader_RUN_INFOS:: You didn't provide a ");
 						printf("good member for $RUN_INFOS$TIME_STEP.\nAborting.\n");
@@ -1604,7 +1596,16 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 							this->THERMAL_FACE_BC_TYPE[numberFace].c_str(),
 							this->THERMAL_FACE_BC_VALUE[numberFace]);*/
 						
-						
+					}else if(propName == "THERMAL_TYPE_SIMULATION"){
+						if(    boost::iequals(propGiven,"cerveau") 
+							|| boost::iequals(propGiven,"analytic"))
+						{
+							this->type_simulation_thermal = new char[propGiven.length() + 1];
+							strcpy(this->type_simulation_thermal, propGiven.c_str());
+						}
+					}else if( propName == "CONVECTION_COEFFICIENT" ){
+
+						this->convection_parameter = std::stod(propGiven);
 											
 					}else{
 						printf("InputParser::readHeader_RUN_INFOS:: You didn't provide a ");

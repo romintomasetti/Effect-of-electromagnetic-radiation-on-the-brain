@@ -218,7 +218,19 @@ class InputParser{
 		double lengthZ_WholeDomain_Thermal = 0.0;
 
 		size_t maxStepsForOneCycleOfElectro = 0;
-		size_t maxStepsForOneCycleOfThermal = 0;
+		
+		
+		// Final time for thermo algo:
+		double t_final_thermal = 0.0;
+
+		// Theta parameter thermal:
+		double theta_parameter = 0.0;
+
+		// Type of simulation thermal:
+		char *type_simulation_thermal = NULL;
+
+		// Convection parameter of air:
+		double convection_parameter = 0.0;
 
 		std::map<std::string,std::string> TEST_PARAVIEW_MPI_ARGS;
 
