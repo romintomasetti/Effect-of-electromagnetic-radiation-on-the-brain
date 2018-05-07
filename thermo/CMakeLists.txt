@@ -40,6 +40,8 @@ endif()
 
 # MUMPS -- 
 SET(MUMPSDIR /home/users/r/t/rtoma/MUMPS_5.1.2)
+set(METIS_INCLUDE_DIR /home/users/r/t/rtoma/local/include)
+set(METIS_LIBRARIES /home/users/r/t/rtoma/local/lib/libparmetis.a /home/users/r/t/rtoma/local/lib/libmetis.a)
 #SET(MUMPSDIR $ENV{HOME}/MUMPS_5.1.2)
 #SET(MUMPSDIR /home/boman/src/mumps-5.1.2)
 #SET(MUMPSDIR C:/mingw-w64/src/mumps-5.1.2)
@@ -51,6 +53,7 @@ if(NOT MUMPS_INCLUDE_DIRS)
     message(FATAL_ERROR "MUMPS include dir not found!")
 endif()
 include_directories(${MUMPS_INCLUDE_DIRS})
+include_directories(${METIS_INCLUDE_DIR})
 
 set(MUMPS_LIBRARIES "")
 find_library(DMUMPSLIB  NAMES dmumps PATHS ${MUMPSDIR}/lib NO_SYSTEM_ENVIRONMENT_PATH)
@@ -60,7 +63,7 @@ message(STATUS "DMUMPSLIB=" ${DMUMPSLIB})
 message(STATUS "COMMONLIB=" ${COMMONLIB})
 message(STATUS "PORDLIB=" ${PORDLIB})
 
-target_link_libraries(TEST_MUMPS ${DMUMPSLIB} ${COMMONLIB} ${PORDLIB})
+target_link_libraries(TEST_MUMPS ${DMUMPSLIB} ${COMMONLIB} ${PORDLIB} ${METIS_LIBRARIES})
 
 # ubuntu
 #target_link_libraries(TEST_MUMPS -lgfortran)
