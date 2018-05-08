@@ -1,7 +1,8 @@
 FILE(GLOB SRCS *.h *.cpp)
 ADD_EXECUTABLE(TEST_MUMPS ${SRCS})
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/vtl_boman)
-TARGET_LINK_LIBRARIES(TEST_MUMPS vtl)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/CREATE_GEOMETRY)
+TARGET_LINK_LIBRARIES(TEST_MUMPS vtl create_geometry)
 
 
 
@@ -39,7 +40,7 @@ if(OPENMP_FOUND)
 endif()
 
 # MUMPS -- 
-SET(MUMPSDIR /home/users/r/t/rtoma/MUMPS_5.1.2)
+SET(MUMPSDIR /home/users/r/t/rtoma/src/MUMPS_5.1.2)
 set(METIS_INCLUDE_DIR /home/users/r/t/rtoma/local/include)
 set(METIS_LIBRARIES /home/users/r/t/rtoma/local/lib/libparmetis.a /home/users/r/t/rtoma/local/lib/libmetis.a)
 #SET(MUMPSDIR $ENV{HOME}/MUMPS_5.1.2)
