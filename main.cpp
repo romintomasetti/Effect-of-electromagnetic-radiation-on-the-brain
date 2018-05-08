@@ -175,7 +175,7 @@ int main(int argc, char *argv[]){
 	printf("You successfully reach the point after the update and the norm computations\n");
 	
 	// Call thermal solver:
-	algo_thermo(argc, argv, gridTest);
+	//algo_thermo(argc, argv, gridTest);
 	
 
 	profiler.probeMaxRSS();
