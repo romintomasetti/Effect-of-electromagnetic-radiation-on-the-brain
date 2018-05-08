@@ -10,6 +10,11 @@ bool compareFiles(const std::string& p1, const std::string& p2) {
 
   if (f1.fail() || f2.fail()) {
     fprintf(stderr,"Problem opening one of the files.\n");
+    if( f1.fail() ){
+	fprintf(stderr,"\n\t>>> File %s cannot be opened.\n",p1.c_str());
+    }else{
+	fprintf(stderr,"\n\t>>> File %s cannot be opened.\n",p2.c_str());
+    }
     return false; //file problem
   }
 
