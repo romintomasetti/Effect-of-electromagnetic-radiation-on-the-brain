@@ -156,8 +156,8 @@ ADD_SUBDIRECTORY   ( UTILS )
 INCLUDE_DIRECTORIES( UTILS )
 
 ##### THERMO ##############
-#ADD_SUBDIRECTORY(thermo)
-#INCLUDE_DIRECTORIES(thermo)
+ADD_SUBDIRECTORY(thermo)
+INCLUDE_DIRECTORIES(thermo)
 
 ##### Brain tests #########
 macro (CHECK_IF_DEBUG)
@@ -192,9 +192,11 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/vtl_romin)
 ############## THERMO #######################################
 
 # MUMPS -- 
-SET(MUMPSDIR /home/users/r/t/rtoma/MUMPS_5.1.2)
-set(METIS_INCLUDE_DIR /home/users/r/t/rtoma/local/include)
+SET(MUMPSDIR /home/users/r/t/rtoma/src/MUMPS_5.1.2)
+set(METISDIR /home/users/r/t/rtoma/local/)
 set(METIS_LIBRARIES /home/users/r/t/rtoma/local/lib/libparmetis.a /home/users/r/t/rtoma/local/lib/libmetis.a)
+
+
 
 find_path(MUMPS_INCLUDE_DIRS NAMES "dmumps_c.h" PATHS ${MUMPSDIR}/include NO_SYSTEM_ENVIRONMENT_PATH)
 message(STATUS "MUMPS_INCLUDE_DIRS=" ${MUMPS_INCLUDE_DIRS})
@@ -202,7 +204,17 @@ if(NOT MUMPS_INCLUDE_DIRS)
     message(FATAL_ERROR "MUMPS include dir not found!")
 endif()
 include_directories(${MUMPS_INCLUDE_DIRS})
+
+find_path(METIS_INCLUDE_DIR NAMES "metis.h" PATHS ${METISDIR}/include NO_SYSTEM_ENVIRONMENT_PATH)
+message(STATUS "METIS_INCLUDE_DIR=" ${METIS_INCLUDE_DIR})
+if(NOT METIS_INCLUDE_DIR)
+    message(FATAL_ERROR "METIS include dir not found!")
+endif()
+message(STATUS "METIS_INCLUDE_DIR = ${METIS_INCLUDE_DIR}")
 include_directories(${METIS_INCLUDE_DIR})
+
+message(STATUS "METIS_LIBRARIES == ${METIS_LIBRARIES}")
+
 
 set(MUMPS_LIBRARIES "")
 find_library(DMUMPSLIB  NAMES dmumps PATHS ${MUMPSDIR}/lib NO_SYSTEM_ENVIRONMENT_PATH)
