@@ -664,8 +664,8 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
     /// Read the file and put it inside a vector:
     size_t size_mat = 0;
 	unsigned int* material_at_nodes = NULL;
-    if( NULL != (material_at_nodes = read_input_geometry_file("../../thermo/test.geometry",&size_mat))){
-        printf("../../thermo/test.geometry\n");
+    if( NULL != (material_at_nodes = read_input_geometry_file("../thermo/test.geometry",&size_mat))){
+        printf("../thermo/test.geometry\n");
     }else if( NULL != (material_at_nodes = read_input_geometry_file("test.geometry",&size_mat))){
         printf("thermo/test.geometry\n");
     }else{
