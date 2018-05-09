@@ -8,7 +8,6 @@
 *.gz
 *.pdf
 *.log
-*.vti
 *.pvti
 *.vtk
 *.json

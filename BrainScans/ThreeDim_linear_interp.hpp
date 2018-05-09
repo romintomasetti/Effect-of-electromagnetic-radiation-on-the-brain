@@ -8,6 +8,25 @@
 
 #define NEWGRID(I,J,K)     this->newGrid[    (I) + this->newSize[0]     * ( (J) + (K) * this->newSize[1])]
 
+void progress_bar(size_t  width_bar, double progress, size_t curr, size_t max){
+  if(progress < 0 || progress > 1){
+    fprintf(stderr,"The progress must be between 0 and 1.\n");
+  }
+  std::cout << "[";
+  size_t pos = width_bar * progress;
+  for(size_t i = 0 ; i < width_bar ; i ++){
+    if( i < pos ){
+      std::cout << "=";
+    }else if( i == pos){
+      std::cout << ">";
+    }else{
+      std::cout << " ";
+    }
+  }
+  std::cout << "]" << size_t(progress * 100.0) << " % (Current " << curr << " over " << max << ")\r";
+  std::cout.flush(); 
+}
+
 class ThreeDim_linear_interp{
     private:
         // Initial 3D grid on which we perform trilinear interpolation.
@@ -36,10 +55,11 @@ class ThreeDim_linear_interp{
                 printf("Welcome to the trilinear grid interpolation...\n");
                 this->newGrid.resize(newSize[0]*newSize[1]*newSize[2]);
                 this->ratio = ratio;
+                printf("Exiting contructor.\n");
         }
 
         // Trilinear interpolation method:
-        std::vector<double> trilinearInterp(void){
+        std::vector<double> &trilinearInterp(void){
 
             printf("Interpolation en cours...\n");
 
@@ -74,6 +94,10 @@ class ThreeDim_linear_interp{
             double c_0;
             double c_1;
             
+            size_t counter_bar = 0;
+            size_t total       = this->newSize[0] * this->newSize[1] * this->newSize[2];
+            size_t bar_width   = 70;
+            
             /** LOOP OVER Z DIRECTION **/
             for(size_t K = 0 ; K < this->newSize[2] ; K ++ ){
 
@@ -92,6 +116,8 @@ class ThreeDim_linear_interp{
 
                 /** LOOP OVER Y DIRECTION **/
                 for(size_t J = 0 ; J < this->newSize[1] ; J ++ ){
+                
+                    progress_bar(bar_width, (double)(counter_bar) / (double)(total),counter_bar,total);
 
                     if( J != 0 && J%ratio == 0 && J < this->newSize[1] - 1 ){
                         use_J++;
@@ -108,6 +134,8 @@ class ThreeDim_linear_interp{
 
                     /** LOOP OVER X DIRECTION **/
                     for(size_t I = 0 ; I < this->newSize[0] ; I ++ ){
+                    
+                        counter_bar ++;                        
 
                         if( I != 0 && I%ratio == 0 && I < this->newSize[0] - 1 ){
                             use_I++;

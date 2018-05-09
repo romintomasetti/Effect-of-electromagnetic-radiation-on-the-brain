@@ -88,7 +88,7 @@ $RUN_INFOS
 		maxStepsForOneCycleOfElectro=40
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
-		maxStepsForOneCycleOfThermal=5E5 
+		T_FINAL_THERMAL=5E5 
 		// input_parser.maxStepsForOneCycleOfThermal
 
 	$STOP_SIMUL_AFTER
