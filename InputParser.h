@@ -229,6 +229,9 @@ class InputParser{
 
 		// Type of simulation thermal:
 		char *type_simulation_thermal = NULL;
+        
+        // Geometry file for thermal algorithm:
+        char *geometry_material_thermo = NULL;
 
 		// Convection parameter of air:
 		double convection_parameter = 0.0;

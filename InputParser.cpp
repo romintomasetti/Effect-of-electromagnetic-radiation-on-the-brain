@@ -940,6 +940,10 @@ void InputParser::readHeader_MESH (ifstream &file){
 						}
 						//std::cout << "Material dirctory is " << this->material_data_directory << std::endl;
 
+                    }else if( boost::iequals( propName , "geometry_material_thermo") ){
+                        this->geometry_material_thermo = new char[propGiven.length() + 1];
+						strcpy(this->geometry_material_thermo, propGiven.c_str());
+                        
 					}else if(propName == "USE_GEOMETRY_FILE"){
 						// Parse the propGiven string:
 						std::vector<size_t> pos_acc_open
