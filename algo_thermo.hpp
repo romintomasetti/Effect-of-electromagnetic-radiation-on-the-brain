@@ -28,6 +28,10 @@ void init_MUMPS(DMUMPS_STRUC_C &id);
 
 void end_MUMPS(DMUMPS_STRUC_C &id);
 
+void wall_geometry(unsigned int *material_at_nodes,unsigned int N_x,unsigned int N_y, unsigned int N_z);
+
+void remplissage_material_at_nodes(unsigned int *material_at_nodes,unsigned int N_x,unsigned int N_y,unsigned int N_z);
+
 void convection_brain(
 	double *A,
 	MUMPS_INT *Indices_line_A,
@@ -86,7 +90,12 @@ void InitializeTemperature(
 	double T_infiny, 
 	double Delta,
 	double *temperature_initial,
-	unsigned int *material_at_nodes);
+	unsigned int *material_at_nodes,
+	double *temperature_initial_face,
+	unsigned int *Stateofeachface,
+	unsigned int type_simulation_value,
+	unsigned int thermal_distribution
+	);
 
 void ReadFile(int Number_total, double *Q,double dt);
 
@@ -115,7 +124,13 @@ void resolve(
 	double h,
 	double T_infiny,
 	unsigned int type_simulation_value,
-	double *temperature_initial);
+	double *temperature_initial,
+	double t_final_thermal,
+	double * temperature_initial_face,
+	unsigned int rate_save_thermo,
+	char *geometry_material,
+	unsigned int wall_thermo,
+	unsigned int thermal_distribution);
 
 int algo_thermo(
 	int argc,

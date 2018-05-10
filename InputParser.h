@@ -236,6 +236,15 @@ class InputParser{
 		// Convection parameter of air:
 		double convection_parameter = 0.0;
 
+		// Temperature infiny:
+		double temperature_convection=0.0;
+
+		// Case of the wall (analytic):
+		unsigned int wall_thermo = 0;
+
+		// Thermal distribution:
+		unsigned int thermal_distribution=0;
+
 		std::map<std::string,std::string> TEST_PARAVIEW_MPI_ARGS;
 
 		void deleteFiles(int MPI_RANK = 0);
