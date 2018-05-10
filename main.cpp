@@ -138,7 +138,9 @@ int main(int argc, char *argv[]){
 		MPI_communicator,
 		profiler);
 
-	gridTest.meshInitialization();
+	if(input_parser.apply_electro_algo == true){
+		gridTest.meshInitialization();
+	}
 
 	//gridTest.Display_size_fields();
 
@@ -148,8 +150,12 @@ int main(int argc, char *argv[]){
 			gridTest
 		);
 		
-	interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
-	interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
+
+	
+	if(input_parser.apply_electro_algo == true){
+		interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
+		interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
+	}
 
 	
 	AlgoElectro_NEW algoElectro_newTst(VERBOSITY);
