@@ -66,7 +66,8 @@ enum stringDollar_Header2{
 	MATERIALS,
 	ORIGINS,
 	PROBING_POINTS,
-	ELECTRO_STEADY_STATE
+	ELECTRO_STEADY_STATE,
+    ALGORITHM_TO_APPLY
 };
 
 class InputParser{
@@ -243,6 +244,7 @@ class InputParser{
         
         /// For the steady-state detection:
         size_t SteadyState_CheckEveryPoint = 0;
+        bool   check_steady_state          = false;
 
 		/////////////////////////////////////////////////
 		/// PARAMETER FOR THE ABC BOUNDARY CONDITIONS ///
@@ -262,6 +264,10 @@ class InputParser{
 		/////////////////////////////////////////////////
 		/// END OF PARAMETERS FOR THE PML BOUNDARY CONDITONS ///
 		/////////////////////////////////////////////////
+        
+        ////// Which algorithm is applied //////
+        bool apply_thermo_algo  = false;
+        bool apply_electro_algo = false;
 };
 
 #endif

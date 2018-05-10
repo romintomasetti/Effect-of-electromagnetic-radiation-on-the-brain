@@ -2,8 +2,6 @@
 #include "vtlSPoints.h"
 #include "vtl_spoints.h"
 
-#include "ThreeDim_linear_interp.hpp"
-
 #include <string>
 #include <vector>
 #include <iostream>
