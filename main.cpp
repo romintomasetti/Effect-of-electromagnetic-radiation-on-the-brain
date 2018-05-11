@@ -57,6 +57,8 @@
 
 #include "boost/format.hpp"
 
+#include "header_with_all_defines.hpp"
+
 #include "algo_thermo.hpp"
 
 using namespace std;
@@ -156,6 +158,9 @@ int main(int argc, char *argv[]){
 		interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
 		interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
 	}
+    
+    //MPI_Barrier(MPI_COMM_WORLD);
+    //DISPLAY_ERROR_ABORT("Abort dans le main, pas de souci !");
 
 	
 	AlgoElectro_NEW algoElectro_newTst(VERBOSITY);
