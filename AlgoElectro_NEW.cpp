@@ -310,6 +310,7 @@ double AlgoElectro_NEW::Compute_dt(GridCreator_NEW &mesh){
                 "Using the 1D case formula for computing dt !"
             );
         }
+
     
     return dt;
 }
@@ -1880,6 +1881,7 @@ void AlgoElectro_NEW::update(
                             gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
                             if(gauss < MIN_GAUSS_BEFORE_LET_BE){
                                 // do nothing
+                                E_z_tmp[index] = 0;
                             }else{
                                 E_z_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
                             }
@@ -1913,6 +1915,7 @@ void AlgoElectro_NEW::update(
                                 COEF_STD);*/
                             if(gauss < MIN_GAUSS_BEFORE_LET_BE){
                                 // do nothing
+                                E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
                             }else{
                                 E_z_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
                                 //printf("Applying.\n");
@@ -1946,6 +1949,7 @@ void AlgoElectro_NEW::update(
                             gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
                             if(gauss < MIN_GAUSS_BEFORE_LET_BE){
                                 // do nothing
+                                E_y_tmp[index] = 0;
                             }else{
                                 E_y_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
                             }
@@ -1969,6 +1973,7 @@ void AlgoElectro_NEW::update(
                             gauss = exp(-((t-MEAN)*(t-MEAN))/(2*STD*STD));
                             if(gauss < MIN_GAUSS_BEFORE_LET_BE){
                                 // do nothing
+                                E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
                             }else{
                                 E_y_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
                             }
@@ -1999,6 +2004,7 @@ void AlgoElectro_NEW::update(
 
                             if(gauss < MIN_GAUSS_BEFORE_LET_BE){
                                 // do nothing
+                                E_x_tmp[index] = 0;
                             }else{
                                 E_x_tmp[index] = 0;//sin(2*M_PI*frequency*current_time);
                             }
@@ -2022,6 +2028,7 @@ void AlgoElectro_NEW::update(
 
                             if(gauss < MIN_GAUSS_BEFORE_LET_BE){
                                 // do nothing
+                                E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
                             }else{
                                 E_x_tmp[index] = gauss * sin(2*M_PI*frequency*current_time);
                             }
@@ -5448,35 +5455,76 @@ double AlgoElectro_NEW::interpolationZ(size_t z1, size_t z2, size_t z3,
 }
 
 
-
-
-
-std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
-                                                   std::vector<double> Ey, std::vector<double> Ez)
+size_t AlgoElectro_NEW::findMinInVec(std::vector<size_t> vec)
 {
+    size_t minimum = INT_MAX;
+    size_t length = vec.size();
+    size_t i = 0;
+
+    for(i=0; i<length; i++)
+    {
+        if(vec[i] < minimum)
+            minimum = vec[i];
+    }
+
+    return minimum;
+}
+
+
+size_t AlgoElectro_NEW::findMin(size_t a, size_t b, size_t c)
+{
+    size_t minimum = std::min( std::min(a,b), c );
+
+    return minimum;
+}
+
+
+
+std::vector<double> AlgoElectro_NEW::ComputeNormE2square(GridCreator_NEW &grid)
+{
+    printf("Entering ComputeNormE2square\n");
+
     // Those indices will serve to go through all the nodes of the domain
     size_t i = 0;
     size_t j = 0;
     size_t k = 0;
 
+    // Those vectors will contain the number of centers along all the directions
+    std::vector<size_t> NbCentersX;
+    std::vector<size_t> NbCentersY;
+    std::vector<size_t> NbCentersZ;
+
     // This vector will contain the norm of the electric field at each node
     std::vector<double> ModulusE;
 
     // Number of centers for Ex along the 3 directions of space
-    size_t NbCentersExx = 1;
-    size_t NbCentersExy = 1;
-    size_t NbCentersExz = 1;
+    size_t NbCentersExx = grid.size_Ex[0] - 2;
+    NbCentersX.push_back(NbCentersExx);
+    size_t NbCentersExy = grid.size_Ex[1] - 2;
+    NbCentersX.push_back(NbCentersExy);
+    size_t NbCentersExz = grid.size_Ex[2] - 2;
+    NbCentersX.push_back(NbCentersExz);
+    printf("NbCentersX = [%zu, %zu,%zu]\n", NbCentersExx, NbCentersExy, NbCentersExz);
 
     // Number of centers for Ey along the 3 directions of space
-    size_t NbCentersEyx = 1;
-    size_t NbCentersEyy = 1;
-    size_t NbCentersEyz = 1;
+    size_t NbCentersEyx = grid.size_Ey[0] - 2;
+    NbCentersY.push_back(NbCentersEyx);
+    size_t NbCentersEyy = grid.size_Ey[1] - 2;
+    NbCentersY.push_back(NbCentersEyy);
+    size_t NbCentersEyz = grid.size_Ey[2] - 2;
+    NbCentersY.push_back(NbCentersEyz);
+    printf("NbCentersY = [%zu, %zu,%zu]\n", NbCentersEyx, NbCentersEyy, NbCentersEyz);
 
     // Number of centers for Ez along the 3 directions of space
-    size_t NbCentersEzx = 1;
-    size_t NbCentersEzy = 1;
-    size_t NbCentersEzz = 1;
-
+    size_t NbCentersEzx = grid.size_Ez[0] - 2;
+    NbCentersZ.push_back(NbCentersEzx);
+    size_t NbCentersEzy = grid.size_Ez[1] - 2;
+    NbCentersZ.push_back(NbCentersEzy);
+    size_t NbCentersEzz = grid.size_Ez[1] - 2;
+    NbCentersZ.push_back(NbCentersEzz);
+    printf("NbCentersZ = [%zu, %zu,%zu]\n", NbCentersEzx, NbCentersEzy, NbCentersEzz);
+    
+    
     size_t x1 = 0; // Correspond to point (i+1, j-1, k-1)
     size_t x2 = 0; // Correspond to point (i-1, j-1, k-1)
     size_t x3 = 0; // Correspond to point (i+1, j-1, k+1)
@@ -5514,10 +5562,6 @@ std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
     std::vector<double> allInterpolationEy;
     std::vector<double> allInterpolationEz;
 
-    printf("Ex.size = %zu\n", Ex.size());
-    //size_t Nx = 1;
-    //size_t Ny = 1;
-    //size_t Nz = 1;
     // Computations for Ex
     for(i=0; i<NbCentersExx; i++)
     {
@@ -5525,14 +5569,6 @@ std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
         {
             for(k=0; k<NbCentersExz; k++)
             {
-                // x1 = (i+1) + Nx * (j + k * Ny);
-                // x2 = i + Nx * (j + k * Ny);
-                // x3 = (i+1) + Nx * (j + (k+1) * Ny);
-                // x4 = i + Nx * (j + (k+1) * Ny);
-                // x5 = i+1 + j + 2*Nx + k;
-                // x6 = i + Nx * ((j+1) + k * Ny);
-                // x7 = (i+1) + Nx * ((j+1) + k * Ny);
-                // x8 = (i+1) + Nx * ((j+1) + (k+1) * Ny);
                 x1 = 0;
                 x2 = 1;
                 x4 = 5;
@@ -5542,10 +5578,7 @@ std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
                 x8 = 7;
                 x7 = 6;
 
-                interpolationEx = interpolationX2(x1, x2, x3, x4, x5, x6, x7, x8, Ex);
-
-                printf("Valuex = %lf\n", interpolationEx);
-
+                interpolationEx = interpolationX2(x1, x2, x3, x4, x5, x6, x7, x8, grid.E_x);
                 allInterpolationEx.push_back(interpolationEx);
             }
         }
@@ -5558,14 +5591,6 @@ std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
         {
             for(k=0; k<NbCentersEyz; k++)
             {
-                // y1 = (i+1) + Ey.size() * (j + k * Ey.size());
-                // y2 = i + Ey.size() * (j + k * Ey.size());
-                // y3 = (i+1) + Ey.size() * (j + (k+1) * Ey.size());
-                // y4 = i + Ey.size() * (j + (k+1) * Ey.size());
-                // y5 = (i+1) + Ey.size() * ((j+1) + k * Ey.size());
-                // y6 = i + Ey.size() * ((j+1) + k * Ey.size());
-                // y7 = (i+1) + Ey.size() * ((j+1) + k * Ey.size());
-                // y8 = (i+1) + Ey.size() * ((j+1) + (k+1) * Ey.size());
                 y1 = 1;
                 y2 = 0;
                 y3 = 5;
@@ -5575,15 +5600,11 @@ std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
                 y7 = 7;
                 y8 = 6;
 
-                interpolationEy = interpolationY2(y1, y2, y3, y4, y5, y6, y7, y8, Ey);
-
-                printf("Valuey = %lf\n", interpolationEy);
-
+                interpolationEy = interpolationY2(y1, y2, y3, y4, y5, y6, y7, y8, grid.E_y);
                 allInterpolationEy.push_back(interpolationEy);
             }
         }
     }
-
 
     // Computations for Ez
     for(i=0; i<NbCentersEzx; i++)
@@ -5592,14 +5613,6 @@ std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
         {
             for(k=0; k<NbCentersEzz; k++)
             {
-                // z1 = (i+1) + Ez.size() * (j + k * Ez.size());
-                // z2 = i + Ez.size() * (j + k * Ez.size());
-                // z3 = (i+1) + Ez.size() * (j + (k+1) * Ez.size());
-                // z4 = i + Ez.size() * (j + (k+1) * Ez.size());
-                // z5 = (i+1) + Ez.size() * ((j+1) + k * Ez.size());
-                // z6 = i + Ez.size() * ((j+1) + k * Ez.size());
-                // z7 = (i+1) + Ez.size() * ((j+1) + k * Ez.size());
-                // z8 = (i+1) + Ez.size() * ((j+1) + (k+1) * Ez.size());
                 z1 = 1;
                 z2 = 0;
                 z3 = 5;
@@ -5609,25 +5622,33 @@ std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
                 z7 = 7;
                 z8 = 6;
 
-                interpolationEz = interpolationZ2(z1, z2, z3, z4, z5, z6, z7, z8, Ez);
-
+                interpolationEz = interpolationZ2(z1, z2, z3, z4, z5, z6, z7, z8, grid.E_z);
                 allInterpolationEz.push_back(interpolationEz);
-                printf("Valuez = %lf\n", interpolationEz);
             }
         }
     }
 
+    printf("After the interpolation\n");
+    printf("Sizes allInterpolations = [%zu, %zu, %zu]\n", allInterpolationEx.size(),
+                                                        allInterpolationEy.size(),
+                                                        allInterpolationEz.size());
+
+    size_t minNbCentersX = findMin(NbCentersExx, NbCentersEyx, NbCentersEzx);
+    size_t minNbCentersY = findMin(NbCentersExy, NbCentersEyy, NbCentersEzy);
+    size_t minNbCentersZ = findMin(NbCentersExz, NbCentersEyz, NbCentersEzz);
+    printf("minNbCenters = [%zu, %zu, %zu]\n", minNbCentersX, minNbCentersY, minNbCentersZ);
+
+    // Will serve to go through the different centers
     size_t lengthInterpX = 0;
     size_t lengthInterpY = 0;
     size_t lengthInterpZ = 0;
-
-    for(lengthInterpX=0; lengthInterpX<allInterpolationEx.size(); lengthInterpX++)
+    
+    for(lengthInterpZ=0; lengthInterpZ<minNbCentersZ; lengthInterpZ++)
     {
-        for(lengthInterpY=0; lengthInterpY<allInterpolationEy.size(); lengthInterpY++)
+        for(lengthInterpY=0; lengthInterpY<minNbCentersY; lengthInterpY++)
         {
-            for(lengthInterpZ=0; lengthInterpZ<allInterpolationEz.size(); lengthInterpZ++)
+            for(lengthInterpX=0; lengthInterpX<minNbCentersX; lengthInterpX++)
             {
-                // Recall : modulus = sqrt(x1^2 + x2^2 + x3^2)
                 ModulusE.push_back(allInterpolationEx[lengthInterpX]*allInterpolationEx[lengthInterpX]
                                    + allInterpolationEy[lengthInterpY]*allInterpolationEy[lengthInterpY]
                                    + allInterpolationEz[lengthInterpZ]*allInterpolationEz[lengthInterpZ]);
@@ -5635,10 +5656,36 @@ std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
         }
     }
 
-    int iiiiii=0;
-    for(iiiiii=0; iiiiii<1; iiiiii++)
-        printf("Modulus = %lf\n", ModulusE[iiiiii]);
+    printf("Size ModulusE = %zu \n", ModulusE.size());
     
+
+    size_t index = 0;
+    double eps_pp = 0.0;
+    double sigma = 0.0;
+    unsigned char mat;
+    std::vector<double> Power;
+    size_t omega = 2 * M_PI * grid.input_parser.source.frequency[0];
+
+    printf("Hello from line %d in file %s\n", __LINE__, __FILE__);
+
+    size_t I, J, K;
+
+    for(K=0; K<minNbCentersZ; K++)
+    {
+        for(J=0; J<minNbCentersY; J++)
+        {
+            for(I=0; I<minNbCentersX; I++)
+            {
+                index = I + grid.size_Ex[0] * (J + K*grid.size_Ex[1]);
+                mat = grid.E_x_material[index];
+                eps_pp = grid.materials.unified_material_list[mat].properties["RELATIVEPERMITTIVITY"];
+                sigma = grid.materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY"];
+                ModulusE[index] = ( ModulusE[index] * (omega*eps_pp + sigma) / 2 );
+            }
+        }
+    }
+
+    printf("Hello from line %d in file %s\n", __LINE__, __FILE__);
     
     return ModulusE;
 }
@@ -5646,7 +5693,7 @@ std::vector<double> AlgoElectro_NEW::ComputeNormE2square(std::vector<double> Ex,
 
 double AlgoElectro_NEW::interpolationX2(size_t x1, size_t x2, size_t x3,
                         size_t x4, size_t x5, size_t x6,
-                        size_t x7, size_t x8,  std::vector<double> Ex)
+                        size_t x7, size_t x8,  double* Ex)
 {
     double valueInterpolationX = 0.0;
 
@@ -5668,14 +5715,14 @@ double AlgoElectro_NEW::interpolationX2(size_t x1, size_t x2, size_t x3,
     double c_101_Ex = Ex[x6];
     double c_110_Ex = Ex[x7];
     double c_111_Ex = Ex[x8];
-    printf("x1 = %lf\n", Ex[x1]);
-    printf("x2 = %lf\n", Ex[x2]);
-    printf("x3 = %lf\n", Ex[x3]);
-    printf("x4 = %lf\n", Ex[x4]);
-    printf("x5 = %lf\n", Ex[x5]);
-    printf("x6 = %lf\n", Ex[x6]);
-    printf("x7 = %lf\n", Ex[x7]);
-    printf("x8 = %lf\n", Ex[x8]);
+    // printf("x1 = %lf\n", Ex[x1]);
+    // printf("x2 = %lf\n", Ex[x2]);
+    // printf("x3 = %lf\n", Ex[x3]);
+    // printf("x4 = %lf\n", Ex[x4]);
+    // printf("x5 = %lf\n", Ex[x5]);
+    // printf("x6 = %lf\n", Ex[x6]);
+    // printf("x7 = %lf\n", Ex[x7]);
+    // printf("x8 = %lf\n", Ex[x8]);
 
     double Mean15_x = (c_000_Ex + c_100_Ex) / 2;
     double Mean26_x = (c_001_Ex + c_101_Ex) / 2;
@@ -5687,20 +5734,20 @@ double AlgoElectro_NEW::interpolationX2(size_t x1, size_t x2, size_t x3,
 
     valueInterpolationX = (Mean1537_x + Mean2648_x) / 2;
 
-    printf("Mean15x = %lf\n", Mean15_x);
-    printf("Mean26x = %lf\n", Mean26_x);
-    printf("Mean37x = %lf\n", Mean37_x);
-    printf("Mean48x = %lf\n", Mean48_x);
-    printf("Mean1537x = %lf\n", Mean1537_x);
-    printf("Mean2648x = %lf\n", Mean2648_x);
-    printf("valueInterpolationX = %lf\n", valueInterpolationX);
+    // printf("Mean15x = %lf\n", Mean15_x);
+    // printf("Mean26x = %lf\n", Mean26_x);
+    // printf("Mean37x = %lf\n", Mean37_x);
+    // printf("Mean48x = %lf\n", Mean48_x);
+    // printf("Mean1537x = %lf\n", Mean1537_x);
+    // printf("Mean2648x = %lf\n", Mean2648_x);
+    // printf("valueInterpolationX = %lf\n", valueInterpolationX);
     
     return valueInterpolationX;
 }
 
 double AlgoElectro_NEW::interpolationY2(size_t y1, size_t y2, size_t y3,
                         size_t y4, size_t y5, size_t y6,
-                        size_t y7, size_t y8,  std::vector<double> Ey)
+                        size_t y7, size_t y8,  double* Ey)
 {
      double valueInterpolationY = 0.0;
     
@@ -5723,20 +5770,20 @@ double AlgoElectro_NEW::interpolationY2(size_t y1, size_t y2, size_t y3,
 
     valueInterpolationY = (Mean1537_y + Mean2648_y) / 2;
 
-    printf("Mean15y = %lf\n", Mean15_y);
-    printf("Mean26y = %lf\n", Mean26_y);
-    printf("Mean37y = %lf\n", Mean37_y);
-    printf("Mean48y = %lf\n", Mean48_y);
-    printf("Mean1537y = %lf\n", Mean1537_y);
-    printf("Mean2648y = %lf\n", Mean2648_y);
-    printf("valueInterpolationY = %lf\n", valueInterpolationY);
+    // printf("Mean15y = %lf\n", Mean15_y);
+    // printf("Mean26y = %lf\n", Mean26_y);
+    // printf("Mean37y = %lf\n", Mean37_y);
+    // printf("Mean48y = %lf\n", Mean48_y);
+    // printf("Mean1537y = %lf\n", Mean1537_y);
+    // printf("Mean2648y = %lf\n", Mean2648_y);
+    // printf("valueInterpolationY = %lf\n", valueInterpolationY);
 
     return valueInterpolationY;
 }
 
 double AlgoElectro_NEW::interpolationZ2(size_t z1, size_t z2, size_t z3,
                         size_t z4, size_t z5, size_t z6,
-                        size_t z7, size_t z8,  std::vector<double> Ez)
+                        size_t z7, size_t z8,  double* Ez)
 {
     double valueInterpolationZ = 0.0;
     
@@ -5759,19 +5806,16 @@ double AlgoElectro_NEW::interpolationZ2(size_t z1, size_t z2, size_t z3,
 
     valueInterpolationZ = (Mean1537_z + Mean2648_z) / 2;
 
-    printf("Mean15z = %lf\n", Mean15_z);
-    printf("Mean26z = %lf\n", Mean26_z);
-    printf("Mean37z = %lf\n", Mean37_z);
-    printf("Mean48z = %lf\n", Mean48_z);
-    printf("Mean1537z = %lf\n", Mean1537_z);
-    printf("Mean2648z = %lf\n", Mean2648_z);
-    printf("valueInterpolationZ = %lf\n", valueInterpolationZ);
+    // printf("Mean15z = %lf\n", Mean15_z);
+    // printf("Mean26z = %lf\n", Mean26_z);
+    // printf("Mean37z = %lf\n", Mean37_z);
+    // printf("Mean48z = %lf\n", Mean48_z);
+    // printf("Mean1537z = %lf\n", Mean1537_z);
+    // printf("Mean2648z = %lf\n", Mean2648_z);
+    // printf("valueInterpolationZ = %lf\n", valueInterpolationZ);
 
     return valueInterpolationZ;
 }
-
-
-
 
 std::vector<double> AlgoElectro_NEW::ComputeNormEsquareBIS(GridCreator_NEW &grid)
 {
@@ -7149,4 +7193,607 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             "None of the boolean values is true."
         );
     }
+}
+
+void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
+{
+    // Size of the domain for process MPI_my_rank
+    size_t M = grid.sizes_EH[0];
+    size_t N = grid.sizes_EH[1];
+    size_t P = grid.sizes_EH[2];
+
+    // Will serve to go through the grid of MPI_my_rank
+    size_t i = 0;
+    size_t j = 0;
+    size_t k = 0;
+    size_t LocalIndex[3] = {i,j,k};
+
+    // Will transform the local (i,j,k) to a global index (I,J,K)
+    size_t I = 0;
+    size_t J = 0;
+    size_t K = 0;
+    size_t GlobalIndex[3] = {I,J,K};
+
+    // Will allow to get the 1D equivalent of point (i,j,k)
+    size_t index = 0;
+
+    // Will contain the indice of the nodes inside the brain (with material != 0)
+    char *dataFile = (char *) calloc(50, sizeof(char));
+
+    // Will contain the number of caracters printed in the name of the string
+    int nbWrittenCaracter = 0;
+
+    if(dataFile == NULL)
+    {
+        printf("nameFile could not be created\n");
+        printf("This error comes from line %d in file %s\n", __LINE__, __FILE__);
+        printf("Aborting...\n");
+        exit(EXIT_FAILURE);
+    }
+
+    nbWrittenCaracter = sprintf(dataFile, "Data_from_MPI%d.txt", MPI_my_rank);
+    printf("%s contains %d caracters\n", dataFile, nbWrittenCaracter);
+
+    FILE *fp = fopen(dataFile, "w");
+
+    if(fp == NULL)
+    {
+        printf("The file could not be opened\n");
+        printf("This error comes from line %d in file %s\n", __LINE__, __FILE__);
+        printf("Aborting...\n");
+        exit(EXIT_FAILURE);
+    }
+
+    
+    // This vector will serve to store the global indices
+    // The indices (x,y,z) of each point are placed "un à la suite"
+    std::vector<size_t> GlobalIndexVECTOR;
+
+    size_t counterInBrain = 0;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    for(k=0; k<P; k++)
+    {
+        for(j=0; j<N; j++)
+        {
+            for(i=0; i<M; i++)
+            {
+                index = i + M * (j + N*k);
+                
+                if(grid.E_x_material[index] != 0)
+                {
+                    counterInBrain++;
+                }
+            
+            }
+        }
+    }
+    
+    unsigned int *GlobalIndexVector = (unsigned int *) calloc(3*counterInBrain, sizeof(unsigned int));
+
+    if(GlobalIndexVector == NULL)
+    {
+        printf("The pointer could not be allocated\n");
+        printf("This message comes from line %d in file %s\n", __LINE__, __FILE__);
+        exit(EXIT_FAILURE);
+    }
+
+    unsigned int *LocalIndexVector = (unsigned int *) calloc(3*counterInBrain, sizeof(unsigned int));
+
+    if(LocalIndexVector == NULL)
+    {
+        printf("The pointer could not be allocated\n");
+        printf("This message comes from line %d in file %s\n", __LINE__, __FILE__);
+        exit(EXIT_FAILURE);
+    }
+
+    unsigned int newCounter = 0;
+
+    for(k=0; k<P; k++)
+    {
+        for(j=0; j<N; j++)
+        {
+            for(i=0; i<M; i++)
+            {
+                LocalIndex[0] = i;
+                LocalIndex[1] = j;
+                LocalIndex[2] = k;
+
+                grid.get_Global_from_Local_Electro(LocalIndex, GlobalIndex);
+
+                index = i + M * (j + N*k);
+                
+                // Store the local indices of the nodes that are not air
+                if(grid.E_x_material[index] != 0)
+                {
+                    fprintf(fp, "Locally : [i, j, k] = [%zu %zu %zu], index : %zu\n" , i, j, k, index);
+                    GlobalIndexVector[newCounter] = GlobalIndex[0];
+                    GlobalIndexVector[newCounter+1] = GlobalIndex[1];
+                    GlobalIndexVector[newCounter+2] = GlobalIndex[2];
+                    LocalIndexVector[newCounter] = LocalIndex[0];
+                    LocalIndexVector[newCounter+1] = LocalIndex[1];
+                    LocalIndexVector[newCounter+2] = LocalIndex[2];
+                    newCounter += 3;
+                }
+            
+            }
+        }
+    }
+
+    
+    double *PowerInBrain = (double *) calloc(counterInBrain, sizeof(double));
+
+    if(PowerInBrain == NULL)
+    {
+        printf("The pointer could not be allocated\n");
+        printf("This message comes from line %d in file %s\n", __LINE__, __FILE__);
+        exit(EXIT_FAILURE);
+    }
+
+    ComputePowerInBrain(GlobalIndexVector, LocalIndexVector, counterInBrain, grid, PowerInBrain);
+
+    unsigned int totNbProc = grid.MPI_communicator.getNumberOfMPIProcesses();
+    unsigned int *tabNodesInBrain = (unsigned int *) calloc(totNbProc, sizeof(unsigned int));
+
+    MPI_Gather(&counterInBrain, 1, MPI_UNSIGNED, tabNodesInBrain, 1, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+
+    unsigned int nbTotalNodesInBrain = 0;
+
+    if(MPI_my_rank == 0)
+    {
+        unsigned int totNbProc = grid.MPI_communicator.getNumberOfMPIProcesses();
+        for(unsigned int i=0; i<totNbProc; i++)
+        {
+            printf("\n\n\ttabNodesInBrain[%u] = %u\n", i, tabNodesInBrain[i]);
+            nbTotalNodesInBrain += tabNodesInBrain[i];
+        }
+
+        // printf("\n\n\tnbTotalNodesInBrain = %u\n", nbTotalNodesInBrain);
+        // abort();
+    }
+
+
+    unsigned int *globalNodesInBrain = (unsigned int *) calloc(3*nbTotalNodesInBrain, sizeof(unsigned int));
+
+    // MPI_Gather(GlobalIndexVector, 3*counterInBrain, MPI_UNSIGNED, globalNodesInBrain, 3*counterInBrain, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    
+    printf("Begin send from MPI%d\n", MPI_my_rank);
+    
+    if(MPI_my_rank != 0)
+    {
+        MPI_Send(GlobalIndexVector, 3*counterInBrain, MPI_UNSIGNED, 0, 17, MPI_COMM_WORLD);
+    }
+
+    printf("End send from MPI%d\n", MPI_my_rank);
+    
+    printf("Begin receive from MPI%d\n", MPI_my_rank);
+
+    if(MPI_my_rank == 0)
+    {
+        MPI_Status status;
+        
+        for(unsigned int i=0; i<3*tabNodesInBrain[0]; i++)
+        {
+            globalNodesInBrain[i] = GlobalIndexVector[i];
+            // printf("globalNodesInBrain[%u] = %u\n", i, globalNodesInBrain[i]);
+        }
+        
+        unsigned int tmp=0;
+
+        for(unsigned int i=1; i<grid.MPI_communicator.getNumberOfMPIProcesses(); i++)
+        {
+            tmp += (tabNodesInBrain[i-1]*3);
+            // printf("\n\n\tmp = %u\n", tmp);
+            MPI_Recv(&(globalNodesInBrain[tmp]), 3*tabNodesInBrain[i], MPI_UNSIGNED, i, 17, MPI_COMM_WORLD, &status);
+        }
+    
+        // printf("3*nbTotalNodesInBrain = %u\n\n", 3*nbTotalNodesInBrain);
+        
+        for(unsigned int i=0; i<3*nbTotalNodesInBrain; i++)
+        {
+            printf("globalNodesInBrain[%u] = %u\n", i, globalNodesInBrain[i]);
+        }
+    }
+
+    printf("End receive from MPI%d\n", MPI_my_rank);
+
+    
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    if(MPI_my_rank == 0)
+    {
+        for(unsigned int i=0; i<3*nbTotalNodesInBrain; i++)
+            printf("globalNodesInBrain[%u] = %u\n", i, globalNodesInBrain[i]);
+    }
+    abort();
+
+    // Every process closes its file containing the local indices
+    fclose(fp);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    // Only the root process will write the power in the brain
+    if(MPI_my_rank == 0)
+    {
+        // Will contain the power at each node in the brain
+        FILE *POWER = fopen("PowerInBrain.txt", "w");
+
+        if(POWER == NULL)
+        {
+            printf("The file could not be created\n");
+            printf("This error comes from line %d in file %s\n", __LINE__, __FILE__);
+            printf("Aborting...\n");
+            exit(EXIT_FAILURE);
+        }
+
+        printf("\n\n=================== Process %d begins to write the power in the brain... ===================\n\n\n", MPI_my_rank);
+
+
+        
+        fclose(POWER);
+
+        printf("\n\n=================== Process %d has finished to write the power in the brain ===================\n\n\n", MPI_my_rank);
+
+        abort();
+
+    }
+
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
+size_t AlgoElectro_NEW::findMaxVectorX(std::vector<size_t> GlobalIndexVECTOR)
+{
+    size_t maximum = INT_MIN;
+    size_t i = 0;
+    size_t counterMaxX = 0;
+
+    for(i=0; i<(GlobalIndexVECTOR.size())/3; i+=3)
+    {
+        if(maximum < GlobalIndexVECTOR[i])
+        {
+            maximum = GlobalIndexVECTOR[i];
+            printf("maximumIndexX = %zu (counterMaxX = %zu)\n", maximum, counterMaxX);
+            counterMaxX++;
+        }
+    }
+
+    return maximum;
+}
+
+size_t AlgoElectro_NEW::findMinVectorX(std::vector<size_t> GlobalIndexVECTOR)
+{
+    size_t minimum = INT_MAX;
+    size_t i = 0;
+    size_t counterMinX = 0;
+
+    for(i=0; i<(GlobalIndexVECTOR.size())/3; i+=3)
+    {
+        if(minimum > GlobalIndexVECTOR[i])
+        {
+            minimum = GlobalIndexVECTOR[i];
+            printf("minimumX = %zu (counterMinX = %zu)\n", minimum, counterMinX);
+            counterMinX++;
+        }
+    }
+
+    return minimum;
+}
+
+size_t AlgoElectro_NEW::findMaxVectorY(std::vector<size_t> GlobalIndexVECTOR)
+{
+    size_t maximum = INT_MIN;
+    size_t i = 0;
+    size_t counterMaxY = 0;
+
+    for(i=1; i<GlobalIndexVECTOR.size()/3; i+=3)
+    {
+        if(maximum < GlobalIndexVECTOR[i])
+        {
+            maximum = GlobalIndexVECTOR[i];
+            printf("maximumIndexY = %zu (counterMaxY = %zu)\n", maximum, counterMaxY);
+            counterMaxY++;
+        }
+    }
+
+    return maximum;
+}
+
+size_t AlgoElectro_NEW::findMinVectorY(std::vector<size_t> GlobalIndexVECTOR)
+{
+    size_t minimum = INT_MAX;
+    size_t i = 0;
+    size_t counterMinY = 0;
+
+    for(i=1; i<GlobalIndexVECTOR.size()/3; i+=3)
+    {
+        if(minimum > GlobalIndexVECTOR[i])
+        {
+            minimum = GlobalIndexVECTOR[i];
+            printf("minimumY = %zu (counterMinY = %zu)\n", minimum, counterMinY);
+            counterMinY++;
+        }
+    }
+
+    return minimum;
+}
+
+size_t AlgoElectro_NEW::findMaxVectorZ(std::vector<size_t> GlobalIndexVECTOR)
+{
+    size_t maximum = INT_MIN;
+    size_t i = 0;
+    size_t counterMaxZ = 0;
+
+    for(i=2; i<GlobalIndexVECTOR.size()/3; i+=3)
+    {
+        if(maximum < GlobalIndexVECTOR[i])
+        {
+            maximum = GlobalIndexVECTOR[i];
+            printf("maximumZ = %zu (counterMaxZ = %zu)\n", maximum, counterMaxZ);
+            counterMaxZ++;
+        }
+            maximum = GlobalIndexVECTOR[i];
+    }
+
+    return maximum;
+}
+
+size_t AlgoElectro_NEW::findMinVectorZ(std::vector<size_t> GlobalIndexVECTOR)
+{
+    size_t minimum = INT_MAX;
+    size_t i = 0;
+    size_t counterMinZ = 0;
+
+    for(i=2; i<GlobalIndexVECTOR.size()/3; i+=3)
+    {
+        if(minimum > GlobalIndexVECTOR[i])
+        {
+            minimum = GlobalIndexVECTOR[i];
+            printf("minimumZ = %zu (counterMinZ = %zu)\n", minimum, counterMinZ);
+            counterMinZ++;
+        }
+    }
+
+    return minimum;
+}
+
+// size_t AlgoElectro_NEW::ComputePowerEachMPI(int MPI_my_rank, std::vector<size_t> indicesInBrainMPI)
+// {
+//     std::vector<size_t> PowerInMPI;
+    
+//     std::vector<size_t> PositionX;
+//     std::vector<size_t> PositionY;
+//     std::vector<size_t> PositionZ;
+
+//     size_t loopOverPoints = 0;
+
+//     for(loopOverPoints=0; loopOverPoints<indicesInBrainMPI.size(); loopOverPoints++)
+//     {
+//         PositionX.push_back( indicesInBrainMPI(loopOverPoints) );
+//         PositionY.push_back( indicesInBrainMPI(loopOverPoints) + 1 );
+//         PositionZ.push_back( indicesInBrainMPI(loopOverPoints) + 2 );
+//     }
+
+    
+//     size_t i = 0;
+//     size_t j = 0;
+//     size_t k = 0;
+
+
+//     return PowerInMPI;
+// }
+
+// std::vector<double> AlgoElectro_NEW::ComputePower(GridCreator_NEW &grid,
+//                                     size_t nbCentersX,
+//                                     size_t nbCentersY,
+//                                     size_t nbCentersZ,
+//                                     std::vector<size_t> allPointsInBrain)
+// {
+//     std::vector<double> power;
+
+//     // Will allow to go through all the centers contained in the brain
+//     size_t i = 0;
+//     size_t j = 0;
+//     size_t k = 0;
+
+//     // Will contain the number of centers along x, y, and z for Ex
+//     std::vector<size_t> nbCentersEx;
+//     nbCentersEx.push_back(nbCentersX);
+//     nbCentersEx.push_back(nbCentersY);
+//     nbCentersEx.push_back(nbCentersZ);
+    
+//     // Will contain the number of centers along x, y, and z for Ey
+//     std::vector<size_t> nbCentersEy;
+//     nbCentersEy.push_back(nbCentersX);
+//     nbCentersEy.push_back(nbCentersY);
+//     nbCentersEy.push_back(nbCentersZ);
+
+//     // Will contain the number of centers along x, y, and z for Ez
+//     std::vector<size_t> nbCentersEz;
+//     nbCentersEz.push_back(nbCentersX);
+//     nbCentersEz.push_back(nbCentersY);
+//     nbCentersEz.push_back(nbCentersZ);
+
+//     // Is the total number of points in the brain
+//     size_t nbPointsInBrain = allPointsInBrain.size()/3;
+
+//     // Will contain the fields Ex, Ey and Ez for the points in the grain
+//     std::vector<size_t> Ex;
+//     std::vector<size_t> Ey;
+//     std::vector<size_t> Ez;
+
+//     size_t x1 = 0; // Correspond to point (i+1, j-1, k-1)
+//     size_t x2 = 0; // Correspond to point (i-1, j-1, k-1)
+//     size_t x3 = 0; // Correspond to point (i+1, j-1, k+1)
+//     size_t x4 = 0; // Correspond to point (i-1, j-1, k+1)
+//     size_t x5 = 0; // Correspond to point (i+1, j+1, k-1)
+//     size_t x6 = 0; // Correspond to point (i-1, j+1, k-1)
+//     size_t x7 = 0; // Correspond to point (i+1, j+1, k+1)
+//     size_t x8 = 0; // Correspond to point (i1, j+1, k+1)
+
+//     size_t y1 = 0; // Correspond to point (i+1, j-1, k-1)
+//     size_t y2 = 0; // Correspond to point (i-1, j-1, k-1)
+//     size_t y3 = 0; // Correspond to point (i+1, j-1, k+1)
+//     size_t y4 = 0; // Correspond to point (i-1, j-1, k+1)
+//     size_t y5 = 0; // Correspond to point (i+1, j+1, k-1)
+//     size_t y6 = 0; // Correspond to point (i-1, j+1, k-1)
+//     size_t y7 = 0; // Correspond to point (i+1, j+1, k+1)
+//     size_t y8 = 0; // Correspond to point (i1, j+1, k+1)
+
+//     size_t z1 = 0; // Correspond to point (i+1, j-1, k-1)
+//     size_t z2 = 0; // Correspond to point (i-1, j-1, k-1)
+//     size_t z3 = 0; // Correspond to point (i+1, j-1, k+1)
+//     size_t z4 = 0; // Correspond to point (i-1, j-1, k+1)
+//     size_t z5 = 0; // Correspond to point (i+1, j+1, k-1)
+//     size_t z6 = 0; // Correspond to point (i-1, j+1, k-1)
+//     size_t z7 = 0; // Correspond to point (i+1, j+1, k+1)
+//     size_t z8 = 0; // Correspond to point (i1, j+1, k+1)
+
+//     std::vector<size_t> PositionsX;
+//     std::vector<size_t> PositionsY;
+//     std::vector<size_t> PositionsZ;
+
+//     size_t loopForPos = 0;
+
+//     for(loopForPos=0; loopForPos<allPointsInBrain.size()/3; loopForPos+=3)
+//     {
+//         PositionsX.push_back( allPointsInBrain(loopForPos) );
+//         PositionsY.push_back( allPointsInBrain(loopForPos + 1) );
+//         PositionsZ.push_back( allPointsInBrain(loopForPos + 2) );
+//     }
+
+//     // Will contain the values for the different interpolations
+//     std::vector<double> allInterpEx;
+//     std::vector<double> allInterpEy;
+//     std::vector<double> allInterpEz;
+
+//     // Computation for Ex
+//     for(k=0; k<nbCentersEx[2]; k++)
+//     {
+//         for(j=0; j<nbCentersEx[1]; j++)
+//         {
+//             for(i=0; i<nbCentersEx[0]; i++)
+//             {
+//                 x1 = allPointsInBrain( (i+1) + nbCentersEx[0] * ( j + nbCentersEx[1] * k ) );
+//                 x2 = allPointsInBrain( i + nbCentersEx[0] * ( j + nbCentersEx[1] * k ) );
+//                 x3 = allPointsInBrain( (i+1) + nbCentersEx[0] * ( j + nbCentersEx[1] * (k+1) ) );
+//                 x4 = allPointsInBrain( i + nbCentersEx[0] * ( j + nbCentersEx[1] * (k+1) ) );
+//                 x5 = allPointsInBrain( (i+1) + nbCentersEx[0] * ( (j+1) + nbCentersEx[1] * k ) );
+//                 x6 = allPointsInBrain( i + nbCentersEx[0] * ( (j+1) + nbCentersEx[1] * k ) );
+//                 x7 = allPointsInBrain( (i+1) + nbCentersEx[0] * ( (j+1) + nbCentersEx[1] * k ) );
+//                 x8 = allPointsInBrain( i + nbCentersEx[0] * ( (j+1) + nbCentersEx[1] * (k+1) ) );
+
+//                 allInterpEx.push_back( interpolationX(x1, x2, x3, x4, x5, x6, x7, x8, grid) );
+//             }
+//         }
+//     }
+
+//     // Computation for Ey
+//     for(k=0; k<nbCentersEy[2]; k++)
+//     {
+//         for(j=0; j<nbCentersEy[1]; j++)
+//         {
+//             for(i=0; i<nbCentersEy[0]; i++)
+//             {
+//                 y1 = allPointsInBrain( (i+1) + nbCentersEy[0] * ( j + nbCentersEy[1] * k ) );
+//                 y2 = allPointsInBrain( i + nbCentersEy[0] * ( j + nbCentersEy[1] * k ) );
+//                 y3 = allPointsInBrain( (i+1) + nbCentersEy[0] * ( j + nbCentersEy[1] * (k+1) ) );
+//                 y4 = allPointsInBrain( i + nbCentersEy[0] * ( j + nbCentersEy[1] * (k+1) ) );
+//                 y5 = allPointsInBrain( (i+1) + nbCentersEy[0] * ( (j+1) + nbCentersEy[1] * k ) );
+//                 y6 = allPointsInBrain( i + nbCentersEy[0] * ( (j+1) + nbCentersEy[1] * k ) );
+//                 y7 = allPointsInBrain( (i+1) + nbCentersEy[0] * ( (j+1) + nbCentersEy[1] * k ) );
+//                 y8 = allPointsInBrain( i + nbCentersEy[0] * ( (j+1) + nbCentersEy[1] * (k+1) ) );
+
+//                 allInterpEy.push_back( interpolationY(y1, y2, y3, y4, y5, y6, y7, y8, grid) );
+//             }
+//         }
+//     }
+
+//     // Computation for Ez
+//     for(k=0; k<nbCentersEz[2]; k++)
+//     {
+//         for(j=0; j<nbCentersEz[1]; j++)
+//         {
+//             for(i=0; i<nbCentersEz[0]; i++)
+//             {
+//                 z1 = allPointsInBrain( (i+1) + nbCentersEz[0] * ( j + nbCentersEz[1] * k ) );
+//                 z2 = allPointsInBrain( i + nbCentersEz[0] * ( j + nbCentersEz[1] * k ) );
+//                 z3 = allPointsInBrain( (i+1) + nbCentersEz[0] * ( j + nbCentersEz[1] * (k+1) ) );
+//                 z4 = allPointsInBrain( i + nbCentersEz[0] * ( j + nbCentersEz[1] * (k+1) ) );
+//                 z5 = allPointsInBrain( (i+1) + nbCentersEz[0] * ( (j+1) + nbCentersEz[1] * k ) );
+//                 z6 = allPointsInBrain( i + nbCentersEz[0] * ( (j+1) + nbCentersEz[1] * k ) );
+//                 z7 = allPointsInBrain( (i+1) + nbCentersEz[0] * ( (j+1) + nbCentersEz[1] * k ) );
+//                 z8 = allPointsInBrain( i + nbCentersEz[0] * ( (j+1) + nbCentersEz[1] * (k+1) ) );
+
+//                 allInterpEz.push_back( interpolationZ(z1, z2, z3, z4, z5, z6, z7, z8, grid) );
+//             }
+//         }
+//     }
+
+//     size_t minCenterX = findMin( nbCentersEx[0], nbCentersEy[0], nbCentersEz[0] );
+//     size_t minCenterY = findMin( nbCentersEx[1], nbCentersEy[1], nbCentersEz[1] );
+//     size_t minCenterZ = findMin( nbCentersEx[2], nbCentersEy[2], nbCentersEz[2] );
+
+//     size_t loopX = 0;
+//     size_t loopY = 0;
+//     size_t loopZ = 0;
+
+//     size_t index = 0;
+//     double eps_pp = 0.0;
+//     double sigma = 0.0;
+//     unsigned char mat;
+//     std::vector<double> Power;
+//     size_t omega = 2 * M_PI * grid.input_parser.source.frequency[0];
+
+//     std::vector<size_t> ModulusEsquare
+
+//     for(loopX=0; loopX<minCenterX; loopX++)
+//     {
+//         for(loopY=0; loopY<minCenterY; loopY++)
+//         {
+//             for(loopZ=0; loopZ<minCenterZ; loopZ++)
+//             {
+//                 ModulusEsquare.push_back( allInterpEx[loopX] * allInterpEx[loopX]
+//                                             +
+//                                         allInterpEy[loopY] * allInterpEy[loopY]
+//                                             +
+//                                         allInterpEz[loopZ] * allInterpEz[loopZ] );
+
+//                 index = loopX + grid.size_Ex[0] * (loopY + loopZ*grid.size_Ex[1]);
+//                 mat = grid.E_x_material[index];
+//                 eps_pp = grid.materials.unified_material_list[mat].properties["RELATIVEPERMITTIVITY"];
+//                 sigma = grid.materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY"];
+//                 power.push_back( ( ModulusEsquare[index] * (omega*eps_pp + sigma) / 2 ) );                
+//             }
+//         }
+//     }
+
+
+
+//     return power;
+// }
+
+void AlgoElectro_NEW::ComputePowerInBrain(unsigned int *GlobalIndexVECTOR,
+                                        unsigned int *LocalIndexVector, 
+                                        unsigned int counterInBrain,
+                                        GridCreator_NEW &grid,
+                                        double *PowerInBrain)
+{
+    double eps_pp = 0.0;
+    double sigma = 0.0;
+    unsigned char mat;
+    size_t omega = 2 * M_PI * grid.input_parser.source.frequency[0];
+
+    for(unsigned int i=0; i<counterInBrain; i++)
+    {
+        mat = grid.E_x_material[i];
+        eps_pp = grid.materials.unified_material_list[mat].properties["RELATIVEPERMITTIVITY"];
+        sigma = grid.materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY"];
+
+        double prefactor = (sigma + omega*eps_pp)/2;
+        
+        PowerInBrain[i] = prefactor * (grid.E_x[i]*grid.E_x[i] + grid.E_y[i]*grid.E_y[i] + grid.E_z[i]*grid.E_z[i]);
+
+    }
+
 }

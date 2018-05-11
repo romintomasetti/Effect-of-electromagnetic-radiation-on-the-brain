@@ -63,6 +63,9 @@ using namespace std;
 
 void check_input_file_name_given(int argc, char *argv[],map<std::string,std::string> &inputs);	
 
+
+
+
 int main(int argc, char *argv[]){
 	
 	unsigned int VERBOSITY = 5;
@@ -151,7 +154,9 @@ int main(int argc, char *argv[]){
 	interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
 	interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
 
-	
+	// MPI_Barrier(MPI_COMM_WORLD);
+	// abort();
+
 	AlgoElectro_NEW algoElectro_newTst(VERBOSITY);
 
 	// printf("SUCCESS Coucou1\n");
@@ -169,8 +174,15 @@ int main(int argc, char *argv[]){
 	printf("You successfully reach the point before the update and the norm computations\n");
 	algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
 	printf("SUCCESS\n");
-	printf("You successfully reach the point after the update and before the norm computations\n");
-	std::vector<double> Norm = algoElectro_newTst.ComputeNormEsquareBIS(gridTest);
+	printf("You successfully reach the point after the update and before the power computations\n");
+	algoElectro_newTst.WriteData(MPI_communicator.getRank(), gridTest);
+	printf("\n\tHello form process %u\n", MPI_communicator.getRank());
+	printf("SUCCESS\n");
+	printf("Prepare to abort...\n");
+	MPI_Barrier(MPI_COMM_WORLD);
+	abort();
+	// std::vector<double> Norm = algoElectro_newTst.ComputeNormEsquareBIS(gridTest);
+	std::vector<double> Norm = algoElectro_newTst.ComputeNormE2square(gridTest);
 	printf("SUCCESS\n");
 	printf("You successfully reach the point after the update and the norm computations\n");
 	
