@@ -1676,7 +1676,31 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					}else if( propName == "CONVECTION_COEFFICIENT" ){
 
 						this->convection_parameter = std::stod(propGiven);
-											
+					}else if(propName == "TEMPERATURE_CONVECTION"){
+
+						this->temperature_convection= std::stod(propGiven);
+
+					}else if( boost::iequals (propName,"WALL_THERMO")){
+						if(boost::iequals(propGiven,"TRUE")){
+							this->wall_thermo = 1;
+						}
+					
+					}else if(boost::iequals (propName,"THERMAL_DISTRIBUTION")){
+						if(boost::iequals(propGiven,"TRUE")){
+							this->thermal_distribution =1;
+						}
+
+					}else if(propName == "AMPLITUDE_THERMAL_DISTRIBUTION"){
+						this->amplitude_thermal_distribution = std::stod(propGiven);
+					
+					}else if(boost::iequals (propName,"HEAT_DISTRIBUTION")){
+						if(boost::iequals(propGiven,"TRUE")){
+							this->heat_distribution =1;
+						}
+
+					}else if(propName == "AMPLITUDE_HEAT_DISTRIBUTION"){
+						this->amplitude_heat_distribution = std::stod(propGiven);
+					
 					}else{
 						printf("InputParser::readHeader_RUN_INFOS:: You didn't provide a ");
 						printf("good member for $RUN_INFOS$BOUNDARY_CONDITIONS_THERMO.\nAborting.\n");
