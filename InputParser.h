@@ -66,7 +66,8 @@ enum stringDollar_Header2{
 	MATERIALS,
 	ORIGINS,
 	PROBING_POINTS,
-	ELECTRO_STEADY_STATE
+	ELECTRO_STEADY_STATE,
+    ALGORITHM_TO_APPLY
 };
 
 class InputParser{
@@ -228,9 +229,30 @@ class InputParser{
 
 		// Type of simulation thermal:
 		char *type_simulation_thermal = NULL;
+        
+        // Geometry file for thermal algorithm:
+        char *geometry_material_thermo = NULL;
 
 		// Convection parameter of air:
 		double convection_parameter = 0.0;
+
+		// Temperature infiny:
+		double temperature_convection=0.0;
+
+		// Case of the wall (analytic):
+		unsigned int wall_thermo = 0;
+
+		// Thermal distribution:
+		unsigned int thermal_distribution=0;
+
+		// Amplitude Thermal distribution:
+		double amplitude_thermal_distribution=0.0;
+
+		// Heat distribution:
+		unsigned int heat_distribution=0;
+
+		//Amplitude Heat distribution:
+		double amplitude_heat_distribution=0.0;
 
 		std::map<std::string,std::string> TEST_PARAVIEW_MPI_ARGS;
 
@@ -243,6 +265,7 @@ class InputParser{
         
         /// For the steady-state detection:
         size_t SteadyState_CheckEveryPoint = 0;
+        bool   check_steady_state          = false;
 
 		/////////////////////////////////////////////////
 		/// PARAMETER FOR THE ABC BOUNDARY CONDITIONS ///
@@ -262,6 +285,10 @@ class InputParser{
 		/////////////////////////////////////////////////
 		/// END OF PARAMETERS FOR THE PML BOUNDARY CONDITONS ///
 		/////////////////////////////////////////////////
+        
+        ////// Which algorithm is applied //////
+        bool apply_thermo_algo  = false;
+        bool apply_electro_algo = false;
 };
 
 #endif

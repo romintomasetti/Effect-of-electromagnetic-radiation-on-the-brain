@@ -434,8 +434,10 @@ void AlgoElectro_NEW::update(
     size = (grid.size_Ey[1]-2)*(grid.size_Ey[2]-2);
     double *Eyx0    = NULL;
     double *Eyx1    = NULL;
-    Eyx0 = new double[size]();   
-    Eyx1 = new double[size]();
+    if(grid.input_parser.apply_ABC_BCs == true){
+        Eyx0 = new double[size]();   
+        Eyx1 = new double[size]();
+    }
     //std::fill_n(Eyx0, size, 0);
     //std::fill_n(Eyx1, size, 0);
 
@@ -446,8 +448,10 @@ void AlgoElectro_NEW::update(
     size = (grid.size_Ez[1]-2)*(grid.size_Ez[2]-2);
     double *Ezx0    = NULL;
     double *Ezx1    = NULL;
-    Ezx0 = new double[size]();  
-    Ezx1 = new double[size]();
+    if(grid.input_parser.apply_ABC_BCs == true){
+        Ezx0 = new double[size]();  
+        Ezx1 = new double[size]();
+    }
     //std::fill_n(Ezx0, size, 0);
     //std::fill_n(Ezx1, size, 0);
 
@@ -458,8 +462,10 @@ void AlgoElectro_NEW::update(
     size = (grid.size_Ex[0]-2)*(grid.size_Ex[2]-2);
     double *Exy0    = NULL;
     double *Exy1    = NULL;
-    Exy0 = new double[size]();    
-    Exy1 = new double[size]();
+    if(grid.input_parser.apply_ABC_BCs == true){
+        Exy0 = new double[size]();    
+        Exy1 = new double[size]();
+    }
     //std::fill_n(Exy0, size, 0);
     //std::fill_n(Exy1, size, 0);
 
@@ -470,8 +476,10 @@ void AlgoElectro_NEW::update(
     size = (grid.size_Ez[0]-2)*(grid.size_Ez[2]-2);
     double *Ezy0    = NULL;    
     double *Ezy1    = NULL;
-    Ezy0 = new double[size]();
-    Ezy1 = new double[size]();
+    if(grid.input_parser.apply_ABC_BCs == true){
+        Ezy0 = new double[size]();
+        Ezy1 = new double[size]();
+    }
     //std::fill_n(Ezy0, size, 0);
     //std::fill_n(Ezy1, size, 0);
     // std::vector<double> Ezy0(size, 0.0);
@@ -481,8 +489,10 @@ void AlgoElectro_NEW::update(
     size = (grid.size_Ex[0]-2)*(grid.size_Ex[1]-2);
     double *Exz0    = NULL;
     double *Exz1    = NULL;
-    Exz0 = new double[size]();
-    Exz1 = new double[size]();
+    if(grid.input_parser.apply_ABC_BCs == true){
+        Exz0 = new double[size]();
+        Exz1 = new double[size]();
+    }
     //std::fill_n(Exz0, size, 0);
     //std::fill_n(Exz1, size, 0);
     
@@ -493,8 +503,10 @@ void AlgoElectro_NEW::update(
     size = (grid.size_Ey[0]-2)*(grid.size_Ey[1]-2);
     double *Eyz0    = NULL;
     double *Eyz1    = NULL;
-    Eyz0 = new double[size]();    
-    Eyz1 = new double[size]();    
+    if(grid.input_parser.apply_ABC_BCs == true){
+        Eyz0 = new double[size]();    
+        Eyz1 = new double[size]();    
+    }
     //std::fill_n(Eyz0, size, 0);
     //std::fill_n(Eyz1, size, 0);
     // std::vector<double> Eyz0(size, 0.0);
@@ -1765,56 +1777,58 @@ void AlgoElectro_NEW::update(
 
             #pragma omp master
             {
-                // Total size without neighboors:
-                size_t tmp = (grid.size_Ez[0]-4) * (grid.size_Ez[1]-2) * (grid.size_Ez[2]-2);
-                printf("\t>>> Number of Ez nodes that are in the steady state is %zu over %zu.\n",
-                            number_of_points_EZ_at_speady_state,
-                            tmp);
-                if(     number_of_points_EZ_at_speady_state >= std::floor(0.99 * tmp)-1
-                    &&  counter_step_____SS > 100){
+                if( grid.input_parser.check_steady_state == true){
+                    // Total size without neighboors:
+                    size_t tmp = (grid.size_Ez[0]-4) * (grid.size_Ez[1]-2) * (grid.size_Ez[2]-2);
+                    printf("\t>>> Number of Ez nodes that are in the steady state is %zu over %zu.\n",
+                                number_of_points_EZ_at_speady_state,
+                                tmp);
+                    if(     number_of_points_EZ_at_speady_state >= std::floor(0.99 * tmp)-1
+                        &&  counter_step_____SS > 100){
 
-                            printf("\t>>> [MPI %d] - Steady state is reached!\n",
-                            grid.MPI_communicator.getRank());
+                                printf("\t>>> [MPI %d] - Steady state is reached!\n",
+                                grid.MPI_communicator.getRank());
 
-                            if(is_previous_segment_steady == true
-                                && numero_du_segment_precedent != counter_steady_state_segments){
-                                is_steady_state_for_this_MPI = true;
-                            }else{
-                                is_previous_segment_steady  = true;
-                                numero_du_segment_precedent = counter_steady_state_segments;
-                            }
-                    
-                }else{
-                    number_of_points_EZ_at_speady_state = 0;
-                }
+                                if(is_previous_segment_steady == true
+                                    && numero_du_segment_precedent != counter_steady_state_segments){
+                                    is_steady_state_for_this_MPI = true;
+                                }else{
+                                    is_previous_segment_steady  = true;
+                                    numero_du_segment_precedent = counter_steady_state_segments;
+                                }
+                        
+                    }else{
+                        number_of_points_EZ_at_speady_state = 0;
+                    }
 
-                if(counter_step_____SS >= look_over_steps__SS){
-                    for(size_t I = 0 ; I < Ez_trapz_absolute.size() ; I ++)
-                        Ez_trapz_absolute[I] = 0.0;
-                    counter_step_____SS = 1;
-                    printf("look_over_steps__SS %zu\n",look_over_steps__SS);
-                    counter_steady_state_segments++;
-                    time_beg = current_time;
+                    if(counter_step_____SS >= look_over_steps__SS){
+                        for(size_t I = 0 ; I < Ez_trapz_absolute.size() ; I ++)
+                            Ez_trapz_absolute[I] = 0.0;
+                        counter_step_____SS = 1;
+                        printf("look_over_steps__SS %zu\n",look_over_steps__SS);
+                        counter_steady_state_segments++;
+                        time_beg = current_time;
 
-                }else{
-                    counter_step_____SS ++;
-                }
+                    }else{
+                        counter_step_____SS ++;
+                    }
 
-                /* Communicate with other MPI's to know is everybody is in steady state: */
-                time_end = current_time;
-                /// Attention ! Check only after a given number of iterations !
-                if( current_time > min_time_before_checking_steadiness ){
-                    this->SteadyStateAnalyser(
-                        is_steady_state_for_this_MPI,
-                        &is_steady_state_for_all_mpi,
-                        grid,
-                        time_beg,
-                        time_end,
-                        Ez_trapz_absolute,
-                        Ey_trapz_absolute,
-                        Ex_trapz_absolute,
-                        dt
-                    );
+                    /* Communicate with other MPI's to know is everybody is in steady state: */
+                    time_end = current_time;
+                    /// Attention ! Check only after a given number of iterations !
+                    if( current_time > min_time_before_checking_steadiness ){
+                        this->SteadyStateAnalyser(
+                            is_steady_state_for_this_MPI,
+                            &is_steady_state_for_all_mpi,
+                            grid,
+                            time_beg,
+                            time_end,
+                            Ez_trapz_absolute,
+                            Ey_trapz_absolute,
+                            Ex_trapz_absolute,
+                            dt
+                        );
+                    }
                 }
             }
             #pragma omp barrier
@@ -2132,28 +2146,30 @@ void AlgoElectro_NEW::update(
 				fflush_stdout();
 				MPI_Barrier(MPI_COMM_WORLD);
 				printf("[MPI %d] - Starting ABC.\n",grid.MPI_communicator.getRank());*/
-                this->abc(grid,
-                    E_x_tmp, E_y_tmp, E_z_tmp, 
-                    Eyx0, Ezx0, 
-                    Eyx1, Ezx1, 
-                    Exy0, Ezy0, 
-                    Exy1, Ezy1, 
-                    Exz0, Eyz0, 
-                    Exz1, Eyz1,
-                    dt,
-                    IS_1D_FACE_EX_Electric_along_Z  ,    
-                    IS_1D_FACE_EX_Electric_along_Y,      
-                    IS_1D_FACE_EY_Electric_along_Z ,      
-                    IS_1D_FACE_EY_Electric_along_X  ,     
-                    IS_1D_FACE_EZ_Electric_along_Y   ,    
-                    IS_1D_FACE_EZ_Electric_along_X    ,  
-                    IS_1D_FACE_Minus_EX_Electric_along_Z, 
-                    IS_1D_FACE_Minus_EX_Electric_along_Y ,
-                    IS_1D_FACE_Minus_EY_Electric_along_Z ,
-                    IS_1D_FACE_Minus_EY_Electric_along_X ,
-                    IS_1D_FACE_Minus_EZ_Electric_along_X ,
-                    IS_1D_FACE_Minus_EZ_Electric_along_Y
-                );
+                if(grid.input_parser.apply_ABC_BCs == true){
+                    this->abc(grid,
+                        E_x_tmp, E_y_tmp, E_z_tmp, 
+                        Eyx0, Ezx0, 
+                        Eyx1, Ezx1, 
+                        Exy0, Ezy0, 
+                        Exy1, Ezy1, 
+                        Exz0, Eyz0, 
+                        Exz1, Eyz1,
+                        dt,
+                        IS_1D_FACE_EX_Electric_along_Z  ,    
+                        IS_1D_FACE_EX_Electric_along_Y,      
+                        IS_1D_FACE_EY_Electric_along_Z ,      
+                        IS_1D_FACE_EY_Electric_along_X  ,     
+                        IS_1D_FACE_EZ_Electric_along_Y   ,    
+                        IS_1D_FACE_EZ_Electric_along_X    ,  
+                        IS_1D_FACE_Minus_EX_Electric_along_Z, 
+                        IS_1D_FACE_Minus_EX_Electric_along_Y ,
+                        IS_1D_FACE_Minus_EY_Electric_along_Z ,
+                        IS_1D_FACE_Minus_EY_Electric_along_X ,
+                        IS_1D_FACE_Minus_EZ_Electric_along_X ,
+                        IS_1D_FACE_Minus_EZ_Electric_along_Y
+                    );
+                }
 				/*fflush_stdout();
 				MPI_Barrier(MPI_COMM_WORLD);
 				printf("[MPI %d] - Ending ABC.\n",grid.MPI_communicator.getRank());*/
@@ -2256,6 +2272,25 @@ void AlgoElectro_NEW::update(
 
                 if(    grid.MPI_communicator.isRootProcess() != INT_MIN 
                     /*&& currentStep == grid.input_parser.maxStepsForOneCycleOfElectro*/){
+                        std::string applyABC_str;
+                        if( grid.input_parser.apply_ABC_BCs == true ){
+                            applyABC_str = "true";
+                        }else{
+                            applyABC_str = "false";
+                        }
+                        std::string applyPML_str;
+                        if( grid.input_parser.apply_PML_BCs == true){
+                            applyPML_str = "true";
+                        }else{
+                            applyPML_str = "false";
+                        }
+                        std::string checkSteadyState_str;
+                        if( grid.input_parser.check_steady_state == true){
+                            checkSteadyState_str = "true";
+                        }else{
+                            checkSteadyState_str = "false";
+                        }
+                        
                         printf("%s[MPI %d - Electro - Update - step %zu]%s\n"
                                "\t> Current simulation time is   %.10g seconds (over %.10g) [dt = %.10g seconds].\n"
                                "\t> Current step is              %zu over %zu.\n"
@@ -2264,7 +2299,10 @@ void AlgoElectro_NEW::update(
                                "\t> Time spent in MPI comm. is   %.6lf seconds (TOTAL).\n"
                                "\t> Time spent in MPI comm. is   %.6lf seconds (ITER).\n"
                                "\t> Time spent in writing is     %.6lf seconds (TOTAL).\n"
-                               "\t> Using %d MPI process(es) and %d OMP thread(s).\n\n",
+                               "\t> Using %d MPI process(es) and %d OMP thread(s).\n"
+                               "\t> Apply ABC boundary conditions is set to %s.\n"
+                               "\t> Apply PML boundary conditions is set to %s.\n"
+                               "\t> Check for steady-state is set to        %s\n\n",
                                ANSI_COLOR_GREEN,
                                grid.MPI_communicator.getRank(),
                                currentStep,
@@ -2280,7 +2318,10 @@ void AlgoElectro_NEW::update(
                                total_mpi_comm,
                                grid.profiler.getTimingInput("ELECTRO_WRITING_OUTPUTS"),
                                grid.MPI_communicator.getNumberOfMPIProcesses(),
-                               omp_get_num_threads()
+                               omp_get_num_threads(),
+                               applyABC_str.c_str(),
+                               applyPML_str.c_str(),
+                               checkSteadyState_str.c_str()
                                );
                     }
 

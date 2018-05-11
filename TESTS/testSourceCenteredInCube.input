@@ -33,11 +33,11 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=0.005
-		deltaY_Electro=0.005
-		deltaZ_Electro=0.005
-		delta_Thermal=0.1
-		ratio_EM_TH_delta=0.05
+		deltaX_Electro=0.01
+		deltaY_Electro=0.01
+		deltaZ_Electro=0.01
+		delta_Thermal=0.01
+		ratio_EM_TH_delta=1
 	$DELTAS
 		
 	// Boundaries of the domain
@@ -46,9 +46,9 @@ $MESH
 		L_X_ELECTRO=1
 		L_Y_ELECTRO=1
 		L_Z_ELECTRO=1
-		L_X_THERMAL=1
-		L_Y_THERMAL=1
-		L_Z_THERMAL=1
+		L_X_THERMAL=0.3
+		L_Y_THERMAL=0.3
+		L_Z_THERMAL=0.3
 	$DOMAIN_SIZE
 	
 	// Information on the source
@@ -89,7 +89,6 @@ $MESH
 		//TEST_PARAVIEW_MPI=(TEMP=RANK,E=GLOBAL,H=GLOBAL)
 		//USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/Multi_layered_spherical_brain.geometry}
 		USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/air_only.geometry}
-		MATERIAL_DATA_FILE={OLD=data_air.csv,ELECTRO=tissueproperties_900E6_HZ.csv}
 		MATERIAL_DIRECTORY=TISSUES_PROPERTIES
 	$MATERIALS
 	
@@ -100,6 +99,9 @@ $RUN_INFOS
 	$TIME_STEP
 		/// Time step used in the thermal algorithm (accessible by input_parser.thermal_algo_time_step):
 		THERMAL_TIME_STEP=1
+
+		THETA_THERMAL=0.5001
+
 	$TIME_STEP
 
 	$STOP_SIMUL_AFTER
@@ -109,8 +111,8 @@ $RUN_INFOS
 		maxStepsForOneCycleOfElectro=100
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
-		maxStepsForOneCycleOfThermal=5E5 
-		// input_parser.maxStepsForOneCycleOfThermal
+		
+		T_FINAL_THERMAL=4E3
 
 	$STOP_SIMUL_AFTER
 	
@@ -120,12 +122,20 @@ $RUN_INFOS
 	$TEMP_INIT
 
 	// State all your boundary conditions inside this region:
-	$BOUNDARY_CONDITIONS
+	$BOUNDARY_CONDITIONS_THERMO
+
+		THERMAL_TYPE_SIMULATION=cerveau
+		//THERMAL_TYPE_SIMULATION=analytic
+
+		// Units of convection coef. are [W/(m²K)]
+		CONVECTION_COEFFICIENT=10
+
 		// Thermal boundary condition of a parallelipipoid:
 		/*
 		  How to use these Boundary Conditions:
 			For Neumann:   {Neumann;value}
 			For Dirichlet: {Dirichlet;value} (value = temperature)
+			Used only for "analytical" verification cases.
 		*/
 		BC_FACE_0={Neumann;0}
 		BC_FACE_1={Neumann;0}
@@ -136,12 +146,12 @@ $RUN_INFOS
 		// Accessible by input_parser.THERMAL_FACE_BC_TYPE
 		// Accessible by input_parser.THERMAL_FACE_BC_VALUE
 
-	$BOUNDARY_CONDITIONS
+	$BOUNDARY_CONDITIONS_THERMO
 
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=1
+		SAMPLING_FREQ_ELECTRO=100
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING

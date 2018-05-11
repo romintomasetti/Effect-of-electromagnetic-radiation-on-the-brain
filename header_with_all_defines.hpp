@@ -11,6 +11,8 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
+#include "mpi.h"
+
 
 #include <cmath>
 /**
@@ -50,10 +52,11 @@
         #define ABORT_MPI(ARG){\
 			int done_already;\
 			MPI_Initialized(&done_already);\
-			if (!done_already)\
+			if (!done_already){\
 				abort();\
-			else\
+			}else{\
 				MPI_Abort(MPI_COMM_WORLD,ARG);\
+            }\
 		}
 #else
         #define ABORT_MPI(ARG) abort();

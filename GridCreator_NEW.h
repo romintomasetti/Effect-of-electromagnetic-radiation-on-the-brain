@@ -216,6 +216,15 @@ class GridCreator_NEW{
         );
 
         void Display_size_fields(void);
+        
+        void fillInMat_Brain(
+            const size_t numberOf,
+            std::vector<std::string> const& binaryFile,
+            std::vector<double> const& centers,
+            std::vector<size_t> const& nodesBrain,
+            std::vector<double> const& deltasBrain,
+            std::vector<std::string> const& materialsBrain
+        );
 };
 
 #endif

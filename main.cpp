@@ -57,6 +57,8 @@
 
 #include "boost/format.hpp"
 
+#include "header_with_all_defines.hpp"
+
 #include "algo_thermo.hpp"
 
 using namespace std;
@@ -67,18 +69,18 @@ void check_input_file_name_given(int argc, char *argv[],map<std::string,std::str
 
 
 int main(int argc, char *argv[]){
-	
+    
+    // Set verbosity of the program:	
 	unsigned int VERBOSITY = 5;
 
+    // Display current working directory:
 	char cwd[1024];
 	if (getcwd(cwd, sizeof(cwd)) != NULL)
 		fprintf(stdout, "Current working dir: %s\n", cwd);
 	else
 		perror("getcwd() error");
-	
-	omp_set_nested(1);
-	omp_set_dynamic(0);
-
+    
+    // Checking inputs of the program:
 	std::map<std::string,std::string> inputs;
 	std::map<std::string,std::string>::iterator it;
 
@@ -90,6 +92,7 @@ int main(int argc, char *argv[]){
 		VERBOSITY = std::stoul(inputs["-v"]);
 	}
 
+    // Profiler class:
 	ProfilingClass profiler;
 
 	/* First of all, initialize MPI because if it fails, the program must immediately be stopped. */
@@ -140,8 +143,9 @@ int main(int argc, char *argv[]){
 		MPI_communicator,
 		profiler);
 
-	//cout << "Mesh init\n";
-	gridTest.meshInitialization();
+	if(input_parser.apply_electro_algo == true){
+		gridTest.meshInitialization();
+	}
 
 	//gridTest.Display_size_fields();
 
@@ -151,8 +155,15 @@ int main(int argc, char *argv[]){
 			gridTest
 		);
 		
-	interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
-	interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
+
+	
+	if(input_parser.apply_electro_algo == true){
+		interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
+		interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
+	}
+    
+    //MPI_Barrier(MPI_COMM_WORLD);
+    //DISPLAY_ERROR_ABORT("Abort dans le main, pas de souci !");
 
 	// MPI_Barrier(MPI_COMM_WORLD);
 	// abort();
@@ -170,24 +181,29 @@ int main(int argc, char *argv[]){
 	// printf("SUCCESS Coucou3\n");
 	// // abort();
 
-	printf("SUCCESS\n");
-	printf("You successfully reach the point before the update and the norm computations\n");
-	algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
-	printf("SUCCESS\n");
-	printf("You successfully reach the point after the update and before the power computations\n");
-	algoElectro_newTst.WriteData(MPI_communicator.getRank(), gridTest);
-	printf("\n\tHello form process %u\n", MPI_communicator.getRank());
-	printf("SUCCESS\n");
-	printf("Prepare to abort...\n");
-	MPI_Barrier(MPI_COMM_WORLD);
-	abort();
-	// std::vector<double> Norm = algoElectro_newTst.ComputeNormEsquareBIS(gridTest);
-	std::vector<double> Norm = algoElectro_newTst.ComputeNormE2square(gridTest);
-	printf("SUCCESS\n");
-	printf("You successfully reach the point after the update and the norm computations\n");
+	if(input_parser.apply_electro_algo == true){
+		printf("SUCCESS\n");
+		printf("You successfully reach the point before the update and the norm computations\n");
+		algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
+		printf("SUCCESS\n");
+		printf("You successfully reach the point after the update and before the power computations\n");
+		algoElectro_newTst.WriteData(MPI_communicator.getRank(), gridTest);
+		printf("\n\tHello form process %u\n", MPI_communicator.getRank());
+		printf("SUCCESS\n");
+		printf("Prepare to abort...\n");
+		MPI_Barrier(MPI_COMM_WORLD);
+		abort();
+		// std::vector<double> Norm = algoElectro_newTst.ComputeNormEsquareBIS(gridTest);
+		std::vector<double> Norm = algoElectro_newTst.ComputeNormE2square(gridTest);
+		printf("SUCCESS\n");
+		printf("You successfully reach the point after the update and the norm computations\n");
+	}
 	
 	// Call thermal solver:
-	algo_thermo(argc, argv, gridTest);
+	// Call thermal solver:
+    if(input_parser.apply_thermo_algo == true){
+        algo_thermo(argc, argv, gridTest);
+    }
 	
 
 	profiler.probeMaxRSS();

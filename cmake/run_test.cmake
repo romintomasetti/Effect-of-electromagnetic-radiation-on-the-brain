@@ -1,6 +1,9 @@
 # adapted from https://cmake.org/pipermail/cmake/2009-July/030595.html
 
 
+SET(ENV{CTEST_OUTPUT_ON_FAILURE} 1)
+
+
 # some argument checking:
 # test_cmd is the command to run with all its arguments
 if( NOT test_cmd1 )

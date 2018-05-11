@@ -1,3 +1,5 @@
+CHECK_IF_DEBUG()
+
 FILE(GLOB SRCS *.cpp *.hpp)
 ADD_EXECUTABLE(brain ${SRCS})
 

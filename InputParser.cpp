@@ -150,6 +150,7 @@ stringDollar_Header2 InputParser::hashit_Header2 (std::string const& inString) {
 	if (inString == "ORIGINS")   					 return ORIGINS;
 	if (inString == "PROBING_POINTS")      			 return PROBING_POINTS;
 	if (inString == "ELECTRO_STEADY_STATE")  		 return ELECTRO_STEADY_STATE;
+    if (inString == "ALGORITHM_TO_APPLY")            return ALGORITHM_TO_APPLY;
 	else {
 		printf("In file %s at %d. Complain to Romin. Abort().\n",__FILE__,__LINE__);
 		cout << "Faulty string is ::" + inString + "::" << endl;
@@ -939,6 +940,10 @@ void InputParser::readHeader_MESH (ifstream &file){
 						}
 						//std::cout << "Material dirctory is " << this->material_data_directory << std::endl;
 
+                    }else if( boost::iequals( propName , "geometry_material_thermo") ){
+                        this->geometry_material_thermo = new char[propGiven.length() + 1];
+						strcpy(this->geometry_material_thermo, propGiven.c_str());
+                        
 					}else if(propName == "USE_GEOMETRY_FILE"){
 						// Parse the propGiven string:
 						std::vector<size_t> pos_acc_open
@@ -1464,6 +1469,60 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					}
 				}
 				break;
+                
+            case ALGORITHM_TO_APPLY:
+                // Read the given time steps:
+				while(!file.eof()){
+					// Note: sections are ended by $the-section-name.
+					// Read line:
+					getline(file,currentLine);
+					// Get rid of comments:
+					this->checkLineISNotComment(file,currentLine);
+					// Remove any blank in the string:
+					this->RemoveAnyBlankSpaceInStr(currentLine);
+					// If the string is "$DELTAS" it means the section ends.
+					if(currentLine == "$ALGORITHM_TO_APPLY"){
+						break;
+					}
+					// If the string is empty, it was just a white space. Continue.
+					if(currentLine == string()){continue;}
+					// Find the position of the equal sign:
+					std::size_t posEqual  = currentLine.find("=");
+					// The property we want to set:
+					std::string propName  = currentLine.substr(0,posEqual);
+					// The property name the user gave:
+					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
+
+					if(propName == "THERMAL"){
+                        if( boost::iequals(propGiven,"true;") ){
+                            this->apply_thermo_algo = true;
+                        }else if(boost::iequals(propGiven,"false;") ){
+                            this->apply_thermo_algo = false;
+                        }else{
+                            DISPLAY_ERROR_ABORT_CLASS(
+                                "The property 'THERMAL' in 'ALGORITHM_TO_APPLY' should be"
+                                " either 'true;' or 'false;'."
+                            );
+                        }
+                    }else if( boost::iequals(propName,"ELECTRO")){
+                        if( boost::iequals(propGiven,"true;") ){
+                            this->apply_electro_algo = true;
+                        }else if(boost::iequals(propGiven,"false;") ){
+                            this->apply_electro_algo = false;
+                        }else{
+                            DISPLAY_ERROR_ABORT_CLASS(
+                                "The property 'ELECTRO' in 'ALGORITHM_TO_APPLY' should be"
+                                " either 'true;' or 'false;'."
+                            );
+                        }
+					}else{
+						DISPLAY_ERROR_ABORT(
+							"In ELECTRO_STEADY_STATE :: nothing corresponds to %s.",
+							propName.c_str()
+						);
+					}
+				}
+                break;
 
 			case ELECTRO_STEADY_STATE:
 				// Read the given time steps:
@@ -1490,6 +1549,17 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 
 					if(propName == "CHECK_EVERY_POINT"){
                         this->SteadyState_CheckEveryPoint = std::stol(propGiven);
+                    }else if( boost::iequals(propName,"check_steady_state")){
+                        if( boost::iequals(propGiven,"true;")){
+                            this->check_steady_state = true;
+                        }else if( boost::iequals(propGiven,"false;")){
+                            this->check_steady_state = false;
+                        }else{
+                            DISPLAY_ERROR_ABORT_CLASS(
+                                "The property 'check_steady_state' should either be"
+                                " 'true;' or 'false;'."
+                            );
+                        }
 					}else{
 						DISPLAY_ERROR_ABORT(
 							"In ELECTRO_STEADY_STATE :: nothing corresponds to %s.",
@@ -1606,7 +1676,31 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					}else if( propName == "CONVECTION_COEFFICIENT" ){
 
 						this->convection_parameter = std::stod(propGiven);
-											
+					}else if(propName == "TEMPERATURE_CONVECTION"){
+
+						this->temperature_convection= std::stod(propGiven);
+
+					}else if( boost::iequals (propName,"WALL_THERMO")){
+						if(boost::iequals(propGiven,"TRUE")){
+							this->wall_thermo = 1;
+						}
+					
+					}else if(boost::iequals (propName,"THERMAL_DISTRIBUTION")){
+						if(boost::iequals(propGiven,"TRUE")){
+							this->thermal_distribution =1;
+						}
+
+					}else if(propName == "AMPLITUDE_THERMAL_DISTRIBUTION"){
+						this->amplitude_thermal_distribution = std::stod(propGiven);
+					
+					}else if(boost::iequals (propName,"HEAT_DISTRIBUTION")){
+						if(boost::iequals(propGiven,"TRUE")){
+							this->heat_distribution =1;
+						}
+
+					}else if(propName == "AMPLITUDE_HEAT_DISTRIBUTION"){
+						this->amplitude_heat_distribution = std::stod(propGiven);
+					
 					}else{
 						printf("InputParser::readHeader_RUN_INFOS:: You didn't provide a ");
 						printf("good member for $RUN_INFOS$BOUNDARY_CONDITIONS_THERMO.\nAborting.\n");

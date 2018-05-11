@@ -32,7 +32,7 @@ typedef struct material_struct{
 	inline void printf_mat(void){
 		printf("\t> %s [ID %u]:\n",name.c_str(),ID);
 		for(auto it = properties.cbegin(); it != properties.cend() ; it ++)
-			printf("\t\t> %30s:%10lf\n",it->first.c_str(),it->second);
+			printf("\t\t> %30s:%.10g\n",it->first.c_str(),it->second);
 		printf("\t\t> Initial temperature is %.9g.\n",initial_temperature);
 		printf("\n");
 	}
@@ -163,6 +163,11 @@ class Materials{
 		double find_frequency_from_mat_file_name(std::string filename);
 
 		void printf_unified_material_list(void);
+        
+        std::string find_nearest_material_from_unified_list(
+            std::string const& str,
+            unsigned int *ID_mat
+        );
 };
 
 #endif

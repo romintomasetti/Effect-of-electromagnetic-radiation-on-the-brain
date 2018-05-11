@@ -1,0 +1,190 @@
+/* This is a comment */
+/* This is a true multiple line comment !
+ * Yo !
+ * Re-bonjour */
+//This is another comment
+$INFOS
+	$NAME
+		// Output file for fields:
+		output=RESULTS/OUTPUT_FILES
+		// Error log file:
+		error=ERROR_LOG
+		// Profiling (cpu time, memory, etc):
+		profile=PROFILING
+	$NAME
+	
+	$REMOVE_EXISTING_FILES
+		// Specify if old .pvti and .vti files must be deleted prior to any computation:
+		remove_vti=true
+		remove_pvti=true
+	$REMOVE_EXISTING_FILES
+$INFOS
+
+$MESH
+	// Origins of the thermal and electromagnetic grids (in coordinates)
+	$ORIGINS
+		ORIGIN_ELECTRO_X=0.0
+		ORIGIN_ELECTRO_Y=0.0
+		ORIGIN_ELECTRO_Z=0.0
+		ORIGIN_THERMAL_X=0.0
+		ORIGIN_THERMAL_Y=0.0
+		ORIGIN_THERMAL_Z=0.0
+	$ORIGINS
+
+	// Size of the elements of the mesh:
+	$DELTAS
+		deltaX_Electro=0.01
+		deltaY_Electro=0.01
+		deltaZ_Electro=0.01
+		delta_Thermal=0.01
+		ratio_EM_TH_delta=1
+	$DELTAS
+		
+	// Boundaries of the domain
+	$DOMAIN_SIZE
+		// Length of the domain in each direction
+		L_X_ELECTRO=1
+		L_Y_ELECTRO=1
+		L_Z_ELECTRO=1
+		L_X_THERMAL=0.3
+		L_Y_THERMAL=0.3
+		L_Z_THERMAL=0.3
+	$DOMAIN_SIZE
+	
+	// Information on the source
+	$SOURCE
+		NBR_SOURCES=2
+		// Length of the source in each direction
+		L_X=0.1;0.1;
+		L_Y=0.1;0.1;
+		L_Z=0.1;0.1;
+		// Center of the source, (0,0,0) is in the lower left corner in front:
+		C_X=0.3;0.7;
+		C_Y=0.5;0.5;
+		C_Z=0.5;0.5;
+		// Frequency [Hz]
+		FRQCY=900E6;900E6;
+		/// Either 'DIPOLE' or 'SIMPLE' (for simple antenna):
+		/// If set to dipole, length is proportional to lambda = 3E8/freq
+		///
+		IMPOSED=DIPOLE;DIPOLE;
+		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
+		SOURCE_TIME=SINE;SINE;
+		// Default with Gaussian is (MEAN,STD)=(0*period,period/10) where period=c/frequency, c=3e8
+	$SOURCE
+	
+	$MATERIALS
+		/* PUT AIR EVERYWHERE */
+		//USE_AIR_EVERYWHERE=true
+		/* TEST PARAVIEW OUTPUT WITH ONE MPI (puts I,J,K inside components
+			of the electric and magnetic fields)*/
+		//TEST_PARAVIEW=true
+		/* TEST PARAVIEW OUTPUT WITH MORE THAN ONE MPI 
+			Convention: 1) TEMP=RANK puts the rank of the MPI process
+					in each temperature nodes
+				    2) E=GLOBAL puts the indices I J K globals
+					in each components of the electric field
+				    3) H=GLOBAL puts the indices I J K globals
+					in each components of the magnetic field*/
+		//TEST_PARAVIEW_MPI=(TEMP=RANK,E=GLOBAL,H=GLOBAL)
+		//USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/Multi_layered_spherical_brain.geometry}
+		USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/real_brain_100by119by100.geometry}
+		MATERIAL_DIRECTORY=TISSUES_PROPERTIES
+	$MATERIALS
+	
+$MESH
+
+$RUN_INFOS
+
+    $ALGORITHM_TO_APPLY
+        THERMAL=false;
+        ELECTRO=true;
+    $ALGORITHM_TO_APPLY
+
+	$TIME_STEP
+		/// Time step used in the thermal algorithm (accessible by input_parser.thermal_algo_time_step):
+		THERMAL_TIME_STEP=1
+
+		THETA_THERMAL=0.5001
+
+	$TIME_STEP
+
+	$STOP_SIMUL_AFTER
+		// The simulation will stop after... (in sec)
+		stopTime=10
+		// The electromagnetic solver stops after this max number of steps parameter:
+		maxStepsForOneCycleOfElectro=100
+		// input_parser.maxStepsForOneCycleOfElectro
+		// The thermal solver stops after this max number of steps:
+		
+		T_FINAL_THERMAL=4E3
+
+	$STOP_SIMUL_AFTER
+	
+	// Initial temperatures:
+	$TEMP_INIT
+		INIT_TEMP_FILE=../initial_temperature_materials.initTemp
+	$TEMP_INIT
+
+	// State all your boundary conditions inside this region:
+	$BOUNDARY_CONDITIONS_THERMO
+
+		THERMAL_TYPE_SIMULATION=cerveau
+		//THERMAL_TYPE_SIMULATION=analytic
+
+		// Units of convection coef. are [W/(m²K)]
+		CONVECTION_COEFFICIENT=10
+
+		// Thermal boundary condition of a parallelipipoid:
+		/*
+		  How to use these Boundary Conditions:
+			For Neumann:   {Neumann;value}
+			For Dirichlet: {Dirichlet;value} (value = temperature)
+			Used only for "analytical" verification cases.
+		*/
+		BC_FACE_0={Neumann;0}
+		BC_FACE_1={Neumann;0}
+		BC_FACE_2={Dirichlet;50}
+		BC_FACE_3={Dirichlet;0}
+		BC_FACE_4={Dirichlet;0}
+		BC_FACE_5={Dirichlet;0}
+
+	$BOUNDARY_CONDITIONS_THERMO
+    
+    $BOUNDARY_CONDITIONS_ELECTRO
+		// Apply ABC or not:
+		APPLY_ABC=true
+		// Apply PML or not:
+		APPLY_PML=false
+		// Thickness of the PML boundary condition
+		THICKNESS_PML_IN_NODES=5
+		// Order of the PML boundary condition:
+		PML_ORDER=0
+		// Sigma_M
+		PML_SIGMA_M=1		
+	$BOUNDARY_CONDITIONS_ELECTRO
+
+	$OUTPUT_SAVING
+		// Sampling frequency for the electromagnetic algorithm:
+		SAMPLING_FREQ_ELECTRO=100
+		// Sampling frequency for the thermal algorithm:
+		SAMPLING_FREQ_THERMAL=1
+	$OUTPUT_SAVING
+
+	$ELECTRO_STEADY_STATE
+        check_steady_state=false;
+	$ELECTRO_STEADY_STATE
+	
+$RUN_INFOS
+
+// This section contains post-processing directives, such as probing data.
+$POST_PROCESSING
+
+	$PROBING_POINTS
+
+	$PROBING_POINTS
+
+$POST_PROCESSING
+
+
+	

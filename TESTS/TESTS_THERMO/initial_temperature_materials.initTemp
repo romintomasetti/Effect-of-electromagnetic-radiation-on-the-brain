@@ -1,0 +1,10 @@
+{
+    "file.info"                : "This file contains the initial temperatures or the multi-layered spherical brain",
+    "howTo.info"               : "Put the material name followed by the initial temperature",
+    "default.info"             : "The default temperature is associated to any material not specified in the following",
+    "Air.initTemp"             : 298.15,
+    "CorticalBone.initTemp"    : 310.15,
+    "BrainGreyMatter.initTemp" : 310.15,
+    "BrainWhiteMatter.initTemp": 310.15,
+    "default.initTemp"         : 310.15
+}
