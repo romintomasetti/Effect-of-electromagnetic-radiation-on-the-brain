@@ -245,6 +245,15 @@ class InputParser{
 		// Thermal distribution:
 		unsigned int thermal_distribution=0;
 
+		// Amplitude Thermal distribution:
+		double amplitude_thermal_distribution=0.0;
+
+		// Heat distribution:
+		unsigned int heat_distribution=0;
+
+		//Amplitude Heat distribution:
+		double amplitude_heat_distribution=0.0;
+
 		std::map<std::string,std::string> TEST_PARAVIEW_MPI_ARGS;
 
 		void deleteFiles(int MPI_RANK = 0);

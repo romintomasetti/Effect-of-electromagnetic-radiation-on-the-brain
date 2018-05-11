@@ -139,11 +139,20 @@ $RUN_INFOS
 		//If analytic case, thermal distribution (sine) (Remark: ONLY DIRECTION X)
 		THERMAL_DISTRIBUTION=FALSE
 
+		// IF analytic case && thermal distribution 
+		AMPLITUDE_THERMAL_DISTRIBUTION=0.0
+
 		// Units of convection coef. are [W/(m²K)]
 		CONVECTION_COEFFICIENT=10
 
 		//Temperature convection (T_infiny)
 		TEMPERATURE_CONVECTION=298.15
+
+		// Sine heat source
+		HEAT_DISTRIBUTION=FALSE
+
+		// IF analytic case && sine heat source
+		AMPLITUDE_HEAT_DISTRIBUTION=0.0
 
 		// Thermal boundary condition of a parallelipipoid:
 		/*

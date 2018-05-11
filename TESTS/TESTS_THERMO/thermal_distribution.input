@@ -137,10 +137,10 @@ $RUN_INFOS
 		WALL_THERMO=FALSE
 
 		//If analytic case, thermal distribution (sine) (Remark: ONLY DIRECTION X)
-		THERMAL_DISTRIBUTION=FALSE
+		THERMAL_DISTRIBUTION=TRUE
 
 		// IF analytic case && thermal distribution 
-		AMPLITUDE_THERMAL_DISTRIBUTION=0.0
+		AMPLITUDE_THERMAL_DISTRIBUTION=1.0
 
 		// Units of convection coef. are [W/(m²K)]
 		CONVECTION_COEFFICIENT=10
@@ -161,8 +161,8 @@ $RUN_INFOS
 			For Dirichlet: {Dirichlet;value} (Only for Dirichelet :value = temperature[K])
 			Used only for "analytical" verification cases.
 		*/
-		BC_FACE_0={Dirichlet;333.15}
-		BC_FACE_1={Dirichlet;298.15}
+		BC_FACE_0={Dirichlet;0}
+		BC_FACE_1={Dirichlet;0}
 		BC_FACE_2={Neumann;0}
 		BC_FACE_3={Neumann;0}
 		BC_FACE_4={Neumann;0}

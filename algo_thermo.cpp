@@ -581,14 +581,14 @@ void condition_limit_equation(double *B, MUMPS_INT *Indices_line_B, MUMPS_INT *I
 
 
 //Function to give the Temperature initial
-void InitializeTemperature(double *InitialTemperature,unsigned int Number_total,unsigned int N_x,unsigned int N_y,unsigned int N_z, double T_infiny, double Delta,double *temperature_initial,unsigned int *material_at_nodes, double *temperature_initial_face,unsigned int *Stateofeachface, unsigned int type_simulation_value, unsigned int thermal_distribution){
+void InitializeTemperature(double *InitialTemperature,unsigned int Number_total,unsigned int N_x,unsigned int N_y,unsigned int N_z, double T_infiny, double Delta,double *temperature_initial,unsigned int *material_at_nodes, double *temperature_initial_face,unsigned int *Stateofeachface, unsigned int type_simulation_value, unsigned int thermal_distribution,double  amplitude_thermal_distribution){
 
         unsigned int count_y=0;
         
         for(unsigned int parcours=0;parcours<Number_total;parcours++){
             //Thermal distibution
             if(thermal_distribution==1){
-                InitialTemperature[parcours]=50*sin(M_PI*(double)count_y/(double)N_x);
+                InitialTemperature[parcours]=amplitude_thermal_distribution*sin(M_PI*(double)count_y/(double)(N_x-1));
             }else{
                 //Analytic case
                 if(type_simulation_value==0){
@@ -710,7 +710,7 @@ void mkl_call(int Number_total,double *B, int *Indices_line_B, int *Colonn_line_
 
 
 //Function resolve
-void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, unsigned int *Stateofeachface, unsigned int N_x, unsigned int N_y, unsigned int N_z, double Delta, double dt,double theta,double h,double T_infiny, unsigned int type_simulation_value, double *temperature_initial,double t_final_thermal, double * temperature_initial_face, unsigned int rate_save_thermo,char *geometry_material, unsigned int wall_thermo, unsigned int thermal_distribution)
+void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, unsigned int *Stateofeachface, unsigned int N_x, unsigned int N_y, unsigned int N_z, double Delta, double dt,double theta,double h,double T_infiny, unsigned int type_simulation_value, double *temperature_initial,double t_final_thermal, double * temperature_initial_face, unsigned int rate_save_thermo,char *geometry_material, unsigned int wall_thermo, unsigned int thermal_distribution,double  amplitude_thermal_distribution,unsigned int heat_distribution, double amplitude_heat_distribution,GridCreator_NEW & gridElectro)
 {
     // Read the file and put it inside a vector:
     unsigned int* material_at_nodes = NULL;
@@ -936,17 +936,7 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
     unsigned int counter_nonvalue_A=0;
     unsigned int counter_nonvalue_B=0;
 
-    // Test wall 2 : material 1) concrete   ; 2) wood cross grain yellow pine  3) glass fiber,coated;duct liner
-    double rho[3]={2300,2300,2300};
-    double k[3]={1,1,1};
-    double c_p[3]={880,880,880};
-    //double rho[3]={2300,640,32};
-    //double k[3]={1.4,0.15,0.038};
-    //double c_p[3]={880,2805,835};
-    // Material aluminium
-    /*double k[2]{46,46};
-    double rho[2]={3970,3970};
-    double c_p[2]={765,765};*/
+
 
 
     
@@ -1305,8 +1295,24 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
             unsigned int value_testx = parcours-tmp*N_x*N_y;
             unsigned int neighbooroutside[6]={0,0,0,0,0,0};
 
+
             //%%%%%%%%%%%%%%%%%%%%% Case Brain %%%%%%%%%%%%%%%%%%%%%%%%ù
             if(type_simulation_value==1){
+
+                //Value paramater
+                double *k=(double *) calloc(gridElectro.materials.unified_material_list.size(),sizeof(double));
+                double *c_p=(double *)calloc(gridElectro.materials.unified_material_list.size(),sizeof(double));
+                double *rho=(double *)calloc(gridElectro.materials.unified_material_list.size(),sizeof(double));
+                for(unsigned int i=0; i<gridElectro.materials.unified_material_list.size();i++){
+                    k[i]=gridElectro.materials.unified_material_list[i].properties["THERMALCONDUCTIVITY(W/M/°C)"];
+                    c_p[i]=gridElectro.materials.unified_material_list[i].properties["HEATCAPACITY(J/KG/°C)"];
+                    rho[i]=gridElectro.materials.unified_material_list[i].properties["DENSITY(KG/M³)"];
+                    /*printf("> Materials %s : rho= %lf, c_p = %lf , k=%lf\n"
+                            ,gridElectro.materials.unified_material_list[i].name.c_str(),gridElectro.materials.unified_material_list[i].properties["DENSITY(KG/M³)"]
+                            ,gridElectro.materials.unified_material_list[i].properties["HEATCAPACITY(J/KG/°C)"],
+                            gridElectro.materials.unified_material_list[i].properties["THERMALCONDUCTIVITY(W/M/°C)"]);*/
+                }
+
                 //neighbour air near the brain 
                 if(nodes_nearbrain_prim[parcours]==1){
                     //convection en avant 
@@ -1462,6 +1468,24 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                 }               
             }else{
             //%%%%%%%%%%%%%%%%%%%% Case analytic %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                //Parameter
+                double rho[2]={0,0};
+                double k[2]={0,0};
+                double c_p[2]={0,0};
+                if(wall_thermo==1){
+                    rho[0]=2300;
+                    rho[1]=640;
+                    k[0]=1.4;
+                    k[1]=0.15;
+                    c_p[0]=880;
+                    c_p[1]=2805;
+                }else{
+                    rho[0]=3970;
+                    k[0]=46;
+                    c_p[0]=765;
+                }
+
                 if(nodes_extern[parcours]==1){
                         //nothing to do 
                 }else{
@@ -1548,9 +1572,12 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                     counter_nonvalue_A++;
                     counter_nonvalue_B++;
             
-            
- //partie chaleur à remodifier !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    Q[position_equation]=0*1000*sin(M_PI*count_y/(N_x-1))*dt;
+                    if(heat_distribution==1){                        
+                        Q[position_equation]=amplitude_heat_distribution*sin(M_PI*(double)count_y/(double)(N_x-1))*dt;
+                    }else{
+                        Q[position_equation]=0;
+                    }
+                    
                         
                     position_equation++;
                     //Conditions frontières domaine
@@ -1724,7 +1751,7 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
             printf("The table is not calloc().This error comes from Line %d \n",__LINE__);
             abort();
         }
-        InitializeTemperature(InitialTemperature,Number_total,N_x,N_y,N_z,T_infiny,Delta,temperature_initial,material_at_nodes,temperature_initial_face,Stateofeachface,type_simulation_value,thermal_distribution);
+        InitializeTemperature(InitialTemperature,Number_total,N_x,N_y,N_z,T_infiny,Delta,temperature_initial,material_at_nodes,temperature_initial_face,Stateofeachface,type_simulation_value,thermal_distribution,amplitude_thermal_distribution);
         
 
         // Lecture of the file outside
@@ -1808,7 +1835,7 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
             abort();
         }
 
-    InitializeTemperature(Temperature_verif,Number_total,N_x,N_y,N_z,T_infiny,Delta,temperature_initial,material_at_nodes,temperature_initial_face,Stateofeachface,type_simulation_value,thermal_distribution);
+    InitializeTemperature(Temperature_verif,Number_total,N_x,N_y,N_z,T_infiny,Delta,temperature_initial,material_at_nodes,temperature_initial_face,Stateofeachface,type_simulation_value,thermal_distribution,amplitude_thermal_distribution);
         
 
     // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LOOP %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1951,6 +1978,15 @@ int algo_thermo(int argc, char **argv, GridCreator_NEW & gridElectro)
 
     // Thermal Distribution
     unsigned int thermal_distribution=gridElectro.input_parser.thermal_distribution;
+
+    // Amplitude Thermal Distribution
+    double  amplitude_thermal_distribution=gridElectro.input_parser.amplitude_thermal_distribution;
+
+    // Heat Distribution
+    unsigned int heat_distribution=gridElectro.input_parser.heat_distribution;
+
+    // Amplitude Heat Distribution
+    double amplitude_heat_distribution=gridElectro.input_parser.amplitude_heat_distribution;
 
     // Boundary  
     //  choose between "Neumann"  homogeneous Neumann condition, "Dirichlet" Dirichlet condition or "Convection" convection conditions
@@ -2153,7 +2189,8 @@ int algo_thermo(int argc, char **argv, GridCreator_NEW & gridElectro)
 
     printf("\n===============================================\n==== CALL TO RESOLVE ====\n===============================================\n");
 
-    resolve(id,grid,Number_total,Stateofeachface, N_x, N_y, N_z, Delta ,dt,theta,h, T_infiny,type_simulation_value,temperature_initial,t_final_thermal,temperature_initial_face,rate_save_thermo,geometry_material,wall_thermo,thermal_distribution);
+    resolve(id,grid,Number_total,Stateofeachface, N_x, N_y, N_z, Delta ,dt,theta,h, T_infiny,type_simulation_value,temperature_initial,t_final_thermal,temperature_initial_face,rate_save_thermo,geometry_material,wall_thermo,thermal_distribution,amplitude_thermal_distribution,heat_distribution,amplitude_heat_distribution,
+                gridElectro);
 
 
     // Terminate the process

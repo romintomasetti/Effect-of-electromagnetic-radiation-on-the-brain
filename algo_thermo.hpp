@@ -94,7 +94,8 @@ void InitializeTemperature(
 	double *temperature_initial_face,
 	unsigned int *Stateofeachface,
 	unsigned int type_simulation_value,
-	unsigned int thermal_distribution
+	unsigned int thermal_distribution,
+	double  amplitude_thermal_distribution
 	);
 
 void ReadFile(int Number_total, double *Q,double dt);
@@ -130,7 +131,11 @@ void resolve(
 	unsigned int rate_save_thermo,
 	char *geometry_material,
 	unsigned int wall_thermo,
-	unsigned int thermal_distribution);
+	unsigned int thermal_distribution,
+	double  amplitude_thermal_distribution,
+	unsigned int heat_distribution,
+	double amplitude_heat_distribution,
+	GridCreator_NEW & gridElectro);
 
 int algo_thermo(
 	int argc,
