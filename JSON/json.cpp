@@ -206,3 +206,34 @@ JSON_API std::vector<std::string> read_vector_string(
     }
     return def;
 }
+
+JSON_API std::vector<std::size_t> read_vector_size_t(
+    rapidjson::Document const &d,
+    char const *name,
+    std::vector<std::size_t> const &def
+)
+{
+    if(d.HasMember(name))
+    {
+        if(!d[name].IsArray())
+        {
+            std::stringstream str;
+            str << "ERROR [read_Vec3i]: \"" << name << "\" should be an array";
+            throw std::runtime_error(str.str());
+        }
+        for(rapidjson::SizeType i = 0; i < d[name].Size(); i++)
+        {
+            if(!d[name][i].IsUint64())
+            {
+                std::stringstream str;
+                str << "ERROR [read_Vec3i]: array \"" << name <<"\" does not contain strings!";
+                throw std::runtime_error(str.str());
+            }
+        }
+        std::vector<std::size_t> returned_vector(d[name].Size());
+        for(rapidjson::SizeType i = 0; i < d[name].Size(); i++)
+            returned_vector[i] = d[name][i].GetUint64();
+        return returned_vector;
+    }
+    return def;
+}

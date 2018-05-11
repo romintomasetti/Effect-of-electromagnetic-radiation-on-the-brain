@@ -20,6 +20,8 @@
 
 #include "GeometricalForms_isInside.hpp"
 
+#include "UTILS/miscelleneous.hpp"
+
 Geometrical_Forms enum_for_geometrical_forms(std::string const &str){
     if(str == "SPHERES")
         return SPHERES;
@@ -1792,6 +1794,79 @@ void GridCreator_NEW::fillIn_material_with_geometry_file(void){
                     "CUBES");
             }else if(kind_of_geometries[forms] == ""){
                 // do nothing
+            }else if(kind_of_geometries[forms] == "realBrain"){
+                /**
+                 * We have spheres.
+                 */
+				if(this->VERBOSITY >= 1)
+					printf("\t\t\t>>> [MPI %d] - Real brain...\n",
+							this->MPI_communicator.getRank());
+                size_t numberOf = static_cast<size_t> (read_int(
+                    geometryFileJSON,"realBrain.howMany",0));
+                std::vector<double> deltasBrain
+                    = read_vector_double(geometryFileJSON,"realBrain.deltas",std::vector<double>(0));
+                std::vector<double> centers
+                    = read_vector_double(geometryFileJSON,"realBrain.centers",std::vector<double>(0));
+                std::vector<std::string> binaryFile
+                    = read_vector_string(geometryFileJSON,"realBrain.binFile",std::vector<std::string>(0));
+                std::vector<size_t> nodesBrain
+                    = read_vector_size_t(geometryFileJSON,"realBrain.N_cells",std::vector<size_t>(0));
+                std::vector<std::string> materialsBrain
+                    = read_vector_string(geometryFileJSON,"realBrain.materials",std::vector<std::string>(0));
+
+                /// Check the sizes of provided data:
+                if(    binaryFile.size()     != numberOf 
+                    || centers.size()        != 3*numberOf 
+                    || nodesBrain.size()     != 3*numberOf
+                    || deltasBrain.size()    != 3*numberOf
+                    || materialsBrain.size() != numberOf){
+                    DISPLAY_ERROR_ABORT(
+                        "You specified %zu real brains but either 'realBrain.binaryFile' (size %zu, should be %zu)"
+                        " or 'realBrain.centers' (size %zu, should be %zu) or 'realBrain.nodesBrain'"
+                        " (size %zu, should be %zu) or 'realBrain.deltasBrain' (size %zu, should be %zu) "
+                        "or 'realBrain.materials' (size %zu, should be %zu) is not well-defined.",
+                        numberOf,
+                        binaryFile.size(),numberOf,
+                        centers.size(),3*numberOf,
+                        nodesBrain.size(),3*numberOf,
+                        deltasBrain.size(),3*numberOf,
+                        materialsBrain.size(),numberOf
+                    );
+                }else{
+                    printf("\t>>> [MPI %d] - Electro. solver - Geometry is 'real brain' with the following parameters:\n",
+                        this->MPI_communicator.getRank());
+                    for(size_t I = 0 ; I < numberOf ; I ++){
+                        printf("\t\t> Brain %zu has:\n",
+                            I);
+                        printf("\t\t\t> Binary file is    %s\n",
+                            binaryFile[I].c_str());
+                        printf("\t\t\t> Centers are       (%.10g,%.10g,%.10g)\n",
+                            centers[3*I+0],
+                            centers[3*I+1],
+                            centers[3*I+2]);
+                        printf("\t\t\t> Number of cells   (%zu,%zu,%zu)\n",
+                            nodesBrain[3*I+0],
+                            nodesBrain[3*I+1],
+                            nodesBrain[3*I+2]);
+                        printf("\t\t\t> Spatial steps are (%.10g,%.10g,%.10g)\n",
+                            deltasBrain[3*I+0],
+                            deltasBrain[3*I+1],
+                            deltasBrain[3*I+2]);
+                        printf("\t\t\t> Materials are     %s\n",
+                            materialsBrain[I].c_str());
+                    }
+                }
+                
+                /// Fill in the material vectors:
+                this->fillInMat_Brain(
+                    numberOf,
+                    binaryFile,
+                    centers,
+                    nodesBrain,
+                    deltasBrain,
+                    materialsBrain
+                );
+                
             }else{
                 DISPLAY_ERROR_ABORT(
                     "No geometricalform corresponding to %s is coded yet !",
@@ -1810,9 +1885,394 @@ void GridCreator_NEW::fillIn_material_with_geometry_file(void){
                 "%s",errTryCatch.str().c_str()
             );
     }
+}
 
-    
+void GridCreator_NEW::fillInMat_Brain(
+    const size_t                    numberOf,
+    std::vector<std::string> const& binaryFile,
+    std::vector<double> const&      centers,
+    std::vector<size_t> const&      nodesBrain,
+    std::vector<double> const&      deltasBrain,
+    std::vector<std::string> const& materialsBrain
+)
+{
+    /* Loop over the number of brains */
+    for(size_t brain = 0 ; brain < numberOf ; brain ++){
 
+        /* Read the binary file specified in binaryFile[brain] */
+        std::vector<float> data_float = readBinaryFile<float>(binaryFile[brain]);
+        printf("\t\t> Brain %zu : binary file successfully opened.\n",brain);
+
+        /* Check the sizes match */
+        if( data_float.size() != nodesBrain[3*brain+0]*nodesBrain[3*brain+1]*nodesBrain[3*brain+2] ){
+            DISPLAY_ERROR_ABORT_CLASS(
+                "Size mismatch between nodesBrain(%zu,%zu,%zu) and read data has a size of %zu.",
+                nodesBrain[3*brain+0],nodesBrain[3*brain+1],nodesBrain[3*brain+2],data_float.size()
+            );
+        }
+        printf("\t\t> Brain %zu : sizes match !\n",brain);
+
+        /* Check that all materials are in our database */
+        std::vector<std::string> conventionMaterial
+            = one_String_to_vector_string(
+                materialsBrain[brain],
+                ",",
+                true
+            );
+        std::vector<unsigned int> conventionMaterial_ID;
+        std::vector<std::string>  conventionMaterial_NAME;
+        UTILS_parseVectorString_uint(
+            conventionMaterial_ID,
+            conventionMaterial_NAME,
+            conventionMaterial,
+            "=",
+            true
+        );
+        std::vector<unsigned int> newMaterial_ID;
+        std::vector<std::string>  newMaterial_NAME;
+        for(size_t I = 0 ; I < conventionMaterial_NAME.size() ; I ++){
+            unsigned int ID = 0;
+            std::string matNew = this->materials.find_nearest_material_from_unified_list(
+                                            conventionMaterial_NAME[I],
+                                            &ID
+                                        );
+            newMaterial_ID.push_back(ID);
+            newMaterial_NAME.push_back(matNew);
+        }
+
+        /* Convert to unsigned int and use material ID's suiting unified_mat_list */
+        std::vector<unsigned int> materialBrain(data_float.size());
+        for(size_t I = 0 ; I < data_float.size() ; I ++){
+            // Check the floating point number is an integer:
+            float intpart;
+            if( std::modf(data_float[I], &intpart) == 0.0){
+                materialBrain[I] = (unsigned int)data_float[I];
+                for(size_t i = 0 ; i < newMaterial_ID.size() ; i ++){
+                    if( conventionMaterial_ID[i] == materialBrain[I]){
+                        //printf("Coucou ==> Value %u is transformed in %u !\n",materialBrain[I],newMaterial_ID[i]);
+                        materialBrain[I] = newMaterial_ID[i];
+                    }
+                }
+            }else{
+                DISPLAY_ERROR_ABORT_CLASS(
+                    "The value %.20f is not an integer.",
+                    data_float[I]
+                );
+            }
+        }
+        printf("\t\t> Brain %zu : float data successfully converted to unsigned int !\n",brain);
+
+        /* Compute some information about the brain (in terms of global nodes) */
+
+        // Center of the brain data in nodes with delta electro:
+        std::vector<size_t> centersBrain_inNodesElectro = {
+            (size_t)(centers[3*brain+0] / this->delta_Electromagn[0] + 1),
+            (size_t)(centers[3*brain+1] / this->delta_Electromagn[1] + 1),
+            (size_t)(centers[3*brain+2] / this->delta_Electromagn[2] + 1)
+        };
+
+        printf("\t\t> Brain %zu : center in node electro (%zu,%zu,%zu)\n",
+            brain,
+            centersBrain_inNodesElectro[0],
+            centersBrain_inNodesElectro[1],
+            centersBrain_inNodesElectro[2]);
+
+        // Length of the brain data:
+        std::vector<double> lengthsBrain_inMeters = {
+            (double)(nodesBrain[0]-1) * deltasBrain[0],
+            (double)(nodesBrain[1]-1) * deltasBrain[1],
+            (double)(nodesBrain[2]-1) * deltasBrain[2]
+        };
+
+        printf("\t\t> Brain %zu : length of the brain (%.5g,%.5g,%.5g) [meters]\n",
+            brain,
+            lengthsBrain_inMeters[0],
+            lengthsBrain_inMeters[1],
+            lengthsBrain_inMeters[2]);
+
+        // Length of the brain data in number of nodes with delta electro:
+        std::vector<size_t> nodesBrainElectro = {
+            (size_t)(lengthsBrain_inMeters[0]/this->delta_Electromagn[0] + 1),
+            (size_t)(lengthsBrain_inMeters[1]/this->delta_Electromagn[1] + 1),
+            (size_t)(lengthsBrain_inMeters[2]/this->delta_Electromagn[2] + 1)
+        };
+
+        printf("\t\t> Brain %zu : number of nodes inside the brain (%zu,%zu,%zu)\n",
+            brain,
+            nodesBrainElectro[0],
+            nodesBrainElectro[1],
+            nodesBrainElectro[2]);
+
+        // Extend of the brain data in terms of nodes:
+        std::vector<size_t> brainExtend_inNodes = {
+            (size_t)(centersBrain_inNodesElectro[0] - (double)nodesBrainElectro[0]/2.),
+            (size_t)(centersBrain_inNodesElectro[0] + (double)nodesBrainElectro[0]/2.),
+            (size_t)(centersBrain_inNodesElectro[1] - (double)nodesBrainElectro[1]/2.),
+            (size_t)(centersBrain_inNodesElectro[1] + (double)nodesBrainElectro[1]/2.),
+            (size_t)(centersBrain_inNodesElectro[2] - (double)nodesBrainElectro[2]/2.),
+            (size_t)(centersBrain_inNodesElectro[2] + (double)nodesBrainElectro[2]/2.)
+        };
+
+        printf("\t\t> Brain %zu : Extend(%zu,%zu,%zu)\n",
+            brain,
+            brainExtend_inNodes[1]-brainExtend_inNodes[0],
+            brainExtend_inNodes[3]-brainExtend_inNodes[2],
+            brainExtend_inNodes[5]-brainExtend_inNodes[4]);
+
+        printf("\t\t> Brain %zu : StartingIndices(%zu,%zu,%zu) | EndingIndices(%zu,%zu,%zu)\n",
+            brain,
+            brainExtend_inNodes[0],
+            brainExtend_inNodes[1],
+            brainExtend_inNodes[2],
+            brainExtend_inNodes[3],
+            brainExtend_inNodes[4],
+            brainExtend_inNodes[5]);
+        printf("\t\t> Brain %zu : Whole domain is (%zu,%zu,%zu)\n",
+            brain,
+            this->size_Ex[0],this->size_Ex[1],this->size_Ex[2]);
+
+        /* Filling electric and magnetic field materials */
+
+        size_t local[3];
+        size_t global[3];
+        size_t index;
+
+        printf("\t\t> Brain %zu : filling electric field X with material.\n",brain);
+        for(size_t K = 0 ; K < this->size_Ex[2] ; K ++){
+            for(size_t J = 0 ; J < this->size_Ex[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
+
+                    // Get global node numbering:
+                    local[0] = I;
+                    local[1] = J;
+                    local[2] = K;
+                    get_Global_from_Local_Electro(local,global);
+
+                    if(   global[0] >= brainExtend_inNodes[0]
+                       && global[0] <  brainExtend_inNodes[1]
+                       && global[1] >= brainExtend_inNodes[2]
+                       && global[1] <  brainExtend_inNodes[3]
+                       && global[2] >= brainExtend_inNodes[4]
+                       && global[2] <  brainExtend_inNodes[5])
+                    {
+                        // Determine the material of the node:
+                        size_t I_br     = global[0]-brainExtend_inNodes[0];
+                        size_t J_br     = global[1]-brainExtend_inNodes[2];
+                        size_t K_br     = global[2]-brainExtend_inNodes[4];
+                        size_t index_br = I_br + nodesBrain[0] * ( J_br + nodesBrain[1] * K_br);
+
+                        if( index_br >= materialBrain.size()){
+                            DISPLAY_ERROR_ABORT_CLASS(
+                                "Index is out of bound for the brain: index_br is %zu (max is %zu)."
+                                " (I_br,J_br,K_br)=(%zu,%zu,%zu).",
+                                index_br,materialBrain.size(),
+                                I_br,J_br,K_br
+                            );
+                        }
+                        index = I + this->size_Ex[0] * ( J + this->size_Ex[1] * K );
+                        this->E_x_material[index] = materialBrain[index_br];
+                    }
+                }
+            }
+        }
+
+        printf("\t\t> Brain %zu : filling electric field Y with material.\n",brain);
+        for(size_t K = 0 ; K < this->size_Ey[2] ; K ++){
+            for(size_t J = 0 ; J < this->size_Ey[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
+
+                    // Get global node numbering:
+                    local[0] = I;
+                    local[1] = J;
+                    local[2] = K;
+                    get_Global_from_Local_Electro(local,global);
+
+                    if(   global[0] >= brainExtend_inNodes[0]
+                       && global[0] <  brainExtend_inNodes[1]
+                       && global[1] >= brainExtend_inNodes[2]
+                       && global[1] <  brainExtend_inNodes[3]
+                       && global[2] >= brainExtend_inNodes[4]
+                       && global[2] <  brainExtend_inNodes[5])
+                    {
+                        // Determine the material of the node:
+                        size_t I_br     = global[0]-brainExtend_inNodes[0];
+                        size_t J_br     = global[1]-brainExtend_inNodes[2];
+                        size_t K_br     = global[2]-brainExtend_inNodes[4];
+                        size_t index_br = I_br + nodesBrain[0] * ( J_br + nodesBrain[1] * K_br);
+
+                        if( index_br >= materialBrain.size()){
+                            DISPLAY_ERROR_ABORT_CLASS(
+                                "Index is out of bound for the brain: index_br is %zu (max is %zu)."
+                                " (I_br,J_br,K_br)=(%zu,%zu,%zu).",
+                                index_br,materialBrain.size(),
+                                I_br,J_br,K_br
+                            );
+                        }
+                        index = I + this->size_Ey[0] * ( J + this->size_Ey[1] * K );
+                        this->E_y_material[index] = materialBrain[index_br];
+                    }
+                }
+            }
+        }
+
+        printf("\t\t> Brain %zu : filling electric field Z with material.\n",brain);
+        for(size_t K = 0 ; K < this->size_Ez[2] ; K ++){
+            for(size_t J = 0 ; J < this->size_Ez[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
+
+                    // Get global node numbering:
+                    local[0] = I;
+                    local[1] = J;
+                    local[2] = K;
+                    get_Global_from_Local_Electro(local,global);
+
+                    if(   global[0] >= brainExtend_inNodes[0]
+                       && global[0] <  brainExtend_inNodes[1]
+                       && global[1] >= brainExtend_inNodes[2]
+                       && global[1] <  brainExtend_inNodes[3]
+                       && global[2] >= brainExtend_inNodes[4]
+                       && global[2] <  brainExtend_inNodes[5])
+                    {
+                        // Determine the material of the node:
+                        size_t I_br     = global[0]-brainExtend_inNodes[0];
+                        size_t J_br     = global[1]-brainExtend_inNodes[2];
+                        size_t K_br     = global[2]-brainExtend_inNodes[4];
+                        size_t index_br = I_br + nodesBrain[0] * ( J_br + nodesBrain[1] * K_br);
+
+                        if( index_br >= materialBrain.size()){
+                            DISPLAY_ERROR_ABORT_CLASS(
+                                "Index is out of bound for the brain: index_br is %zu (max is %zu)."
+                                " (I_br,J_br,K_br)=(%zu,%zu,%zu).",
+                                index_br,materialBrain.size(),
+                                I_br,J_br,K_br
+                            );
+                        }
+                        index = I + this->size_Ez[0] * ( J + this->size_Ez[1] * K );
+                        this->E_z_material[index] = materialBrain[index_br];
+                    }
+                }
+            }
+        }
+
+        printf("\t\t> Brain %zu : filling magnetic field X with material.\n",brain);
+        for(size_t K = 0 ; K < this->size_Hx[2] ; K ++){
+            for(size_t J = 0 ; J < this->size_Hx[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
+
+                    // Get global node numbering:
+                    local[0] = I;
+                    local[1] = J;
+                    local[2] = K;
+                    get_Global_from_Local_Electro(local,global);
+
+                    if(   global[0] >= brainExtend_inNodes[0]
+                       && global[0] <  brainExtend_inNodes[1]
+                       && global[1] >= brainExtend_inNodes[2]
+                       && global[1] <  brainExtend_inNodes[3]
+                       && global[2] >= brainExtend_inNodes[4]
+                       && global[2] <  brainExtend_inNodes[5])
+                    {
+                        // Determine the material of the node:
+                        size_t I_br     = global[0]-brainExtend_inNodes[0];
+                        size_t J_br     = global[1]-brainExtend_inNodes[2];
+                        size_t K_br     = global[2]-brainExtend_inNodes[4];
+                        size_t index_br = I_br + nodesBrain[0] * ( J_br + nodesBrain[1] * K_br);
+
+                        if( index_br >= materialBrain.size()){
+                            DISPLAY_ERROR_ABORT_CLASS(
+                                "Index is out of bound for the brain: index_br is %zu (max is %zu)."
+                                " (I_br,J_br,K_br)=(%zu,%zu,%zu).",
+                                index_br,materialBrain.size(),
+                                I_br,J_br,K_br
+                            );
+                        }
+                        index = I + this->size_Hx[0] * ( J + this->size_Hx[1] * K );
+                        this->H_x_material[index] = materialBrain[index_br];
+                    }
+                }
+            }
+        }
+
+        printf("\t\t> Brain %zu : filling magnetic field Y with material.\n",brain);
+        for(size_t K = 0 ; K < this->size_Hy[2] ; K ++){
+            for(size_t J = 0 ; J < this->size_Hy[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
+
+                    // Get global node numbering:
+                    local[0] = I;
+                    local[1] = J;
+                    local[2] = K;
+                    get_Global_from_Local_Electro(local,global);
+
+                    if(   global[0] >= brainExtend_inNodes[0]
+                       && global[0] <  brainExtend_inNodes[1]
+                       && global[1] >= brainExtend_inNodes[2]
+                       && global[1] <  brainExtend_inNodes[3]
+                       && global[2] >= brainExtend_inNodes[4]
+                       && global[2] <  brainExtend_inNodes[5])
+                    {
+                        // Determine the material of the node:
+                        size_t I_br     = global[0]-brainExtend_inNodes[0];
+                        size_t J_br     = global[1]-brainExtend_inNodes[2];
+                        size_t K_br     = global[2]-brainExtend_inNodes[4];
+                        size_t index_br = I_br + nodesBrain[0] * ( J_br + nodesBrain[1] * K_br);
+
+                        if( index_br >= materialBrain.size()){
+                            DISPLAY_ERROR_ABORT_CLASS(
+                                "Index is out of bound for the brain: index_br is %zu (max is %zu)."
+                                " (I_br,J_br,K_br)=(%zu,%zu,%zu).",
+                                index_br,materialBrain.size(),
+                                I_br,J_br,K_br
+                            );
+                        }
+                        index = I + this->size_Hy[0] * ( J + this->size_Hy[1] * K );
+                        this->H_y_material[index] = materialBrain[index_br];
+                    }
+                }
+            }
+        }
+        
+        printf("\t\t> Brain %zu : filling magnetic field Z with material.\n",brain);
+        for(size_t K = 0 ; K < this->size_Hz[2] ; K ++){
+            for(size_t J = 0 ; J < this->size_Hz[1] ; J ++){
+                for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
+
+                    // Get global node numbering:
+                    local[0] = I;
+                    local[1] = J;
+                    local[2] = K;
+                    get_Global_from_Local_Electro(local,global);
+
+                    if(   global[0] >= brainExtend_inNodes[0]
+                       && global[0] <  brainExtend_inNodes[1]
+                       && global[1] >= brainExtend_inNodes[2]
+                       && global[1] <  brainExtend_inNodes[3]
+                       && global[2] >= brainExtend_inNodes[4]
+                       && global[2] <  brainExtend_inNodes[5])
+                    {
+                        // Determine the material of the node:
+                        size_t I_br     = global[0]-brainExtend_inNodes[0];
+                        size_t J_br     = global[1]-brainExtend_inNodes[2];
+                        size_t K_br     = global[2]-brainExtend_inNodes[4];
+                        size_t index_br = I_br + nodesBrain[0] * ( J_br + nodesBrain[1] * K_br);
+
+                        if( index_br >= materialBrain.size()){
+                            DISPLAY_ERROR_ABORT_CLASS(
+                                "Index is out of bound for the brain: index_br is %zu (max is %zu)."
+                                " (I_br,J_br,K_br)=(%zu,%zu,%zu).",
+                                index_br,materialBrain.size(),
+                                I_br,J_br,K_br
+                            );
+                        }
+                        index = I + this->size_Hz[0] * ( J + this->size_Hz[1] * K );
+                        this->H_z_material[index] = materialBrain[index_br];
+                    }
+                }
+            }
+        }
+
+
+    }
 }
 
 void GridCreator_NEW::fillInMat_forms(

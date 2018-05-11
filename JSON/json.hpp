@@ -46,4 +46,10 @@ JSON_API std::vector<std::string> read_vector_string(
     std::vector<std::string> const &def
 );
 
+JSON_API std::vector<std::size_t> read_vector_size_t(
+    rapidjson::Document const &d,
+    char const *name,
+    std::vector<std::size_t> const &def
+);
+
 #endif //JSON_H

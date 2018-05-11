@@ -12,6 +12,8 @@
 #include "CSV_parser.hpp"
 #include "header_with_all_defines.hpp"
 
+#include "UTILS/stringSearch.hpp"
+
 template<typename T>
 inline bool is_inside(std::vector<T> &vector, T item){
 	if(std::find(vector.begin(), vector.end(), item)!=vector.end()){
@@ -193,13 +195,13 @@ void Materials::unification_of_data_files(void){
 					elec_cond);
 
 		double dielectric_permittivity 
-			= (loss_tangent *frequency * 
-						VACUUM_PERMITTIVITY * rel_permittivity - elec_cond)/(frequency);
+			= (loss_tangent * 2 * M_PI * frequency * 
+						VACUUM_PERMITTIVITY * rel_permittivity - elec_cond)/(2*M_PI*frequency);
 
 		printf("\t\t> Dielectric permittivity is %.9g.\n",dielectric_permittivity);
 
-		std::pair<std::string,double> temp_pair("DIELECTRICPERMITTIVITY",propValue);
-			temp_mat.properties.insert(temp_pair);
+		std::pair<std::string,double> temp_pair("DIELECTRICPERMITTIVITY",dielectric_permittivity);
+		temp_mat.properties.insert(temp_pair);
 		
 			/*double eps_dielectric 
 				= ( frequency * VACUUM_PERMITTIVITY 
@@ -686,6 +688,57 @@ void Materials::get_properties_from_file_ALL(
 Materials::~Materials(void){
 	if( this->VERBOSITY >= 3 )
 		printf("[MPI %d] - Material destructor.\n",this->MPI_RANK);
+}
+
+std::string Materials::find_nearest_material_from_unified_list(
+    std::string const& str,
+    unsigned int *ID_mat
+)
+{
+    /**
+     * @brief Finds the nearest material name from the unified material list.
+     */
+    std::string ret_str;
+    
+    std::map<std::string,unsigned int>::iterator it;
+    it = this->materialID_FromMaterialName_unified.find(str);
+
+    if(it == this->materialID_FromMaterialName_unified.end()){
+        printf("Material %s not found !\n",
+            str.c_str());
+
+        /// Find nearest material name:
+        size_t nearest = 1E10;
+        std::string nearestMatName;
+        for(size_t J = 0 ; J < this->unified_material_list.size() ; J ++){
+            //this->materials.unified_material_list[I].printf_mat();
+            size_t res = ComputeLevenshteinDistance(
+                str,
+                this->unified_material_list[J].name
+            );
+            if(res < nearest){
+                nearestMatName = this->unified_material_list[J].name;
+                printf("Comparison between %s and %s gives %zu.\n",
+                    str.c_str(),
+                    this->unified_material_list[J].name.c_str(),
+                    res
+                );
+                nearest = res;
+            }
+        }
+        printf("\n\t>> Material you named %s is in fact %s !\n\n",
+            str.c_str(),
+            nearestMatName.c_str()
+            );
+        *ID_mat = this->materialID_FromMaterialName_unified[nearestMatName];
+        this->unified_material_list[*ID_mat].printf_mat();
+        ret_str = nearestMatName;
+    }else{
+        printf("Material %s found!\n",
+            str.c_str());
+        ret_str = str;
+    }
+    return ret_str;
 }
 
 

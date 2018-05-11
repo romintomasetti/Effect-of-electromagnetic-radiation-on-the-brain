@@ -263,10 +263,10 @@ class ElectromagneticSource{
 					&& Y_coord >= (this->centerY[ID_Source] - length_Y/2.)-EPS
 					&& Y_coord <= (this->centerY[ID_Source] + length_Y/2.)+EPS
 					&& Z_coord >= (this->centerZ[ID_Source] - length_Z/2.)-EPS
-					&& Z_coord <= (this->centerZ[ID_Source] + length_Z/2.)+EPS)
+					&& Z_coord <= (this->centerZ[ID_Source] + length_Z/2.)+EPS) 
 				{
 					/// Check if Ez is inside the airgap:
-					if( abs(Z_coord - this->centerZ[ID_Source] ) <= 2*EPS ){
+					if( abs(Z_coord - this->centerZ[ID_Source] ) <= deltas_Electro[0] ){
 						if( type == "Ez"){
 							this->there_is_at_least_one_element_non_zero_in_source[ID_Source] = true;
 							return "true";
