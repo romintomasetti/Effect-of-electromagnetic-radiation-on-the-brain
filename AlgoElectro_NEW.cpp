@@ -1776,56 +1776,58 @@ void AlgoElectro_NEW::update(
 
             #pragma omp master
             {
-                // Total size without neighboors:
-                size_t tmp = (grid.size_Ez[0]-4) * (grid.size_Ez[1]-2) * (grid.size_Ez[2]-2);
-                printf("\t>>> Number of Ez nodes that are in the steady state is %zu over %zu.\n",
-                            number_of_points_EZ_at_speady_state,
-                            tmp);
-                if(     number_of_points_EZ_at_speady_state >= std::floor(0.99 * tmp)-1
-                    &&  counter_step_____SS > 100){
+                if( grid.input_parser.check_steady_state == true){
+                    // Total size without neighboors:
+                    size_t tmp = (grid.size_Ez[0]-4) * (grid.size_Ez[1]-2) * (grid.size_Ez[2]-2);
+                    printf("\t>>> Number of Ez nodes that are in the steady state is %zu over %zu.\n",
+                                number_of_points_EZ_at_speady_state,
+                                tmp);
+                    if(     number_of_points_EZ_at_speady_state >= std::floor(0.99 * tmp)-1
+                        &&  counter_step_____SS > 100){
 
-                            printf("\t>>> [MPI %d] - Steady state is reached!\n",
-                            grid.MPI_communicator.getRank());
+                                printf("\t>>> [MPI %d] - Steady state is reached!\n",
+                                grid.MPI_communicator.getRank());
 
-                            if(is_previous_segment_steady == true
-                                && numero_du_segment_precedent != counter_steady_state_segments){
-                                is_steady_state_for_this_MPI = true;
-                            }else{
-                                is_previous_segment_steady  = true;
-                                numero_du_segment_precedent = counter_steady_state_segments;
-                            }
-                    
-                }else{
-                    number_of_points_EZ_at_speady_state = 0;
-                }
+                                if(is_previous_segment_steady == true
+                                    && numero_du_segment_precedent != counter_steady_state_segments){
+                                    is_steady_state_for_this_MPI = true;
+                                }else{
+                                    is_previous_segment_steady  = true;
+                                    numero_du_segment_precedent = counter_steady_state_segments;
+                                }
+                        
+                    }else{
+                        number_of_points_EZ_at_speady_state = 0;
+                    }
 
-                if(counter_step_____SS >= look_over_steps__SS){
-                    for(size_t I = 0 ; I < Ez_trapz_absolute.size() ; I ++)
-                        Ez_trapz_absolute[I] = 0.0;
-                    counter_step_____SS = 1;
-                    printf("look_over_steps__SS %zu\n",look_over_steps__SS);
-                    counter_steady_state_segments++;
-                    time_beg = current_time;
+                    if(counter_step_____SS >= look_over_steps__SS){
+                        for(size_t I = 0 ; I < Ez_trapz_absolute.size() ; I ++)
+                            Ez_trapz_absolute[I] = 0.0;
+                        counter_step_____SS = 1;
+                        printf("look_over_steps__SS %zu\n",look_over_steps__SS);
+                        counter_steady_state_segments++;
+                        time_beg = current_time;
 
-                }else{
-                    counter_step_____SS ++;
-                }
+                    }else{
+                        counter_step_____SS ++;
+                    }
 
-                /* Communicate with other MPI's to know is everybody is in steady state: */
-                time_end = current_time;
-                /// Attention ! Check only after a given number of iterations !
-                if( current_time > min_time_before_checking_steadiness ){
-                    this->SteadyStateAnalyser(
-                        is_steady_state_for_this_MPI,
-                        &is_steady_state_for_all_mpi,
-                        grid,
-                        time_beg,
-                        time_end,
-                        Ez_trapz_absolute,
-                        Ey_trapz_absolute,
-                        Ex_trapz_absolute,
-                        dt
-                    );
+                    /* Communicate with other MPI's to know is everybody is in steady state: */
+                    time_end = current_time;
+                    /// Attention ! Check only after a given number of iterations !
+                    if( current_time > min_time_before_checking_steadiness ){
+                        this->SteadyStateAnalyser(
+                            is_steady_state_for_this_MPI,
+                            &is_steady_state_for_all_mpi,
+                            grid,
+                            time_beg,
+                            time_end,
+                            Ez_trapz_absolute,
+                            Ey_trapz_absolute,
+                            Ex_trapz_absolute,
+                            dt
+                        );
+                    }
                 }
             }
             #pragma omp barrier
@@ -2275,6 +2277,12 @@ void AlgoElectro_NEW::update(
                         }else{
                             applyPML_str = "false";
                         }
+                        std::string checkSteadyState_str;
+                        if( grid.input_parser.check_steady_state == true){
+                            checkSteadyState_str = "true";
+                        }else{
+                            checkSteadyState_str = "false";
+                        }
                         
                         printf("%s[MPI %d - Electro - Update - step %zu]%s\n"
                                "\t> Current simulation time is   %.10g seconds (over %.10g) [dt = %.10g seconds].\n"
@@ -2286,7 +2294,8 @@ void AlgoElectro_NEW::update(
                                "\t> Time spent in writing is     %.6lf seconds (TOTAL).\n"
                                "\t> Using %d MPI process(es) and %d OMP thread(s).\n"
                                "\t> Apply ABC boundary conditions is set to %s.\n"
-                               "\t> Apply PML boundary conditions is set to %s.\n\n",
+                               "\t> Apply PML boundary conditions is set to %s.\n"
+                               "\t> Check for steady-state is set to        %s\n\n",
                                ANSI_COLOR_GREEN,
                                grid.MPI_communicator.getRank(),
                                currentStep,
@@ -2304,7 +2313,8 @@ void AlgoElectro_NEW::update(
                                grid.MPI_communicator.getNumberOfMPIProcesses(),
                                omp_get_num_threads(),
                                applyABC_str.c_str(),
-                               applyPML_str.c_str()
+                               applyPML_str.c_str(),
+                               checkSteadyState_str.c_str()
                                );
                     }
 
