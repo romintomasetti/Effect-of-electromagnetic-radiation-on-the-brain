@@ -369,6 +369,7 @@ void AlgoElectro_NEW::update(
     double *C_hxh   = new double[size]();
     double *C_hxe_1 = new double[size]();
     double *C_hxe_2 = new double[size]();
+    double *C_hxh2  = new double[size](); // only for the PML
 
     fill_double_vector_with_zeros(C_hxh,size);
     fill_double_vector_with_zeros(C_hxe_1,size);
@@ -379,6 +380,7 @@ void AlgoElectro_NEW::update(
     double *C_hyh   = new double[size]();
     double *C_hye_1 = new double[size]();
     double *C_hye_2 = new double[size]();
+    double *C_hyh2  = new double[size](); // only for the PML
 
     fill_double_vector_with_zeros(C_hyh,size);
     fill_double_vector_with_zeros(C_hye_1,size);
@@ -389,6 +391,7 @@ void AlgoElectro_NEW::update(
     double *C_hzh   = new double[size]();
     double *C_hze_1 = new double[size]();
     double *C_hze_2 = new double[size]();
+    double *C_hzh2  = new double[size](); // only for the PML
 
     fill_double_vector_with_zeros(C_hzh,size);
     fill_double_vector_with_zeros(C_hze_1,size);
@@ -399,6 +402,7 @@ void AlgoElectro_NEW::update(
     double *C_exe   = new double[size]();
     double *C_exh_1 = new double[size]();
     double *C_exh_2 = new double[size]();
+    double *C_exe2  = new double[size](); // only for the PML
 
     fill_double_vector_with_zeros(C_exe,size);
     fill_double_vector_with_zeros(C_exh_1,size);
@@ -409,6 +413,7 @@ void AlgoElectro_NEW::update(
     double *C_eye   = new double[size]();
     double *C_eyh_1 = new double[size]();
     double *C_eyh_2 = new double[size]();
+    double *C_eye2  = new double[size](); // only for the PML
 
     fill_double_vector_with_zeros(C_eye,size);
     fill_double_vector_with_zeros(C_eyh_1,size);
@@ -419,6 +424,7 @@ void AlgoElectro_NEW::update(
     double *C_eze   = new double[size]();
     double *C_ezh_1 = new double[size]();
     double *C_ezh_2 = new double[size]();
+    double *C_eze2  = new double[size](); // only for the PML
 
     fill_double_vector_with_zeros(C_eze,size);
     fill_double_vector_with_zeros(C_ezh_1,size);
@@ -512,6 +518,162 @@ void AlgoElectro_NEW::update(
     // std::vector<double> Eyz1(size, 0.0);
 
 
+    //////////////// PML PARAMETERS /////////////////
+    double order_PML  = grid.input_parser.PML_order;
+    size_t rho_PML    = grid.input_parser.thickness_PML_in_number_of_nodes;
+    double sigmaM_PML = grid.input_parser.PML_sigma_M;
+
+    // Thickness of the PML:
+    unsigned int rhoX0 = 0;
+    unsigned int rhoX1 = 0;
+    unsigned int rhoY0 = 0;
+    unsigned int rhoY1 = 0;
+    unsigned int rhoZ0 = 0;
+    unsigned int rhoZ1 = 0;
+
+    // Hx and its Hxy and Hxz in a vector PML
+    double *Hx_pml_x0 = NULL;
+    double *Hx_pml_x1 = NULL;
+    double *Hx_pml_y0 = NULL;
+    double *Hx_pml_y1 = NULL;
+    double *Hx_pml_z0 = NULL;
+    double *Hx_pml_z1 = NULL;
+
+    // Hy and its Hyx and Hyz in a vector PML
+    double *Hy_pml_x0 = NULL;
+    double *Hy_pml_x1 = NULL;
+    double *Hy_pml_y0 = NULL;
+    double *Hy_pml_y1 = NULL;
+    double *Hy_pml_z0 = NULL;
+    double *Hy_pml_z1 = NULL;
+
+    // Hz and its Hzx and Hzy in a vector PML
+    double *Hz_pml_x0 = NULL;
+    double *Hz_pml_x1 = NULL;
+    double *Hz_pml_y0 = NULL;
+    double *Hz_pml_y1 = NULL;
+    double *Hz_pml_z0 = NULL;
+    double *Hz_pml_z1 = NULL;
+
+    // Ex and its Exy and Exz in a vector PML 
+    double *Ex_pml_x0 = NULL;
+    double *Ex_pml_x1 = NULL;
+    double *Ex_pml_y0 = NULL;
+    double *Ex_pml_y1 = NULL;
+    double *Ex_pml_z0 = NULL;
+    double *Ex_pml_z1 = NULL;
+
+    // Ey and its Eyx and Eyz in a vector PML
+    //(Pour eviter les recouvrements x prioritaire sur y)
+    double *Ey_pml_x0 = NULL;
+    double *Ey_pml_x1 = NULL;
+    double *Ey_pml_y0 = NULL;
+    double *Ey_pml_y1 = NULL;
+    double *Ey_pml_z0 = NULL;
+    double *Ey_pml_z1 = NULL;
+
+    // Ez and its Ezx and Hzy in a vector PML
+    // (Pour eviter les recouvrement x prioritaire sur y,
+    //                             & y prioritaire sur z)
+    double *Ez_pml_x0 = NULL;
+    double *Ez_pml_x1 = NULL;
+    double *Ez_pml_y0 = NULL;
+    double *Ez_pml_y1 = NULL;
+    double *Ez_pml_z0 = NULL;
+    double *Ez_pml_z1 = NULL;
+
+    /**
+    * Vextor for the PML regions
+    * (ATTENTION: To make things easier we will consider the thickness as (rho+1)
+    *            i.e. a case at each thinckness will remain void)
+    */
+    if( grid.input_parser.apply_PML_BCs == true){
+        if(grid.MPI_communicator.RankNeighbour[0] == -1){
+            rhoX1 = rho_PML;
+            // rhoX1 = 0;
+            Ex_pml_x1 = new double[grid.size_Ex[1]*grid.size_Ex[2]*rhoX1*2]();
+            Ey_pml_x1 = new double[grid.size_Ey[1]*grid.size_Ey[2]*rhoX1*2]();
+            Ez_pml_x1 = new double[grid.size_Ez[1]*grid.size_Ez[2]*rhoX1*2]();
+            Hx_pml_x1 = new double[grid.size_Hx[1]*grid.size_Hx[2]*rhoX1*2]();
+            Hy_pml_x1 = new double[grid.size_Hy[1]*grid.size_Hy[2]*rhoX1*2]();
+            Hz_pml_x1 = new double[grid.size_Hz[1]*grid.size_Hz[2]*rhoX1*2]();
+        }
+        if(grid.MPI_communicator.RankNeighbour[1] == -1){
+            // rhoX0 = rho;
+            rhoX0 = 0;
+            Ex_pml_x0 = new double[grid.size_Ex[1]*grid.size_Ex[2]*rhoX0*2]();
+            Ey_pml_x0 = new double[grid.size_Ey[1]*grid.size_Ey[2]*rhoX0*2]();
+            Ez_pml_x0 = new double[grid.size_Ez[1]*grid.size_Ez[2]*rhoX0*2]();
+            Hx_pml_x0 = new double[grid.size_Hx[1]*grid.size_Hx[2]*rhoX0*2]();
+            Hy_pml_x0 = new double[grid.size_Hy[1]*grid.size_Hy[2]*rhoX0*2]();
+            Hz_pml_x0 = new double[grid.size_Hz[1]*grid.size_Hz[2]*rhoX0*2]();
+        }
+        if(grid.MPI_communicator.RankNeighbour[2] == -1){
+            // rhoY0 = rho;
+            rhoY0 = 0;
+            
+            Ex_pml_y0 = new double[(grid.size_Ex[0]-rhoX0-rhoX1)
+                                   *grid.size_Ex[2]*rhoY0*2]();
+            Ey_pml_y0 = new double[(grid.size_Ey[0]-rhoX0-rhoX1)
+                                   *grid.size_Ey[2]*rhoY0*2]();
+            Ez_pml_y0 = new double[(grid.size_Ez[0]-rhoX0-rhoX1)
+                                   *grid.size_Ez[2]*rhoY0*2]();
+            Hx_pml_y0 = new double[(grid.size_Hx[0]-rhoX0-rhoX1)
+                                   *grid.size_Hx[2]*rhoY0*2]();
+            Hy_pml_y0 = new double[(grid.size_Hy[0]-rhoX0-rhoX1)
+                                   *grid.size_Hy[2]*rhoY0*2]();
+            Hz_pml_y0 = new double[(grid.size_Hz[0]-rhoX0-rhoX1)
+                                   *grid.size_Hz[2]*rhoY0*2]();
+        }
+        if(grid.MPI_communicator.RankNeighbour[3] == -1){
+            // rhoY1 = rho;
+            rhoY1 = 0;
+            Ex_pml_y1 = new double[(grid.size_Ex[0]-rhoX0-rhoX1)
+                                   *grid.size_Ex[2]*rhoY1*2]();
+            Ey_pml_y1 = new double[(grid.size_Ey[0]-rhoX0-rhoX1)
+                                   *grid.size_Ey[2]*rhoY1*2]();
+            Ez_pml_y1 = new double[(grid.size_Ez[0]-rhoX0-rhoX1)
+                                   *grid.size_Ez[2]*rhoY1*2]();
+            Hx_pml_y1 = new double[(grid.size_Hx[0]-rhoX0-rhoX1)
+                                   *grid.size_Hx[2]*rhoY1*2]();
+            Hy_pml_y1 = new double[(grid.size_Hy[0]-rhoX0-rhoX1)
+                                   *grid.size_Hy[2]*rhoY1*2]();
+            Hz_pml_y1 = new double[(grid.size_Hz[0]-rhoX0-rhoX1)
+                                   *grid.size_Hz[2]*rhoY1*2]();
+        }
+        if(grid.MPI_communicator.RankNeighbour[4] == -1){
+            // rhoZ0 = rho;
+            rhoZ0 = 0;
+            Ex_pml_z0 = new double[(grid.size_Ex[0]-rhoX0-rhoX1)
+                                  *(grid.size_Ex[1]-rhoY0-rhoY1) *rhoZ0*2]();
+            Ey_pml_z0 = new double[(grid.size_Ey[0]-rhoX0-rhoX1)
+                                  *(grid.size_Ey[1]-rhoY0-rhoY1) *rhoZ0*2]();
+            Ez_pml_z0 = new double[(grid.size_Ez[0]-rhoX0-rhoX1)
+                                  *(grid.size_Ez[1]-rhoY0-rhoY1) *rhoZ0*2]();
+            Hx_pml_z0 = new double[(grid.size_Hx[0]-rhoX0-rhoX1)
+                                  *(grid.size_Hx[1]-rhoY0-rhoY1) *rhoZ0*2]();
+            Hy_pml_z0 = new double[(grid.size_Hy[0]-rhoX0-rhoX1)
+                                  *(grid.size_Hy[1]-rhoY0-rhoY1) *rhoZ0*2]();
+            Hz_pml_z0 = new double[(grid.size_Hz[0]-rhoX0-rhoX1)
+                                  *(grid.size_Hz[1]-rhoY0-rhoY1) *rhoZ0*2]();
+        }
+        if(grid.MPI_communicator.RankNeighbour[5] == -1){
+            // rhoZ1 = rho;
+            rhoZ1 = 0;
+            Ex_pml_z1 = new double[(grid.size_Ex[0]-rhoX0-rhoX1)
+                                  *(grid.size_Ex[1]-rhoY0-rhoY1) *rhoZ1*2]();
+            Ey_pml_z1 = new double[(grid.size_Ey[0]-rhoX0-rhoX1)
+                                  *(grid.size_Ey[1]-rhoY0-rhoY1) *rhoZ1*2]();
+            Ez_pml_z1 = new double[(grid.size_Ez[0]-rhoX0-rhoX1)
+                                  *(grid.size_Ez[1]-rhoY0-rhoY1) *rhoZ1*2]();
+            Hx_pml_z1 = new double[(grid.size_Hx[0]-rhoX0-rhoX1)
+                                  *(grid.size_Hx[1]-rhoY0-rhoY1) *rhoZ1*2]();
+            Hy_pml_z1 = new double[(grid.size_Hy[0]-rhoX0-rhoX1)
+                                  *(grid.size_Hy[1]-rhoY0-rhoY1) *rhoZ1*2]();
+            Hz_pml_z1 = new double[(grid.size_Hz[0]-rhoX0-rhoX1)
+                                  *(grid.size_Hz[1]-rhoY0-rhoY1) *rhoZ1*2]();
+        }
+    }
 
 
 
@@ -521,15 +683,58 @@ void AlgoElectro_NEW::update(
 		printf("\t> [MPI %d] - Computing coefficients...\n",grid.MPI_communicator.getRank());
     /* COMPUTING COEFFICIENTS */
     #pragma omp parallel default(none)\
-		firstprivate(C_exe,C_exh_1,C_exh_2)\
-		firstprivate(C_eye,C_eyh_1,C_eyh_2)\
-		firstprivate(C_eze,C_ezh_1,C_ezh_2)\
-		firstprivate(C_hxh,C_hxe_1,C_hxe_2)\
-		firstprivate(C_hyh,C_hye_1,C_hye_2)\
-		firstprivate(C_hzh,C_hze_1,C_hze_2)\
+		firstprivate(C_exe,C_exh_1,C_exh_2,C_exe2)\
+		firstprivate(C_eye,C_eyh_1,C_eyh_2,C_eye2)\
+		firstprivate(C_eze,C_ezh_1,C_ezh_2,C_eze2)\
+		firstprivate(C_hxh,C_hxe_1,C_hxe_2,C_hxh2)\
+		firstprivate(C_hyh,C_hye_1,C_hye_2,C_hyh2)\
+		firstprivate(C_hzh,C_hze_1,C_hze_2,C_hzh2)\
 		shared(grid)\
-		firstprivate(dt)
+		firstprivate(dt)\
+        firstprivate(rhoX0,rhoX1)\
+        firstprivate(rhoY0,rhoY1)\
+        firstprivate(rhoZ0,rhoZ1)\
+        firstprivate(sigmaM_PML)\
+        firstprivate(order_PML)
     {
+        /**
+         * Important for the electric field update !
+         */
+        size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = 0;
+        size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = 0;
+        size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = 0;
+
+        size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 0;
+        size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 0;
+        size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 0;
+
+        if(grid.MPI_communicator.MPI_POSITION[0] == grid.MPI_communicator.MPI_MAX_POSI[0]){
+            IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = 1;
+        }
+
+        if(grid.MPI_communicator.MPI_POSITION[1] == grid.MPI_communicator.MPI_MAX_POSI[1]){
+            IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = 1;
+        }
+
+        if(grid.MPI_communicator.MPI_POSITION[2] == grid.MPI_communicator.MPI_MAX_POSI[2]){
+            IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = 1;
+        }
+
+        if(grid.MPI_communicator.MPI_POSITION[0] == 0){
+            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 1;
+        }
+
+        if(grid.MPI_communicator.MPI_POSITION[1] == 0){
+            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 1;
+        }
+
+        if(grid.MPI_communicator.MPI_POSITION[2] == 0){
+            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
+        }
+
+        double *sigma = NULL;
+        sigma = new double[2]();
+
         size_t index;
         /* Coefficients for Ex */
         // Ex of size (M − 1) × N × P
@@ -540,19 +745,87 @@ void AlgoElectro_NEW::update(
 
                         index = I + grid.size_Ex[0] * ( J + grid.size_Ex[1] * K);
 
-                        double COEF_E = grid.E_x_electrical_cond[index] * dt
-                            / (2.0 * grid.E_x_eps[index]);
+                        if(    J >= 1+rhoY0+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY
+                            && J <  grid.size_Ex[1]-1-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY
+                            && K >= 1+rhoZ0+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ
+                            && K <  grid.size_Ex[2]-1-rhoZ1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ){
 
-                        // Coefficient C_exe:
-                        C_exe[index] = (1-COEF_E) / (1+COEF_E);
+                            double COEF_E = grid.E_x_electrical_cond[index] * dt
+                                / (2.0 * grid.E_x_eps[index]);
 
-                        // Coefficient C_exh_1:
-                        C_exh_1[index] = 1 / ( 1 + COEF_E) * dt 
-                            / (grid.E_x_eps[index] * grid.delta_Electromagn[1]);
+                            // Coefficient C_exe:
+                            C_exe[index] = (1-COEF_E) / (1+COEF_E);
 
-                        // Coefficient C_exh_2:
-                        C_exh_2[index] = 1 / ( 1 + COEF_E) * dt 
-                            / (grid.E_x_eps[index] * grid.delta_Electromagn[2]);
+                            // Coefficient C_exh_1:
+                            C_exh_1[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_x_eps[index] * grid.delta_Electromagn[1]);
+
+                            // Coefficient C_exh_2:
+                            C_exh_2[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_x_eps[index] * grid.delta_Electromagn[2]);
+
+                        }else if( J==0 || K==0){
+                            double COEF_E = grid.E_x_electrical_cond[index] * dt
+                                / (2.0 * grid.E_x_eps[index]);
+
+                            // Coefficient C_exe:
+                            C_exe[index] = (1-COEF_E) / (1+COEF_E);
+
+                            // Coefficient C_exh_1:
+                            C_exh_1[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_x_eps[index] * grid.delta_Electromagn[1]);
+
+                            // Coefficient C_exh_2:
+                            C_exh_2[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_x_eps[index] * grid.delta_Electromagn[2]);
+
+                            // Coefficient C_exe2
+                            C_exe2[index] = C_exe[index];
+                        }else{
+                            sigma[0] = 0;
+                            sigma[1] = 0;
+                            if(J< 1+rhoY0+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY && rhoY0!=0){
+                                // sigma[0] = sigmaM_PML;
+                                sigma[0] = sigmaM_PML 
+                                    * pow((double)(IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY+rhoY0-J)/(double)(rhoY0), order_PML);
+                                
+                            }
+                            else if(J>= grid.size_Ex[1]-1-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY
+                                    && rhoY1!=0){
+                                // sigma[0] = sigmaM_PML;
+                                sigma[0] = sigmaM_PML 
+                                    * pow((double)(J-(grid.size_Ex[1]-1-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY))/(double)(rhoY1),order_PML);
+                            }
+                            if(K< 1+rhoZ0+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ && rhoZ0!=0){
+                                // sigma[1] = sigmaM_PML;
+                                sigma[1] = sigmaM_PML 
+                                    * pow((double)(IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ+rhoZ0-K)/(double)(rhoZ0),order_PML);
+                            }
+                            else if(K>=grid.size_Ex[2]-1-rhoZ1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ
+                                    && rhoZ1!=0){
+                                // sigma[1] = sigmaM_PML;
+                                sigma[1] = sigmaM_PML 
+                                    * pow((double)(K-(grid.size_Ex[2]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ-rhoZ1))/(double)(rhoZ1), order_PML);
+                            }
+                            double COEF_E = sigma[0] * dt
+                                / (2.0 * grid.E_x_eps[index]);
+                            // Coefficient C_exe ( !!! Will be used as the coeff for Exy in the PML !!!): 
+                            C_exe[index] = (1-COEF_E) / (1+COEF_E);
+
+                            // Coefficient C_exh_1:
+                            C_exh_1[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_x_eps[index] * grid.delta_Electromagn[1]);
+
+
+                            COEF_E = sigma[1] * dt
+                                    / (2.0 * grid.E_x_eps[index]);
+                            // Coefficient C_exe2 (!!! only used in the PML for Exz !!!)
+                            C_exe2[index] = (1-COEF_E) / (1+COEF_E);
+
+                            // Coefficient C_exh_2:
+                            C_exh_2[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_x_eps[index] * grid.delta_Electromagn[2]);
+                        }
 
                     }
                 }
@@ -567,19 +840,88 @@ void AlgoElectro_NEW::update(
 
                         index = I + grid.size_Ey[0] * ( J + grid.size_Ey[1] * K);
 
-                        double COEF_E = grid.E_y_electrical_cond[index] * dt
-                            / (2.0 * grid.E_y_eps[index]);
+                        if(    I >= 1+rhoX0 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX
+                            && I <  grid.size_Ey[0]-1-rhoX1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX
+                            && K >= 1+rhoZ0 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ
+                            && K <  grid.size_Ey[2]-1-rhoZ1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ){
 
-                        // Coefficient C_eye:
-                        C_eye[index] = (1-COEF_E) / (1+COEF_E);
+                            double COEF_E = grid.E_y_electrical_cond[index] * dt
+                                / (2.0 * grid.E_y_eps[index]);
 
-                        // Coefficient C_eyh_1:
-                        C_eyh_1[index] = 1 / ( 1 + COEF_E) * dt 
-                            / (grid.E_y_eps[index] * grid.delta_Electromagn[2]);
+                            // Coefficient C_eye:
+                            C_eye[index] = (1-COEF_E) / (1+COEF_E);
 
-                        // Coefficient C_eyh_2:
-                        C_eyh_2[index] = 1 / ( 1 + COEF_E) * dt 
-                            / (grid.E_y_eps[index] * grid.delta_Electromagn[0]);
+                            // Coefficient C_eyh_1:
+                            C_eyh_1[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_y_eps[index] * grid.delta_Electromagn[2]);
+
+                            // Coefficient C_eyh_2:
+                            C_eyh_2[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_y_eps[index] * grid.delta_Electromagn[0]);
+
+                        }else if( I==0 || K==0){
+                            double COEF_E = grid.E_y_electrical_cond[index] * dt
+                                / (2.0 * grid.E_y_eps[index]);
+
+                            // Coefficient C_eye:
+                            C_eye[index] = (1-COEF_E) / (1+COEF_E);
+
+                            // Coefficient C_eyh_1:
+                            C_eyh_1[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_y_eps[index] * grid.delta_Electromagn[2]);
+
+                            // Coefficient C_eyh_2:
+                            C_eyh_2[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_y_eps[index] * grid.delta_Electromagn[0]);
+
+                            // Coefficient C_eye2:
+                            C_eye2[index] = C_eye[index];
+
+                        }else{ // PML
+                            sigma[0] = 0;
+                            sigma[1] = 0;
+                            if(I< 1+rhoX0+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX && rhoX0!=0){
+                                // sigma[0] = sigmaM_PML;
+                                sigma[0] = sigmaM_PML 
+                                    * pow((double)(IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX+rhoX0-I)/ (double) rhoX0,order_PML);
+                            }
+                            else if(I >= grid.size_Ey[0]-1-rhoX1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX
+                                    && rhoX1!=0){
+                                // sigma[0] = sigmaM_PML;
+                                sigma[0] = sigmaM_PML 
+                                    * pow((double)(I-(grid.size_Ey[0]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX-rhoX1))/(double)rhoX1,order_PML);
+                            }
+                            if(K< 1+rhoZ0+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ && rhoZ0!=0){
+                                // sigma[1] = sigmaM_PML;
+                                sigma[1] = sigmaM_PML
+                                    * pow((double)(IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ+rhoZ0-K)/(double)rhoZ0,order_PML);
+                            }
+                            else if(K>= grid.size_Ey[2]-1-rhoZ1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ
+                                    && rhoZ1!=0){
+                                // sigma[1] = sigmaM_PML;
+                                sigma[1] = sigmaM_PML 
+                                    * pow((double)(K-(grid.size_Ey[2]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ-rhoZ1))/(double)rhoZ1,order_PML);
+                            }
+                            double COEF_E = sigma[1] * dt
+                                / (2.0 * grid.E_y_eps[index]);
+
+                            // Coefficient C_eye:
+                            C_eye[index] = (1-COEF_E) / (1+COEF_E);
+
+                            // Coefficient C_eyh_1:
+                            C_eyh_1[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_y_eps[index] * grid.delta_Electromagn[2]);
+
+
+                            COEF_E = sigma[0] * dt
+                                / (2.0 * grid.E_y_eps[index]);
+                            // Coefficient C_eye2 (!!! only used in the PML for Exz !!!)
+                            C_eye2[index] = (1-COEF_E) / (1+COEF_E);
+
+                            // Coefficient C_eyh_2:
+                            C_eyh_2[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_y_eps[index] * grid.delta_Electromagn[0]);
+                        }
                     }
                 }
             }
@@ -593,19 +935,88 @@ void AlgoElectro_NEW::update(
 
                         index = I + grid.size_Ez[0] * ( J + grid.size_Ez[1] * K);
 
-                        double COEF_E = grid.E_z_electrical_cond[index] * dt
-                            / (2.0 * grid.E_z_eps[index]);
+                        if(    I >= 1 + rhoX0 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX
+                            && I <  grid.size_Ez[0] - 1 - rhoX1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX
+                            && J >= 1 + rhoY0  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY
+                            && J <  grid.size_Ez[1] - 1 - rhoY1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY
+                            ){
 
-                        // Coefficient C_eze:
-                        C_eze[index] = (1-COEF_E) / (1+COEF_E);
+                            double COEF_E = grid.E_z_electrical_cond[index] * dt
+                                / (2.0 * grid.E_z_eps[index]);
 
-                        // Coefficient C_ezh_1:
-                        C_ezh_1[index] = 1 / ( 1 + COEF_E) * dt 
-                            / (grid.E_z_eps[index] * grid.delta_Electromagn[0]);
+                            // Coefficient C_eze:
+                            C_eze[index] = (1-COEF_E) / (1+COEF_E);
 
-                        // Coefficient C_ezh_2:
-                        C_ezh_2[index] = 1 / ( 1 + COEF_E) * dt 
-                            / (grid.E_z_eps[index] * grid.delta_Electromagn[1]);
+                            // Coefficient C_ezh_1:
+                            C_ezh_1[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_z_eps[index] * grid.delta_Electromagn[0]);
+
+                            // Coefficient C_ezh_2:
+                            C_ezh_2[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_z_eps[index] * grid.delta_Electromagn[1]);
+
+                        }else if( I==0 || J==0){
+                            double COEF_E = grid.E_z_electrical_cond[index] * dt
+                                / (2.0 * grid.E_z_eps[index]);
+
+                            // Coefficient C_exe:
+                            C_eze[index] = (1-COEF_E) / (1+COEF_E);
+
+                            // Coefficient C_exh_1:
+                            C_ezh_1[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_z_eps[index] * grid.delta_Electromagn[0]);
+
+                            // Coefficient C_exh_2:
+                            C_ezh_2[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_z_eps[index] * grid.delta_Electromagn[1]);
+
+                            // Coefficient C_eze2:
+                            C_eze2[index] = C_eze[index];
+                        }else{
+                            sigma[0] = 0;
+                            sigma[1] = 0;
+                            if(I< 1+rhoX0+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX && rhoX0!=0){
+                                // sigma[0] = sigmaM_PML;
+                                sigma[0] = sigmaM_PML
+                                    * pow((double)(IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX+rhoX0-I)/(double)rhoX0,order_PML);
+                            }
+                            else if(I>=grid.size_Ez[0]-1-rhoX1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX 
+                                    && rhoX1!=0){
+                                // sigma[0] = sigmaM_PML;
+                                sigma[0] = sigmaM_PML 
+                                    * pow((double)(I-(grid.size_Ez[0]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX-rhoX1))/(double)rhoX1,order_PML);
+                            }
+                            if(J< 1+rhoY0+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY && rhoY0!=0){
+                                // sigma[1] = sigmaM_PML;
+                                sigma[1] = sigmaM_PML 
+                                    * pow((double)(IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY+rhoY0-J)/(double)rhoY0,order_PML);
+                            }
+                            else if(J>=grid.size_Ez[1]-1-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY
+                                    && rhoY1!=0 ){
+                                // sigma[1] = sigmaM_PML;
+                                sigma[1] = sigmaM_PML 
+                                    * pow((double)(J-(grid.size_Ez[1]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY-rhoY1))/(double)rhoY1,order_PML);
+                            }
+                            double COEF_E = sigma[0] * dt
+                                        / (2.0 * grid.E_z_eps[index]);
+
+                            // Coefficient C_eze:
+                            C_eze[index] = (1-COEF_E) / (1+COEF_E);
+
+                            // Coefficient C_ezh_1:
+                            C_ezh_1[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_z_eps[index] * grid.delta_Electromagn[0]);
+
+                            
+                            COEF_E = sigma[1] * dt
+                                        / (2.0 * grid.E_z_eps[index]);
+                            //Coefficient C_eze2 (!!! only used in the PML for Exz !!!)
+                            C_eze2[index] = (1-COEF_E) / (1+COEF_E);
+
+                            // Coefficient C_ezh_2:
+                            C_ezh_2[index] = 1 / ( 1 + COEF_E) * dt 
+                                / (grid.E_z_eps[index] * grid.delta_Electromagn[1]);
+                        }
                     }
                 }
             }
@@ -619,18 +1030,90 @@ void AlgoElectro_NEW::update(
 
                         index = I + grid.size_Hx[0] * ( J + grid.size_Hx[1] * K);
 
-                        double COEF_H = grid.H_x_magnetic_cond[index] * dt
-                            / (2.0 * grid.H_x_mu[index]);
-                        // Coefficient C_hxh:
-                        C_hxh[index] = (1-COEF_H) / (1+COEF_H);
+                        if(    J >= 1+rhoY0
+                            && J <  grid.size_Hx[1]-1-rhoY1
+                            && K >= 1+rhoZ0
+                            && K <  grid.size_Hx[2]-1-rhoZ1){
 
-                        // Coefficient C_hxe_1:
-                        C_hxe_1[index] = 1 / ( 1 + COEF_H) * dt 
-                            / (grid.H_x_mu[index] * grid.delta_Electromagn[2]);
+                            double COEF_H = grid.H_x_magnetic_cond[index] * dt
+                                / (2.0 * grid.H_x_mu[index]);
+                            // Coefficient C_hxh:
+                            C_hxh[index] = (1-COEF_H) / (1+COEF_H);
 
-                        // Coefficient C_hxe_2:
-                        C_hxe_2[index] = 1 / ( 1 + COEF_H) * dt 
-                            / (grid.H_x_mu[index] * grid.delta_Electromagn[1]);
+                            // Coefficient C_hxe_1:
+                            C_hxe_1[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_x_mu[index] * grid.delta_Electromagn[2]);
+
+                            // Coefficient C_hxe_2:
+                            C_hxe_2[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_x_mu[index] * grid.delta_Electromagn[1]);
+
+                        }else if( J==0 || K==0){
+                            double COEF_H = grid.H_x_magnetic_cond[index] * dt
+                                / (2.0 * grid.H_x_mu[index]);
+                            // Coefficient C_hxh:
+                            C_hxh[index] = (1-COEF_H) / (1+COEF_H);
+
+                            // Coefficient C_hxe_1:
+                            C_hxe_1[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_x_mu[index] * grid.delta_Electromagn[2]);
+
+                            // Coefficient C_hxe_2:
+                            C_hxe_2[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_x_mu[index] * grid.delta_Electromagn[1]);
+
+                            // Coefficient C_hxh2:
+                            C_hxh2[index] = C_hxh[index];
+                        }else{
+                            sigma[0] = 0;
+                            sigma[1] = 0;
+                            if(J< 1+rhoY0 && rhoY0!=0){
+                                sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                           * pow((double)(1+rhoY0-J)/(double)(rhoY0),order_PML);
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                //            * pow((double)(1+rhoY0-(J+0.5))/(double)(rhoY0),order_PML);
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            else if(J>=grid.size_Hx[1]-1-rhoY1 && rhoY1!=0){
+                                sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(J-(grid.size_Hx[1]-1-rhoY1))/(double)rhoY1,order_PML);
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                //             * pow((double)(J+0.5-(grid.size_Hx[1]-1-rhoY1))/(double)rhoY1,order_PML);
+                                //sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            if(K< 1+rhoZ0 && rhoZ0!=0){
+                                sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                           * pow((double)(1+rhoZ0-K)/(double)rhoZ0,order_PML);
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                //            * pow((double)(1+rhoZ0-(K+0.5))/(double)rhoZ0,order_PML);
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            else if(K>=grid.size_Hx[2]-1-rhoZ1 && rhoZ1!=0){
+                                sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                           * pow((double)(K-(grid.size_Hx[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                //            * pow((double)(K+0.5-(grid.size_Hx[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            double COEF_H = sigma[1] * dt
+                                / (2.0 * grid.H_x_mu[index]);
+                            // Coefficient C_hxh ( !!! Will be used as the coeff for Hxz in the PML !!!): 
+                            C_hxh[index] = (1-COEF_H) / (1+COEF_H);
+
+                            // Coefficient C_hxe_1:
+                            C_hxe_1[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_x_mu[index] * grid.delta_Electromagn[2]);
+
+
+                            COEF_H = sigma[0] * dt
+                                    / (2.0 * grid.H_x_mu[index]);
+                            // Coefficient C_hxh2 (!!! only used in the PML for Hxy !!!)
+                            C_hxh2[index] = (1-COEF_H) / (1+COEF_H);
+
+                            // Coefficient C_hxe_2:
+                            C_hxe_2[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_x_mu[index] * grid.delta_Electromagn[1]);
+                        }
                     }
                 }
             }
@@ -644,20 +1127,98 @@ void AlgoElectro_NEW::update(
 
                         index = I + grid.size_Hy[0] * ( J + grid.size_Hy[1] * K);
 
-                        double COEF_H = grid.H_y_magnetic_cond[index] * dt
-                            / (2.0 * grid.H_y_mu[index]);
+                        if(    I >= 1+rhoX0
+                            && I <  grid.size_Hy[0]-1-rhoX1
+                            && K >= 1+rhoZ0
+                            && K <  grid.size_Hy[2]-1-rhoZ1){
+
+                            double COEF_H = grid.H_y_magnetic_cond[index] * dt
+                                / (2.0 * grid.H_y_mu[index]);
 
 
-                        // Coefficient C_hxh:
-                        C_hyh[index] = (1-COEF_H) / (1+COEF_H);
+                            // Coefficient C_hxh:
+                            C_hyh[index] = (1-COEF_H) / (1+COEF_H);
 
-                        // Coefficient C_hxe_1:
-                        C_hye_1[index] = 1 / ( 1 + COEF_H) * dt 
-                            / (grid.H_y_mu[index] * grid.delta_Electromagn[0]);
+                            // Coefficient C_hxe_1:
+                            C_hye_1[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_y_mu[index] * grid.delta_Electromagn[0]);
 
-                        // Coefficient C_hxe_2:
-                        C_hye_2[index] = 1 / ( 1 + COEF_H) * dt 
-                            / (grid.H_y_mu[index] * grid.delta_Electromagn[2]);
+                            // Coefficient C_hxe_2:
+                            C_hye_2[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_y_mu[index] * grid.delta_Electromagn[2]);
+
+                        }else if( I==0 || K==0){
+                            double COEF_H = grid.H_y_magnetic_cond[index] * dt
+                                / (2.0 * grid.H_y_mu[index]);
+
+
+                            // Coefficient C_hxh:
+                            C_hyh[index] = (1-COEF_H) / (1+COEF_H);
+
+                            // Coefficient C_hxe_1:
+                            C_hye_1[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_y_mu[index] * grid.delta_Electromagn[0]);
+
+                            // Coefficient C_hxe_2:
+                            C_hye_2[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_y_mu[index] * grid.delta_Electromagn[2]);
+
+                            // Coefficient C_hyh2:
+                            C_hyh2[index] = C_hyh[index];
+
+                        }else{
+                            sigma[0] = 0;
+                            sigma[1] = 0;
+                            if(I< 1+rhoX0 && rhoX0!=0){
+                                sigma[0] = sigmaM_PML 
+                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY *pow((double)(1+rhoX0-I)/(double)rhoX0,order_PML);
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY *pow((double)(1+rhoX0-(I+0.5))/(double)rhoX0,order_PML);
+                                
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                                // if(J==5)
+                                //     printf("sigma[0] = %lf \n", sigma[0]);
+                            }
+                            else if(I>=grid.size_Hy[0]-1-rhoX1 && rhoX1!=0){
+                                sigma[0] = sigmaM_PML 
+                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(I-(grid.size_Hy[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(I+0.5-(grid.size_Hy[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            if(K< 1+rhoZ0 && rhoZ0!=0){
+                                sigma[1] = sigmaM_PML 
+                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoZ0-K)/(double)rhoZ0,order_PML);
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoZ0-(K+0.5))/(double)rhoZ0,order_PML);
+                                
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            else if(K>=grid.size_Hy[2]-1-rhoZ1 && rhoZ1!=0){
+                                sigma[1] = sigmaM_PML 
+                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY* pow((double)(K-(grid.size_Hy[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY* pow((double)(K+0.5-(grid.size_Hy[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
+                                
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            double COEF_H = sigma[0] * dt
+                                / (2.0 * grid.H_y_mu[index]);
+
+                            // Coefficient C_hyh:
+                            C_hyh[index] = (1-COEF_H) / (1+COEF_H);
+
+                            // Coefficient C_hye_1:
+                            C_hye_1[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_y_mu[index] * grid.delta_Electromagn[0]);
+
+
+                            COEF_H = sigma[1] * dt
+                                / (2.0 * grid.H_y_mu[index]);
+                            // Coefficient C_hyh2 (!!! only used in the PML for Exz !!!)
+                            C_hyh2[index] = (1-COEF_H) / (1+COEF_H);
+
+                            // Coefficient C_hye_2:
+                            C_hye_2[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_y_mu[index] * grid.delta_Electromagn[2]);
+                        }
                     }
                 }
             }
@@ -671,21 +1232,101 @@ void AlgoElectro_NEW::update(
 
                         index = I + grid.size_Hz[0] * ( J + grid.size_Hz[1] * K);
 
-                        double COEF_H = grid.H_z_magnetic_cond[index] * dt
+                        if(    I >= 1+rhoX0
+                            && I <  grid.size_Hz[0]-1-rhoX1
+                            && J >= 1+rhoY0 /*+1*/
+                            && J <  grid.size_Hz[1]-1-rhoY1
+                            ){
+
+                            double COEF_H = grid.H_z_magnetic_cond[index] * dt
+                                / (2.0 * grid.H_z_mu[index]);
+
+                            // Coefficient C_hxh:
+                            C_hzh[index] = (1-COEF_H) / (1+COEF_H);
+
+                            // Coefficient C_hxe_1:
+                            C_hze_1[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_z_mu[index] * grid.delta_Electromagn[1]);
+
+                            // Coefficient C_hxe_2:
+                            C_hze_2[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_z_mu[index] * grid.delta_Electromagn[0]);
+                        }else if( I==0 || J==0){
+                            double COEF_H = grid.H_z_magnetic_cond[index] * dt
                             / (2.0 * grid.H_z_mu[index]);
 
 
 
-                        // Coefficient C_hxh:
-                        C_hzh[index] = (1-COEF_H) / (1+COEF_H);
+                            // Coefficient C_hxh:
+                            C_hzh[index] = (1-COEF_H) / (1+COEF_H);
 
-                        // Coefficient C_hxe_1:
-                        C_hze_1[index] = 1 / ( 1 + COEF_H) * dt 
-                            / (grid.H_z_mu[index] * grid.delta_Electromagn[1]);
+                            // Coefficient C_hxe_1:
+                            C_hze_1[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_z_mu[index] * grid.delta_Electromagn[1]);
 
-                        // Coefficient C_hxe_2:
-                        C_hze_2[index] = 1 / ( 1 + COEF_H) * dt 
-                            / (grid.H_z_mu[index] * grid.delta_Electromagn[0]);
+                            // Coefficient C_hxe_2:
+                            C_hze_2[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_z_mu[index] * grid.delta_Electromagn[0]);
+
+                            // Coefficient C_hzh2:
+                            C_hzh2[index] = C_hzh[index];
+                        }else{
+                            sigma[0] = 0;
+                            sigma[1] = 0;
+                            if(I< 1+rhoX0 && rhoX0!=0){
+                                sigma[0] = sigmaM_PML 
+                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoX0-I)/(double)rhoX0,order_PML);
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoX0-(I+0.5))/(double)rhoX0,order_PML);
+                                
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            else if(I>=grid.size_Hz[0]-1-rhoX1 && rhoX1!=0){
+                                sigma[0] = sigmaM_PML 
+                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(I-(grid.size_Hz[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(I+0.5-(grid.size_Hz[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                
+                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            if(J< 1+rhoY0/*+1*/ && rhoY0!=0){
+                                sigma[1] = sigmaM_PML 
+                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoY0-J)/(double)rhoY0,order_PML);
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoY0-(J+0.5))/(double)rhoY0,order_PML);
+                                
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            else if(J>=grid.size_Hz[1]-1-rhoY1 && rhoY1 !=0 ){
+                                sigma[1] = sigmaM_PML 
+                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(J-(grid.size_Hz[1]-1-rhoY1))/(double)rhoY1,order_PML);
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(J+0.5-(grid.size_Hz[1]-1-rhoY1))/(double)rhoY1,order_PML);
+                                
+                                // if(K==5 && I==5)
+                                //     printf("sigma[0] = %lf \n", sigma[1]);
+                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
+                            }
+                            double COEF_H = sigma[1] * dt
+                                        / (2.0 * grid.H_z_mu[index]);
+
+                            // Coefficient C_hzh:
+                            C_hzh[index] = (1-COEF_H) / (1+COEF_H);
+
+                            // Coefficient C_hze_1:
+                            C_hze_1[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_z_mu[index] * grid.delta_Electromagn[1]);
+
+                            
+                            COEF_H = sigma[0] * dt
+                                        / (2.0 * grid.H_z_mu[index]);
+                            //Coefficient C_hzh2 (!!! only used in the PML !!!)
+                            C_hzh2[index] = (1-COEF_H) / (1+COEF_H);
+
+                            // Coefficient C_hze_2:
+                            C_hze_2[index] = 1 / ( 1 + COEF_H) * dt 
+                                / (grid.H_z_mu[index] * grid.delta_Electromagn[0]);
+                            if(K==5 && I==5){
+                                printf("I = %zu, J= %zu, K = %zu : C_hze_1 = %.20g \n C_hzh = %.20g \n", I,J,K,C_hze_1[index], C_hzh[index]);
+                                printf("Hello -> COEF_H = %lf \n \n \n ", COEF_H);
+                            }
+                        }
                     }
                 }
             }
@@ -965,17 +1606,23 @@ void AlgoElectro_NEW::update(
         firstprivate(local_nodes_inside_source_NUMBER)\
         firstprivate(local_nodes_inside_source_FREQ,ID_Source)\
         shared(interfaceParaview)\
-        firstprivate(C_hxh,C_hxe_1,C_hxe_2)\
-        firstprivate(C_hyh,C_hye_1,C_hye_2)\
-        firstprivate(C_hzh,C_hze_1,C_hze_2)\
-        firstprivate(C_exe,C_exh_1,C_exh_2)\
-        firstprivate(C_eye,C_eyh_1,C_eyh_2)\
-        firstprivate(C_eze,C_ezh_1,C_ezh_2)\
+        firstprivate(C_hxh,C_hxe_1,C_hxe_2,C_hxh2)\
+        firstprivate(C_hyh,C_hye_1,C_hye_2,C_hyh2)\
+        firstprivate(C_hzh,C_hze_1,C_hze_2,C_hzh2)\
+        firstprivate(C_exe,C_exh_1,C_exh_2,C_exe2)\
+        firstprivate(C_eye,C_eyh_1,C_eyh_2,C_eye2)\
+        firstprivate(C_eze,C_ezh_1,C_ezh_2,C_eze2)\
         shared(ompi_mpi_comm_world,ompi_mpi_int)\
         firstprivate(Electric_field_to_send,Electric_field_to_recv)\
         firstprivate(Magnetic_field_to_send,Magnetic_field_to_recv)\
         firstprivate(electric_field_sizes,magnetic_field_sizes,dt)\
         firstprivate(size_faces_electric,size_faces_magnetic)\
+        firstprivate(Hx_pml_x0,Hx_pml_x1, Hx_pml_y0,Hx_pml_y1, Hx_pml_z0, Hx_pml_z1)\
+        firstprivate(Hy_pml_x0,Hy_pml_x1,Hy_pml_y0,Hy_pml_y1,Hy_pml_z0, Hy_pml_z1)\
+        firstprivate(Hz_pml_x0,Hz_pml_x1,Hz_pml_y0,Hz_pml_y1,Hz_pml_z0,Hz_pml_z1)\
+        firstprivate(Ex_pml_x0,Ex_pml_x1,Ex_pml_y0,Ex_pml_y1,Ex_pml_z0,Ex_pml_z1)\
+        firstprivate(Ey_pml_x0,Ey_pml_x1,Ey_pml_y0,Ey_pml_y1,Ey_pml_z0,Ey_pml_z1)\
+        firstprivate(Ez_pml_x0,Ez_pml_x1,Ez_pml_y0,Ez_pml_y1,Ez_pml_z0,Ez_pml_z1)\
         firstprivate(Eyx0, Eyx1)\
         firstprivate(Ezx0, Ezx1)\
         firstprivate(Exy0, Exy1)\
@@ -993,7 +1640,10 @@ void AlgoElectro_NEW::update(
         shared(time_beg,time_end)\
         shared(min_time_before_checking_steadiness)\
         firstprivate(is_previous_segment_steady)\
-        firstprivate(numero_du_segment_precedent)
+        firstprivate(numero_du_segment_precedent)\
+        firstprivate(rhoX0, rhoX1)\
+        firstprivate(rhoY0, rhoY1)\
+        firstprivate(rhoZ0, rhoZ1)
     {
         /**
          * @brief Determine if the simulation must be 1D.
@@ -1180,6 +1830,9 @@ void AlgoElectro_NEW::update(
             }else{
                 IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = 1;
             }
+            if(rhoX1 != 0){
+                IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = rhoX1+1;
+            }
         }
 
         if(grid.MPI_communicator.MPI_POSITION[1] == grid.MPI_communicator.MPI_MAX_POSI[1]){
@@ -1190,6 +1843,9 @@ void AlgoElectro_NEW::update(
                 // Do nothing.
             }else{
                 IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = 1;
+            }
+            if(rhoY1 != 0){
+                IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = rhoY1+1;
             }
         }
 
@@ -1202,6 +1858,9 @@ void AlgoElectro_NEW::update(
             }else{
                 IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = 1;
             }
+            if(rhoZ1 != 0){
+                IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = rhoZ1+1;
+            }
         }
 
         if(grid.MPI_communicator.MPI_POSITION[0] == 0){
@@ -1212,6 +1871,9 @@ void AlgoElectro_NEW::update(
                 // Do nothing.
             }else{
                 IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 1;
+            }
+            if(rhoX0 != 0){
+                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = rhoX0+1;
             }
         }
 
@@ -1224,6 +1886,9 @@ void AlgoElectro_NEW::update(
             }else{
                 IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 1;
             }
+            if(rhoY0 != 0){
+                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = rhoY0+1;
+            }
         }
 
         if(grid.MPI_communicator.MPI_POSITION[2] == 0){
@@ -1234,6 +1899,9 @@ void AlgoElectro_NEW::update(
                 // Do nothing.
             }else{
                 IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
+            }
+            if(rhoZ0 != 0){
+                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = rhoZ0+1;
             }
         }
 
@@ -1300,9 +1968,9 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Ez[1];
 
             #pragma omp for //schedule(static) collapse(3) nowait
-            for (K = 1 ; K < grid.size_Hx[2]-1 ; K++){
-                for(J = 1 ; J < grid.size_Hx[1]-1 ; J ++){
-                    for(I = 1 ; I < grid.size_Hx[0]-1 ; I++){
+            for (K =1+rhoZ0 ; K < grid.size_Hx[2]-1-rhoZ1; K++){
+                for(J=1+rhoY0; J < grid.size_Hx[1]-1-rhoY1; J ++){
+                    for(I =1+rhoX0; I < grid.size_Hx[0]-1-rhoX1; I++){
 
                         // Hx(mm, nn, pp):
                         index        = I + size_x   * ( J     + size_y   * K);
@@ -1353,9 +2021,9 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Ex[1];
 
             #pragma omp for //schedule(static) collapse(3) nowait
-            for(K = 1 ; K < grid.size_Hy[2]-1 ; K ++){
-                for(J = 1 ; J < grid.size_Hy[1]-1 ; J ++){
-                    for(I = 1; I < grid.size_Hy[0]-1 ; I ++){
+            for(K = 1+rhoZ0; K < grid.size_Hy[2]-1-rhoZ1; K ++){
+                for(J =1+rhoY0; J < grid.size_Hy[1]-1-rhoY1; J ++){
+                    for(I =1+rhoX0; I < grid.size_Hy[0]-1-rhoX1; I ++){
 
                         index        = I   + size_x   * ( J  + size_y   * K);
                         // Ez(mm + 1, nn, pp):
@@ -1402,9 +2070,9 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Ey[1];
 
             #pragma omp for //schedule(static) collapse(3) nowait
-            for(K = 1 ; K < grid.size_Hz[2]-1  ; K ++){
-                for(J = 1 ; J < grid.size_Hz[1]-1 ; J ++){
-                    for(I = 1 ; I < grid.size_Hz[0]-1 ; I ++){
+            for(K = 1+rhoZ0; K < grid.size_Hz[2]-1-rhoZ1; K ++){
+                for(J = 1+rhoY0 ; J < grid.size_Hz[1]-1-rhoY1 ; J ++){
+                    for(I = 1+rhoX0 ; I < grid.size_Hz[0]-1-rhoX1 ; I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Ex(mm, nn + 1, pp)
@@ -1444,6 +2112,36 @@ void AlgoElectro_NEW::update(
             /// magnetic fields have been updated.            ///
             /////////////////////////////////////////////////////
             #pragma omp barrier
+
+            //////////////////////////////////
+            ///// PML on magnetic field //////
+            //////////////////////////////////
+            #pragma omp master
+            {
+                if(grid.input_parser.apply_PML_BCs == true){
+                    this->pmlH(grid,
+                                H_x_tmp, H_y_tmp, H_z_tmp,
+                                Hx_pml_x0, Hx_pml_x1,
+                                Hx_pml_y0, Hx_pml_y1, 
+                                Hx_pml_z0, Hx_pml_z1,
+                                Hy_pml_x0, Hy_pml_x1,
+                                Hy_pml_y0, Hy_pml_y1,
+                                Hy_pml_z0, Hy_pml_z1,
+                                Hz_pml_x0, Hz_pml_x1, 
+                                Hz_pml_y0, Hz_pml_y1,
+                                Hz_pml_z0, Hz_pml_z1,
+
+                                E_x_tmp, E_y_tmp, E_z_tmp,
+
+                                C_hxh, C_hxe_1, C_hxe_2, C_hxh2,
+                                C_hyh, C_hye_1, C_hye_2, C_hyh2,
+                                C_hzh, C_hze_1, C_hze_2, C_hzh2,
+                                rhoX0, rhoX1,
+                                rhoY0, rhoY1,
+                                rhoZ0, rhoZ1
+                            );
+                }
+            }
 
 
             ///////////////////////////////////////
@@ -1572,14 +2270,14 @@ void AlgoElectro_NEW::update(
 
 
             #pragma omp for //schedule(static) collapse(3) nowait
-            for(K = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ ;
-                    K < grid.size_Ex[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; 
+            for(K = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; // A vaccum element to update in the PML
+                    K < grid.size_Ex[2]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ;  
                     K ++){
-                for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY ; 
-                        J < grid.size_Ex[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY ; 
+                for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY; 
+                        J < grid.size_Ex[1]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY; 
                         J ++){
-                    for(I = 1  /*+ IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX*/; 
-                            I < grid.size_Ex[0]-1 /*- IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX*/; 
+                   for(I = 1 + rhoX0  /*+ IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX*/; // BYEBYE: A Virer!!!
+                            I < grid.size_Ex[0]-1-rhoX1/*-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX*/; // BYEBYE: A virer !!!
                             I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
@@ -1639,15 +2337,12 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Hz[1];
 
             #pragma omp for //schedule(static) collapse(3) nowait
-            for(K = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ ; 
-                    K < grid.size_Ey[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ ; 
-                    K ++){
-                for(J = 1  /*+ IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY*/; 
-                        J < grid.size_Ey[1]-1 /*- IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY*/ ; 
-                        J ++){
-                    for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX ; 
-                            I < grid.size_Ey[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX ; 
-                            I ++){
+            for(K = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
+                K < grid.size_Ey[2]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; K ++){
+                for(J = 1 +rhoY0 /*+ IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY*/; 
+                        J < grid.size_Ey[1]-1-rhoY1 /*- IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY*/; J ++){
+                    for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                            I < grid.size_Ey[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX; I ++){ 
 
                         index        = I   + size_x   * ( J     + size_y   * K);
                         // Hx(mm, nn, pp)
@@ -1706,14 +2401,14 @@ void AlgoElectro_NEW::update(
             size_y_2 = grid.size_Hx[1];
 
             #pragma omp for //schedule(static) collapse(3) nowait
-            for(K = 1  /*+ IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ*/;
-                     K < grid.size_Ez[2]-1 /*- IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ*/ ; 
-                     K ++){
-                for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY ; 
-                        J < grid.size_Ez[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY ; 
+            for(K = 1 +rhoZ0 /*+ IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ*/; 
+                    K < grid.size_Ez[2]-1-rhoZ1 /*- IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ*/; 
+                    K ++){ 
+                for(J = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY; 
+                        J < grid.size_Ez[1]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY; 
                         J ++){
-                    for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX ; 
-                            I < grid.size_Ez[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX ; 
+                    for(I = 1  + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                            I < grid.size_Ez[0]-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX; 
                             I ++){
 
                         index        = I   + size_x   * ( J     + size_y   * K);
@@ -1831,6 +2526,39 @@ void AlgoElectro_NEW::update(
                 }
             }
             #pragma omp barrier
+
+            //////////////////////////////////
+            ///// PML on electric field //////
+            //////////////////////////////////
+            #pragma omp master
+            {
+                if(grid.input_parser.apply_PML_BCs == true){
+                    this->pmlE(grid,
+                                E_x_tmp, E_y_tmp, E_z_tmp,
+                                Ex_pml_x0, Ex_pml_x1,
+                                Ex_pml_y0, Ex_pml_y1, 
+                                Ex_pml_z0, Ex_pml_z1,
+                                Ey_pml_x0, Ey_pml_x1,
+                                Ey_pml_y0, Ey_pml_y1,
+                                Ey_pml_z0, Ey_pml_z1,
+                                Ez_pml_x0, Ez_pml_x1, 
+                                Ez_pml_y0, Ez_pml_y1,
+                                Ez_pml_z0, Ez_pml_z1,
+
+                                H_x_tmp, H_y_tmp, H_z_tmp,
+                                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ, IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ,
+                                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY, IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
+                                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX, IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
+                                
+                                C_exe, C_exh_1, C_exh_2, C_exe2,
+                                C_eye, C_eyh_1, C_eyh_2, C_eye2,
+                                C_eze, C_ezh_1, C_ezh_2, C_eze2,
+                                rhoX0, rhoX1,
+                                rhoY0, rhoY1,
+                                rhoZ0, rhoZ1
+                            );
+                }
+            }
 
             ///////////////////////////////////////
             // 1D CASE - ONLY WITH 1 MPI PROCESS //
@@ -7190,4 +7918,2293 @@ void AlgoElectro_NEW::apply_1D_case_on_electric_field(
             "None of the boolean values is true."
         );
     }
+}
+
+void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
+            double *Ex, double *Ey, double *Ez,
+            double *Ex_pml_x0, double *Ex_pml_x1,
+            double *Ex_pml_y0, double *Ex_pml_y1, 
+            double *Ex_pml_z0, double *Ex_pml_z1,
+            double *Ey_pml_x0, double *Ey_pml_x1,
+            double *Ey_pml_y0, double *Ey_pml_y1,
+            double *Ey_pml_z0, double *Ey_pml_z1,
+            double *Ez_pml_x0, double *Ez_pml_x1, 
+            double *Ez_pml_y0, double *Ez_pml_y1,
+            double *Ez_pml_z0, double *Ez_pml_z1,
+
+            double *Hx, double *Hy, double *Hz,
+            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ, size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ,
+            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY, size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
+            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX, size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
+            
+            double *C_exe, double *C_exh_1, double *C_exh_2, double *C_exe2,
+            double *C_eye, double *C_eyh_1, double *C_eyh_2, double *C_eye2,
+            double *C_eze, double *C_ezh_1, double *C_ezh_2, double *C_eze2,
+            unsigned int rhoX0, unsigned int rhoX1,
+            unsigned int rhoY0, unsigned int rhoY1,
+            unsigned int rhoZ0, unsigned int rhoZ1
+            )
+{
+    size_t size_x, size_y, size_z;
+    size_t size_x_1, size_y_1, size_x_2, size_y_2;
+    size_t index, index_1Plus, index_1Moins, index_2Plus, index_2Moins, index_pml;
+
+
+    if(grid.MPI_communicator.MPI_POSITION[0] == grid.MPI_communicator.MPI_MAX_POSI[0]){
+        IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = 1;
+    }
+
+    if(grid.MPI_communicator.MPI_POSITION[1] == grid.MPI_communicator.MPI_MAX_POSI[1]){
+        IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = 1;
+    }
+
+    if(grid.MPI_communicator.MPI_POSITION[2] == grid.MPI_communicator.MPI_MAX_POSI[2]){
+        IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = 1;
+    }
+
+    if(grid.MPI_communicator.MPI_POSITION[0] == 0){
+        IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 1;
+    }
+
+    if(grid.MPI_communicator.MPI_POSITION[1] == 0){
+        IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 1;
+    }
+
+    if(grid.MPI_communicator.MPI_POSITION[2] == 0){
+        IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
+    }
+    // ---- Ex ---- : 
+    size_x = grid.size_Ex[0];
+    size_y = grid.size_Ex[1];
+    size_z = grid.size_Ex[2];
+
+    size_x_1 = grid.size_Hz[0];
+    size_y_1 = grid.size_Hz[1];
+
+    size_x_2 = grid.size_Hy[0];
+    size_y_2 = grid.size_Hy[1];
+
+
+
+    // face x0: ATTENTION DIFFERENT
+    if(rhoX0>0){
+        for(size_t K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
+                    K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
+                    K++){ 
+            for(size_t  J=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+                        J<size_y-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
+                        J++){ 
+                for(size_t I=1; I<1+rhoX0; I++){ 
+
+                    index = I + size_x * ( J + size_y * K);
+
+                    index_1Plus = I
+                                + size_x_1 * ( J
+                                + size_y_1 * (K));
+                    index_1Moins = I
+                                + size_x_1 * ( J-1
+                                + size_y_1 * (K));
+                    index_2Plus  = I 
+                                + size_x_2 * ( J
+                                + size_y_2 * (K));
+                    index_2Moins = I 
+                                + size_x_2 * ( J 
+                                + size_y_2 * (K-1 ));
+
+                    index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2;
+                    // "-1" because no communication case
+
+                    
+
+                    if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExX0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExX0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExX0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExX0 index_2Plu out of bounds !!!");
+                        abort();
+                    }                   
+                    if(index_pml >= grid.size_Ex[1]*grid.size_Ex[2]*rhoX0*2){
+                        printf("Hello : ExX0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+
+                    // Exy:
+                    Ex_pml_x0[index_pml] = C_exe[index]*Ex_pml_x0[index_pml]
+                        + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
+                    // Exz:
+                    Ex_pml_x0[index_pml+1] = C_exe2[index]*Ex_pml_x0[index_pml+1]
+                        - C_exh_2[index] * (Hy[index_2Plus]-Hy[index_2Moins]);
+                    // Ex:
+                    Ex[index] = Ex_pml_x0[index_pml] + Ex_pml_x0[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    // face x1: ATTENTION DIFFERENT
+    if(rhoX1>0){
+        for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
+                    K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ;
+                    K++){ 
+            for(size_t  J=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY; 
+                        J<size_y-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY; 
+                        J++){
+                for(size_t I=0; I<rhoX1; I++){ 
+                    
+
+                    size_t II = (I+size_x-rhoX1-1);
+                    index = II + size_x * ( J + size_y * K);
+
+                    index_1Plus = II
+                                + size_x_1 * ( J
+                                + size_y_1 * (K));
+                    index_1Moins = II
+                                + size_x_1 * ( J-1
+                                + size_y_1 * (K));
+                    index_2Plus  = II 
+                                + size_x_2 * ( J
+                                + size_y_2 * (K));
+                    index_2Moins = II 
+                                + size_x_2 * ( J 
+                                + size_y_2 * (K-1 ));
+
+                    index_pml    = (I + rhoX1 * (J+ size_y*K)) *2; // VERIFIER !!!
+
+                    if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExX1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExX1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExX1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExX1 index_2Plu out of bounds !!!");
+                        abort();
+                    }                   
+                    if(index_pml >= grid.size_Ez[1]*grid.size_Ez[2]*rhoX1*2){
+                        printf("Hello : ExX1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ex_pml_x1[index_pml] = C_exe[index]*Ex_pml_x1[index_pml]
+                        + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
+                    Ex_pml_x1[index_pml+1] = C_exe2[index]*Ex_pml_x1[index_pml+1]
+                        - C_exh_2[index] * (Hy[index_2Plus]-Hy[index_2Moins]);
+                    Ex[index] = Ex_pml_x1[index_pml] + Ex_pml_x1[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    // face y0:
+    if(rhoY0>0){
+        for(size_t  K = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
+                    K < size_z - 1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
+                    K++){ 
+            for(size_t J = 0; J < rhoY0; J++){
+                for(size_t I = 1 ; I < size_x - 1 - rhoX0 - rhoX1; I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+1+ IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+
+                    index = II + size_x * ( JJ + size_y * K);
+
+                    index_1Plus = II
+                                + size_x_1 * ( JJ
+                                + size_y_1 * (K));
+                    index_1Moins = II
+                                + size_x_1 * ( JJ-1
+                                + size_y_1 * (K));
+                    index_2Plus  = II 
+                                + size_x_2 * ( JJ
+                                + size_y_2 * (K));
+                    index_2Moins = II 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (K-1 ));
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY0*K)) *2;
+
+                    if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExY0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExY0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExX1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExX1 index_2Plu out of bounds !!!");
+                        abort();
+                    }                   
+                    if(index_pml >= (grid.size_Ex[0]-rhoX0-rhoX1)
+                                    *grid.size_Ex[2]*rhoY0*2){
+                        printf("Hello : ExY0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ex_pml_y0[index_pml] = C_exe[index]*Ex_pml_y0[index_pml]
+                        + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
+
+                    Ex_pml_y0[index_pml+1] = C_exe2[index]*Ex_pml_y0[index_pml+1]
+                        - C_exh_2[index] * (Hy[index_2Plus]-Hy[index_2Moins]);
+
+                    Ex[index] = Ex_pml_y0[index_pml] + Ex_pml_y0[index_pml+1];
+                    
+                    // if(K==1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ && I==1){
+                    //     index = II + size_x * ( JJ+1 + size_y * K);
+                    //     printf("Hello: Ex pml  ->  J = %zu  JJ = %zu : ------> C_exe = %lf, C_exe2 = %lf \n", J,JJ, C_exe[index], C_exe2[index]);
+                    // }
+                }
+            }
+        }
+    }
+
+
+    // face y1:
+    if(rhoY1>1){
+        for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
+                    K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ;
+                    K++){ 
+            for(size_t J=0; J<rhoY1; J++){  /* "-1" for the BC */
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+size_y-rhoY1-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
+                    index = II + size_x * ( JJ + size_y * K);
+
+                    index_1Plus = II
+                                + size_x_1 * ( JJ
+                                + size_y_1 * (K));
+                    index_1Moins = II
+                                + size_x_1 * ( JJ-1
+                                + size_y_1 * (K));
+                    index_2Plus  = II 
+                                + size_x_2 * ( JJ
+                                + size_y_2 * (K));
+                    index_2Moins = II 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (K-1 ));
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
+
+                    if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExY1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExY1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExX1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExX1 index_2Plus out of bounds !!!");
+                        abort();
+                    }                   
+                    if(index_pml >= (grid.size_Ex[0]-rhoX0-rhoX1)
+                                    *grid.size_Ex[2]*rhoY1*2){
+                        printf("Hello : ExY1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ex_pml_y1[index_pml] = C_exe[index]*Ex_pml_y1[index_pml]
+                        + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
+                    Ex_pml_y1[index_pml+1] = C_exe2[index]*Ex_pml_y1[index_pml+1]
+                        - C_exh_2[index] * (Hy[index_2Plus]-Hy[index_2Moins]);
+                    Ex[index] = Ex_pml_y1[index_pml] + Ex_pml_y1[index_pml+1];
+
+                    // if( Ex[index] != 0){
+                    //     printf("Hello : size_x = %zu, size_y = %zu, size_z = %zu \n", size_x, size_y, size_z);
+                    //     printf("Hello : Ex_pml1 = %.40g , Ex_pml2 = %.40g , Hz[index_1Plus] = %.40g , Hz[index_1Moins] = %.40g , Hy[index_2Plus] = %.40g , Hy[index_2Moins] = %.40g \n ",
+                    //     Ex_pml_y1[index_pml],  Ex_pml_y1[index_pml+1], Hz[index_1Plus], Hz[index_1Moins], Hy[index_2Plus], Hy[index_2Moins]);
+                    //     printf("Hello : I = %zu, J = %zu, K = %zu \n ",I, J, K);
+                    //     printf("Hello : II = %zu, JJ= %zu \n ",II, JJ);
+                    //     abort();
+                    // }
+                }
+            }
+        }
+    }
+
+
+    // face z0:
+    if(rhoZ0>1){
+        for(size_t K=0; K<rhoZ0; K++){ 
+            for(size_t  J=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+                        J<size_y-1-rhoY0-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
+                        J++){ 
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+                    
+                    
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    size_t KK = K+1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
+                    index = II + size_x * ( JJ + size_y * KK);
+                    
+                    index_1Plus = II
+                                + size_x_1 * ( JJ
+                                + size_y_1 * (KK));
+                    index_1Moins = II
+                                + size_x_1 * ( JJ-1
+                                + size_y_1 * (KK));
+                    index_2Plus  = II 
+                                + size_x_2 * ( JJ
+                                + size_y_2 * (KK));
+                    index_2Moins = II 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (KK-1 ));
+                                
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*K) ) *2;
+                    
+                    if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExZ0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExZ0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExZ0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExZ0 index_2Plu out of bounds !!!");
+                        abort();
+                    }                   
+                    if(index_pml >= (grid.size_Ex[0]-rhoX0-rhoX1)
+                                    *(grid.size_Ex[1]-rhoY0-rhoY1) *rhoZ0*2){
+                        printf("Hello : ExZ0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ex_pml_z0[index_pml] = C_exe[index]*Ex_pml_z0[index_pml]
+                        + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
+                    Ex_pml_z0[index_pml+1] = C_exe2[index]*Ex_pml_z0[index_pml+1]
+                        - C_exh_2[index] * (Hy[index_2Plus]-Hy[index_2Moins]);
+                    Ex[index] = Ex_pml_z0[index_pml] + Ex_pml_z0[index_pml+1];
+                }
+            }
+        }
+    }
+    
+
+    // face z1:
+    if(rhoZ1>0){
+        for(size_t K=0; K<rhoZ1; K++){ 
+            for(size_t  J=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+                        J<size_y-1-rhoY0-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
+                        J++){ 
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    size_t KK = K+size_z-rhoZ1-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ;
+                    index = II + size_x * ( JJ + size_y * KK );
+
+                    index_1Plus = II
+                                + size_x_1 * ( JJ
+                                + size_y_1 * (KK));
+                    index_1Moins = II
+                                + size_x_1 * ( JJ-1
+                                + size_y_1 * (KK));
+                    index_2Plus  = II 
+                                + size_x_2 * ( JJ
+                                + size_y_2 * (KK));
+                    index_2Moins = II 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (KK-1 ));
+                                
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*K) ) *2;
+                    
+                    if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExZ1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExZ1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : ExZ1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : ExZ1 index_2Plu out of bounds !!!");
+                        abort();
+                    }                   
+                    if(index_pml >= (grid.size_Ex[0]-rhoX0-rhoX1)
+                                    *(grid.size_Ex[1]-rhoY0-rhoY1) *rhoZ1*2){
+                        printf("Hello : ExZ1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ex_pml_z1[index_pml] = C_exe[index]*Ex_pml_z1[index_pml]
+                        + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
+                    Ex_pml_z1[index_pml+1] = C_exe2[index]*Ex_pml_z1[index_pml+1]
+                        - C_exh_2[index] * (Hy[index_2Plus]-Hy[index_2Moins]);
+                    Ex[index] = Ex_pml_z1[index_pml] + Ex_pml_z1[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+
+    // ---- Ey ----
+    size_x = grid.size_Ey[0];
+    size_y = grid.size_Ey[1];
+    size_z = grid.size_Ey[2];
+
+    size_x_1 = grid.size_Hx[0];
+    size_y_1 = grid.size_Hx[1];
+
+    size_x_2 = grid.size_Hz[0];
+    size_y_2 = grid.size_Hz[1];
+
+    // face x0:
+    if(rhoX0>1){
+        for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
+                    K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
+                    K++){
+            for(size_t J=1; J<size_y-1; J++){
+                for(size_t I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                            I<1+rhoX0+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                            I++){
+                    index = I + size_x * ( J + size_y * K);
+
+                    index_1Plus = I 
+                                + size_x_1 * ( J 
+                                + size_y_1 * (K ));
+                    index_1Moins = I 
+                                + size_x_1 * ( J 
+                                + size_y_1 * (K-1 ));
+                    index_2Plus  = I
+                                + size_x_2 * ( J 
+                                + size_y_2 * (K ));
+                    index_2Moins = I-1 
+                                + size_x_2 * ( J 
+                                + size_y_2 * (K ));
+
+                    index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2;
+
+                    if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyX0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyX0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyX0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyX0 index_2Plu out of bounds !!!");
+                        abort();
+                    }                   
+                    if(index_pml >= grid.size_Ey[1]*grid.size_Ey[2]*rhoX0*2){
+                        printf("Hello : EyX0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    // Eyx:
+                    Ey_pml_x0[index_pml] = C_eye2[index]*Ey_pml_x0[index_pml]
+                        - C_eyh_2[index] * (Hz[index_2Plus]-Hz[index_2Moins]);
+                    // Eyz:
+                    Ey_pml_x0[index_pml+1] = C_eye[index]*Ey_pml_x0[index_pml+1]
+                        + C_eyh_1[index] * (Hx[index_1Plus]-Hx[index_1Moins]);
+                    // Ey:
+                    Ey[index] = Ey_pml_x0[index_pml] + Ey_pml_x0[index_pml+1];
+                }
+            }
+        }
+    }
+
+    // face x1:
+    if(rhoX1>1){
+        for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
+                    K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
+                    K++){
+            for(size_t J=1; J<size_y-1; J++){ 
+                for(size_t I=0; I<rhoX1; I++){ 
+                    
+
+                    size_t II = I+size_x-rhoX1-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX;
+
+                    index = II + size_x * ( J + size_y * K);
+
+                    index_1Plus = II 
+                                + size_x_1 * ( J 
+                                + size_y_1 * (K ));
+                    index_1Moins = II 
+                                + size_x_1 * ( J 
+                                + size_y_1 * (K-1 ));
+                    index_2Plus  = II
+                                + size_x_2 * ( J 
+                                + size_y_2 * (K ));
+                    index_2Moins = II-1 
+                                + size_x_2 * ( J 
+                                + size_y_2 * (K ));
+
+                    index_pml    = (I + rhoX1 * (J+ size_y*K)) *2;
+
+                    if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyX1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyX1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyX1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyX1 index_2Plu out of bounds !!!");
+                        abort();
+                    }                 
+                    if(index_pml >= grid.size_Ey[1]*grid.size_Ey[2]*rhoX1*2){
+                        printf("Hello : EyX1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ey_pml_x1[index_pml] = C_eye2[index]*Ey_pml_x1[index_pml]
+                        - C_eyh_2[index] * (Hz[index_2Plus]-Hz[index_2Moins]);
+
+                    Ey_pml_x1[index_pml+1] = C_eye[index]*Ey_pml_x1[index_pml+1]
+                        + C_eyh_1[index] * (Hx[index_1Plus]-Hx[index_1Moins]);
+
+                    Ey[index] = Ey_pml_x1[index_pml] + Ey_pml_x1[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+
+    // face y0: ATTENTION DIFFERENT
+    if(rhoY0>0){
+        for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
+                    K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
+                    K++){
+            for(size_t J=1; J<1+rhoY0; J++){
+                for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                            I<size_x-1-rhoX0-rhoX1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX; 
+                            I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    index = II + size_x * ( J + size_y * K);
+
+                    index_1Plus = II 
+                                + size_x_1 * ( J 
+                                + size_y_1 * (K ));
+                    index_1Moins = II 
+                                + size_x_1 * ( J 
+                                + size_y_1 * (K-1 ));
+                    index_2Plus  = II
+                                + size_x_2 * ( J 
+                                + size_y_2 * (K ));
+                    index_2Moins = II-1 
+                                + size_x_2 * ( J 
+                                + size_y_2 * (K ));
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * ((J-1)+ rhoY0*K)) *2;
+
+                    if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyY0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyY0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyY0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyY0 index_2Plu out of bounds !!!");
+                        abort();
+                    }                              
+                    if(index_pml >= (grid.size_Ey[0]-rhoX0-rhoX1)
+                                    *grid.size_Ey[2]*rhoY0*2){
+                        printf("Hello : EyY0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+
+                    Ey_pml_y0[index_pml] = C_eye2[index]*Ey_pml_y0[index_pml]
+                        - C_eyh_2[index] * (Hz[index_2Plus]-Hz[index_2Moins]);
+                    Ey_pml_y0[index_pml+1] = C_eye[index]*Ey_pml_y0[index_pml+1]
+                        + C_eyh_1[index] * (Hx[index_1Plus]-Hx[index_1Moins]);
+                    Ey[index] = Ey_pml_y0[index_pml] + Ey_pml_y0[index_pml+1];
+                }
+            }
+        }
+    }
+
+    // face y1: ATTENTION DIFFERENT
+    if(rhoY1>0){
+        for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
+                    K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
+                    K++){
+            for(size_t J=0; J<rhoY1; J++){ 
+                for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                            I<size_x-1-rhoX0-rhoX1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX;
+                            I++){
+                    
+                    
+                    size_t II = I+rhoX0; 
+                    size_t JJ = J+size_y-rhoY1-1;
+                    index = II + size_x * ( JJ + size_y * K);
+
+                    index_1Plus = II 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (K ));
+                    index_1Moins = II 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (K-1 ));
+                    index_2Plus  = II
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (K ));
+                    index_2Moins = II-1 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (K ));
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
+
+                    if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyY1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyY1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyY1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyY1 index_2Plu out of bounds !!!");
+                        abort();
+                    }                 
+                    if(index_pml >= (grid.size_Ey[0]-rhoX0-rhoX1)
+                                    *grid.size_Ey[2]*rhoY1*2){
+                        printf("Hello : EyY1 index_pml out of bounds !!!");
+                        abort();
+                    }
+                    if(index_pml+1 >= (grid.size_Ey[0]-rhoX0-rhoX1)
+                                    *grid.size_Ey[2]*rhoY1*2){
+                        printf("Hello : EyY1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ey_pml_y1[index_pml] = C_eye2[index]*Ey_pml_y1[index_pml]
+                        - C_eyh_2[index] * (Hz[index_2Plus]-Hz[index_2Moins]);
+
+                    Ey_pml_y1[index_pml+1] = C_eye[index]*Ey_pml_y1[index_pml+1]
+                        + C_eyh_1[index] * (Hx[index_1Plus]-Hx[index_1Moins]);
+
+                    Ey[index] = Ey_pml_y1[index_pml] + Ey_pml_y1[index_pml+1];
+                    
+                }
+            }
+        }
+    }
+
+
+
+    // face z0:
+    if(rhoZ0>1){
+        for(size_t K=0; K<rhoZ0; K++){
+            for(size_t J=1 ; J<size_y-1-rhoY0-rhoY1; J++){ 
+                for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX;
+                            I<size_x-1-rhoX0-rhoX1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX; 
+                            I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    size_t KK = K+1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
+
+                    index = II + size_x * ( JJ+ + size_y * KK);
+                    
+                    index_1Plus = II 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (KK ));
+                    index_1Moins = II 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (KK-1 ));
+                    index_2Plus  = II
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (KK ));
+                    index_2Moins = II-1 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (KK));
+                                
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*K) ) *2;
+                    
+                    if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyZ0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyZ0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyZ0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyZ0 index_2Plu out of bounds !!!");
+                        abort();
+                    }                 
+                    if(index_pml >= (grid.size_Ey[0]-rhoX0-rhoX1)
+                                    *(grid.size_Ey[1]-rhoY0-rhoY1) *rhoZ0*2){
+                        printf("Hello : EyZ0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ey_pml_z0[index_pml] = C_eye2[index]*Ey_pml_z0[index_pml]
+                        - C_eyh_2[index] * (Hz[index_2Plus]-Hz[index_2Moins]);
+                    Ey_pml_z0[index_pml+1] = C_eye[index]*Ey_pml_z0[index_pml+1]
+                       + C_eyh_1[index] * (Hx[index_1Plus]-Hx[index_1Moins]);
+                    Ey[index] = Ey_pml_z0[index_pml] + Ey_pml_z0[index_pml+1];
+                }
+            }
+        }
+    }
+
+    // face z1:
+    if(rhoZ1>1){
+        for(size_t K=0; K<rhoZ1; K++){ 
+            for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
+                for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX;  
+                            I<size_x-1-rhoX0-rhoX1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX; 
+                            I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    size_t KK = K+size_z-rhoZ1-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ;
+                    index = II + size_x * ( JJ + size_y * KK);
+
+                    index_1Plus = II 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (KK ));
+                    index_1Moins = II 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (KK-1 ));
+                    index_2Plus  = II
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (KK ));
+                    index_2Moins = II-1 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (KK ));
+                                
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*K) )*2;
+                    
+                    if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyZ1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyZ1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EyZ1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
+                        printf("Hello : EyZ1 index_2Plu out of bounds !!!");
+                        abort();
+                    }                 
+                    if(index_pml >= (grid.size_Ey[0]-rhoX0-rhoX1)
+                                    *(grid.size_Ey[1]-rhoY0-rhoY1) *rhoZ1*2){
+                        printf("Hello : EyZ1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ey_pml_z1[index_pml] = C_eye2[index]*Ey_pml_z1[index_pml]
+                        - C_eyh_2[index] * (Hz[index_2Plus]-Hz[index_2Moins]);
+                    Ey_pml_z1[index_pml+1] = C_eye[index]*Ey_pml_z1[index_pml+1]
+                        + C_eyh_1[index] * (Hx[index_1Plus]-Hx[index_1Moins]);
+                    Ey[index] = Ey_pml_z1[index_pml] + Ey_pml_z1[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+
+
+    // ---- Ez ----
+    size_x = grid.size_Ez[0];
+    size_y = grid.size_Ez[1];
+    size_z = grid.size_Ez[2];
+
+    size_x_1 = grid.size_Hy[0];
+    size_y_1 = grid.size_Hy[1];
+
+    size_x_2 = grid.size_Hx[0];
+    size_y_2 = grid.size_Hx[1];
+
+    // face x0:
+    if(rhoX0>1){
+        for(size_t K = 1 ; K < size_z - 1; K++){
+            for(size_t  J = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY; 
+                        J < size_y - 1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
+                        J++){
+                for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX;
+                            I<1+rhoX0+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX;
+                            I++){ 
+
+                    index = I + size_x * ( J + size_y * K);
+
+                    index_1Plus = I 
+                                + size_x_1 * ( J 
+                                + size_y_1 * (K ));
+                    index_1Moins = I-1 
+                                + size_x_1 * ( J 
+                                + size_y_1 * (K ));
+                    index_2Plus  = I 
+                                + size_x_2 * ( J 
+                                + size_y_2 * (K));
+                    index_2Moins = I 
+                                + size_x_2 * ( J-1 
+                                + size_y_2 * (K ));
+
+                    index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2;
+
+                    if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzX0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzX0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzX0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzX0 index_2Plu out of bounds !!!");
+                        abort();
+                    }                 
+                    if(index_pml >= grid.size_Ez[1]*grid.size_Ez[2]*rhoX0*2){
+                        printf("Hello : EzX0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    // Ezx:
+                    Ez_pml_x0[index_pml] = C_eze[index]*Ez_pml_x0[index_pml]
+                        + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
+                    // Ezy:
+                    Ez_pml_x0[index_pml+1] = C_eze2[index]*Ez_pml_x0[index_pml+1]
+                        - C_ezh_2[index] * (Hx[index_2Plus]-Hx[index_2Moins]);
+                    // Ez:
+                    Ez[index] = Ez_pml_x0[index_pml] + Ez_pml_x0[index_pml+1];
+                }
+            }
+        }
+    }
+
+    // face x1:
+    if(rhoX1 > 1){
+        for(size_t K = 1 ; K < size_z - 1 ; K++){
+            for(size_t  J = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;  
+                        J < size_y - 1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY; J++){
+                for(size_t I = 0 ; I < rhoX1; I++){
+
+                    size_t II = (I+size_x-rhoX1-1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX);
+                    index = II + size_x * ( J + size_y * K);
+
+                    index_1Plus = II 
+                                + size_x_1 * ( J 
+                                + size_y_1 * (K ));
+                    index_1Moins = II-1 
+                                + size_x_1 * ( J 
+                                + size_y_1 * (K ));
+                    index_2Plus  = II 
+                                + size_x_2 * ( J 
+                                + size_y_2 * (K));
+                    index_2Moins = II 
+                                + size_x_2 * ( J-1 
+                                + size_y_2 * (K ));
+
+                    index_pml    = ((I-1) + rhoX1 * (J+ size_y*K)) *2;
+
+                    if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzX1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzX1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzX1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzX1 index_2Plu out of bounds !!!");
+                        abort();
+                    }                 
+                    if(index_pml >= grid.size_Ez[1]*grid.size_Ez[2]*rhoX1*2){
+                        printf("Hello : EzX1 index_pml out of bounds I = %zu rhoX1 = %u IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = %zu\n",
+                            I,rhoX1,IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX);
+                        abort();
+                    }
+
+                    Ez_pml_x1[index_pml] = C_eze[index]*Ez_pml_x1[index_pml]
+                        + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
+
+                    Ez_pml_x1[index_pml+1] = C_eze2[index]*Ez_pml_x1[index_pml+1]
+                        - C_ezh_2[index] * (Hx[index_2Plus]-Hx[index_2Moins]);
+
+                    Ez[index] = Ez_pml_x1[index_pml] + Ez_pml_x1[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    // face y0:
+    if(rhoY0>1){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=0; J<rhoY0; J++){
+                for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                            I<size_x-1-rhoX0-rhoX1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX; 
+                            I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+                    index = II + size_x * ( JJ + size_y * K);
+
+                    index_1Plus = II 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (K ));
+                    index_1Moins = II-1 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (K ));
+                    index_2Plus  = II 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (K));
+                    index_2Moins = II 
+                                + size_x_2 * ( JJ-1 
+                                + size_y_2 * (K ));
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY0*K)) *2;
+
+                    if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzY0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzY0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzY0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzY0 index_2Plu out of bounds !!!");
+                        abort();
+                    }                 
+                    if(index_pml >= (grid.size_Ez[0]-rhoX0-rhoX1)
+                                    *grid.size_Ez[2]*rhoY0*2){
+                        printf("Hello : EzY0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ez_pml_y0[index_pml] = C_eze[index]*Ez_pml_y0[index_pml]
+                        + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
+                    Ez_pml_y0[index_pml+1] = C_eze2[index]*Ez_pml_y0[index_pml+1]
+                        - C_ezh_2[index] * (Hx[index_2Plus]-Hx[index_2Moins]);
+                    Ez[index] = Ez_pml_y0[index_pml] + Ez_pml_y0[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    // face y1:
+    if(rhoY1>1){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=0; J<rhoY1; J++){
+                for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                            I<size_x-1-rhoX0-rhoX1; 
+                            I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+size_y-rhoY1-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
+                    index = II + size_x * ( JJ + size_y * K);
+
+                    index_1Plus = II 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (K ));
+                    index_1Moins = II-1 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (K ));
+                    index_2Plus  = II 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (K));
+                    index_2Moins = II 
+                                + size_x_2 * ( JJ-1 
+                                + size_y_2 * (K ));
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
+
+                    if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzY1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzY1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzY1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzY1 index_2Plu out of bounds !!!");
+                        abort();
+                    }                 
+                    if(index_pml >= (grid.size_Ez[0]-rhoX0-rhoX1)
+                                    *grid.size_Ez[2]*rhoY1*2){
+                        printf("Hello : EzY1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ez_pml_y1[index_pml] = C_eze[index]*Ez_pml_y1[index_pml]
+                        + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
+                    Ez_pml_y1[index_pml+1] = C_eze2[index]*Ez_pml_y1[index_pml+1]
+                        - C_ezh_2[index] * (Hx[index_2Plus]-Hx[index_2Moins]);
+                    Ez[index] = Ez_pml_y1[index_pml] + Ez_pml_y1[index_pml+1];
+                }
+            }
+        }
+    }
+
+    // face z0: ATTENTION DIFFERENT
+    if(rhoZ0>0){
+        for(size_t K=1; K<1+rhoZ0; K++){
+            for(size_t  J=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+                        J<size_y-1-rhoY0-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
+                        J++){
+                for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                            I<size_x-1-rhoX0-rhoX1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX; 
+                            I++){
+                    
+                    
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    index = II + size_x * ( JJ + size_y * K);
+                    
+                    index_1Plus = II 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (K ));
+                    index_1Moins = II-1 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (K ));
+                    index_2Plus  = II 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (K));
+                    index_2Moins = II 
+                                + size_x_2 * ( JJ-1 
+                                + size_y_2 * (K ));
+                                
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*(K-1)) )*2;
+                    
+                    if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzZ0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzZ0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzZ0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzZ0 index_2Plu out of bounds !!!");
+                        abort();
+                    }                 
+                    if(index_pml >= (grid.size_Ez[0]-rhoX0-rhoX1)
+                                    *(grid.size_Ez[1]-rhoY0-rhoY1) *rhoZ0*2){
+                        printf("Hello : EzZ0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ez_pml_z0[index_pml] = C_eze[index]*Ez_pml_z0[index_pml]
+                        + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
+                    Ez_pml_z0[index_pml+1] = C_eze2[index]*Ez_pml_z0[index_pml+1]
+                        - C_ezh_2[index] * (Hx[index_2Plus]-Hx[index_2Moins]);
+                    Ez[index] = Ez_pml_z0[index_pml] + Ez_pml_z0[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    // face z1: ATTENTION DIFFERENT
+    if(rhoZ1>0){
+        for(size_t K=0; K<rhoZ1; K++){
+            for(size_t  J=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+                        J<size_y-1-rhoY0-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY; 
+                        J++){
+                for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                            I<size_x-1-rhoX0-rhoX1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX; 
+                            I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = I+rhoY0;
+                    size_t KK = K+size_z-rhoZ1-1;
+                    index = II + size_x * ( JJ + size_y * KK);
+
+                    index_1Plus = II 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (KK ));
+                    index_1Moins = II-1 
+                                + size_x_1 * ( JJ 
+                                + size_y_1 * (KK ));
+                    index_2Plus  = II 
+                                + size_x_2 * ( JJ 
+                                + size_y_2 * (KK));
+                    index_2Moins = II 
+                                + size_x_2 * ( JJ-1 
+                                + size_y_2 * (KK ));
+                                
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*K) )*2;
+                    
+                    if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzZ1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzZ1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
+                        printf("Hello : EzZ1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
+                        printf("Hello : EzZ1 index_2Plu out of bounds !!!");
+                        abort();
+                    }                 
+                    if(index_pml >= (grid.size_Ez[0]-rhoX0-rhoX1)
+                                    *(grid.size_Ez[1]-rhoY0-rhoY1) *rhoZ1*2){
+                        printf("Hello : EzZ1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Ez_pml_z1[index_pml] = C_eze[index]*Ez_pml_z1[index_pml]
+                        + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
+                    Ez_pml_z1[index_pml+1] = C_eze2[index]*Ez_pml_z1[index_pml+1]
+                        - C_ezh_2[index] * (Hx[index_2Plus]-Hx[index_2Moins]);
+                    Ez[index] = Ez_pml_z1[index_pml] + Ez_pml_z1[index_pml+1];
+                }
+            }
+        }
+    }
+    
+
+    return;
+}
+
+
+void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
+            double *Hx, double *Hy, double *Hz,
+            double *Hx_pml_x0, double *Hx_pml_x1,
+            double *Hx_pml_y0, double *Hx_pml_y1, 
+            double *Hx_pml_z0, double *Hx_pml_z1,
+            double *Hy_pml_x0, double *Hy_pml_x1,
+            double *Hy_pml_y0, double *Hy_pml_y1,
+            double *Hy_pml_z0, double *Hy_pml_z1,
+            double *Hz_pml_x0, double *Hz_pml_x1,
+            double *Hz_pml_y0, double *Hz_pml_y1,
+            double *Hz_pml_z0, double *Hz_pml_z1,
+
+            double *Ex, double *Ey, double *Ez,
+
+            double *C_hxh, double *C_hxe_1, double *C_hxe_2, double *C_hxh2,
+            double *C_hyh, double *C_hye_1, double *C_hye_2, double *C_hyh2,
+            double *C_hzh, double *C_hze_1, double *C_hze_2, double *C_hzh2,
+            unsigned int rhoX0, unsigned int rhoX1,
+            unsigned int rhoY0, unsigned int rhoY1,
+            unsigned int rhoZ0, unsigned int rhoZ1
+            )
+{   
+    size_t size_x, size_y, size_z;
+    size_t size_x_1, size_y_1, size_x_2, size_y_2;
+    size_t index, index_1Plus, index_1Moins, index_2Plus, index_2Moins, index_pml;
+    
+    // ---- Hx ---- : 
+    size_x = grid.size_Hx[0];
+    size_y = grid.size_Hx[1];
+    size_z = grid.size_Hx[2];
+
+    size_x_1 = grid.size_Ey[0];
+    size_y_1 = grid.size_Ey[1];
+
+    size_x_2 = grid.size_Ez[0];
+    size_y_2 = grid.size_Ez[1];
+
+    // face x0:  ATTENTION DIFFERENT
+
+    if(rhoX0>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=1; J<size_y-1; J++){
+                for(size_t I=1; I<1+rhoX0; I++){
+
+                    index = I + size_x * ( J + size_y * K);
+
+                    index_1Plus  = I + size_x_1 * ( J     + size_y_1 * (K+1));
+                    index_1Moins = I + size_x_1 * ( J     + size_y_1 * K);
+                    index_2Plus  = I + size_x_2 * ( (J+1) + size_y_2 * K);
+                    index_2Moins = I + size_x_2 * ( J     + size_y_2 * K);
+
+                    index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2; 
+                    // "-1" because no communication case 
+
+                    if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxX0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxX0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxX0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxX0 index_2Plus out of bounds !!!");
+                        abort();
+                    }                
+                    if(index_pml >= grid.size_Hx[1]*grid.size_Hx[2]*rhoX0*2){
+                        printf("Hello : HxX0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    // Hxy:
+                    Hx_pml_x0[index_pml] = C_hxh2[index]*Hx_pml_x0[index_pml]
+                        - C_hxe_2[index] * (Ez[index_2Plus]-Ez[index_2Moins]);
+                    //Hxz:
+                    Hx_pml_x0[index_pml+1] = C_hxh[index]*Hx_pml_x0[index_pml+1]
+                        + C_hxe_1[index] * (Ey[index_1Plus]-Ey[index_1Moins]);
+                    // Hx:
+                    Hx[index] = Hx_pml_x0[index_pml] + Hx_pml_x0[index_pml+1];
+
+                    // if( Hx[index] > 0.000000001){
+                    //     printf("Hello : size_x = %zu, size_y = %zu, size_z = %zu \n", size_x, size_y, size_z);
+                    //     printf("Hello : HX_pml1 = %lf , Hx_pml2 = %lf, Ey[index_1Plus] = %lf, Ey[index_1Moins] = %lf, Ez[index_2Plus] = %lf , Ez[index_2Moins] = %lf \n ",
+                    //     Hx_pml_x0[index_pml],  Hx_pml_x0[index_pml+1], Ey[index_1Plus], Ey[index_1Moins], Ez[index_2Plus], Ez[index_2Moins]);
+                    //     printf("Hello : I = %zu, J = %zu, K = %zu \n ",I, J, K);
+                    //     abort();
+                    // }
+                    
+                }
+            }
+        }
+    }
+        
+
+    // face x1:  ATTENTION DIFFERENT
+    if(rhoX1>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=1; J<size_y-1; J++){
+                for(size_t I=0; I<rhoX1; I++){ 
+
+                    size_t II = (I+size_x-rhoX1-1);
+                    index = II + size_x * ( J + size_y * K);
+                        // printf("Hello : K = %zu, J = %zu, I = %zu \n", K, J, I);
+                        // printf("Hello : II = %zu \n", II);
+
+                    index_1Plus  = II + size_x_1 * ( J     + size_y_1 * (K+1));
+                    index_1Moins = II + size_x_1 * ( J     + size_y_1 * K);
+                    index_2Plus  = II + size_x_2 * ( (J+1) + size_y_2 * K);
+                    index_2Moins = II + size_x_2 * ( J     + size_y_2 * K);
+
+                    index_pml    = (I + rhoX1 * (J+ size_y*K)) *2;
+                    // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxX1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxX1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxX1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxX1 index_2Plus out of bounds !!!");
+                        abort();
+                    }                
+                    if(index_pml >= grid.size_Hx[1]*grid.size_Hx[2]*rhoX1*2){
+                        printf("Hello : HxX1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                
+                    Hx_pml_x1[index_pml] = C_hxh2[index]*Hx_pml_x1[index_pml]
+                        - C_hxe_2[index] * (Ez[index_2Plus]-Ez[index_2Moins]);
+
+                    Hx_pml_x1[index_pml+1] = C_hxh[index]*Hx_pml_x1[index_pml+1]
+                        + C_hxe_1[index] * (Ey[index_1Plus]-Ey[index_1Moins]);
+
+                    Hx[index] = Hx_pml_x1[index_pml] + Hx_pml_x1[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    // face y0:
+    if(rhoY0>0){
+        for(size_t K = 1 ; K < size_z - 1 ; K++){
+            for(size_t J = 1 ; J < 1 + rhoY0; J++){
+                for(size_t I = 1 ; I < size_x - 1 - rhoX0 - rhoX1 ; I++){
+                    
+                    size_t II = (I+rhoX0);
+                    index = II + size_x * ( J + size_y * K);
+                        
+                    index_1Plus  = II + size_x_1 * ( J     + size_y_1 * (K+1));
+                    index_1Moins = II + size_x_1 * ( J     + size_y_1 * K);
+                    index_2Plus  = II + size_x_2 * ( (J+1) + size_y_2 * K);
+                    index_2Moins = II + size_x_2 * ( J     + size_y_2 * K);
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * ((J-1)+ rhoY0*K)) *2;
+                    // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxY0 index_1Plus out of bounds (I,J,K)=(%zu,%zu,%zu)!!!",I,J,K);
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxY0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxY0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxY0 index_2Plus out of bounds !!!");
+                        abort();
+                    }                
+                    if(index_pml >= (grid.size_Hx[0]-rhoX0-rhoX1)
+                                    *grid.size_Hx[2]*rhoY0*2){
+                        printf("Hello : HxY0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                
+                    Hx_pml_y0[index_pml] = C_hxh2[index]*Hx_pml_y0[index_pml]
+                        - C_hxe_2[index] * (Ez[index_2Plus]-Ez[index_2Moins]);
+
+                    Hx_pml_y0[index_pml+1] = C_hxh[index]*Hx_pml_y0[index_pml+1]
+                        + C_hxe_1[index] * (Ey[index_1Plus]-Ey[index_1Moins]);
+
+                    Hx[index] = Hx_pml_y0[index_pml] + Hx_pml_y0[index_pml+1];
+
+                }
+            }
+        }
+    }
+
+    // face y1:
+    if(rhoY1>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=0; J<rhoY1; J++){ // We consider here J = 1 with J'=size_y-1-rhoY1 
+                                            // such as J'-size_y-1+rhoY1+2=1=J  then J'=J+size_y-rhoY1+2
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+size_y-rhoY1-1;
+                    index = II + size_x * ( JJ + size_y * K);
+                    
+                    index_1Plus  = II + size_x_1 * ( JJ     + size_y_1 * (K+1));
+                    index_1Moins = II + size_x_1 * ( JJ     + size_y_1 * K);
+                    index_2Plus  = II + size_x_2 * ( (JJ+1) + size_y_2 * K);
+                    index_2Moins = II + size_x_2 * ( JJ     + size_y_2 * K);
+
+                    index_pml = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
+                    // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxY1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxY1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxY1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxY1 index_2Plus out of bounds !!!");
+                        abort();
+                    }                
+                    if(index_pml >= (grid.size_Hx[0]-rhoX0-rhoX1)
+                                    *grid.size_Hx[2]*rhoY1*2){
+                        printf("Hello : HxY1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    
+                    Hx_pml_y1[index_pml] = C_hxh2[index]*Hx_pml_y1[index_pml]
+                        - C_hxe_2[index] * (Ez[index_2Plus]-Ez[index_2Moins]);
+
+                    Hx_pml_y1[index_pml+1] = C_hxh[index]*Hx_pml_y1[index_pml+1]
+                        + C_hxe_1[index] * (Ey[index_1Plus]-Ey[index_1Moins]);
+                    
+                    Hx[index] = Hx_pml_y1[index_pml] + Hx_pml_y1[index_pml+1];
+
+                }
+            }
+        }
+    }
+
+    // face z0:
+    if(rhoZ0>0){
+        for(size_t K=1; K<1+rhoZ0; K++){
+            for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    index = II + size_x * ( JJ + size_y * K);
+                    
+                    index_1Plus  = II + size_x_1 * ( JJ     + size_y_1 * (K+1));
+                    index_1Moins = II + size_x_1 * ( JJ     + size_y_1 * K);
+                    index_2Plus  = II + size_x_2 * ( (JJ+1) + size_y_2 * K);
+                    index_2Moins = II + size_x_2 * ( JJ     + size_y_2 * K);
+
+                    index_pml = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*(K-1))) *2;
+                        
+                    if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxZ0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxZ0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxZ0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxZ0 index_2Plus out of bounds !!!");
+                        abort();
+                    }                
+                    if(index_pml >= ((grid.size_Hx[0]-rhoX0-rhoX1)
+                                    *(grid.size_Hx[1]-rhoY0-rhoY1) *rhoZ0*2) ) {
+                        printf("Hello : HxY1 index_pml out of bounds !!!");
+                        abort();
+                    }
+                    
+
+                    Hx_pml_z0[index_pml] = C_hxh2[index]*Hx_pml_z0[index_pml]
+                        - C_hxe_2[index] * (Ez[index_2Plus]-Ez[index_2Moins]);
+                    
+                    Hx_pml_z0[index_pml+1] = C_hxh[index]*Hx_pml_z0[index_pml+1]
+                        + C_hxe_1[index] * (Ey[index_1Plus]-Ey[index_1Moins]);
+
+                    Hx[index] = Hx_pml_z0[index_pml] + Hx_pml_z0[index_pml+1];
+                }
+            }
+        }
+    }
+
+    // face z1:
+    if(rhoZ1>0){
+        for(size_t K=0; K<rhoZ1; K++){
+            for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    size_t KK = K+size_z-rhoZ1-1;
+                    index = II + size_x * ( JJ + size_y * KK);
+                    
+                    index_1Plus  = II + size_x_1 * ( JJ     + size_y_1 * (KK+1));
+                    index_1Moins = II + size_x_1 * ( JJ     + size_y_1 * KK);
+                    index_2Plus  = II + size_x_2 * ( (JJ+1) + size_y_2 * KK);
+                    index_2Moins = II + size_x_2 * ( JJ     + size_y_2 * KK);
+
+                    index_pml = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*K)) *2;
+                    
+                    if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxZ1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxZ1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HxZ1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HxZ1 index_2Plus out of bounds !!!");
+                        abort();
+                    }                
+                    if(index_pml >= (grid.size_Hx[0]-rhoX0-rhoX1)
+                                    *(grid.size_Hx[1]-rhoY0-rhoY1) *rhoZ1*2) {
+                        printf("Hello : HxZ1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Hx_pml_z1[index_pml] = C_hxh2[index]*Hx_pml_z1[index_pml]
+                        - C_hxe_2[index] * (Ez[index_2Plus]-Ez[index_2Moins]);
+
+                    Hx_pml_z1[index_pml+1] = C_hxh[index]*Hx_pml_z1[index_pml+1]
+                        + C_hxe_1[index] * (Ey[index_1Plus]-Ey[index_1Moins]);
+
+                    Hx[index] = Hx_pml_z1[index_pml] + Hx_pml_z1[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    // ---- Hy ----
+    size_x = grid.size_Hy[0];
+    size_y = grid.size_Hy[1];
+    size_z = grid.size_Hy[2];
+
+    size_x_1 = grid.size_Ez[0];
+    size_y_1 = grid.size_Ez[1];
+
+    size_x_2 = grid.size_Ex[0];
+    size_y_2 = grid.size_Ex[1];
+
+    // face x0:
+    if(rhoX0>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=1; J<size_y-1; J++){
+                for(size_t I=1; I<1+rhoX0; I++){
+                    index = I + size_x * ( J + size_y * K);
+
+                    index_1Plus  = I+1 + size_x_1 * ( J  + size_y_1 * K);
+                    index_1Moins = I   + size_x_1 * ( J  + size_y_1 * K);
+                    index_2Plus  = I   + size_x_2 * ( J  + size_y_2 * (K+1));
+                    index_2Moins = I   + size_x_2 * ( J  + size_y_2 * K);
+
+                    index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2;
+                    // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyX0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyX0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyX0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyX0 index_2Plus out of bounds !!!");
+                        abort();
+                    }                
+                    if(index_pml >= grid.size_Hy[1]*grid.size_Hy[2]*rhoX0*2) {
+                        printf("Hello : HyX0 index_pml out of bounds !!!");
+                        abort();
+                    }
+    ////            // Hyx:
+                    Hy_pml_x0[index_pml] = C_hyh[index]*Hy_pml_x0[index_pml]
+                        + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
+                    // Hyz:
+                    Hy_pml_x0[index_pml+1] = C_hyh2[index]*Hy_pml_x0[index_pml+1]
+                        - C_hye_2[index] * (Ex[index_2Plus]-Ex[index_2Moins]);
+                    // Hy:
+                    Hy[index] = Hy_pml_x0[index_pml] + Hy_pml_x0[index_pml+1];
+
+                    // if( Hy[index] > 0.000000001){
+                    //     printf("Hello : size_x = %zu, size_y = %zu, size_z = %zu \n", size_x, size_y, size_z);
+                    //     printf("Hello : Hy_pml1 = %lf , Hy_pml2 = %lf, Ez[index_1Plus] = %lf, Ez[index_1Moins] = %lf, Ex[index_2Plus] = %lf , Ex[index_2Moins] = %lf \n ",
+                    //     Hy_pml_x0[index_pml],  Hy_pml_x0[index_pml+1], Ez[index_1Plus], Ez[index_1Moins], Ex[index_2Plus], Ex[index_2Moins]);
+                    //     printf("Hello : I = %zu, J = %zu, K = %zu \n ",I, J, K);
+                    //     abort();
+                    // }
+                }
+            }
+        }
+    }
+
+    // face x1:
+    if(rhoX1>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=1; J<size_y-1; J++){
+                for(size_t I=0; I<rhoX1; I++){
+
+                    size_t II = I+size_x-rhoX1-1;
+                    index = II + size_x * ( J + size_y * K);
+                    
+
+                    index_1Plus  = (II+1) + size_x_1 * ( J  + size_y_1 * K);
+                    index_1Moins = II   + size_x_1 * ( J  + size_y_1 * K);
+                    index_2Plus  = II   + size_x_2 * ( J  + size_y_2 * (K+1));
+                    index_2Moins = II   + size_x_2 * ( J  + size_y_2 * K);
+
+                    index_pml    = (I + rhoX1 * (J+ size_y*K)) *2;
+                    // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyX1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyX1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyX1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyX1 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= grid.size_Hy[1]*grid.size_Hy[2]*rhoX1*2) {
+                        printf("Hello : HyX1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Hy_pml_x1[index_pml] = C_hyh[index]*Hy_pml_x1[index_pml]
+                        + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
+                    Hy_pml_x1[index_pml+1] = C_hyh2[index]*Hy_pml_x1[index_pml+1]
+                        - C_hye_2[index] * (Ex[index_2Plus]-Ex[index_2Moins]);
+                    Hy[index] = Hy_pml_x1[index_pml] + Hy_pml_x1[index_pml+1];
+                }
+            }
+        }
+    }
+
+    // face y0: ATTENTION DIFFERENT
+    if(rhoY0>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=1; J<1+rhoY0; J++){
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+
+                    size_t II = I+rhoX0;
+                    index = II + size_x * ( J + size_y * K);
+                    
+                    index_1Plus  = II+1 + size_x_1 * ( J  + size_y_1 * K);
+                    index_1Moins = II   + size_x_1 * ( J  + size_y_1 * K);
+                    index_2Plus  = II   + size_x_2 * ( J  + size_y_2 * (K+1));
+                    index_2Moins = II   + size_x_2 * ( J  + size_y_2 * K);
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * ((J-1)+ rhoY0*K)) *2;
+                    // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyY0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyY0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyY0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyY0 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= (grid.size_Hy[0]-rhoX0-rhoX1)
+                                    *grid.size_Hy[2]*rhoY0*2) {
+                        printf("Hello : HyY0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Hy_pml_y0[index_pml] = C_hyh[index]*Hy_pml_y0[index_pml]
+                        + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
+                    Hy_pml_y0[index_pml+1] = C_hyh2[index]*Hy_pml_y0[index_pml+1]
+                        - C_hye_2[index] * (Ex[index_2Plus]-Ex[index_2Moins]);
+                    Hy[index] = Hy_pml_y0[index_pml] + Hy_pml_y0[index_pml+1];
+                }
+            }
+        }
+    }
+
+    // face y1: ATTENTION DIFFERENT
+    if(rhoY1>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=0; J<rhoY1; J++){ // We consider here J = 1 with J'=size_y-1-rhoY1 
+                                            // such as J'-size_y-1+rhoY1+2=1=J  then J'=J+size_y-rhoY1+2
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+size_y-rhoY1-1;
+                    index = II + size_x * ( JJ + size_y * K);
+                    
+                    index_1Plus  = (II+1) + size_x_1 * ( JJ  + size_y_1 * K);
+                    index_1Moins = II   + size_x_1 * ( JJ  + size_y_1 * K);
+                    index_2Plus  = II   + size_x_2 * ( JJ  + size_y_2 * (K+1));
+                    index_2Moins = II   + size_x_2 * ( JJ  + size_y_2 * K);
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
+                    // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyY1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyY1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyY1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyY1 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= (grid.size_Hy[0]-rhoX0-rhoX1)
+                                    *grid.size_Hy[2]*rhoY1*2) {
+                        printf("Hello : HyY1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Hy_pml_y1[index_pml] = C_hyh[index]*Hy_pml_y1[index_pml]
+                        + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
+
+                    Hy_pml_y1[index_pml+1] = C_hyh2[index]*Hy_pml_y1[index_pml+1]
+                        - C_hye_2[index] * (Ex[index_2Plus]-Ex[index_2Moins]);
+
+                    Hy[index] = Hy_pml_y1[index_pml] + Hy_pml_y1[index_pml+1];
+
+                    // if( Hy[index] !=0){
+                    //     printf("Hello : size_x = %zu, size_y = %zu, size_z = %zu \n", size_x, size_y, size_z);
+                    //     printf("Hello : Hy_pml1 = %.40g , Hy_pml2 = %.40g , Ez[index_1Plus] = %.40g , Ez[index_1Moins] = %.40g , Ex[index_2Plus] = %.40g , Ex[index_2Moins] = %.40g  \n ",
+                    //     Hy_pml_y1[index_pml],  Hy_pml_y1[index_pml+1], Ez[index_1Plus], Ez[index_1Moins], Ex[index_2Plus], Ex[index_2Moins]);
+                    //     printf("Hello : I = %zu, J = %zu, K = %zu \n ",I, J, K);
+                    //     printf("Hello : II = %zu, JJ = %zu \n", II, JJ);
+                    //     abort();
+                    // }
+                }
+            }
+        }
+    }
+        
+
+    // face z0:
+    if(rhoZ0>0){
+        for(size_t K=1; K<1+rhoZ0; K++){
+            for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    index = II + size_x * ( JJ + size_y * K);
+
+                    index_1Plus  = II+1 + size_x_1 * ( JJ  + size_y_1 * K);
+                    index_1Moins = II   + size_x_1 * ( JJ  + size_y_1 * K);
+                    index_2Plus  = II   + size_x_2 * ( JJ  + size_y_2 * (K+1));
+                    index_2Moins = II   + size_x_2 * ( JJ  + size_y_2 * K);
+                            
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*(K-1))) *2;
+                                // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyZ0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyZ0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyZ0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyZ0 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= (grid.size_Hy[0]-rhoX0-rhoX1)
+                                    *(grid.size_Hy[1]-rhoY0-rhoY1) *rhoZ0*2) {
+                        printf("Hello : HyZ0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Hy_pml_z0[index_pml] = C_hyh[index]*Hy_pml_z0[index_pml]
+                        + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
+                    Hy_pml_z0[index_pml+1] = C_hyh2[index]*Hy_pml_z0[index_pml+1]
+                        - C_hye_2[index] * (Ex[index_2Plus]-Ex[index_2Moins]);
+                    Hy[index] = Hy_pml_z0[index_pml] + Hy_pml_z0[index_pml+1];
+                }
+            }
+        }
+    }
+
+    // face z1:
+    if(rhoZ1>0){
+        for(size_t K=0; K<rhoZ1; K++){
+            for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    size_t KK = K+size_z-rhoZ1-1;
+                    index = II + size_x * ( JJ + size_y * KK );
+                    
+                    index_1Plus  = II+1 + size_x_1 * ( JJ  + size_y_1 * KK);
+                    index_1Moins = II   + size_x_1 * ( JJ  + size_y_1 * KK);
+                    index_2Plus  = II   + size_x_2 * ( JJ  + size_y_2 * (KK+1));
+                    index_2Moins = II   + size_x_2 * ( JJ  + size_y_2 * KK);
+                                
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*K)) *2;
+                                // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyZ1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyZ1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
+                        printf("Hello : HyZ1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HyZ1 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= (grid.size_Hy[0]-rhoX0-rhoX1)
+                                    *(grid.size_Hy[1]-rhoY0-rhoY1) *rhoZ1*2) {
+                        printf("Hello : HyZ1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Hy_pml_z1[index_pml] = C_hyh[index]*Hy_pml_z1[index_pml]
+                        + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
+                    Hy_pml_z1[index_pml+1] = C_hyh2[index]*Hy_pml_z1[index_pml+1]
+                        - C_hye_2[index] * (Ex[index_2Plus]-Ex[index_2Moins]);
+                    Hy[index] = Hy_pml_z1[index_pml] + Hy_pml_z1[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    // ---- Hz ----
+    size_x = grid.size_Hz[0];
+    size_y = grid.size_Hz[1];
+    size_z = grid.size_Hz[2];
+
+    size_x_1 = grid.size_Ex[0];
+    size_y_1 = grid.size_Ex[1];
+
+    size_x_2 = grid.size_Ey[0];
+    size_y_2 = grid.size_Ey[1];
+
+    // face x0:
+    if(rhoX0>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=1; J<size_y-1; J++){
+                for(size_t I=1; I<1+rhoX0; I++){
+                    index = I + size_x * ( J + size_y * K);
+
+                    index_1Plus  = I   + size_x_1 * ( (J+1) + size_y_1 * K);
+                    index_1Moins = I   + size_x_1 * ( J     + size_y_1 * K);
+                    index_2Plus  = I+1 + size_x_2 * ( J     + size_y_2 * K);
+                    index_2Moins = I   + size_x_2 * ( J     + size_y_2 * K);
+
+                    index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2;
+                    // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzX0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzX0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzX0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzX0 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= grid.size_Hz[1]*grid.size_Hz[2]*rhoX0*2){
+                        printf("Hello : HzX0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    // Hzx:
+                    Hz_pml_x0[index_pml] = C_hzh2[index]*Hz_pml_x0[index_pml]
+                        - C_hze_2[index] * (Ey[index_2Plus]-Ey[index_2Moins]);
+                    // Hzy:
+                    Hz_pml_x0[index_pml+1] = C_hzh[index]*Hz_pml_x0[index_pml+1]
+                        + C_hze_1[index] * (Ex[index_1Plus]-Ex[index_1Moins]);
+                    // Hz:
+                    Hz[index] = Hz_pml_x0[index_pml] + Hz_pml_x0[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    // face x1:
+    if(rhoX1>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=1; J<size_y-1; J++){
+                for(size_t I=0; I<rhoX1; I++){ 
+                    
+
+                    size_t II = I+size_x-rhoX1-1;
+                    index = II + size_x * ( J + size_y * K);
+
+                    index_1Plus  = II   + size_x_1 * ( (J+1) + size_y_1 * K);
+                    index_1Moins = II   + size_x_1 * ( J     + size_y_1 * K);
+                    index_2Plus  = II+1 + size_x_2 * ( J     + size_y_2 * K);
+                    index_2Moins = II   + size_x_2 * ( J     + size_y_2 * K);
+
+                    index_pml    = (I + rhoX1 * (J+ size_y*K)) *2;
+                    // "-1" because no communication case
+
+                    if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzX1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzX1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzX1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzX1 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= grid.size_Hz[1]*grid.size_Hz[2]*rhoX1*2){
+                        printf("Hello : HzX1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Hz_pml_x1[index_pml] = C_hzh2[index]*Hz_pml_x1[index_pml]
+                        - C_hze_2[index] * (Ey[index_2Plus]-Ey[index_2Moins]);
+
+                    Hz_pml_x1[index_pml+1] = C_hzh[index]*Hz_pml_x1[index_pml+1]
+                        + C_hze_1[index] * (Ex[index_1Plus]-Ex[index_1Moins]);
+
+                    Hz[index] = Hz_pml_x1[index_pml] + Hz_pml_x1[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    // face y0:
+
+    printf("\n \t Hello : rhoY0 PML %zu \n", rhoY0);
+    if(rhoY0>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=1; J<1+rhoY0; J++){
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    index = II + size_x * ( J + size_y * K);
+                    
+                    index_1Plus  = II   + size_x_1 * ( (J+1) + size_y_1 * K);
+                    index_1Moins = II   + size_x_1 * ( J     + size_y_1 * K);
+                    index_2Plus  = II+1 + size_x_2 * ( J     + size_y_2 * K);
+                    index_2Moins = II   + size_x_2 * ( J     + size_y_2 * K);
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * ((J-1)+ rhoY0*K)) *2;
+
+                    if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzY0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzY0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzY0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzY0 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= (grid.size_Hz[0]-rhoX0-rhoX1)
+                                    *grid.size_Hz[2]*rhoY0*2){
+                        printf("Hello : HzY0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+
+                    Hz_pml_y0[index_pml] = C_hzh2[index]*Hz_pml_y0[index_pml]
+                        - C_hze_2[index] * (Ey[index_2Plus]-Ey[index_2Moins]);
+
+                    Hz_pml_y0[index_pml+1] = C_hzh[index]*Hz_pml_y0[index_pml+1]
+                        + C_hze_1[index] * (Ex[index_1Plus]-Ex[index_1Moins]);
+
+                    Hz[index] = Hz_pml_y0[index_pml] + Hz_pml_y0[index_pml+1];
+
+                    if(K==1 && I==1){
+                        index = II + size_x * ( J+1 + size_y * K);
+                        printf("Hello: Hx pml -> J = %zu : ------ >  C_hzh = %lf, C_hzh2 = %lf \n ", J, C_hzh[index+1], C_hzh2[index+1]);
+                    }
+                }
+            }
+        }
+    }
+
+    
+
+    // face y1:
+    if(rhoY1>0){
+        for(size_t K=1; K<size_z-1; K++){
+            for(size_t J=0; J<rhoY1; J++){ 
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+size_y-rhoY1-1;
+                    index = II + size_x * ( JJ + size_y * K);
+                    
+                    index_1Plus  = II   + size_x_1 * ( (JJ+1) + size_y_1 * K);
+                    index_1Moins = II   + size_x_1 * ( JJ     + size_y_1 * K);
+                    index_2Plus  = II+1 + size_x_2 * ( JJ     + size_y_2 * K);
+                    index_2Moins = II   + size_x_2 * ( JJ     + size_y_2 * K);
+
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
+
+                    if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzY1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzY1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzY1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzY1 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= (grid.size_Hz[0]-rhoX0-rhoX1)
+                                    *grid.size_Hz[2]*rhoY1*2){
+                        printf("Hello : HzY1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Hz_pml_y1[index_pml] = C_hzh2[index]*Hz_pml_y1[index_pml]
+                        - C_hze_2[index] * (Ey[index_2Plus]-Ey[index_2Moins]);
+
+                    Hz_pml_y1[index_pml+1] = C_hzh[index]*Hz_pml_y1[index_pml+1]
+                        + C_hze_1[index] * (Ex[index_1Plus]-Ex[index_1Moins]);
+
+                    Hz[index] = Hz_pml_y1[index_pml] + Hz_pml_y1[index_pml+1];
+
+                    // if( Hz[index] !=0){
+                    //     printf("Hello : size_x = %zu, size_y = %zu, size_z = %zu \n", size_x, size_y, size_z);
+                    //     printf("Hello : Hz_pml1 = %.40g , Hz_pml2 = %.40g , Ex[index_1Plus] = %.40g , Ex[index_1Moins] = %.40g , Ey[index_2Plus] = %.40g , Ey[index_2Moins] = %.40g  \n ",
+                    //     Hz_pml_y1[index_pml],  Hz_pml_y1[index_pml+1], Ex[index_1Plus], Ex[index_1Moins], Ey[index_2Plus], Ey[index_2Moins]);
+                    //     printf("Hello : I = %zu, J = %zu, K = %zu \n ",I, J, K);
+                    //     printf("Hello : II = %zu, JJ = %zu \n", II, JJ);
+                    //     abort();
+                    // }
+                
+                }
+            }
+        }
+    }
+    printf("sizeX = %zu, sizeY = %zu, sizeZ = %zu \n",size_x, size_y, size_z);
+
+    // face z0: ATTENTION DIFFERENT
+    if(rhoZ0>0){
+        for(size_t K=1; K<1+rhoZ0; K++){
+            for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    index = II + size_x * ( JJ + size_y * K);
+
+                    index_1Plus  = II   + size_x_1 * ( (JJ+1) + size_y_1 * K);
+                    index_1Moins = II   + size_x_1 * ( JJ     + size_y_1 * K);
+                    index_2Plus  = II+1 + size_x_2 * ( JJ     + size_y_2 * K);
+                    index_2Moins = II   + size_x_2 * ( JJ     + size_y_2 * K);
+        
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*(K-1))) *2;
+                    
+                    if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzZ0 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzZ0 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzZ0 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzZ0 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= (grid.size_Hz[0]-rhoX0-rhoX1)
+                                    *(grid.size_Hz[1]-rhoY0-rhoY1) *rhoZ0*2){
+                        printf("Hello : HzZ0 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Hz_pml_z0[index_pml] = C_hzh2[index]*Hz_pml_z0[index_pml]
+                        - C_hze_2[index] * (Ey[index_2Plus]-Ey[index_2Moins]);
+                    Hz_pml_z0[index_pml+1] = C_hzh[index]*Hz_pml_z0[index_pml+1]
+                        + C_hze_1[index] * (Ex[index_1Plus]-Ex[index_1Moins]);
+                    Hz[index] = Hz_pml_z0[index_pml] + Hz_pml_z0[index_pml+1];
+                }
+            }
+        }
+    }
+
+    // face z1: ATTENTION DIFFERENT
+    if(rhoZ1>0){
+        for(size_t K=0; K<rhoZ1; K++){
+            for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
+                for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
+                    
+
+                    size_t II = I+rhoX0;
+                    size_t JJ = J+rhoY0;
+                    size_t KK =K+size_z-rhoZ1-1;
+                    index = II + size_x * ( JJ + size_y * KK);
+                    
+                    index_1Plus  = II   + size_x_1 * ( (JJ+1) + size_y_1 * KK);
+                    index_1Moins = II   + size_x_1 * ( JJ     + size_y_1 * KK);
+                    index_2Plus  = II+1 + size_x_2 * ( JJ     + size_y_2 * KK);
+                    index_2Moins = II   + size_x_2 * ( JJ     + size_y_2 * KK);
+                                
+                    index_pml    = (I + (size_x-rhoX0-rhoX1)
+                                * (J+ (size_y-rhoY0-rhoY1)*K)) *2;
+                    
+                    if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzZ1 index_1Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzZ1 index_2Plus out of bounds !!!");
+                        abort();
+                    }
+                    if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
+                        printf("Hello : HzZ1 index_1Moins out of bounds !!!");
+                        abort();
+                    }
+                    if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
+                        printf("Hello : HzZ1 index_2Plus out of bounds !!!");
+                        abort();
+                    }               
+                    if(index_pml >= (grid.size_Hz[0]-rhoX0-rhoX1)
+                                    *(grid.size_Hz[1]-rhoY0-rhoY1) *rhoZ1*2){
+                        printf("Hello : HzZ1 index_pml out of bounds !!!");
+                        abort();
+                    }
+
+                    Hz_pml_z1[index_pml] = C_hzh2[index]*Hz_pml_z1[index_pml]
+                        - C_hze_2[index] * (Ey[index_2Plus]-Ey[index_2Moins]);
+
+                    Hz_pml_z1[index_pml+1] = C_hzh[index]*Hz_pml_z1[index_pml+1]
+                        + C_hze_1[index] * (Ex[index_1Plus]-Ex[index_1Moins]);
+
+                    Hz[index] = Hz_pml_z1[index_pml] + Hz_pml_z1[index_pml+1];
+                }
+            }
+        }
+    }
+
+
+    return;
 }

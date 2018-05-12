@@ -164,6 +164,53 @@ class AlgoElectro_NEW{
             double *E_y_tmp,
             double *E_z_tmp
         );
+        
+        void pmlE( GridCreator_NEW &grid,
+            double *Ex, double *Ey, double *Ez,
+            double *Ex_pml_x0, double *Ex_pml_x1,
+            double *Ex_pml_y0, double *Ex_pml_y1, 
+            double *Ex_pml_z0, double *Ex_pml_z1,
+            double *Ey_pml_x0, double *Ey_pml_x1,
+            double *Ey_pml_y0, double *Ey_pml_y1,
+            double *Ey_pml_z0, double *Ey_pml_z1,
+            double *Ez_pml_x0, double *Ez_pml_x1, 
+            double *Ez_pml_y0, double *Ez_pml_y1,
+            double *Ez_pml_z0, double *Ez_pml_z1,
+
+            double *Hx, double *Hy, double *Hz,
+            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ, size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ,
+            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY, size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
+            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX, size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
+            
+            double *C_exe, double *C_exh_1, double *C_exh_2, double *C_exe2,
+            double *C_eye, double *C_eyh_1, double *C_eyh_2, double *C_eye2,
+            double *C_eze, double *C_ezh_1, double *C_ezh_2, double *C_eze2,
+            unsigned int rhoX0, unsigned int rhoX1,
+            unsigned int rhoY0, unsigned int rhoY1,
+            unsigned int rhoZ0, unsigned int rhoZ1
+            );
+            
+        void pmlH(  GridCreator_NEW &grid,
+            double *Hx, double *Hy, double *Hz,
+            double *Hx_pml_x0, double *Hx_pml_x1,
+            double *Hx_pml_y0, double *Hx_pml_y1, 
+            double *Hx_pml_z0, double *Hx_pml_z1,
+            double *Hy_pml_x0, double *Hy_pml_x1,
+            double *Hy_pml_y0, double *Hy_pml_y1,
+            double *Hy_pml_z0, double *Hy_pml_z1,
+            double *Hz_pml_x0, double *Hz_pml_x1,
+            double *Hz_pml_y0, double *Hz_pml_y1,
+            double *Hz_pml_z0, double *Hz_pml_z1,
+
+            double *Ex, double *Ey, double *Ez,
+
+            double *C_hxh, double *C_hxe_1, double *C_hxe_2, double *C_hxh2,
+            double *C_hyh, double *C_hye_1, double *C_hye_2, double *C_hyh2,
+            double *C_hzh, double *C_hze_1, double *C_hze_2, double *C_hzh2,
+            unsigned int rhoX0, unsigned int rhoX1,
+            unsigned int rhoY0, unsigned int rhoY1,
+            unsigned int rhoZ0, unsigned int rhoZ1
+            );
 
 };
 
