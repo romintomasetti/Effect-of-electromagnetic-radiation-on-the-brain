@@ -65,6 +65,9 @@ using namespace std;
 
 void check_input_file_name_given(int argc, char *argv[],map<std::string,std::string> &inputs);	
 
+
+
+
 int main(int argc, char *argv[]){
     
     // Set verbosity of the program:	
@@ -162,7 +165,9 @@ int main(int argc, char *argv[]){
     //MPI_Barrier(MPI_COMM_WORLD);
     //DISPLAY_ERROR_ABORT("Abort dans le main, pas de souci !");
 
-	
+	// MPI_Barrier(MPI_COMM_WORLD);
+	// abort();
+
 	AlgoElectro_NEW algoElectro_newTst(VERBOSITY);
 
 	// printf("SUCCESS Coucou1\n");
@@ -176,17 +181,25 @@ int main(int argc, char *argv[]){
 	// printf("SUCCESS Coucou3\n");
 	// // abort();
 
-    if(input_parser.apply_electro_algo == true){
-        printf("SUCCESS\n");
-        printf("You successfully reach the point before the update and the norm computations\n");
-        algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
-        printf("SUCCESS\n");
-        printf("You successfully reach the point after the update and before the norm computations\n");
-        std::vector<double> Norm = algoElectro_newTst.ComputeNormEsquareBIS(gridTest);
-        printf("SUCCESS\n");
-        printf("You successfully reach the point after the update and the norm computations\n");
-    }
+	if(input_parser.apply_electro_algo == true){
+		printf("SUCCESS\n");
+		printf("You successfully reach the point before the update and the norm computations\n");
+		algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
+		printf("SUCCESS\n");
+		printf("You successfully reach the point after the update and before the power computations\n");
+		algoElectro_newTst.WriteData(MPI_communicator.getRank(), gridTest);
+		printf("\n\tHello form process %u\n", MPI_communicator.getRank());
+		printf("SUCCESS\n");
+		printf("Prepare to abort...\n");
+		MPI_Barrier(MPI_COMM_WORLD);
+		abort();
+		// std::vector<double> Norm = algoElectro_newTst.ComputeNormEsquareBIS(gridTest);
+		std::vector<double> Norm = algoElectro_newTst.ComputeNormE2square(gridTest);
+		printf("SUCCESS\n");
+		printf("You successfully reach the point after the update and the norm computations\n");
+	}
 	
+	// Call thermal solver:
 	// Call thermal solver:
     if(input_parser.apply_thermo_algo == true){
         algo_thermo(argc, argv, gridTest);
