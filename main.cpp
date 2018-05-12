@@ -182,21 +182,21 @@ int main(int argc, char *argv[]){
 	// // abort();
 
 	if(input_parser.apply_electro_algo == true){
-		printf("SUCCESS\n");
-		printf("You successfully reach the point before the update and the norm computations\n");
+		//printf("SUCCESS\n");
+		//printf("You successfully reach the point before the update and the norm computations\n");
 		algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
-		printf("SUCCESS\n");
-		printf("You successfully reach the point after the update and before the power computations\n");
-		algoElectro_newTst.WriteData(MPI_communicator.getRank(), gridTest);
-		printf("\n\tHello form process %u\n", MPI_communicator.getRank());
-		printf("SUCCESS\n");
-		printf("Prepare to abort...\n");
-		MPI_Barrier(MPI_COMM_WORLD);
-		abort();
+		//printf("SUCCESS\n");
+		//printf("You successfully reach the point after the update and before the power computations\n");
+		//algoElectro_newTst.WriteData(MPI_communicator.getRank(), gridTest);
+		//printf("\n\tHello form process %u\n", MPI_communicator.getRank());
+		//printf("SUCCESS\n");
+		//printf("Prepare to abort...\n");
+		//MPI_Barrier(MPI_COMM_WORLD);
+		//abort();
 		// std::vector<double> Norm = algoElectro_newTst.ComputeNormEsquareBIS(gridTest);
-		std::vector<double> Norm = algoElectro_newTst.ComputeNormE2square(gridTest);
-		printf("SUCCESS\n");
-		printf("You successfully reach the point after the update and the norm computations\n");
+		//std::vector<double> Norm = algoElectro_newTst.ComputeNormE2square(gridTest);
+		//printf("SUCCESS\n");
+		//printf("You successfully reach the point after the update and the norm computations\n");
 	}
 	
 	// Call thermal solver:
