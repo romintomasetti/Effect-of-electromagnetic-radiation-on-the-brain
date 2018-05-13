@@ -7004,7 +7004,7 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
                 index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
                 H_x_tmp[index] = 0;
 
-                k = grid.size_Hx[1] - 2 ;
+                k = grid.size_Hx[2] - 2 ;
                 index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
                 H_x_tmp[index] = 0;
             }
