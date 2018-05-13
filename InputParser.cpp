@@ -1751,7 +1751,6 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 								);
 							}
 							printf(">>> PML thickness %zu.\n",this->thickness_PML_in_number_of_nodes);
-							abort();
 						}
 						break;
 					}

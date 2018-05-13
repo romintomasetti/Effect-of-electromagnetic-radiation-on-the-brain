@@ -588,8 +588,76 @@ void AlgoElectro_NEW::update(
     * (ATTENTION: To make things easier we will consider the thickness as (rho+1)
     *            i.e. a case at each thinckness will remain void)
     */
+
+    bool Apply_rhoX0 = true;
+    bool Apply_rhoX1 = true;
+    bool Apply_rhoY0 = true;
+    bool Apply_rhoY1 = true;
+    bool Apply_rhoZ0 = true;
+    bool Apply_rhoZ1 = true;
+
+    if(grid.input_parser.conditionsInsideSources[0] == "FACE_EX_Electric_along_Z" 
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_EX_Electric_along_Y"){
+        Apply_rhoX0 = true;
+        Apply_rhoX1 = false;
+        Apply_rhoY0 = false;
+        Apply_rhoY1 = false;
+        Apply_rhoZ0 = false;
+        Apply_rhoZ1 = false;
+    }
+    if(grid.input_parser.conditionsInsideSources[0] == "FACE_EY_Electric_along_Z"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_EY_Electric_along_X"){
+            Apply_rhoX0 = false;
+            Apply_rhoX1 = false;
+            Apply_rhoY0 = true;
+            Apply_rhoY1 = false;
+            Apply_rhoZ0 = false;
+            Apply_rhoZ1 = false;
+        }
+    if(grid.input_parser.conditionsInsideSources[0] == "FACE_EZ_Electric_along_Y"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_EZ_Electric_along_X"){
+            Apply_rhoX0 = false;
+            Apply_rhoX1 = false;
+            Apply_rhoY0 = false;
+            Apply_rhoY1 = false;
+            Apply_rhoZ0 = true;
+            Apply_rhoZ1 = false;
+        }
+
+    if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX_Electric_along_Z"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EX_Electric_along_Y"){
+            Apply_rhoX0 = false;
+            Apply_rhoX1 = true;
+            Apply_rhoY0 = false;
+            Apply_rhoY1 = false;
+            Apply_rhoZ0 = false;
+            Apply_rhoZ1 = false;
+    }
+
+    if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY_Electric_along_Z"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EY_Electric_along_X"){
+            Apply_rhoX0 = false;
+            Apply_rhoX1 = false;
+            Apply_rhoY0 = false;
+            Apply_rhoY1 = true;
+            Apply_rhoZ0 = false;
+            Apply_rhoZ1 = false;
+    }
+
+    if(grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EZ_Electric_along_X"
+        || grid.input_parser.conditionsInsideSources[0] == "FACE_Minus_EZ_Electric_along_Y"){
+            Apply_rhoX0 = false;
+            Apply_rhoX1 = false;
+            Apply_rhoY0 = false;
+            Apply_rhoY1 = false;
+            Apply_rhoZ0 = false;
+            Apply_rhoZ1 = true;
+    }
+
+
+
     if( grid.input_parser.apply_PML_BCs == true){
-        if(grid.MPI_communicator.RankNeighbour[0] == -1){
+        if(grid.MPI_communicator.RankNeighbour[0] == -1  &&  Apply_rhoX1 == true){
             rhoX1 = rho_PML;
             // rhoX1 = 0;
             Ex_pml_x1 = new double[grid.size_Ex[1]*grid.size_Ex[2]*rhoX1*2]();
@@ -599,9 +667,9 @@ void AlgoElectro_NEW::update(
             Hy_pml_x1 = new double[grid.size_Hy[1]*grid.size_Hy[2]*rhoX1*2]();
             Hz_pml_x1 = new double[grid.size_Hz[1]*grid.size_Hz[2]*rhoX1*2]();
         }
-        if(grid.MPI_communicator.RankNeighbour[1] == -1){
-            // rhoX0 = rho;
-            rhoX0 = 0;
+        if(grid.MPI_communicator.RankNeighbour[1] == -1  &&  Apply_rhoX0 == true){
+            rhoX0 = rho_PML;
+            // rhoX0 = 0;
             Ex_pml_x0 = new double[grid.size_Ex[1]*grid.size_Ex[2]*rhoX0*2]();
             Ey_pml_x0 = new double[grid.size_Ey[1]*grid.size_Ey[2]*rhoX0*2]();
             Ez_pml_x0 = new double[grid.size_Ez[1]*grid.size_Ez[2]*rhoX0*2]();
@@ -609,9 +677,9 @@ void AlgoElectro_NEW::update(
             Hy_pml_x0 = new double[grid.size_Hy[1]*grid.size_Hy[2]*rhoX0*2]();
             Hz_pml_x0 = new double[grid.size_Hz[1]*grid.size_Hz[2]*rhoX0*2]();
         }
-        if(grid.MPI_communicator.RankNeighbour[2] == -1){
-            // rhoY0 = rho;
-            rhoY0 = 0;
+        if(grid.MPI_communicator.RankNeighbour[2] == -1  &&  Apply_rhoY0 == true){
+            rhoY0 = rho_PML;
+            // rhoY0 = 0;
             
             Ex_pml_y0 = new double[(grid.size_Ex[0]-rhoX0-rhoX1)
                                    *grid.size_Ex[2]*rhoY0*2]();
@@ -626,9 +694,9 @@ void AlgoElectro_NEW::update(
             Hz_pml_y0 = new double[(grid.size_Hz[0]-rhoX0-rhoX1)
                                    *grid.size_Hz[2]*rhoY0*2]();
         }
-        if(grid.MPI_communicator.RankNeighbour[3] == -1){
-            // rhoY1 = rho;
-            rhoY1 = 0;
+        if(grid.MPI_communicator.RankNeighbour[3] == -1  &&  Apply_rhoY1 == true){
+            rhoY1 = rho_PML;
+            // rhoY1 = 0;
             Ex_pml_y1 = new double[(grid.size_Ex[0]-rhoX0-rhoX1)
                                    *grid.size_Ex[2]*rhoY1*2]();
             Ey_pml_y1 = new double[(grid.size_Ey[0]-rhoX0-rhoX1)
@@ -642,9 +710,9 @@ void AlgoElectro_NEW::update(
             Hz_pml_y1 = new double[(grid.size_Hz[0]-rhoX0-rhoX1)
                                    *grid.size_Hz[2]*rhoY1*2]();
         }
-        if(grid.MPI_communicator.RankNeighbour[4] == -1){
-            // rhoZ0 = rho;
-            rhoZ0 = 0;
+        if(grid.MPI_communicator.RankNeighbour[4] == -1  &&  Apply_rhoZ0 == true){
+            rhoZ0 = rho_PML;
+            // rhoZ0 = 0;
             Ex_pml_z0 = new double[(grid.size_Ex[0]-rhoX0-rhoX1)
                                   *(grid.size_Ex[1]-rhoY0-rhoY1) *rhoZ0*2]();
             Ey_pml_z0 = new double[(grid.size_Ey[0]-rhoX0-rhoX1)
@@ -658,9 +726,9 @@ void AlgoElectro_NEW::update(
             Hz_pml_z0 = new double[(grid.size_Hz[0]-rhoX0-rhoX1)
                                   *(grid.size_Hz[1]-rhoY0-rhoY1) *rhoZ0*2]();
         }
-        if(grid.MPI_communicator.RankNeighbour[5] == -1){
-            // rhoZ1 = rho;
-            rhoZ1 = 0;
+        if(grid.MPI_communicator.RankNeighbour[5] == -1  &&  Apply_rhoZ1 == true){
+            rhoZ1 = rho_PML;
+            // rhoZ1 = 0;
             Ex_pml_z1 = new double[(grid.size_Ex[0]-rhoX0-rhoX1)
                                   *(grid.size_Ex[1]-rhoY0-rhoY1) *rhoZ1*2]();
             Ey_pml_z1 = new double[(grid.size_Ey[0]-rhoX0-rhoX1)
