@@ -4,7 +4,7 @@
 
 $INFOS
 	$NAME
-		output=RESULTS/OUTPUT_FILES
+		output=RESULTS_EY_Z_PML_ORDER_0/OUTPUT_FILES
 		error=ERROR_LOG
 		profile=PROFILING
 	$NAME
@@ -38,9 +38,9 @@ $MESH
 	// Boundaries of the domain
 	$DOMAIN_SIZE
 		// Length of the domain in each direction
-		L_X_ELECTRO=0.5
-		L_Y_ELECTRO=0.1
-		L_Z_ELECTRO=0.1
+		L_X_ELECTRO=0.01
+		L_Y_ELECTRO=1
+		L_Z_ELECTRO=0.01
 		L_X_THERMAL=1
 		L_Y_THERMAL=1
 		L_Z_THERMAL=1
@@ -60,75 +60,103 @@ $MESH
 		// Frequency [Hz]
 		FRQCY=900E7;
 
-		IMPOSED=FACE_EX_Electric_along_Y;
+		IMPOSED=FACE_EY_Electric_along_Z;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
 		SOURCE_TIME=GAUSSIAN;
 	$SOURCE
 	
 	$MATERIALS
 		//USE_AIR_EVERYWHERE=true
-		USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/air_only.geometry}
-		//USE_GEOMETRY_FILE={true,../CREATE_GEOMETRY/two_materials.geometry}
+		USE_GEOMETRY_FILE={true,../../CREATE_GEOMETRY/air_only.geometry}
 		MATERIAL_DIRECTORY=TISSUES_PROPERTIES
+        geometry_material_thermo=../../thermo/test.geometry
 	$MATERIALS
 	
 $MESH
 
 $RUN_INFOS
 
+    $ALGORITHM_TO_APPLY
+        THERMAL=false;
+        ELECTRO=true;
+    $ALGORITHM_TO_APPLY
+
 	$TIME_STEP
 		/// Time step used in the thermal algorithm (accessible by input_parser.thermal_algo_time_step):
 		THERMAL_TIME_STEP=1
+
+		THETA_THERMAL=0.5001
 	$TIME_STEP
 
 	$STOP_SIMUL_AFTER
 		// The simulation will stop after... (in sec)
 		stopTime=10
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=1900
+		maxStepsForOneCycleOfElectro=2000
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
-		maxStepsForOneCycleOfThermal=5E5 
+		T_FINAL_THERMAL=5E5 
 		// input_parser.maxStepsForOneCycleOfThermal
 
 	$STOP_SIMUL_AFTER
 	
 	// Initial temperatures:
 	$TEMP_INIT
-		INIT_TEMP_FILE=../initial_temperature_materials.initTemp
+		INIT_TEMP_FILE=../../initial_temperature_materials.initTemp
 	$TEMP_INIT
 
 	// State all your boundary conditions inside this region:
 	$BOUNDARY_CONDITIONS_THERMO
+		//THERMAL_TYPE_SIMULATION=cerveau
+		THERMAL_TYPE_SIMULATION=analytic
+
+		//If analytic case of Wall (Remark: ONLY  DIRECTION Z)
+		WALL_THERMO=FALSE
+
+		//If analytic case, thermal distribution (sine) (Remark: ONLY DIRECTION X)
+		THERMAL_DISTRIBUTION=TRUE
+
+		// IF analytic case && thermal distribution 
+		AMPLITUDE_THERMAL_DISTRIBUTION=1.0
+
+		// Units of convection coef. are [W/(m²K)]
+		CONVECTION_COEFFICIENT=10
+
+		//Temperature convection (T_infiny)
+		TEMPERATURE_CONVECTION=298.15
+
+		// Sine heat source
+		HEAT_DISTRIBUTION=FALSE
+
+		// IF analytic case && sine heat source
+		AMPLITUDE_HEAT_DISTRIBUTION=0.0
+
 		// Thermal boundary condition of a parallelipipoid:
 		/*
 		  How to use these Boundary Conditions:
-			For Neumann:   {Neumann;value}
-			For Dirichlet: {Dirichlet;value} (value = temperature)
+			For Neumann:   {Neumann;value} (Temperature useless)
+			For Dirichlet: {Dirichlet;value} (Only for Dirichelet :value = temperature[K])
+			Used only for "analytical" verification cases.
 		*/
-		BC_FACE_0={Neumann;0}
-		BC_FACE_1={Neumann;0}
-		BC_FACE_2={Dirichlet;50}
-		BC_FACE_3={Dirichlet;0}
-		BC_FACE_4={Dirichlet;0}
-		BC_FACE_5={Dirichlet;0}
-		// Accessible by input_parser.THERMAL_FACE_BC_TYPE
-		// Accessible by input_parser.THERMAL_FACE_BC_VALUE
+		BC_FACE_0={Dirichlet;0}
+		BC_FACE_1={Dirichlet;0}
+		BC_FACE_2={Neumann;0}
+		BC_FACE_3={Neumann;0}
+		BC_FACE_4={Neumann;0}
+		BC_FACE_5={Neumann;0}
 
 	$BOUNDARY_CONDITIONS_THERMO
 
 	// Gives some information on the sampling frequency / number of steps before saving:
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=70
+		SAMPLING_FREQ_ELECTRO=50
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING
 
 	$ELECTRO_STEADY_STATE
-		/* We won't check for steady state at each point, but every 
-		   -specified by CHECK_EVERY_POINT- points */
-		CHECK_EVERY_POINT=10
+        check_steady_state=false;
 	$ELECTRO_STEADY_STATE
 
 	$BOUNDARY_CONDITIONS_ELECTRO
@@ -137,11 +165,11 @@ $RUN_INFOS
 		// Apply PML or not:
 		APPLY_PML=true
 		// Thickness of the PML boundary condition
-		THICKNESS_PML_IN_NODES=5
+		THICKNESS_PML_IN_NODES=100
 		// Order of the PML boundary condition:
 		PML_ORDER=0
 		// Sigma_M
-		PML_SIGMA_M=1		
+		PML_SIGMA_M=20	
 	$BOUNDARY_CONDITIONS_ELECTRO
 	
 $RUN_INFOS
@@ -150,15 +178,7 @@ $RUN_INFOS
 $POST_PROCESSING
 
 	$PROBING_POINTS
-		probe_line={Ey,x=ALL,y=0.05,z=0.05}
-		//probe_line={Ex,x=0.5,y=ALL,z=0.5}
-		//probe_line={Ey,x=0.5,y=ALL,z=0.5}
-		//probe_line={Ez,x=0.5,y=0.5,z=ALL}
-		//probe_line={Ex,x=0.5,y=0.5,z=ALL}
-		//probe_line={Ey,x=0.5,y=0.5,z=ALL}
+		
 	$PROBING_POINTS
 
 $POST_PROCESSING
-
-
-	

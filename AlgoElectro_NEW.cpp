@@ -833,6 +833,9 @@ void AlgoElectro_NEW::update(
                             C_exh_2[index] = 1 / ( 1 + COEF_E) * dt 
                                 / (grid.E_x_eps[index] * grid.delta_Electromagn[2]);
 
+                            // Coefficient C_exe2
+                            C_exe2[index] = C_exe[index];
+
                         }else if( J==0 || K==0){
                             double COEF_E = grid.E_x_electrical_cond[index] * dt
                                 / (2.0 * grid.E_x_eps[index]);
@@ -927,6 +930,10 @@ void AlgoElectro_NEW::update(
                             // Coefficient C_eyh_2:
                             C_eyh_2[index] = 1 / ( 1 + COEF_E) * dt 
                                 / (grid.E_y_eps[index] * grid.delta_Electromagn[0]);
+                            
+                            // Coefficient C_eye2:
+                            C_eye2[index] = C_eye[index];
+
 
                         }else if( I==0 || K==0){
                             double COEF_E = grid.E_y_electrical_cond[index] * dt
@@ -1024,6 +1031,9 @@ void AlgoElectro_NEW::update(
                             C_ezh_2[index] = 1 / ( 1 + COEF_E) * dt 
                                 / (grid.E_z_eps[index] * grid.delta_Electromagn[1]);
 
+                            // Coefficient C_eze2:
+                            C_eze2[index] = C_eze[index];
+
                         }else if( I==0 || J==0){
                             double COEF_E = grid.E_z_electrical_cond[index] * dt
                                 / (2.0 * grid.E_z_eps[index]);
@@ -1041,6 +1051,8 @@ void AlgoElectro_NEW::update(
 
                             // Coefficient C_eze2:
                             C_eze2[index] = C_eze[index];
+
+                            
                         }else{
                             sigma[0] = 0;
                             sigma[1] = 0;
@@ -1116,6 +1128,9 @@ void AlgoElectro_NEW::update(
                             // Coefficient C_hxe_2:
                             C_hxe_2[index] = 1 / ( 1 + COEF_H) * dt 
                                 / (grid.H_x_mu[index] * grid.delta_Electromagn[1]);
+
+                            // Coefficient C_hxh2:
+                            C_hxh2[index] = C_hxh[index];
 
                         }else if( J==0 || K==0){
                             double COEF_H = grid.H_x_magnetic_cond[index] * dt
@@ -1215,6 +1230,9 @@ void AlgoElectro_NEW::update(
                             // Coefficient C_hxe_2:
                             C_hye_2[index] = 1 / ( 1 + COEF_H) * dt 
                                 / (grid.H_y_mu[index] * grid.delta_Electromagn[2]);
+
+                            // Coefficient C_hyh2:
+                            C_hyh2[index] = C_hyh[index];
 
                         }else if( I==0 || K==0){
                             double COEF_H = grid.H_y_magnetic_cond[index] * dt
@@ -1320,6 +1338,11 @@ void AlgoElectro_NEW::update(
                             // Coefficient C_hxe_2:
                             C_hze_2[index] = 1 / ( 1 + COEF_H) * dt 
                                 / (grid.H_z_mu[index] * grid.delta_Electromagn[0]);
+
+                            // Coefficient C_hzh2:
+                            C_hzh2[index] = C_hzh[index];
+
+
                         }else if( I==0 || J==0){
                             double COEF_H = grid.H_z_magnetic_cond[index] * dt
                             / (2.0 * grid.H_z_mu[index]);
