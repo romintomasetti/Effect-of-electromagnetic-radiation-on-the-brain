@@ -4,6 +4,14 @@ ADD_EXECUTABLE(filesCompare ${SRCS})
 
 enable_testing()
 
+####### USEFUL COMMANDS #######
+# 1) To launch all tests        : ctest -j 16
+# 2) To launch only ABC         : ctest -j 12 -L ABC
+# 3) To launch only PML order 0 : ctest -j 12 -L PML_ORDER_0
+# 4) To launch only PML order 2 : ctest -j 12 -L PML_ORDER_2
+# 
+# Note: to add verbosity, use --verbose option.
+
 
 ################# 1D ABC Face e_x - Electric field along Y #########
 add_test(NAME "Test_IS_1D_FACE_EX_Electric_along_Y_ABC"
@@ -21,6 +29,9 @@ add_test(NAME "Test_IS_1D_FACE_EX_Electric_along_Y_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EX_Electric_along_Y_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face e_x - Electric field along Z #########
 add_test(NAME "Test_IS_1D_FACE_EX_Electric_along_Z_ABC"
@@ -38,6 +49,9 @@ add_test(NAME "Test_IS_1D_FACE_EX_Electric_along_Z_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EX_Electric_along_Z_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face -e_x - Electric field along Y #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Y_ABC"
@@ -55,6 +69,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Y_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EX_Electric_along_Y_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face -e_x - Electric field along Z #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Z_ABC"
@@ -72,6 +89,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Z_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EX_Electric_along_Z_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face e_y - Electric field along X #########
 add_test(NAME "Test_IS_1D_FACE_EY_Electric_along_X_ABC"
@@ -89,6 +109,9 @@ add_test(NAME "Test_IS_1D_FACE_EY_Electric_along_X_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EY_Electric_along_X_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face e_y - Electric field along Z #########
 add_test(NAME "Test_IS_1D_FACE_EY_Electric_along_Z_ABC"
@@ -106,6 +129,9 @@ add_test(NAME "Test_IS_1D_FACE_EY_Electric_along_Z_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EY_Electric_along_Z_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face -e_y - Electric field along X #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EY_Electric_along_X_ABC"
@@ -123,6 +149,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EY_Electric_along_X_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EY_Electric_along_X_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face -e_y - Electric field along Z #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EY_Electric_along_Z_ABC"
@@ -140,6 +169,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EY_Electric_along_Z_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EY_Electric_along_Z_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face e_z - Electric field along X #########
 add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_X_ABC"
@@ -157,6 +189,9 @@ add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_X_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EZ_Electric_along_X_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face e_z - Electric field along Y #########
 add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_Y_ABC"
@@ -174,6 +209,9 @@ add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_Y_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EZ_Electric_along_Y_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face -e_z - Electric field along X #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_X_ABC"
@@ -191,6 +229,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_X_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EZ_Electric_along_X_ABC
+    PROPERTIES  LABELS "ABC")
 
 ################# 1D ABC Face -e_z - Electric field along X #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_Y_ABC"
@@ -208,6 +249,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_Y_ABC"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EZ_Electric_along_Y_ABC
+    PROPERTIES  LABELS "ABC")
 
 
 ################# 1D PML Face e_x - Electric field along Y - Order 0 #########
@@ -226,6 +270,9 @@ add_test(NAME "Test_IS_1D_FACE_EX_Electric_along_Y_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EX_Electric_along_Y_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 ################# 1D PML Face e_x - Electric field along Z - Order 0 #########
 add_test(NAME "Test_IS_1D_FACE_EX_Electric_along_Z_PML_ORDER_0"
@@ -243,6 +290,9 @@ add_test(NAME "Test_IS_1D_FACE_EX_Electric_along_Z_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EX_Electric_along_Z_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 ################# 1D PML Face -e_x - Electric field along Y - Order 0 #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Y_PML_ORDER_0"
@@ -260,6 +310,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Y_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EX_Electric_along_Y_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 ################# 1D PML Face -e_x - Electric field along Z - Order 0 #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Z_PML_ORDER_0"
@@ -277,6 +330,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Z_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EX_Electric_along_Z_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 
 
@@ -296,6 +352,9 @@ add_test(NAME "Test_IS_1D_FACE_EY_Electric_along_X_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EY_Electric_along_X_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 ################# 1D PML Face e_y - Electric field along Z - Order 0 #########
 add_test(NAME "Test_IS_1D_FACE_EY_Electric_along_Z_PML_ORDER_0"
@@ -313,6 +372,9 @@ add_test(NAME "Test_IS_1D_FACE_EY_Electric_along_Z_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EY_Electric_along_Z_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 
 ################# 1D PML Face -e_y - Electric field along X - Order 0 #########
@@ -331,6 +393,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EY_Electric_along_X_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EY_Electric_along_X_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 ################# 1D PML Face -e_y - Electric field along Z - Order 0 #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EY_Electric_along_Z_PML_ORDER_0"
@@ -348,6 +413,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EY_Electric_along_Z_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EY_Electric_along_Z_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 ################# 1D PML Face e_z - Electric field along X - Order 0 #########
 add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_X_PML_ORDER_0"
@@ -365,6 +433,9 @@ add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_X_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EZ_Electric_along_X_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 ################# 1D PML Face e_z - Electric field along Y - Order 0 #########
 add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_Y_PML_ORDER_0"
@@ -382,6 +453,9 @@ add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_Y_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EZ_Electric_along_Y_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 ################# 1D PML Face -e_z - Electric field along X - Order 0 #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_X_PML_ORDER_0"
@@ -399,6 +473,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_X_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EZ_Electric_along_X_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 ################# 1D PML Face -e_z - Electric field along Y - Order 0 #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_Y_PML_ORDER_0"
@@ -416,6 +493,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_Y_PML_ORDER_0"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EZ_Electric_along_Y_PML_ORDER_0
+    PROPERTIES  LABELS "PML_ORDER_0")
 
 
 
@@ -437,6 +517,9 @@ add_test(NAME "Test_IS_1D_FACE_EX_Electric_along_Y_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EX_Electric_along_Y_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 ################# 1D PML Face e_x - Electric field along Z - Order 2 #########
 add_test(NAME "Test_IS_1D_FACE_EX_Electric_along_Z_PML_ORDER_2"
@@ -454,6 +537,9 @@ add_test(NAME "Test_IS_1D_FACE_EX_Electric_along_Z_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EX_Electric_along_Z_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 ################# 1D PML Face -e_x - Electric field along Y - Order 2 #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Y_PML_ORDER_2"
@@ -471,6 +557,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Y_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EX_Electric_along_Y_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 ################# 1D PML Face -e_x - Electric field along Z - Order 2 #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Z_PML_ORDER_2"
@@ -488,6 +577,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EX_Electric_along_Z_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EX_Electric_along_Z_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 
 
@@ -507,6 +599,9 @@ add_test(NAME "Test_IS_1D_FACE_EY_Electric_along_X_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EY_Electric_along_X_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 ################# 1D PML Face e_y - Electric field along Z - Order 2 #########
 add_test(NAME "Test_IS_1D_FACE_EY_Electric_along_Z_PML_ORDER_2"
@@ -524,6 +619,9 @@ add_test(NAME "Test_IS_1D_FACE_EY_Electric_along_Z_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EY_Electric_along_Z_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 
 ################# 1D PML Face -e_y - Electric field along X - Order 2 #########
@@ -542,6 +640,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EY_Electric_along_X_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EY_Electric_along_X_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 ################# 1D PML Face -e_y - Electric field along Z - Order 2 #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EY_Electric_along_Z_PML_ORDER_2"
@@ -559,6 +660,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EY_Electric_along_Z_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EY_Electric_along_Z_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 ################# 1D PML Face e_z - Electric field along X - Order 2 #########
 add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_X_PML_ORDER_2"
@@ -576,6 +680,9 @@ add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_X_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EZ_Electric_along_X_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 ################# 1D PML Face e_z - Electric field along Y - Order 2 #########
 add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_Y_PML_ORDER_2"
@@ -593,6 +700,9 @@ add_test(NAME "Test_IS_1D_FACE_EZ_Electric_along_Y_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_EZ_Electric_along_Y_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 ################# 1D PML Face -e_z - Electric field along X - Order 2 #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_X_PML_ORDER_2"
@@ -610,6 +720,9 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_X_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EZ_Electric_along_X_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
 
 ################# 1D PML Face -e_z - Electric field along Y - Order 2 #########
 add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_Y_PML_ORDER_2"
@@ -627,3 +740,6 @@ add_test(NAME "Test_IS_1D_FACE_Minus_EZ_Electric_along_Y_PML_ORDER_2"
 	 -Dcomparator=${PROJECT_SOURCE_DIR}/build/CMake_tests/filesCompare
          -P ${PROJECT_SOURCE_DIR}/cmake/run_test.cmake
 )
+SET_TESTS_PROPERTIES(
+    Test_IS_1D_FACE_Minus_EZ_Electric_along_Y_PML_ORDER_2
+    PROPERTIES  LABELS "PML_ORDER_2")
