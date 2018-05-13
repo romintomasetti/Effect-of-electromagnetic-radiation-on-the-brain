@@ -6995,17 +6995,17 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
          *  1) On faces with normal +e_y or -e_y:
          *          - Hx is zero.
          */
-        size_t k, index;
+        size_t j, index;
         printf("\t> > 1D case is IS_1D_FACE_Minus_EX_Electric_along_Z.\n");
         printf("\t\t> Imposing HX on faces with normal +e_y and -e_y...\n");
         for(size_t i = 1 ; i < grid.size_Hx[0] - 1 ; i ++){
-            for(size_t j = 1 ; j < grid.size_Hx[1] - 1 ; j ++){
+            for(size_t k = 1 ; k < grid.size_Hx[2] - 1 ; k ++){
 
-                k = 1;
+                j = 1;
                 index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
                 H_x_tmp[index] = 0;
 
-                k = grid.size_Hx[2] - 2 ;
+                j = grid.size_Hx[1] - 2 ;
                 index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
                 H_x_tmp[index] = 0;
             }
