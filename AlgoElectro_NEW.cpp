@@ -1914,10 +1914,11 @@ void AlgoElectro_NEW::update(
         size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 0;
 
         if(grid.MPI_communicator.MPI_POSITION[0] == grid.MPI_communicator.MPI_MAX_POSI[0]){
-            if( IS_1D_FACE_EY_Electric_along_Z
+            if( (IS_1D_FACE_EY_Electric_along_Z
              || IS_1D_FACE_EZ_Electric_along_Y
              || IS_1D_FACE_Minus_EZ_Electric_along_Y
-             || IS_1D_FACE_Minus_EY_Electric_along_Z){
+             || IS_1D_FACE_Minus_EY_Electric_along_Z)
+             && grid.input_parser.apply_PML_BCs == false){
                 // Do nothing.
             }else{
                 IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = 1;
@@ -1928,10 +1929,11 @@ void AlgoElectro_NEW::update(
         }
 
         if(grid.MPI_communicator.MPI_POSITION[1] == grid.MPI_communicator.MPI_MAX_POSI[1]){
-            if(   IS_1D_FACE_EX_Electric_along_Z 
+            if(   (IS_1D_FACE_EX_Electric_along_Z 
                || IS_1D_FACE_Minus_EX_Electric_along_Z
                || IS_1D_FACE_EZ_Electric_along_X
-               || IS_1D_FACE_Minus_EZ_Electric_along_X){
+               || IS_1D_FACE_Minus_EZ_Electric_along_X)
+               && grid.input_parser.apply_PML_BCs == false){
                 // Do nothing.
             }else{
                 IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = 1;
@@ -1942,10 +1944,11 @@ void AlgoElectro_NEW::update(
         }
 
         if(grid.MPI_communicator.MPI_POSITION[2] == grid.MPI_communicator.MPI_MAX_POSI[2]){
-            if( IS_1D_FACE_EX_Electric_along_Y
+            if( (IS_1D_FACE_EX_Electric_along_Y
              || IS_1D_FACE_Minus_EX_Electric_along_Y
              || IS_1D_FACE_EY_Electric_along_X
-             || IS_1D_FACE_Minus_EY_Electric_along_X){
+             || IS_1D_FACE_Minus_EY_Electric_along_X)
+             && grid.input_parser.apply_PML_BCs == false){
                 // Do nothing.
             }else{
                 IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = 1;
@@ -1956,10 +1959,11 @@ void AlgoElectro_NEW::update(
         }
 
         if(grid.MPI_communicator.MPI_POSITION[0] == 0){
-            if( IS_1D_FACE_EY_Electric_along_Z
+            if( (IS_1D_FACE_EY_Electric_along_Z
              || IS_1D_FACE_EZ_Electric_along_Y
              || IS_1D_FACE_Minus_EZ_Electric_along_Y
-             || IS_1D_FACE_Minus_EY_Electric_along_Z){
+             || IS_1D_FACE_Minus_EY_Electric_along_Z)
+             && grid.input_parser.apply_PML_BCs == false){
                 // Do nothing.
             }else{
                 IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 1;
@@ -1970,10 +1974,11 @@ void AlgoElectro_NEW::update(
         }
 
         if(grid.MPI_communicator.MPI_POSITION[1] == 0){
-            if(   IS_1D_FACE_EX_Electric_along_Z
+            if(   (IS_1D_FACE_EX_Electric_along_Z
                || IS_1D_FACE_Minus_EX_Electric_along_Z
                || IS_1D_FACE_EZ_Electric_along_X
-               || IS_1D_FACE_Minus_EZ_Electric_along_X){
+               || IS_1D_FACE_Minus_EZ_Electric_along_X)
+               && grid.input_parser.apply_PML_BCs == false){
                 // Do nothing.
             }else{
                 IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 1;
@@ -1984,10 +1989,11 @@ void AlgoElectro_NEW::update(
         }
 
         if(grid.MPI_communicator.MPI_POSITION[2] == 0){
-            if( IS_1D_FACE_EX_Electric_along_Y
+            if( (IS_1D_FACE_EX_Electric_along_Y
              || IS_1D_FACE_Minus_EX_Electric_along_Y
              || IS_1D_FACE_EY_Electric_along_X
-             || IS_1D_FACE_Minus_EY_Electric_along_X){
+             || IS_1D_FACE_Minus_EY_Electric_along_X)
+             && grid.input_parser.apply_PML_BCs == false){
                 // Do nothing.
             }else{
                 IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 1;
@@ -1996,6 +2002,7 @@ void AlgoElectro_NEW::update(
                 IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = rhoZ0+1;
             }
         }
+
 
         bool has_neighboor = false;
         for(unsigned int ii =  0; ii < NBR_FACES_CUBE ; ii ++){
@@ -7010,19 +7017,19 @@ void AlgoElectro_NEW::apply_1D_case_on_magnetic_field(
          *  1) On faces with normal +e_y or -e_y:
          *          - Hx is zero.
          */
-        size_t j, index;
+        size_t k, index;
         printf("\t> > 1D case is IS_1D_FACE_Minus_EX_Electric_along_Y.\n");
         printf("\t\t> Imposing HX on faces with normal +e_y and -e_y...\n");
         for(size_t i = 1 ; i < grid.size_Hx[0] - 1 ; i ++){
-            for(size_t k = 1 ; k < grid.size_Hx[2] - 1 ; k ++){
+            for(size_t j = 1 ; j < grid.size_Hx[1] - 1 ; j ++){
 
-                j = 1;
+                k = 1;
                 index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
-                //H_x_tmp[index] = 0;
+                H_x_tmp[index] = 0;
 
-                j = grid.size_Hx[1] - 2 ;
+                k = grid.size_Hx[1] - 2 ;
                 index = i + grid.size_Hx[0] * ( j + grid.size_Hx[1] * k);
-                //H_x_tmp[index] = 0;
+                H_x_tmp[index] = 0;
             }
         }
 
