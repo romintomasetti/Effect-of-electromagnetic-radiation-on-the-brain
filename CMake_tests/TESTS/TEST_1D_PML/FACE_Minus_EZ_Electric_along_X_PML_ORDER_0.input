@@ -1,0 +1,187 @@
+// Material :: only air.
+// One centered dipole with ABC boundary conditions.
+// 1D case: propagation of Ey in the -x direction.
+
+$INFOS
+	$NAME
+		output=RESULTS_Minus_EZ_X_PML_ORDER_0/OUTPUT_FILES
+		error=ERROR_LOG
+		profile=PROFILING
+	$NAME
+	
+	$REMOVE_EXISTING_FILES
+		remove_vti =true
+		remove_pvti=true
+	$REMOVE_EXISTING_FILES
+$INFOS
+
+$MESH
+	// Origins of the thermal and electromagnetic grids (in coordinates)
+	$ORIGINS
+		ORIGIN_ELECTRO_X=0.0
+		ORIGIN_ELECTRO_Y=0.0
+		ORIGIN_ELECTRO_Z=0.0
+		ORIGIN_THERMAL_X=0.0
+		ORIGIN_THERMAL_Y=0.0
+		ORIGIN_THERMAL_Z=0.0
+	$ORIGINS
+
+	// Size of the elements of the mesh:
+	$DELTAS
+		deltaX_Electro=0.001
+		deltaY_Electro=0.001
+		deltaZ_Electro=0.001
+		delta_Thermal=0.1
+		ratio_EM_TH_delta=0.01
+	$DELTAS
+		
+	// Boundaries of the domain
+	$DOMAIN_SIZE
+		// Length of the domain in each direction
+		L_X_ELECTRO=0.01
+		L_Y_ELECTRO=0.01
+		L_Z_ELECTRO=1
+		L_X_THERMAL=1
+		L_Y_THERMAL=1
+		L_Z_THERMAL=1
+	$DOMAIN_SIZE
+	
+	// Information on the source
+	$SOURCE
+		NBR_SOURCES=1
+		// Length of the source in each direction
+		L_X=0.1;
+		L_Y=0.1;
+		L_Z=0.1;
+		// Center of the source, (0,0,0) is in the lower left corner in front:
+		C_X=0.5;
+		C_Y=0.5;
+		C_Z=0.5;
+		// Frequency [Hz]
+		FRQCY=900E7;
+
+		IMPOSED=FACE_Minus_EZ_Electric_along_X;
+		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
+		SOURCE_TIME=GAUSSIAN;
+	$SOURCE
+	
+	$MATERIALS
+		//USE_AIR_EVERYWHERE=true
+		USE_GEOMETRY_FILE={true,../../CREATE_GEOMETRY/air_only.geometry}
+		MATERIAL_DIRECTORY=TISSUES_PROPERTIES
+        geometry_material_thermo=../../thermo/test.geometry
+	$MATERIALS
+	
+$MESH
+
+$RUN_INFOS
+
+    $ALGORITHM_TO_APPLY
+        THERMAL=false;
+        ELECTRO=true;
+    $ALGORITHM_TO_APPLY
+
+	$TIME_STEP
+		/// Time step used in the thermal algorithm (accessible by input_parser.thermal_algo_time_step):
+		THERMAL_TIME_STEP=1
+
+		THETA_THERMAL=0.5001
+	$TIME_STEP
+
+	$STOP_SIMUL_AFTER
+		// The simulation will stop after... (in sec)
+		stopTime=10
+		// The electromagnetic solver stops after this max number of steps parameter:
+		maxStepsForOneCycleOfElectro=2000
+		// input_parser.maxStepsForOneCycleOfElectro
+		// The thermal solver stops after this max number of steps:
+		T_FINAL_THERMAL=5E5 
+		// input_parser.maxStepsForOneCycleOfThermal
+
+	$STOP_SIMUL_AFTER
+	
+	// Initial temperatures:
+	$TEMP_INIT
+		INIT_TEMP_FILE=../../initial_temperature_materials.initTemp
+	$TEMP_INIT
+
+	// State all your boundary conditions inside this region:
+	$BOUNDARY_CONDITIONS_THERMO
+		//THERMAL_TYPE_SIMULATION=cerveau
+		THERMAL_TYPE_SIMULATION=analytic
+
+		//If analytic case of Wall (Remark: ONLY  DIRECTION Z)
+		WALL_THERMO=FALSE
+
+		//If analytic case, thermal distribution (sine) (Remark: ONLY DIRECTION X)
+		THERMAL_DISTRIBUTION=TRUE
+
+		// IF analytic case && thermal distribution 
+		AMPLITUDE_THERMAL_DISTRIBUTION=1.0
+
+		// Units of convection coef. are [W/(m²K)]
+		CONVECTION_COEFFICIENT=10
+
+		//Temperature convection (T_infiny)
+		TEMPERATURE_CONVECTION=298.15
+
+		// Sine heat source
+		HEAT_DISTRIBUTION=FALSE
+
+		// IF analytic case && sine heat source
+		AMPLITUDE_HEAT_DISTRIBUTION=0.0
+
+		// Thermal boundary condition of a parallelipipoid:
+		/*
+		  How to use these Boundary Conditions:
+			For Neumann:   {Neumann;value} (Temperature useless)
+			For Dirichlet: {Dirichlet;value} (Only for Dirichelet :value = temperature[K])
+			Used only for "analytical" verification cases.
+		*/
+		BC_FACE_0={Dirichlet;0}
+		BC_FACE_1={Dirichlet;0}
+		BC_FACE_2={Neumann;0}
+		BC_FACE_3={Neumann;0}
+		BC_FACE_4={Neumann;0}
+		BC_FACE_5={Neumann;0}
+
+	$BOUNDARY_CONDITIONS_THERMO
+
+	// Gives some information on the sampling frequency / number of steps before saving:
+	$OUTPUT_SAVING
+		// Sampling frequency for the electromagnetic algorithm:
+		SAMPLING_FREQ_ELECTRO=50
+		// Sampling frequency for the thermal algorithm:
+		SAMPLING_FREQ_THERMAL=1
+	$OUTPUT_SAVING
+
+	$ELECTRO_STEADY_STATE
+        check_steady_state=false;
+	$ELECTRO_STEADY_STATE
+
+	$BOUNDARY_CONDITIONS_ELECTRO
+		// Apply ABC or not:
+		APPLY_ABC=false
+		// Apply PML or not:
+		APPLY_PML=true
+		// Thickness of the PML boundary condition
+		THICKNESS_PML_IN_NODES=100
+		// Order of the PML boundary condition:
+		PML_ORDER=0
+		// Sigma_M
+		PML_SIGMA_M=20	
+	$BOUNDARY_CONDITIONS_ELECTRO
+	
+$RUN_INFOS
+
+// This section contains post-processing directives, such as probing data.
+$POST_PROCESSING
+
+	$PROBING_POINTS
+		
+	$PROBING_POINTS
+
+$POST_PROCESSING
+
+
+	
