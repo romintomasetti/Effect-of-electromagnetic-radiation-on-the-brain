@@ -523,6 +523,7 @@ void AlgoElectro_NEW::update(
     double order_PML  = grid.input_parser.PML_order;
     size_t rho_PML    = grid.input_parser.thickness_PML_in_number_of_nodes;
     double sigmaM_PML = grid.input_parser.PML_sigma_M;
+    bool Improved_PML = false;
 
     // Thickness of the PML:
     unsigned int rhoX0 = 0;
@@ -764,7 +765,8 @@ void AlgoElectro_NEW::update(
         firstprivate(rhoY0,rhoY1)\
         firstprivate(rhoZ0,rhoZ1)\
         firstprivate(sigmaM_PML)\
-        firstprivate(order_PML)
+        firstprivate(order_PML)\
+        firstprivate(Improved_PML)
     {
         /**
          * Important for the electric field update !
@@ -1152,31 +1154,50 @@ void AlgoElectro_NEW::update(
                             sigma[0] = 0;
                             sigma[1] = 0;
                             if(J< 1+rhoY0 && rhoY0!=0){
-                                sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
-                                           * pow((double)(1+rhoY0-J)/(double)(rhoY0),order_PML);
-                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
-                                //            * pow((double)(1+rhoY0-(J+0.5))/(double)(rhoY0),order_PML);
+                                if(Improved_PML == false){
+                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(1+rhoY0-J)/(double)(rhoY0),order_PML);
+                                }
+                                else{
+                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(1+rhoY0-(J+0.5))/(double)(rhoY0),order_PML);
+                                }
+
                                 // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                             }
                             else if(J>=grid.size_Hx[1]-1-rhoY1 && rhoY1!=0){
-                                sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
-                                            * pow((double)(J-(grid.size_Hx[1]-1-rhoY1))/(double)rhoY1,order_PML);
-                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
-                                //             * pow((double)(J+0.5-(grid.size_Hx[1]-1-rhoY1))/(double)rhoY1,order_PML);
+                                if(Improved_PML == false){
+                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                                * pow((double)(J-(grid.size_Hx[1]-1-rhoY1))/(double)rhoY1,order_PML);
+                                }
+                                else{
+                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(J+0.5-(grid.size_Hx[1]-1-rhoY1))/(double)rhoY1,order_PML);
+                                }
                                 //sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                             }
                             if(K< 1+rhoZ0 && rhoZ0!=0){
-                                sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
-                                           * pow((double)(1+rhoZ0-K)/(double)rhoZ0,order_PML);
-                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
-                                //            * pow((double)(1+rhoZ0-(K+0.5))/(double)rhoZ0,order_PML);
+                                if(Improved_PML == false){
+                                    sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(1+rhoZ0-K)/(double)rhoZ0,order_PML);
+                                }
+                                else{
+                                    sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(1+rhoZ0-(K+0.5))/(double)rhoZ0,order_PML);
+                                }
                                 // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                             }
                             else if(K>=grid.size_Hx[2]-1-rhoZ1 && rhoZ1!=0){
-                                sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
-                                           * pow((double)(K-(grid.size_Hx[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
-                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
-                                //            * pow((double)(K+0.5-(grid.size_Hx[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
+                                if(Improved_PML == false){
+                                    sigma[1] = sigmaM_PML 
+                                            * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(K-(grid.size_Hx[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
+                                }
+                                else{
+                                    sigma[1] = sigmaM_PML 
+                                            * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(K+0.5-(grid.size_Hx[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
+                                }
                                 // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                             }
                             double COEF_H = sigma[1] * dt
@@ -1257,32 +1278,54 @@ void AlgoElectro_NEW::update(
                             sigma[0] = 0;
                             sigma[1] = 0;
                             if(I< 1+rhoX0 && rhoX0!=0){
-                                sigma[0] = sigmaM_PML 
-                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY *pow((double)(1+rhoX0-I)/(double)rhoX0,order_PML);
-                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY *pow((double)(1+rhoX0-(I+0.5))/(double)rhoX0,order_PML);
+                                if(Improved_PML == false){
+                                    sigma[0] = sigmaM_PML 
+                                            * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY 
+                                            * pow((double)(1+rhoX0-I)/(double)rhoX0,order_PML);
+                                }
+                                else{
+                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY 
+                                            * pow((double)(1+rhoX0-(I+0.5))/(double)rhoX0,order_PML);
+                                }
                                 
                                 // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                                 // if(J==5)
                                 //     printf("sigma[0] = %lf \n", sigma[0]);
                             }
                             else if(I>=grid.size_Hy[0]-1-rhoX1 && rhoX1!=0){
-                                sigma[0] = sigmaM_PML 
-                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(I-(grid.size_Hy[0]-1-rhoX1))/(double)rhoX1,order_PML);
-                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(I+0.5-(grid.size_Hy[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                if(Improved_PML == false){
+                                    sigma[0] = sigmaM_PML 
+                                            * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(I-(grid.size_Hy[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                }
+                                else{
+                                    sigma[0] = sigmaM_PML 
+                                            * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(I+0.5-(grid.size_Hy[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                }
                                 
                                 // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                             }
                             if(K< 1+rhoZ0 && rhoZ0!=0){
-                                sigma[1] = sigmaM_PML 
-                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoZ0-K)/(double)rhoZ0,order_PML);
-                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoZ0-(K+0.5))/(double)rhoZ0,order_PML);
-                                
+                                if(Improved_PML == false){
+                                    sigma[1] = sigmaM_PML 
+                                        * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoZ0-K)/(double)rhoZ0,order_PML);
+                                }
+                                else{
+                                    sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(1+rhoZ0-(K+0.5))/(double)rhoZ0,order_PML);
+                                }
                                 // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                             }
                             else if(K>=grid.size_Hy[2]-1-rhoZ1 && rhoZ1!=0){
-                                sigma[1] = sigmaM_PML 
-                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY* pow((double)(K-(grid.size_Hy[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
-                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY* pow((double)(K+0.5-(grid.size_Hy[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
+                                if(Improved_PML == false){
+                                    sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(K-(grid.size_Hy[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
+                                }
+                                else{
+                                    sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(K+0.5-(grid.size_Hy[2]-1-rhoZ1))/(double)rhoZ1,order_PML);
+                                }
                                 
                                 // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                             }
@@ -1366,30 +1409,49 @@ void AlgoElectro_NEW::update(
                             sigma[0] = 0;
                             sigma[1] = 0;
                             if(I< 1+rhoX0 && rhoX0!=0){
-                                sigma[0] = sigmaM_PML 
-                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoX0-I)/(double)rhoX0,order_PML);
-                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoX0-(I+0.5))/(double)rhoX0,order_PML);
+                                if(Improved_PML == false){
+                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            *pow((double)(1+rhoX0-I)/(double)rhoX0,order_PML);
+                                }
+                                else{
+                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            *pow((double)(1+rhoX0-(I+0.5))/(double)rhoX0,order_PML);
+                                }
                                 
                                 // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                             }
                             else if(I>=grid.size_Hz[0]-1-rhoX1 && rhoX1!=0){
-                                sigma[0] = sigmaM_PML 
-                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(I-(grid.size_Hz[0]-1-rhoX1))/(double)rhoX1,order_PML);
-                                // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(I+0.5-(grid.size_Hz[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                if(Improved_PML == false){
+                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(I-(grid.size_Hz[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                }
+                                else{
+                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(I+0.5-(grid.size_Hz[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                }
                                 
                                 // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                             }
                             if(J< 1+rhoY0/*+1*/ && rhoY0!=0){
-                                sigma[1] = sigmaM_PML 
-                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoY0-J)/(double)rhoY0,order_PML);
-                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(1+rhoY0-(J+0.5))/(double)rhoY0,order_PML);
+                                if(Improved_PML == false){
+                                    sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(1+rhoY0-J)/(double)rhoY0,order_PML);
+                                }
+                                else{
+                                    sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(1+rhoY0-(J+0.5))/(double)rhoY0,order_PML);
+                                }
                                 
                                 // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
                             }
                             else if(J>=grid.size_Hz[1]-1-rhoY1 && rhoY1 !=0 ){
-                                sigma[1] = sigmaM_PML 
-                                    * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(J-(grid.size_Hz[1]-1-rhoY1))/(double)rhoY1,order_PML);
-                                // sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(J+0.5-(grid.size_Hz[1]-1-rhoY1))/(double)rhoY1,order_PML);
+                                if(Improved_PML == false){
+                                    sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(J-(grid.size_Hz[1]-1-rhoY1))/(double)rhoY1,order_PML);
+                                }
+                                else{
+                                    sigma[1] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            * pow((double)(J+0.5-(grid.size_Hz[1]-1-rhoY1))/(double)rhoY1,order_PML);
+                                }
                                 
                                 // if(K==5 && I==5)
                                 //     printf("sigma[0] = %lf \n", sigma[1]);
@@ -9247,7 +9309,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     
 
                     size_t II = I+rhoX0;
-                    size_t JJ = I+rhoY0;
+                    size_t JJ = J+rhoY0;
                     size_t KK = K+size_z-rhoZ1-1;
                     index = II + size_x * ( JJ + size_y * KK);
 
@@ -9296,6 +9358,20 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         - C_ezh_2[index] * (Hx[index_2Plus]-Hx[index_2Moins]);
 
                     Ez[index] = Ez_pml_z1[index_pml] + Ez_pml_z1[index_pml+1];
+
+                    // // if( Ex[index] != 0){
+                    //     printf("Hello : size_x = %zu, size_y = %zu, size_z = %zu \n", size_x, size_y, size_z);
+                    //     printf("Hello : Ex_pml1 = %.40g , Ex_pml2 = %.40g , Hz[index_1Plus] = %.40g , Hz[index_1Moins] = %.40g , Hy[index_2Plus] = %.40g , Hy[index_2Moins] = %.40g \n ",
+                    //     Ex_pml_y1[index_pml],  Ex_pml_y1[index_pml+1], Hz[index_1Plus], Hz[index_1Moins], Hy[index_2Plus], Hy[index_2Moins]);
+                    //     printf("Hello : I = %zu, J = %zu, K = %zu \n ",I, J, K);
+                    //     printf("Hello : II = %zu, JJ= %zu KK = %zu\n ",II, JJ, KK);
+                    //     printf("Hello : C_eze = %lf, Ceze2 = %lf, C_ezh_1 = %lf, C_ezh_2 = %lf \n ", C_eze[index], C_eze2[index], C_ezh_1[index], C_ezh_2[index]);
+                    // // }
+                    //     if(K==rhoZ1-1){
+                    //         printf("Hello : K = %zu and rhoZ1-1 = %zu \n", K, rhoZ1-1);
+                    //         abort();
+                    //     }
+
                 }
             }
         }

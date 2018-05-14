@@ -1724,7 +1724,7 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 					// If the string is "$DELTAS" it means the section ends.
 					if(currentLine == "$BOUNDARY_CONDITIONS_ELECTRO"){
 						if(this->apply_ABC_BCs == true && this->apply_PML_BCs == true){
-							DISPLAY_ERROR_ABORT_CLASS(
+							DISPLAY_WARNING(
 								"You set both 'APPLY_ABC' and 'APPLY_PML' to true. You cannot do that."
 							);
 						}
