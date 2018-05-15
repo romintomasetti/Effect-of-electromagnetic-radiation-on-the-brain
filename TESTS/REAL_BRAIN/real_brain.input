@@ -6,7 +6,7 @@
 $INFOS
 	$NAME
 		// Output file for fields:
-		output=RESULTS_cerveau_steady/OUTPUT_FILES
+		output=RESULTS_cerveau_steady_test/OUTPUT_FILES
 		// Error log file:
 		error=ERROR_LOG
 		// Profiling (cpu time, memory, etc):
@@ -100,7 +100,7 @@ $MESH
 $RUN_INFOS
 
     $ALGORITHM_TO_APPLY
-        THERMAL=false;
+        THERMAL=true;
         ELECTRO=true;
     $ALGORITHM_TO_APPLY
 
@@ -114,13 +114,13 @@ $RUN_INFOS
 
 	$STOP_SIMUL_AFTER
 		// The simulation will stop after... (in sec)
-		stopTime=10
+		stopTime=1000
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=1000
+		maxStepsForOneCycleOfElectro=5E5
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
 		
-		T_FINAL_THERMAL=4E3
+		T_FINAL_THERMAL=4E4
 
 	$STOP_SIMUL_AFTER
 	
@@ -131,14 +131,14 @@ $RUN_INFOS
 
 	// State all your boundary conditions inside this region:
 	$BOUNDARY_CONDITIONS_THERMO
-        //THERMAL_TYPE_SIMULATION=cerveau
-		THERMAL_TYPE_SIMULATION=analytic
+        THERMAL_TYPE_SIMULATION=cerveau
+		//THERMAL_TYPE_SIMULATION=analytic
 
 		//If analytic case of Wall (Remark: ONLY  DIRECTION Z)
 		WALL_THERMO=FALSE
 
 		//If analytic case, thermal distribution (sine) (Remark: ONLY DIRECTION X)
-		THERMAL_DISTRIBUTION=TRUE
+		THERMAL_DISTRIBUTION=FALSE
 
 		// IF analytic case && thermal distribution 
 		AMPLITUDE_THERMAL_DISTRIBUTION=1.0
@@ -147,7 +147,7 @@ $RUN_INFOS
 		CONVECTION_COEFFICIENT=10
 
 		//Temperature convection (T_infiny)
-		TEMPERATURE_CONVECTION=298.15
+		TEMPERATURE_CONVECTION=293.15
 
 		// Sine heat source
 		HEAT_DISTRIBUTION=FALSE
@@ -182,12 +182,14 @@ $RUN_INFOS
 		// Sigma_M
 		PML_SIGMA_M=20
         // Improve the PML reflection:
-        Improved_PML=true		
+        Improved_PML=true	
+        // Don't save the fields in the PML:
+        save_fields_in_pml=false
 	$BOUNDARY_CONDITIONS_ELECTRO
 
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=100000
+		SAMPLING_FREQ_ELECTRO=100
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING
