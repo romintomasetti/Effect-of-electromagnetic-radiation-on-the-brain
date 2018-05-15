@@ -716,7 +716,30 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
     unsigned int* material_at_nodes = NULL;
     //Brain
     if(type_simulation_value==1){
-        size_t size_mat = 0;
+        material_at_nodes = (unsigned int *) calloc(Number_total,sizeof(unsigned int));
+
+        FILE* fichier = NULL;
+
+        fichier = fopen("thermo_geometry.txt", "r");
+        unsigned int i=0;
+        if (fichier != NULL)
+        {
+            while(!feof(fichier)){
+                fscanf(fichier, "%u",&material_at_nodes[i]);
+                i++;
+            }
+            fclose(fichier);
+        }
+        else
+        {
+            // On affiche un message d'erreur si on veut
+            printf("Impossible d'ouvrir le fichier test.txt");
+        }
+
+
+
+
+        /*size_t size_mat = 0;
         
         if( NULL != (material_at_nodes = read_input_geometry_file(geometry_material,&size_mat))){
             printf("%s\n",geometry_material);
@@ -731,7 +754,8 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
         }else{        
             printf("There is an abort() at line %d. Sorry for that.\n",__LINE__);
             abort();
-        }
+        }*/
+
         // Case analytic
     }else{
         material_at_nodes = (unsigned int *) calloc(Number_total,sizeof(unsigned int));
@@ -945,6 +969,22 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
     if(Q == NULL){
         printf("The table is not calloc().This error comes from Line %d \n",__LINE__);
         abort();
+    }
+
+    if(type_simulation_value==1){
+        //Lecture du fichier Power
+        FILE* fichier = NULL;
+
+        fichier = fopen("power.txt", "r");
+        unsigned int i=0;
+        if (fichier != NULL)
+        {
+            while(!feof(fichier)){
+                fscanf(fichier, "%lf",&Q[i]);
+                i++;
+            }
+            fclose(fichier);
+        }
     }
 
 
@@ -1458,8 +1498,7 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                     counter_nonvalue_A++;
                     counter_nonvalue_B++;
                     
-//partie chaleur à remodifier !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//Q[position_equation]=1000*sin(M_PI*count_y/(N_x-1))*dt;
+                    
                     
                     position_equation++;
                 }else{
@@ -2037,6 +2076,18 @@ int algo_thermo(int argc, char **argv, GridCreator_NEW & gridElectro)
 
     //%%%%%%%%%%%%%%% Case of the brain %%%%%%%%%%%%%%%%%%%%%%%%%
     if(strcmp(type_simulation,cerveau)== 0){  
+        // Real size
+
+        Delta = gridElectro.delta_Electromagn[0];
+
+        N_x = gridElectro.nodes_of_the_real_brain[0];
+
+        N_y = gridElectro.nodes_of_the_real_brain[1];
+
+        N_z = gridElectro.nodes_of_the_real_brain[2];
+
+        Number_total = N_x*N_y*N_z;
+
         // Case of the brain
         type_simulation_value=1;
         // By default
