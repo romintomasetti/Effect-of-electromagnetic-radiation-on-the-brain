@@ -166,7 +166,8 @@ class Materials{
         
         std::string find_nearest_material_from_unified_list(
             std::string const& str,
-            unsigned int *ID_mat
+            unsigned int *ID_mat,
+            bool display
         );
 };
 
