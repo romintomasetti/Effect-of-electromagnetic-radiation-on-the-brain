@@ -62,7 +62,7 @@ $MESH
 		L_Y=0.1;
 		L_Z=0.1;
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=0.51;
+		C_X=0.47;
 		C_Y=0.35;
 		C_Z=0.35;
 		// Frequency [Hz]
