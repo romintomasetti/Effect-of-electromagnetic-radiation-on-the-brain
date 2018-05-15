@@ -290,6 +290,11 @@ class InputParser{
         ////// Which algorithm is applied //////
         bool apply_thermo_algo  = false;
         bool apply_electro_algo = false;
+        
+        
+        ////// Don't write the fields inside the PML boundary conditions
+        ////// because it is faster and requires less disk space.
+        bool save_fields_in_pml = true;
 };
 
 #endif

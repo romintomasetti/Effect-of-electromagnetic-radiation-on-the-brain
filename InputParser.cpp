@@ -1779,6 +1779,13 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 						if( boost::iequals(propGiven,"true")){
 							this->PML_improved = true;
 						}
+                        
+                    }else if( boost::iequals(propName,"save_fields_in_pml")){
+                        if( boost::iequals(propGiven,"true")){
+                            this->save_fields_in_pml = true;
+                        }else if( boost::iequals(propGiven,"false")){
+                            this->save_fields_in_pml = false;
+                        }
 
 					}else if(propName == "APPLY_PML"){
 						if(boost::iequals(propGiven,"true")){
