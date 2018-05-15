@@ -1937,7 +1937,8 @@ void GridCreator_NEW::fillInMat_Brain(
             unsigned int ID = 0;
             std::string matNew = this->materials.find_nearest_material_from_unified_list(
                                             conventionMaterial_NAME[I],
-                                            &ID
+                                            &ID,
+                                            true
                                         );
             newMaterial_ID.push_back(ID);
             newMaterial_NAME.push_back(matNew);
@@ -2035,20 +2036,21 @@ void GridCreator_NEW::fillInMat_Brain(
             this->size_Ex[0],this->size_Ex[1],this->size_Ex[2]);
 
         /* Filling electric and magnetic field materials */
-
         size_t local[3];
         size_t global[3];
         size_t index;
 
+        // We don't care about neighbors !!!
+
         printf("\t\t> Brain %zu : filling electric field X with material.\n",brain);
-        for(size_t K = 0 ; K < this->size_Ex[2] ; K ++){
-            for(size_t J = 0 ; J < this->size_Ex[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Ex[0] ; I ++){
+        for(size_t K = 1 ; K < this->size_Ex[2]-1 ; K ++){
+            for(size_t J = 1 ; J < this->size_Ex[1]-1 ; J ++){
+                for(size_t I = 1 ; I < this->size_Ex[0]-1 ; I ++){
 
                     // Get global node numbering:
-                    local[0] = I;
-                    local[1] = J;
-                    local[2] = K;
+                    local[0] = I-1;
+                    local[1] = J-1;
+                    local[2] = K-1;
                     get_Global_from_Local_Electro(local,global);
 
                     if(   global[0] >= brainExtend_inNodes[0]
@@ -2074,20 +2076,21 @@ void GridCreator_NEW::fillInMat_Brain(
                         }
                         index = I + this->size_Ex[0] * ( J + this->size_Ex[1] * K );
                         this->E_x_material[index] = materialBrain[index_br];
+                        //this->E_x[index] = materialBrain[index_br];
                     }
                 }
             }
         }
 
         printf("\t\t> Brain %zu : filling electric field Y with material.\n",brain);
-        for(size_t K = 0 ; K < this->size_Ey[2] ; K ++){
-            for(size_t J = 0 ; J < this->size_Ey[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Ey[0] ; I ++){
+        for(size_t K = 1 ; K < this->size_Ey[2]-1 ; K ++){
+            for(size_t J = 1 ; J < this->size_Ey[1]-1 ; J ++){
+                for(size_t I = 1 ; I < this->size_Ey[0]-1 ; I ++){
 
                     // Get global node numbering:
-                    local[0] = I;
-                    local[1] = J;
-                    local[2] = K;
+                    local[0] = I-1;
+                    local[1] = J-1;
+                    local[2] = K-1;
                     get_Global_from_Local_Electro(local,global);
 
                     if(   global[0] >= brainExtend_inNodes[0]
@@ -2119,14 +2122,14 @@ void GridCreator_NEW::fillInMat_Brain(
         }
 
         printf("\t\t> Brain %zu : filling electric field Z with material.\n",brain);
-        for(size_t K = 0 ; K < this->size_Ez[2] ; K ++){
-            for(size_t J = 0 ; J < this->size_Ez[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Ez[0] ; I ++){
+        for(size_t K = 1 ; K < this->size_Ez[2]-1 ; K ++){
+            for(size_t J = 1 ; J < this->size_Ez[1]-1 ; J ++){
+                for(size_t I = 1 ; I < this->size_Ez[0]-1 ; I ++){
 
                     // Get global node numbering:
-                    local[0] = I;
-                    local[1] = J;
-                    local[2] = K;
+                    local[0] = I-1;
+                    local[1] = J-1;
+                    local[2] = K-1;
                     get_Global_from_Local_Electro(local,global);
 
                     if(   global[0] >= brainExtend_inNodes[0]
@@ -2158,14 +2161,14 @@ void GridCreator_NEW::fillInMat_Brain(
         }
 
         printf("\t\t> Brain %zu : filling magnetic field X with material.\n",brain);
-        for(size_t K = 0 ; K < this->size_Hx[2] ; K ++){
-            for(size_t J = 0 ; J < this->size_Hx[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Hx[0] ; I ++){
+        for(size_t K = 1 ; K < this->size_Hx[2]-1 ; K ++){
+            for(size_t J = 1 ; J < this->size_Hx[1]-1 ; J ++){
+                for(size_t I = 1 ; I < this->size_Hx[0]-1 ; I ++){
 
                     // Get global node numbering:
-                    local[0] = I;
-                    local[1] = J;
-                    local[2] = K;
+                    local[0] = I-1;
+                    local[1] = J-1;
+                    local[2] = K-1;
                     get_Global_from_Local_Electro(local,global);
 
                     if(   global[0] >= brainExtend_inNodes[0]
@@ -2197,14 +2200,14 @@ void GridCreator_NEW::fillInMat_Brain(
         }
 
         printf("\t\t> Brain %zu : filling magnetic field Y with material.\n",brain);
-        for(size_t K = 0 ; K < this->size_Hy[2] ; K ++){
-            for(size_t J = 0 ; J < this->size_Hy[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Hy[0] ; I ++){
+        for(size_t K = 1 ; K < this->size_Hy[2]-1 ; K ++){
+            for(size_t J = 1 ; J < this->size_Hy[1]-1 ; J ++){
+                for(size_t I = 1 ; I < this->size_Hy[0]-1 ; I ++){
 
                     // Get global node numbering:
-                    local[0] = I;
-                    local[1] = J;
-                    local[2] = K;
+                    local[0] = I-1;
+                    local[1] = J-1;
+                    local[2] = K-1;
                     get_Global_from_Local_Electro(local,global);
 
                     if(   global[0] >= brainExtend_inNodes[0]
@@ -2236,14 +2239,14 @@ void GridCreator_NEW::fillInMat_Brain(
         }
         
         printf("\t\t> Brain %zu : filling magnetic field Z with material.\n",brain);
-        for(size_t K = 0 ; K < this->size_Hz[2] ; K ++){
-            for(size_t J = 0 ; J < this->size_Hz[1] ; J ++){
-                for(size_t I = 0 ; I < this->size_Hz[0] ; I ++){
+        for(size_t K = 1 ; K < this->size_Hz[2]-1 ; K ++){
+            for(size_t J = 1 ; J < this->size_Hz[1]-1 ; J ++){
+                for(size_t I = 1 ; I < this->size_Hz[0]-1 ; I ++){
 
                     // Get global node numbering:
-                    local[0] = I;
-                    local[1] = J;
-                    local[2] = K;
+                    local[0] = I-1;
+                    local[1] = J-1;
+                    local[2] = K-1;
                     get_Global_from_Local_Electro(local,global);
 
                     if(   global[0] >= brainExtend_inNodes[0]

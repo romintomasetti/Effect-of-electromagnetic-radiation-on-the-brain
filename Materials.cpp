@@ -41,6 +41,14 @@ bool string_compare_case_insensitive (std::string str1, std::string str2)
 }
 
 inline void Materials::remove_duplicated_material_names(std::string &mat){
+	if(  boost::iequals(mat,"BloodVesselWall")
+	  || boost::iequals(mat,"BloodVessel")){
+		  mat = "BloodVessel";
+	  }
+	if(  boost::iequals(mat,"BoneMarrow(Yellow)")
+	  || boost::iequals(mat,"BoneMarrow")){
+		  mat = "BoneMarrow";
+	  }
 	if(  boost::iequals(mat,"BoneCortical")
 	  || boost::iequals(mat,"Bone(Cortical)")){
 		  mat = "BoneCortical";
@@ -195,7 +203,7 @@ void Materials::unification_of_data_files(void){
 					elec_cond);
 
 		double dielectric_permittivity 
-			= (loss_tangent * 2 * M_PI * frequency * 
+			= (std::tan(loss_tangent) * 2 * M_PI * frequency * 
 						VACUUM_PERMITTIVITY * rel_permittivity - elec_cond)/(2*M_PI*frequency);
 
 		printf("\t\t> Dielectric permittivity is %.9g.\n",dielectric_permittivity);
@@ -254,6 +262,7 @@ double Materials::get_mean_prop_from_dir(std::string const &mat, std::string con
 		size_t nbr_mat = this->list_of_mat_from_dir[it_files->first].size();
 		for(size_t it_mat = 0 ; it_mat < nbr_mat ; it_mat ++){
 			curr_mat = it_files->second[it_mat].name;
+			remove_duplicated_material_names(curr_mat);
 			if(curr_mat == mat){
 				/// Go over the properties:
 				map<std::string,double> props = it_files->second[it_mat].properties;
@@ -692,7 +701,8 @@ Materials::~Materials(void){
 
 std::string Materials::find_nearest_material_from_unified_list(
     std::string const& str,
-    unsigned int *ID_mat
+    unsigned int *ID_mat,
+	bool display
 )
 {
     /**
@@ -736,6 +746,8 @@ std::string Materials::find_nearest_material_from_unified_list(
     }else{
         printf("Material %s found!\n",
             str.c_str());
+		*ID_mat = this->materialID_FromMaterialName_unified[str];
+		this->unified_material_list[*ID_mat].printf_mat();
         ret_str = str;
     }
     return ret_str;
