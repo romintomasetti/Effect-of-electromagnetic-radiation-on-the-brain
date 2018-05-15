@@ -1633,7 +1633,7 @@ void AlgoElectro_NEW::update(
             min_frequency = grid.input_parser.source.frequency[I];
     }
         // Look over 35 periods of the signal:
-    double look_over_period_SS = 100 * 1 / min_frequency;
+    double look_over_period_SS = 10 * 1 / min_frequency;
     size_t look_over_steps__SS = std::floor(look_over_period_SS/dt);
     size_t counter_step_____SS = 0;
         // Number of nodes at steady state:
@@ -2634,13 +2634,15 @@ void AlgoElectro_NEW::update(
             {
                 if( grid.input_parser.check_steady_state == true){
                     // Total size without neighboors:
-                    size_t tmp = (grid.size_Ez[0]-4) * (grid.size_Ez[1]-2) * (grid.size_Ez[2]-2);
+                    size_t tmp = (grid.size_Ez[0]-2-IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX) 
+                               * (grid.size_Ez[1]-2-IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY)
+                               * (grid.size_Ez[2]-2-rhoZ0-rhoZ1);
                     printf("\t>>> [MPI %d - %.3f %%] - Number of Ez nodes that are in the steady state is %zu over %zu.\n",
                                 grid.MPI_communicator.getRank(),
                                 (double)number_of_points_EZ_at_speady_state/(double)tmp*100.0,
                                 number_of_points_EZ_at_speady_state,
                                 tmp);
-                    if(     number_of_points_EZ_at_speady_state >= std::floor(0.99 * tmp)-1
+                    if(     (double)number_of_points_EZ_at_speady_state >= std::floor(0.95 * (double)tmp)-1
                         &&  counter_step_____SS > 100){
 
                                 printf("\t>>> [MPI %d] - Steady state is reached!\n",
@@ -2649,10 +2651,17 @@ void AlgoElectro_NEW::update(
                                 if(is_previous_segment_steady == true
                                     && numero_du_segment_precedent != counter_steady_state_segments){
                                     is_steady_state_for_this_MPI = true;
+                                    printf("[MPI %d] - LE STEADY STATE EST VRAIMENT VRAI !!!!!\n",
+                                        grid.MPI_communicator.getRank());
                                 }else{
                                     is_previous_segment_steady  = true;
                                     numero_du_segment_precedent = counter_steady_state_segments;
                                 }
+                                //is_steady_state_for_this_MPI = true;
+                                printf("[MPI %d] - Counter_step_SS %zu | look_over_SS %zu\n",
+                                    grid.MPI_communicator.getRank(),
+                                    counter_step_____SS,
+                                    look_over_steps__SS);
                         
                     }else{
                         number_of_points_EZ_at_speady_state = 0;
@@ -2686,6 +2695,7 @@ void AlgoElectro_NEW::update(
                             dt
                         );
                     }
+                    number_of_points_EZ_at_speady_state = 0;
                 }
             }
             #pragma omp barrier
@@ -5992,6 +6002,8 @@ bool AlgoElectro_NEW::SteadyStateAnalyser(
     for(size_t i = 0 ; i < steady_state_per_MPI.size() ; i ++)
         sum += steady_state_per_MPI[i];
 
+    printf("[MPI %d] - sum of bools is %u\n",grid.MPI_communicator.getRank(),sum);
+
     if(sum != steady_state_per_MPI.size()){
         // At least one MPI is not in the steady state.
         *is_steady_state_for_all_mpi = false;
@@ -6073,7 +6085,7 @@ bool AlgoElectro_NEW::SteadyStateAnalyser(
 
                 index = I + grid.size_Ex[0] * ( J + grid.size_Ex[1] * K);
 
-                if(index >= grid.size_Ex[2]*grid.size_Ex[2]*grid.size_Ex[2]){
+                if(index >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
                     DISPLAY_ERROR_ABORT_CLASS(
                         "Index out of bound..."
                     );
@@ -6115,7 +6127,7 @@ bool AlgoElectro_NEW::SteadyStateAnalyser(
 
                 index = I + grid.size_Ey[0] * ( J + grid.size_Ey[1] * K);
 
-                if(index >= grid.size_Ey[2]*grid.size_Ey[2]*grid.size_Ey[2]){
+                if(index >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
                     DISPLAY_ERROR_ABORT_CLASS(
                         "Index out of bound..."
                     );
