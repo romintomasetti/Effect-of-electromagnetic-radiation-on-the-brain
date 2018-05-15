@@ -524,6 +524,16 @@ void AlgoElectro_NEW::update(
     size_t rho_PML    = grid.input_parser.thickness_PML_in_number_of_nodes;
     double sigmaM_PML = grid.input_parser.PML_sigma_M;
     bool Improved_PML = grid.input_parser.PML_improved;
+    // double Reflection_PML = grid.input_parser.PML_Reflection;
+    // if(Reflection_PML > 0 && Reflection_PML <=1){
+    //     sigmaM_PML = ;
+    //     printf("The Sigma_M in the PML is computed with the reflection desired without taking into account the Sigma_M in the input file\n");
+    // }
+    // else{
+    //     printf("No reflection given! The Sigma_M given in the input file will be taken into account \n");
+    // }
+    ////////////////////////////////////////////////
+    
 
     // Thickness of the PML:
     unsigned int rhoX0 = 0;
@@ -1476,10 +1486,6 @@ void AlgoElectro_NEW::update(
                             // Coefficient C_hze_2:
                             C_hze_2[index] = 1 / ( 1 + COEF_H) * dt 
                                 / (grid.H_z_mu[index] * grid.delta_Electromagn[0]);
-                            if(K==5 && I==5){
-                                printf("I = %zu, J= %zu, K = %zu : C_hze_1 = %.20g \n C_hzh = %.20g \n", I,J,K,C_hze_1[index], C_hzh[index]);
-                                printf("Hello -> COEF_H = %lf \n \n \n ", COEF_H);
-                            }
                         }
                     }
                 }
@@ -2277,32 +2283,31 @@ void AlgoElectro_NEW::update(
             //////////////////////////////////
             ///// PML on magnetic field //////
             //////////////////////////////////
-            #pragma omp master
-            {
-                if(grid.input_parser.apply_PML_BCs == true){
-                    this->pmlH(grid,
-                                H_x_tmp, H_y_tmp, H_z_tmp,
-                                Hx_pml_x0, Hx_pml_x1,
-                                Hx_pml_y0, Hx_pml_y1, 
-                                Hx_pml_z0, Hx_pml_z1,
-                                Hy_pml_x0, Hy_pml_x1,
-                                Hy_pml_y0, Hy_pml_y1,
-                                Hy_pml_z0, Hy_pml_z1,
-                                Hz_pml_x0, Hz_pml_x1, 
-                                Hz_pml_y0, Hz_pml_y1,
-                                Hz_pml_z0, Hz_pml_z1,
 
-                                E_x_tmp, E_y_tmp, E_z_tmp,
+            if(grid.input_parser.apply_PML_BCs == true){
+                this->pmlH(grid,
+                            H_x_tmp, H_y_tmp, H_z_tmp,
+                            Hx_pml_x0, Hx_pml_x1,
+                            Hx_pml_y0, Hx_pml_y1, 
+                            Hx_pml_z0, Hx_pml_z1,
+                            Hy_pml_x0, Hy_pml_x1,
+                            Hy_pml_y0, Hy_pml_y1,
+                            Hy_pml_z0, Hy_pml_z1,
+                            Hz_pml_x0, Hz_pml_x1, 
+                            Hz_pml_y0, Hz_pml_y1,
+                            Hz_pml_z0, Hz_pml_z1,
 
-                                C_hxh, C_hxe_1, C_hxe_2, C_hxh2,
-                                C_hyh, C_hye_1, C_hye_2, C_hyh2,
-                                C_hzh, C_hze_1, C_hze_2, C_hzh2,
-                                rhoX0, rhoX1,
-                                rhoY0, rhoY1,
-                                rhoZ0, rhoZ1
-                            );
-                }
+                            E_x_tmp, E_y_tmp, E_z_tmp,
+
+                            C_hxh, C_hxe_1, C_hxe_2, C_hxh2,
+                            C_hyh, C_hye_1, C_hye_2, C_hyh2,
+                            C_hzh, C_hze_1, C_hze_2, C_hzh2,
+                            rhoX0, rhoX1,
+                            rhoY0, rhoY1,
+                            rhoZ0, rhoZ1
+                        );
             }
+
 
 
             ///////////////////////////////////////
@@ -2693,34 +2698,32 @@ void AlgoElectro_NEW::update(
             //////////////////////////////////
             ///// PML on electric field //////
             //////////////////////////////////
-            #pragma omp master
-            {
-                if(grid.input_parser.apply_PML_BCs == true){
-                    this->pmlE(grid,
-                                E_x_tmp, E_y_tmp, E_z_tmp,
-                                Ex_pml_x0, Ex_pml_x1,
-                                Ex_pml_y0, Ex_pml_y1, 
-                                Ex_pml_z0, Ex_pml_z1,
-                                Ey_pml_x0, Ey_pml_x1,
-                                Ey_pml_y0, Ey_pml_y1,
-                                Ey_pml_z0, Ey_pml_z1,
-                                Ez_pml_x0, Ez_pml_x1, 
-                                Ez_pml_y0, Ez_pml_y1,
-                                Ez_pml_z0, Ez_pml_z1,
 
-                                H_x_tmp, H_y_tmp, H_z_tmp,
-                                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ, IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ,
-                                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY, IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
-                                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX, IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
-                                
-                                C_exe, C_exh_1, C_exh_2, C_exe2,
-                                C_eye, C_eyh_1, C_eyh_2, C_eye2,
-                                C_eze, C_ezh_1, C_ezh_2, C_eze2,
-                                rhoX0, rhoX1,
-                                rhoY0, rhoY1,
-                                rhoZ0, rhoZ1
-                            );
-                }
+            if(grid.input_parser.apply_PML_BCs == true){
+                this->pmlE(grid,
+                            E_x_tmp, E_y_tmp, E_z_tmp,
+                            Ex_pml_x0, Ex_pml_x1,
+                            Ex_pml_y0, Ex_pml_y1, 
+                            Ex_pml_z0, Ex_pml_z1,
+                            Ey_pml_x0, Ey_pml_x1,
+                            Ey_pml_y0, Ey_pml_y1,
+                            Ey_pml_z0, Ey_pml_z1,
+                            Ez_pml_x0, Ez_pml_x1, 
+                            Ez_pml_y0, Ez_pml_y1,
+                            Ez_pml_z0, Ez_pml_z1,
+
+                            H_x_tmp, H_y_tmp, H_z_tmp,
+                            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ, IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ,
+                            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY, IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
+                            IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX, IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
+                            
+                            C_exe, C_exh_1, C_exh_2, C_exe2,
+                            C_eye, C_eyh_1, C_eyh_2, C_eye2,
+                            C_eze, C_ezh_1, C_ezh_2, C_eze2,
+                            rhoX0, rhoX1,
+                            rhoY0, rhoY1,
+                            rhoZ0, rhoZ1
+                        );
             }
 
             ///////////////////////////////////////
@@ -3030,40 +3033,38 @@ void AlgoElectro_NEW::update(
             /////////////////////////
             
             #pragma omp barrier
-            #pragma omp master
-            {
-				/*MPI_Barrier(MPI_COMM_WORLD);
-				fflush_stdout();
-				MPI_Barrier(MPI_COMM_WORLD);
-				printf("[MPI %d] - Starting ABC.\n",grid.MPI_communicator.getRank());*/
-                if(grid.input_parser.apply_ABC_BCs == true){
-                    this->abc(grid,
-                        E_x_tmp, E_y_tmp, E_z_tmp, 
-                        Eyx0, Ezx0, 
-                        Eyx1, Ezx1, 
-                        Exy0, Ezy0, 
-                        Exy1, Ezy1, 
-                        Exz0, Eyz0, 
-                        Exz1, Eyz1,
-                        dt,
-                        IS_1D_FACE_EX_Electric_along_Z  ,    
-                        IS_1D_FACE_EX_Electric_along_Y,      
-                        IS_1D_FACE_EY_Electric_along_Z ,      
-                        IS_1D_FACE_EY_Electric_along_X  ,     
-                        IS_1D_FACE_EZ_Electric_along_Y   ,    
-                        IS_1D_FACE_EZ_Electric_along_X    ,  
-                        IS_1D_FACE_Minus_EX_Electric_along_Z, 
-                        IS_1D_FACE_Minus_EX_Electric_along_Y ,
-                        IS_1D_FACE_Minus_EY_Electric_along_Z ,
-                        IS_1D_FACE_Minus_EY_Electric_along_X ,
-                        IS_1D_FACE_Minus_EZ_Electric_along_X ,
-                        IS_1D_FACE_Minus_EZ_Electric_along_Y
-                    );
-                }
-				/*fflush_stdout();
-				MPI_Barrier(MPI_COMM_WORLD);
-				printf("[MPI %d] - Ending ABC.\n",grid.MPI_communicator.getRank());*/
+
+            /*MPI_Barrier(MPI_COMM_WORLD);
+            fflush_stdout();
+            MPI_Barrier(MPI_COMM_WORLD);
+            printf("[MPI %d] - Starting ABC.\n",grid.MPI_communicator.getRank());*/
+            if(grid.input_parser.apply_ABC_BCs == true){
+                this->abc(grid,
+                    E_x_tmp, E_y_tmp, E_z_tmp, 
+                    Eyx0, Ezx0, 
+                    Eyx1, Ezx1, 
+                    Exy0, Ezy0, 
+                    Exy1, Ezy1, 
+                    Exz0, Eyz0, 
+                    Exz1, Eyz1,
+                    dt,
+                    IS_1D_FACE_EX_Electric_along_Z  ,    
+                    IS_1D_FACE_EX_Electric_along_Y,      
+                    IS_1D_FACE_EY_Electric_along_Z ,      
+                    IS_1D_FACE_EY_Electric_along_X  ,     
+                    IS_1D_FACE_EZ_Electric_along_Y   ,    
+                    IS_1D_FACE_EZ_Electric_along_X    ,  
+                    IS_1D_FACE_Minus_EX_Electric_along_Z, 
+                    IS_1D_FACE_Minus_EX_Electric_along_Y ,
+                    IS_1D_FACE_Minus_EY_Electric_along_Z ,
+                    IS_1D_FACE_Minus_EY_Electric_along_X ,
+                    IS_1D_FACE_Minus_EZ_Electric_along_X ,
+                    IS_1D_FACE_Minus_EZ_Electric_along_Y
+                );
             }
+            /*fflush_stdout();
+            MPI_Barrier(MPI_COMM_WORLD);
+            printf("[MPI %d] - Ending ABC.\n",grid.MPI_communicator.getRank());*/
             #pragma omp barrier
 
 
@@ -3251,6 +3252,7 @@ void AlgoElectro_NEW::update(
     delete[] C_hxh;
     delete[] C_hxe_1;
     delete[] C_hxe_2;
+    delete[] C_hxh2;
 
 
     // Free H_y coefficents:
@@ -3258,30 +3260,35 @@ void AlgoElectro_NEW::update(
     delete[] C_hyh;
     delete[] C_hye_1;
     delete[] C_hye_2;
+    delete[] C_hyh2;
 
     // Free H_z coefficients:
     size = grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2];
     delete[] C_hzh;
     delete[] C_hze_1;
     delete[] C_hze_2;
+    delete[] C_hzh2;
 
     // Free E_x coefficients:
     size = grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2];
     delete[] C_exe;
     delete[] C_exh_1;
     delete[] C_exh_2;
+    delete[] C_exe2;
 
     // Free E_y coefficients:
     size = grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2];
     delete[] C_eye;
     delete[] C_eyh_1;
     delete[] C_eyh_2;
+    delete[] C_eye2;
 
     // Free E_z coefficients:
     size = grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2];
     delete[] C_eze;
     delete[] C_ezh_1;
     delete[] C_ezh_2;
+    delete[] C_eze2;
 
     /**
      * @brief Freeing memory of ABC conditions.
@@ -3292,16 +3299,76 @@ void AlgoElectro_NEW::update(
      */
     delete[] Eyx0;
     delete[] Eyx1;
+
     delete[] Ezx0;
     delete[] Ezx1;
+
     delete[] Exy0;
     delete[] Exy1;
+
     delete[] Ezy0;
     delete[] Ezy1;
+
     delete[] Exz0;
     delete[] Exz1;
+
     delete[] Eyz0;
     delete[] Eyz1;
+
+    /**
+     * @brief Freeing memory of PML arrays
+     * 
+     */
+     
+    // Free PML face X0:
+    delete[] Ex_pml_x0;
+    delete[] Ey_pml_x0;
+    delete[] Ez_pml_x0;
+    delete[] Hx_pml_x0;
+    delete[] Hy_pml_x0;
+    delete[] Hz_pml_x0;
+
+    // Free PML face X1:
+    delete[] Ex_pml_x1;
+    delete[] Ey_pml_x1;
+    delete[] Ez_pml_x1;
+    delete[] Hx_pml_x1;
+    delete[] Hy_pml_x1;
+    delete[] Hz_pml_x1;
+
+    // Free PML face Y0:
+    delete[] Ex_pml_y0;
+    delete[] Ey_pml_y0;
+    delete[] Ez_pml_y0;
+    delete[] Hx_pml_y0;
+    delete[] Hy_pml_y0;
+    delete[] Hz_pml_y0;
+
+    // Free PML face Y1:
+    delete[] Ex_pml_y1;
+    delete[] Ey_pml_y1;
+    delete[] Ez_pml_y1;
+    delete[] Hx_pml_y1;
+    delete[] Hy_pml_y1;
+    delete[] Hz_pml_y1;
+
+    // Free PML face Z0:
+    delete[] Ex_pml_z0;
+    delete[] Ey_pml_z0;
+    delete[] Ez_pml_z0;
+    delete[] Hx_pml_z0;
+    delete[] Hy_pml_z0;
+    delete[] Hz_pml_z0;
+
+    // Free PML face Z1:
+    delete[] Ex_pml_z1;
+    delete[] Ey_pml_z1;
+    delete[] Ez_pml_z1;
+    delete[] Hx_pml_z1;
+    delete[] Hy_pml_z1;
+    delete[] Hz_pml_z1;
+
+
 
     /// Free electric and magnetic fields:
     for(unsigned int i = 0 ; i < NBR_FACES_CUBE ; i ++){
@@ -3494,7 +3561,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         size_y = grid.size_Ey[1];
         size_z = grid.size_Ey[2];
 
-
+        #pragma omp for collapse(2)
         for (j = 1; j < size_y - 1; j++) // Peut-etre inverser les boucles
             for (k = 1; k < size_z -1 ; k++) {
                 index = i + size_x * ( j + size_y * k);
@@ -3513,6 +3580,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         size_y = grid.size_Ez[1];
         size_z = grid.size_Ez[2];
 
+        #pragma omp for collapse(2)
         for (j = 1; j < size_y - 1 ; j++)
             for (k = 1; k < size_z - 1; k++) {
                 index = i + size_x * ( j + size_y * k);
@@ -3538,6 +3606,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
         i = size_x - 2;
 
+        #pragma omp for collapse(2)
         for (j = 1; j < size_y - 1; j++) // -1 not to take the last column which is to send
             for (k = 1; k < size_z - 1; k++) { // -1 not to take the last column
                 index = i + size_x * ( j + size_y * k); //
@@ -3558,6 +3627,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         
         i = size_x - 2;
 
+        #pragma omp for collapse(2)
         for ( j = 1; j < size_y - 1; j++) 
             for (k = 1; k < size_z -  1; k++) {
                 index = i + size_x * ( j + size_y * k); //
@@ -3581,6 +3651,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         size_y = grid.size_Ex[1];
         size_z = grid.size_Ex[2];
 
+        #pragma omp for collapse(2)
         for (i = 1; i < size_x - 1; i++)
             for (k = 1; k < size_z - 1; k++) {
                 index = i + size_x * ( j + size_y * k); //
@@ -3598,6 +3669,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         size_y = grid.size_Ez[1];
         size_z = grid.size_Ez[2];
 
+        #pragma omp for collapse(2)
         for (i = 1; i < size_x - 1; i++)
             for (k = 1; k < size_z - 1; k++) {
                 index = i + size_x * ( j + size_y * k); //
@@ -3623,6 +3695,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
         j = size_y - 2;
 
+        #pragma omp for collapse(2)
         for (i = 1; i < size_x - 1; i++)
             for (k = 1; k < size_z -1; k++) {
                 index = i + size_x * ( j + size_y * k); //
@@ -3641,7 +3714,8 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         size_z = grid.size_Ez[2];
 
         j = size_y - 2;
-
+        
+        #pragma omp for collapse(2)
         for (i = 1; i < size_x - 1; i++)
             for (k = 1; k < size_z - 1; k++) {
                 index = i + size_x * ( j + size_y * k); //
@@ -3668,6 +3742,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         size_y = grid.size_Ex[1];
         size_z = grid.size_Ex[2];
 
+        #pragma omp for collapse(2)
         for (i = 1; i < size_x - 1; i++)
             for (j = 1; j < size_y -1 ; j++) {
                 index = i + size_x * ( j + size_y * k); //
@@ -3685,6 +3760,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
         size_y = grid.size_Ey[1];
         size_z = grid.size_Ey[2];
 
+        #pragma omp for collapse(2)
         for (i = 1; i < size_x - 1; i++)
             for (j = 1; j < size_y - 1; j++) {
                 index = i + size_x * ( j + size_y * k); //
@@ -3711,6 +3787,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
         k = size_z - 2;
 
+        #pragma omp for collapse(2)
         for (i = 1; i < size_x - 1; i++)
             for (j = 1; j < size_y - 1; j++) {
                 index = i + size_x * ( j + size_y * k); //
@@ -3730,6 +3807,7 @@ void AlgoElectro_NEW::abc(   GridCreator_NEW &grid,
 
         k = size_z - 2;
 
+        #pragma omp for collapse(2)
         for (i = 1; i < size_x - 1; i++)
             for (j = 1; j < size_y - 1; j++) {
                 index = i + size_x * ( j + size_y * k); //
@@ -7423,6 +7501,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face x0: ATTENTION DIFFERENT
     if(rhoX0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
                     K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
                     K++){ 
@@ -7452,23 +7531,23 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExX0 index_1Plus out of bounds !!!");
+                        printf("ExX0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExX0 index_2Plus out of bounds !!!");
+                        printf("ExX0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExX0 index_1Moins out of bounds !!!");
+                        printf("ExX0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExX0 index_2Plu out of bounds !!!");
+                        printf("ExX0 index_2Plu out of bounds !!!");
                         abort();
                     }                   
                     if(index_pml >= grid.size_Ex[1]*grid.size_Ex[2]*rhoX0*2){
-                        printf("Hello : ExX0 index_pml out of bounds !!!");
+                        printf("ExX0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -7490,6 +7569,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face x1: ATTENTION DIFFERENT
     if(rhoX1>0){
+        #pragma omp for collapse(3)
         for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
                     K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ;
                     K++){ 
@@ -7519,23 +7599,23 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExX1 index_1Plus out of bounds !!!");
+                        printf("ExX1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExX1 index_2Plus out of bounds !!!");
+                        printf("ExX1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExX1 index_1Moins out of bounds !!!");
+                        printf("ExX1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExX1 index_2Plu out of bounds !!!");
+                        printf("ExX1 index_2Plu out of bounds !!!");
                         abort();
                     }                   
                     if(index_pml >= grid.size_Ez[1]*grid.size_Ez[2]*rhoX1*2){
-                        printf("Hello : ExX1 index_pml out of bounds !!!");
+                        printf("ExX1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -7553,6 +7633,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face y0:
     if(rhoY0>0){
+        #pragma omp for collapse(3)
         for(size_t  K = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
                     K < size_z - 1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
                     K++){ 
@@ -7582,24 +7663,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExY0 index_1Plus out of bounds !!!");
+                        printf("ExY0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExY0 index_2Plus out of bounds !!!");
+                        printf("ExY0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExX1 index_1Moins out of bounds !!!");
+                        printf("ExX1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExX1 index_2Plu out of bounds !!!");
+                        printf("ExX1 index_2Plu out of bounds !!!");
                         abort();
                     }                   
                     if(index_pml >= (grid.size_Ex[0]-rhoX0-rhoX1)
                                     *grid.size_Ex[2]*rhoY0*2){
-                        printf("Hello : ExY0 index_pml out of bounds !!!");
+                        printf("ExY0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -7624,6 +7705,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face y1:
     if(rhoY1>0){
+        #pragma omp for collapse(3)
         for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
                     K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ;
                     K++){ 
@@ -7652,24 +7734,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExY1 index_1Plus out of bounds !!!");
+                        printf("ExY1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExY1 index_2Plus out of bounds !!!");
+                        printf("ExY1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExX1 index_1Moins out of bounds !!!");
+                        printf("ExX1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExX1 index_2Plus out of bounds !!!");
+                        printf("ExX1 index_2Plus out of bounds !!!");
                         abort();
                     }                   
                     if(index_pml >= (grid.size_Ex[0]-rhoX0-rhoX1)
                                     *grid.size_Ex[2]*rhoY1*2){
-                        printf("Hello : ExY1 index_pml out of bounds !!!");
+                        printf("ExY1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -7696,6 +7778,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face z0:
     if(rhoZ0>0){
+        #pragma omp for collapse(3)
         for(size_t K=0; K<rhoZ0; K++){ 
             for(size_t  J=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
                         J<size_y-1-rhoY0-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
@@ -7726,24 +7809,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExZ0 index_1Plus out of bounds !!!");
+                        printf("ExZ0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExZ0 index_2Plus out of bounds !!!");
+                        printf("ExZ0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExZ0 index_1Moins out of bounds !!!");
+                        printf("ExZ0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExZ0 index_2Plu out of bounds !!!");
+                        printf("ExZ0 index_2Plu out of bounds !!!");
                         abort();
                     }                   
                     if(index_pml >= (grid.size_Ex[0]-rhoX0-rhoX1)
                                     *(grid.size_Ex[1]-rhoY0-rhoY1) *rhoZ0*2){
-                        printf("Hello : ExZ0 index_pml out of bounds !!!");
+                        printf("ExZ0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -7760,6 +7843,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face z1:
     if(rhoZ1>0){
+        #pragma omp for collapse(3)
         for(size_t K=0; K<rhoZ1; K++){ 
             for(size_t  J=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
                         J<size_y-1-rhoY0-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
@@ -7790,24 +7874,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExZ1 index_1Plus out of bounds !!!");
+                        printf("ExZ1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExZ1 index_2Plus out of bounds !!!");
+                        printf("ExZ1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : ExZ1 index_1Moins out of bounds !!!");
+                        printf("ExZ1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : ExZ1 index_2Plu out of bounds !!!");
+                        printf("ExZ1 index_2Plu out of bounds !!!");
                         abort();
                     }                   
                     if(index_pml >= (grid.size_Ex[0]-rhoX0-rhoX1)
                                     *(grid.size_Ex[1]-rhoY0-rhoY1) *rhoZ1*2){
-                        printf("Hello : ExZ1 index_pml out of bounds !!!");
+                        printf("ExZ1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -7837,6 +7921,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face x0:
     if(rhoX0>0){
+        #pragma omp for collapse(3)
         for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
                     K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
                     K++){
@@ -7863,23 +7948,23 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyX0 index_1Plus out of bounds !!!");
+                        printf("EyX0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyX0 index_2Plus out of bounds !!!");
+                        printf("EyX0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyX0 index_1Moins out of bounds !!!");
+                        printf("EyX0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyX0 index_2Plu out of bounds !!!");
+                        printf("EyX0 index_2Plu out of bounds !!!");
                         abort();
                     }                   
                     if(index_pml >= grid.size_Ey[1]*grid.size_Ey[2]*rhoX0*2){
-                        printf("Hello : EyX0 index_pml out of bounds !!!");
+                        printf("EyX0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -7899,6 +7984,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face x1:
     if(rhoX1>0){
+        #pragma omp for collapse(3)
         for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
                     K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
                     K++){
@@ -7927,23 +8013,23 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyX1 index_1Plus out of bounds !!!");
+                        printf("EyX1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyX1 index_2Plus out of bounds !!!");
+                        printf("EyX1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyX1 index_1Moins out of bounds !!!");
+                        printf("EyX1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyX1 index_2Plu out of bounds !!!");
+                        printf("EyX1 index_2Plu out of bounds !!!");
                         abort();
                     }                 
                     if(index_pml >= grid.size_Ey[1]*grid.size_Ey[2]*rhoX1*2){
-                        printf("Hello : EyX1 index_pml out of bounds !!!");
+                        printf("EyX1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -7964,6 +8050,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face y0: ATTENTION DIFFERENT
     if(rhoY0>0){
+        #pragma omp for collapse(3)
         for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
                     K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
                     K++){
@@ -7993,24 +8080,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyY0 index_1Plus out of bounds !!!");
+                        printf("EyY0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyY0 index_2Plus out of bounds !!!");
+                        printf("EyY0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyY0 index_1Moins out of bounds !!!");
+                        printf("EyY0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyY0 index_2Plu out of bounds !!!");
+                        printf("EyY0 index_2Plu out of bounds !!!");
                         abort();
                     }                              
                     if(index_pml >= (grid.size_Ey[0]-rhoX0-rhoX1)
                                     *grid.size_Ey[2]*rhoY0*2){
-                        printf("Hello : EyY0 index_pml out of bounds !!!");
+                        printf("EyY0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8028,6 +8115,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face y1: ATTENTION DIFFERENT
     if(rhoY1>0){
+        #pragma omp for collapse(3)
         for(size_t  K=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
                     K<size_z-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
                     K++){
@@ -8058,29 +8146,29 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyY1 index_1Plus out of bounds !!!");
+                        printf("EyY1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyY1 index_2Plus out of bounds !!!");
+                        printf("EyY1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyY1 index_1Moins out of bounds !!!");
+                        printf("EyY1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyY1 index_2Plu out of bounds !!!");
+                        printf("EyY1 index_2Plu out of bounds !!!");
                         abort();
                     }                 
                     if(index_pml >= (grid.size_Ey[0]-rhoX0-rhoX1)
                                     *grid.size_Ey[2]*rhoY1*2){
-                        printf("Hello : EyY1 index_pml out of bounds !!!");
+                        printf("EyY1 index_pml out of bounds !!!");
                         abort();
                     }
                     if(index_pml+1 >= (grid.size_Ey[0]-rhoX0-rhoX1)
                                     *grid.size_Ey[2]*rhoY1*2){
-                        printf("Hello : EyY1 index_pml out of bounds !!!");
+                        printf("EyY1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8104,6 +8192,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face z0:
     if(rhoZ0>0){
+        #pragma omp for collapse(3)
         for(size_t K=0; K<rhoZ0; K++){
             for(size_t J=1 ; J<size_y-1-rhoY0-rhoY1; J++){ 
                 for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX;
@@ -8135,24 +8224,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyZ0 index_1Plus out of bounds !!!");
+                        printf("EyZ0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyZ0 index_2Plus out of bounds !!!");
+                        printf("EyZ0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyZ0 index_1Moins out of bounds !!!");
+                        printf("EyZ0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyZ0 index_2Plu out of bounds !!!");
+                        printf("EyZ0 index_2Plu out of bounds !!!");
                         abort();
                     }                 
                     if(index_pml >= (grid.size_Ey[0]-rhoX0-rhoX1)
                                     *(grid.size_Ey[1]-rhoY0-rhoY1) *rhoZ0*2){
-                        printf("Hello : EyZ0 index_pml out of bounds !!!");
+                        printf("EyZ0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8169,6 +8258,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face z1:
     if(rhoZ1>0){
+        #pragma omp for collapse(3)
         for(size_t K=0; K<rhoZ1; K++){ 
             for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
                 for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX;  
@@ -8199,24 +8289,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyZ1 index_1Plus out of bounds !!!");
+                        printf("EyZ1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyZ1 index_2Plus out of bounds !!!");
+                        printf("EyZ1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EyZ1 index_1Moins out of bounds !!!");
+                        printf("EyZ1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
-                        printf("Hello : EyZ1 index_2Plu out of bounds !!!");
+                        printf("EyZ1 index_2Plu out of bounds !!!");
                         abort();
                     }                 
                     if(index_pml >= (grid.size_Ey[0]-rhoX0-rhoX1)
                                     *(grid.size_Ey[1]-rhoY0-rhoY1) *rhoZ1*2){
-                        printf("Hello : EyZ1 index_pml out of bounds !!!");
+                        printf("EyZ1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8247,6 +8337,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face x0:
     if(rhoX0>0){
+        #pragma omp for collapse(3)
         for(size_t K = 1 ; K < size_z - 1; K++){
             for(size_t  J = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY; 
                         J < size_y - 1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
@@ -8274,23 +8365,23 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzX0 index_1Plus out of bounds !!!");
+                        printf("EzX0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzX0 index_2Plus out of bounds !!!");
+                        printf("EzX0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzX0 index_1Moins out of bounds !!!");
+                        printf("EzX0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzX0 index_2Plu out of bounds !!!");
+                        printf("EzX0 index_2Plu out of bounds !!!");
                         abort();
                     }                 
                     if(index_pml >= grid.size_Ez[1]*grid.size_Ez[2]*rhoX0*2){
-                        printf("Hello : EzX0 index_pml out of bounds !!!");
+                        printf("EzX0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8310,6 +8401,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face x1:
     if(rhoX1 > 0){
+        #pragma omp for collapse(3)
         for(size_t K = 1 ; K < size_z - 1 ; K++){
             for(size_t  J = 1 + IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;  
                         J < size_y - 1 - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY; J++){
@@ -8335,23 +8427,23 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzX1 index_1Plus out of bounds !!!");
+                        printf("EzX1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzX1 index_2Plus out of bounds !!!");
+                        printf("EzX1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzX1 index_1Moins out of bounds !!!");
+                        printf("EzX1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzX1 index_2Plu out of bounds !!!");
+                        printf("EzX1 index_2Plu out of bounds !!!");
                         abort();
                     }                 
                     if(index_pml >= grid.size_Ez[1]*grid.size_Ez[2]*rhoX1*2){
-                        printf("Hello : EzX1 index_pml out of bounds I = %zu rhoX1 = %u IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = %zu\n",
+                        printf("EzX1 index_pml out of bounds I = %zu rhoX1 = %u IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = %zu\n",
                             I,rhoX1,IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX);
                         abort();
                     }
@@ -8372,6 +8464,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face y0:
     if(rhoY0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=0; J<rhoY0; J++){
                 for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
@@ -8400,24 +8493,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzY0 index_1Plus out of bounds !!!");
+                        printf("EzY0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzY0 index_2Plus out of bounds !!!");
+                        printf("EzY0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzY0 index_1Moins out of bounds !!!");
+                        printf("EzY0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzY0 index_2Plu out of bounds !!!");
+                        printf("EzY0 index_2Plu out of bounds !!!");
                         abort();
                     }                 
                     if(index_pml >= (grid.size_Ez[0]-rhoX0-rhoX1)
                                     *grid.size_Ez[2]*rhoY0*2){
-                        printf("Hello : EzY0 index_pml out of bounds !!!");
+                        printf("EzY0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8435,6 +8528,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face y1:
     if(rhoY1>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=0; J<rhoY1; J++){
                 for(size_t  I=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
@@ -8463,24 +8557,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzY1 index_1Plus out of bounds !!!");
+                        printf("EzY1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzY1 index_2Plus out of bounds !!!");
+                        printf("EzY1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzY1 index_1Moins out of bounds !!!");
+                        printf("EzY1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzY1 index_2Plu out of bounds !!!");
+                        printf("EzY1 index_2Plu out of bounds !!!");
                         abort();
                     }                 
                     if(index_pml >= (grid.size_Ez[0]-rhoX0-rhoX1)
                                     *grid.size_Ez[2]*rhoY1*2){
-                        printf("Hello : EzY1 index_pml out of bounds !!!");
+                        printf("EzY1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8497,6 +8591,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face z0: ATTENTION DIFFERENT
     if(rhoZ0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<1+rhoZ0; K++){
             for(size_t  J=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
                         J<size_y-1-rhoY0-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
@@ -8528,24 +8623,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzZ0 index_1Plus out of bounds !!!");
+                        printf("EzZ0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzZ0 index_2Plus out of bounds !!!");
+                        printf("EzZ0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzZ0 index_1Moins out of bounds !!!");
+                        printf("EzZ0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzZ0 index_2Plu out of bounds !!!");
+                        printf("EzZ0 index_2Plu out of bounds !!!");
                         abort();
                     }                 
                     if(index_pml >= (grid.size_Ez[0]-rhoX0-rhoX1)
                                     *(grid.size_Ez[1]-rhoY0-rhoY1) *rhoZ0*2){
-                        printf("Hello : EzZ0 index_pml out of bounds !!!");
+                        printf("EzZ0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8563,6 +8658,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
     // face z1: ATTENTION DIFFERENT
     if(rhoZ1>0){
+        #pragma omp for collapse(3)
         for(size_t K=0; K<rhoZ1; K++){
             for(size_t  J=1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
                         J<size_y-1-rhoY0-rhoY1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY; 
@@ -8595,24 +8691,24 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzZ1 index_1Plus out of bounds !!!");
+                        printf("EzZ1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzZ1 index_2Plus out of bounds !!!");
+                        printf("EzZ1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
-                        printf("Hello : EzZ1 index_1Moins out of bounds !!!");
+                        printf("EzZ1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
-                        printf("Hello : EzZ1 index_2Plu out of bounds !!!");
+                        printf("EzZ1 index_2Plu out of bounds !!!");
                         abort();
                     }                 
                     if(index_pml >= (grid.size_Ez[0]-rhoX0-rhoX1)
                                     *(grid.size_Ez[1]-rhoY0-rhoY1) *rhoZ1*2){
-                        printf("Hello : EzZ1 index_pml out of bounds !!!");
+                        printf("EzZ1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8688,6 +8784,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
     // face x0:  ATTENTION DIFFERENT
 
     if(rhoX0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=1; J<size_y-1; J++){
                 for(size_t I=1; I<1+rhoX0; I++){
@@ -8704,23 +8801,23 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxX0 index_1Plus out of bounds !!!");
+                        printf("HxX0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxX0 index_2Plus out of bounds !!!");
+                        printf("HxX0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxX0 index_1Moins out of bounds !!!");
+                        printf("HxX0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxX0 index_2Plus out of bounds !!!");
+                        printf("HxX0 index_2Plus out of bounds !!!");
                         abort();
                     }                
                     if(index_pml >= grid.size_Hx[1]*grid.size_Hx[2]*rhoX0*2){
-                        printf("Hello : HxX0 index_pml out of bounds !!!");
+                        printf("HxX0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8750,6 +8847,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face x1:  ATTENTION DIFFERENT
     if(rhoX1>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=1; J<size_y-1; J++){
                 for(size_t I=0; I<rhoX1; I++){ 
@@ -8769,23 +8867,23 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxX1 index_1Plus out of bounds !!!");
+                        printf("HxX1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxX1 index_2Plus out of bounds !!!");
+                        printf("HxX1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxX1 index_1Moins out of bounds !!!");
+                        printf("HxX1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxX1 index_2Plus out of bounds !!!");
+                        printf("HxX1 index_2Plus out of bounds !!!");
                         abort();
                     }                
                     if(index_pml >= grid.size_Hx[1]*grid.size_Hx[2]*rhoX1*2){
-                        printf("Hello : HxX1 index_pml out of bounds !!!");
+                        printf("HxX1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8806,6 +8904,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face y0:
     if(rhoY0>0){
+        #pragma omp for collapse(3)
         for(size_t K = 1 ; K < size_z - 1 ; K++){
             for(size_t J = 1 ; J < 1 + rhoY0; J++){
                 for(size_t I = 1 ; I < size_x - 1 - rhoX0 - rhoX1 ; I++){
@@ -8823,24 +8922,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxY0 index_1Plus out of bounds (I,J,K)=(%zu,%zu,%zu)!!!",I,J,K);
+                        printf("HxY0 index_1Plus out of bounds (I,J,K)=(%zu,%zu,%zu)!!!",I,J,K);
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxY0 index_2Plus out of bounds !!!");
+                        printf("HxY0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxY0 index_1Moins out of bounds !!!");
+                        printf("HxY0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxY0 index_2Plus out of bounds !!!");
+                        printf("HxY0 index_2Plus out of bounds !!!");
                         abort();
                     }                
                     if(index_pml >= (grid.size_Hx[0]-rhoX0-rhoX1)
                                     *grid.size_Hx[2]*rhoY0*2){
-                        printf("Hello : HxY0 index_pml out of bounds !!!");
+                        printf("HxY0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8861,6 +8960,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face y1:
     if(rhoY1>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=0; J<rhoY1; J++){ // We consider here J = 1 with J'=size_y-1-rhoY1 
                                             // such as J'-size_y-1+rhoY1+2=1=J  then J'=J+size_y-rhoY1+2
@@ -8880,24 +8980,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxY1 index_1Plus out of bounds !!!");
+                        printf("HxY1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxY1 index_2Plus out of bounds !!!");
+                        printf("HxY1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxY1 index_1Moins out of bounds !!!");
+                        printf("HxY1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxY1 index_2Plus out of bounds !!!");
+                        printf("HxY1 index_2Plus out of bounds !!!");
                         abort();
                     }                
                     if(index_pml >= (grid.size_Hx[0]-rhoX0-rhoX1)
                                     *grid.size_Hx[2]*rhoY1*2){
-                        printf("Hello : HxY1 index_pml out of bounds !!!");
+                        printf("HxY1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8918,6 +9018,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face z0:
     if(rhoZ0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<1+rhoZ0; K++){
             for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
                 for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
@@ -8936,24 +9037,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxZ0 index_1Plus out of bounds !!!");
+                        printf("HxZ0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxZ0 index_2Plus out of bounds !!!");
+                        printf("HxZ0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxZ0 index_1Moins out of bounds !!!");
+                        printf("HxZ0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxZ0 index_2Plus out of bounds !!!");
+                        printf("HxZ0 index_2Plus out of bounds !!!");
                         abort();
                     }                
                     if(index_pml >= ((grid.size_Hx[0]-rhoX0-rhoX1)
                                     *(grid.size_Hx[1]-rhoY0-rhoY1) *rhoZ0*2) ) {
-                        printf("Hello : HxY1 index_pml out of bounds !!!");
+                        printf("HxY1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -8973,6 +9074,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face z1:
     if(rhoZ1>0){
+        #pragma omp for collapse(3)
         for(size_t K=0; K<rhoZ1; K++){
             for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
                 for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
@@ -8992,24 +9094,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxZ1 index_1Plus out of bounds !!!");
+                        printf("HxZ1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxZ1 index_2Plus out of bounds !!!");
+                        printf("HxZ1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HxZ1 index_1Moins out of bounds !!!");
+                        printf("HxZ1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HxZ1 index_2Plus out of bounds !!!");
+                        printf("HxZ1 index_2Plus out of bounds !!!");
                         abort();
                     }                
                     if(index_pml >= (grid.size_Hx[0]-rhoX0-rhoX1)
                                     *(grid.size_Hx[1]-rhoY0-rhoY1) *rhoZ1*2) {
-                        printf("Hello : HxZ1 index_pml out of bounds !!!");
+                        printf("HxZ1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9040,6 +9142,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face x0:
     if(rhoX0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=1; J<size_y-1; J++){
                 for(size_t I=1; I<1+rhoX0; I++){
@@ -9055,23 +9158,23 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyX0 index_1Plus out of bounds !!!");
+                        printf("HyX0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyX0 index_2Plus out of bounds !!!");
+                        printf("HyX0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyX0 index_1Moins out of bounds !!!");
+                        printf("HyX0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyX0 index_2Plus out of bounds !!!");
+                        printf("HyX0 index_2Plus out of bounds !!!");
                         abort();
                     }                
                     if(index_pml >= grid.size_Hy[1]*grid.size_Hy[2]*rhoX0*2) {
-                        printf("Hello : HyX0 index_pml out of bounds !!!");
+                        printf("HyX0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9099,6 +9202,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face x1:
     if(rhoX1>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=1; J<size_y-1; J++){
                 for(size_t I=0; I<rhoX1; I++){
@@ -9117,23 +9221,23 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyX1 index_1Plus out of bounds !!!");
+                        printf("HyX1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyX1 index_2Plus out of bounds !!!");
+                        printf("HyX1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyX1 index_1Moins out of bounds !!!");
+                        printf("HyX1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyX1 index_2Plus out of bounds !!!");
+                        printf("HyX1 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= grid.size_Hy[1]*grid.size_Hy[2]*rhoX1*2) {
-                        printf("Hello : HyX1 index_pml out of bounds !!!");
+                        printf("HyX1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9150,6 +9254,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face y0: ATTENTION DIFFERENT
     if(rhoY0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=1; J<1+rhoY0; J++){
                 for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
@@ -9167,24 +9272,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyY0 index_1Plus out of bounds !!!");
+                        printf("HyY0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyY0 index_2Plus out of bounds !!!");
+                        printf("HyY0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyY0 index_1Moins out of bounds !!!");
+                        printf("HyY0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyY0 index_2Plus out of bounds !!!");
+                        printf("HyY0 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= (grid.size_Hy[0]-rhoX0-rhoX1)
                                     *grid.size_Hy[2]*rhoY0*2) {
-                        printf("Hello : HyY0 index_pml out of bounds !!!");
+                        printf("HyY0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9201,6 +9306,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face y1: ATTENTION DIFFERENT
     if(rhoY1>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=0; J<rhoY1; J++){ // We consider here J = 1 with J'=size_y-1-rhoY1 
                                             // such as J'-size_y-1+rhoY1+2=1=J  then J'=J+size_y-rhoY1+2
@@ -9221,24 +9327,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyY1 index_1Plus out of bounds !!!");
+                        printf("HyY1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyY1 index_2Plus out of bounds !!!");
+                        printf("HyY1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyY1 index_1Moins out of bounds !!!");
+                        printf("HyY1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyY1 index_2Plus out of bounds !!!");
+                        printf("HyY1 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= (grid.size_Hy[0]-rhoX0-rhoX1)
                                     *grid.size_Hy[2]*rhoY1*2) {
-                        printf("Hello : HyY1 index_pml out of bounds !!!");
+                        printf("HyY1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9267,6 +9373,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face z0:
     if(rhoZ0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<1+rhoZ0; K++){
             for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
                 for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
@@ -9287,24 +9394,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyZ0 index_1Plus out of bounds !!!");
+                        printf("HyZ0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyZ0 index_2Plus out of bounds !!!");
+                        printf("HyZ0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyZ0 index_1Moins out of bounds !!!");
+                        printf("HyZ0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyZ0 index_2Plus out of bounds !!!");
+                        printf("HyZ0 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= (grid.size_Hy[0]-rhoX0-rhoX1)
                                     *(grid.size_Hy[1]-rhoY0-rhoY1) *rhoZ0*2) {
-                        printf("Hello : HyZ0 index_pml out of bounds !!!");
+                        printf("HyZ0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9321,6 +9428,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face z1:
     if(rhoZ1>0){
+        #pragma omp for collapse(3)
         for(size_t K=0; K<rhoZ1; K++){
             for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
                 for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
@@ -9342,24 +9450,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyZ1 index_1Plus out of bounds !!!");
+                        printf("HyZ1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyZ1 index_2Plus out of bounds !!!");
+                        printf("HyZ1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
-                        printf("Hello : HyZ1 index_1Moins out of bounds !!!");
+                        printf("HyZ1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HyZ1 index_2Plus out of bounds !!!");
+                        printf("HyZ1 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= (grid.size_Hy[0]-rhoX0-rhoX1)
                                     *(grid.size_Hy[1]-rhoY0-rhoY1) *rhoZ1*2) {
-                        printf("Hello : HyZ1 index_pml out of bounds !!!");
+                        printf("HyZ1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9388,6 +9496,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face x0:
     if(rhoX0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=1; J<size_y-1; J++){
                 for(size_t I=1; I<1+rhoX0; I++){
@@ -9403,23 +9512,23 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzX0 index_1Plus out of bounds !!!");
+                        printf("HzX0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzX0 index_2Plus out of bounds !!!");
+                        printf("HzX0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzX0 index_1Moins out of bounds !!!");
+                        printf("HzX0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzX0 index_2Plus out of bounds !!!");
+                        printf("HzX0 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= grid.size_Hz[1]*grid.size_Hz[2]*rhoX0*2){
-                        printf("Hello : HzX0 index_pml out of bounds !!!");
+                        printf("HzX0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9440,6 +9549,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face x1:
     if(rhoX1>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=1; J<size_y-1; J++){
                 for(size_t I=0; I<rhoX1; I++){ 
@@ -9458,23 +9568,23 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzX1 index_1Plus out of bounds !!!");
+                        printf("HzX1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzX1 index_2Plus out of bounds !!!");
+                        printf("HzX1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzX1 index_1Moins out of bounds !!!");
+                        printf("HzX1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzX1 index_2Plus out of bounds !!!");
+                        printf("HzX1 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= grid.size_Hz[1]*grid.size_Hz[2]*rhoX1*2){
-                        printf("Hello : HzX1 index_pml out of bounds !!!");
+                        printf("HzX1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9496,6 +9606,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     //printf("\n \t Hello : rhoY0 PML %zu \n", rhoY0);
     if(rhoY0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=1; J<1+rhoY0; J++){
                 for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
@@ -9513,24 +9624,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzY0 index_1Plus out of bounds !!!");
+                        printf("HzY0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzY0 index_2Plus out of bounds !!!");
+                        printf("HzY0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzY0 index_1Moins out of bounds !!!");
+                        printf("HzY0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzY0 index_2Plus out of bounds !!!");
+                        printf("HzY0 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= (grid.size_Hz[0]-rhoX0-rhoX1)
                                     *grid.size_Hz[2]*rhoY0*2){
-                        printf("Hello : HzY0 index_pml out of bounds !!!");
+                        printf("HzY0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9557,6 +9668,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face y1:
     if(rhoY1>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=0; J<rhoY1; J++){ 
                 for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
@@ -9575,24 +9687,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzY1 index_1Plus out of bounds !!!");
+                        printf("HzY1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzY1 index_2Plus out of bounds !!!");
+                        printf("HzY1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzY1 index_1Moins out of bounds !!!");
+                        printf("HzY1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzY1 index_2Plus out of bounds !!!");
+                        printf("HzY1 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= (grid.size_Hz[0]-rhoX0-rhoX1)
                                     *grid.size_Hz[2]*rhoY1*2){
-                        printf("Hello : HzY1 index_pml out of bounds !!!");
+                        printf("HzY1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9622,6 +9734,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face z0: ATTENTION DIFFERENT
     if(rhoZ0>0){
+        #pragma omp for collapse(3)
         for(size_t K=1; K<1+rhoZ0; K++){
             for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
                 for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
@@ -9641,24 +9754,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzZ0 index_1Plus out of bounds !!!");
+                        printf("HzZ0 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzZ0 index_2Plus out of bounds !!!");
+                        printf("HzZ0 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzZ0 index_1Moins out of bounds !!!");
+                        printf("HzZ0 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzZ0 index_2Plus out of bounds !!!");
+                        printf("HzZ0 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= (grid.size_Hz[0]-rhoX0-rhoX1)
                                     *(grid.size_Hz[1]-rhoY0-rhoY1) *rhoZ0*2){
-                        printf("Hello : HzZ0 index_pml out of bounds !!!");
+                        printf("HzZ0 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
@@ -9675,6 +9788,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face z1: ATTENTION DIFFERENT
     if(rhoZ1>0){
+        #pragma omp for collapse(3)
         for(size_t K=0; K<rhoZ1; K++){
             for(size_t J=1; J<size_y-1-rhoY0-rhoY1; J++){
                 for(size_t I=1; I<size_x-1-rhoX0-rhoX1; I++){
@@ -9695,24 +9809,24 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     
                     #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzZ1 index_1Plus out of bounds !!!");
+                        printf("HzZ1 index_1Plus out of bounds !!!");
                         abort();
                     }
                     if(index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzZ1 index_2Plus out of bounds !!!");
+                        printf("HzZ1 index_2Plus out of bounds !!!");
                         abort();
                     }
                     if(index_1Moins < 0 || index_1Moins >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
-                        printf("Hello : HzZ1 index_1Moins out of bounds !!!");
+                        printf("HzZ1 index_1Moins out of bounds !!!");
                         abort();
                     }
                     if(index_2Moins < 0 ||index_2Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
-                        printf("Hello : HzZ1 index_2Plus out of bounds !!!");
+                        printf("HzZ1 index_2Plus out of bounds !!!");
                         abort();
                     }               
                     if(index_pml >= (grid.size_Hz[0]-rhoX0-rhoX1)
                                     *(grid.size_Hz[1]-rhoY0-rhoY1) *rhoZ1*2){
-                        printf("Hello : HzZ1 index_pml out of bounds !!!");
+                        printf("HzZ1 index_pml out of bounds !!!");
                         abort();
                     }
                     #endif
