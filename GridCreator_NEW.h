@@ -225,6 +225,8 @@ class GridCreator_NEW{
             std::vector<double> const& deltasBrain,
             std::vector<std::string> const& materialsBrain
         );
+
+        std::vector<size_t> nodes_of_the_real_brain = {0,0,0};
 };
 
 #endif

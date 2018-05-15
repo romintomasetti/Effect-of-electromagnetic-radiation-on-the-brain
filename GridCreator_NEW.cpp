@@ -1811,6 +1811,9 @@ void GridCreator_NEW::fillIn_material_with_geometry_file(void){
                     = read_vector_string(geometryFileJSON,"realBrain.binFile",std::vector<std::string>(0));
                 std::vector<size_t> nodesBrain
                     = read_vector_size_t(geometryFileJSON,"realBrain.N_cells",std::vector<size_t>(0));
+                this->nodes_of_the_real_brain[0] = nodesBrain[0];
+                this->nodes_of_the_real_brain[1] = nodesBrain[1];
+                this->nodes_of_the_real_brain[2] = nodesBrain[2];
                 std::vector<std::string> materialsBrain
                     = read_vector_string(geometryFileJSON,"realBrain.materials",std::vector<std::string>(0));
 
