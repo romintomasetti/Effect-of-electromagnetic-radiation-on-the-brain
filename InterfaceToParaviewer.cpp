@@ -327,7 +327,8 @@ std::string InterfaceToParaviewer::create_folder_and_go_in(std::string folderNam
  * Detailed explanation goes here.
  */
 void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
-            std::string type /*"thermal" or "electro", case sensitive*/){
+            std::string type /*"thermal" or "electro", case sensitive*/,
+            algoElectroToVtlRomin pmlVersSauvegarde){
 
     /* FETCH THE OUPUT FILE NAME */
     map<std::string,std::string> outputFileNames;
@@ -360,7 +361,8 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
                         this->grid_Thermal, 
                         this->mygrid_Thermal,
                         this->grid_Creator_NEW, 
-                        vtl_romin::ZIPPED);
+                        vtl_romin::ZIPPED,
+                        pmlVersSauvegarde);
 
         /* ONLY THE ROOT PROCESS CALLS THE FOLLOWING FUNCTION */
         if (this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess)
@@ -388,7 +390,8 @@ void InterfaceToParaviewer::convertAndWriteData(unsigned long currentStep,
                         this->grid_Electro, 
                         this->mygrid_Electro,
                         this->grid_Creator_NEW, 
-                        vtl_romin::ZIPPED);
+                        vtl_romin::ZIPPED,
+                        pmlVersSauvegarde);
 
         /* ONLY THE ROOT PROCESS CALLS THE FOLLOWING FUNCTION */
         if (this->MPI_communicator.isRootProcess() == this->MPI_communicator.rootProcess)

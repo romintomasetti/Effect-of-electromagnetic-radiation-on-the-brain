@@ -1,6 +1,7 @@
 #ifndef INTERFACETOPARAVIEWER_H
 #define INTERFACETOPARAVIEWER_H
 
+#include "header_with_all_defines.hpp"
 
 #include "GridCreator_NEW.h"
 
@@ -51,7 +52,8 @@ class InterfaceToParaviewer{
 
         // Convert and write output:
         void convertAndWriteData(unsigned long currentStep,
-                std::string type /*"thermal" or "electro", case sensitive*/);
+                std::string type /*"thermal" or "electro", case sensitive*/,
+                algoElectroToVtlRomin pmlVersSauvegarde);
 
         std::string create_folder_and_go_in(std::string folderName);
 };
