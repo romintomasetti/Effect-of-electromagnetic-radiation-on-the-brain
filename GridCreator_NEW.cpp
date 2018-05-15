@@ -451,10 +451,17 @@ void GridCreator_NEW::meshInitialization(void){
             "Your temperature grid is empty (size T is 0)."
         );
     }
-    this->temperature          = new double[T]();
-    this->temperature_material = new unsigned char[T]();
-    this->thermal_conductivity = new double[T]();
-    this->thermal_diffusivity  = new double[T]();
+    // NOTE: Temperature is not allocated in GridCreator anymore. See algo_thermo.
+    if(
+        this->input_parser.get_SimulationType() == "TEST_PARAVIEW_MPI"
+        ||
+        this->input_parser.get_SimulationType() == "TEST_PARAVIEW"
+    ){
+        this->temperature          = new double[T]();
+        this->temperature_material = new unsigned char[T]();
+        this->thermal_conductivity = new double[T]();
+        this->thermal_diffusivity  = new double[T]();
+    }
 
     /* INITIALIZATION OF THE NODES */
     if(this->VERBOSITY >= 1)
@@ -910,9 +917,10 @@ void GridCreator_NEW::Assign_Init_Temperature_to_Temperature_nodes(void){
 
     if(this->input_parser.get_SimulationType() == "USE_AIR_EVERYWHERE"){
 
-        double init_air_temp = this->input_parser.GetInitTemp_FromMaterialName["AIR"];
+        //double init_air_temp = this->input_parser.GetInitTemp_FromMaterialName["AIR"];
 
-        #pragma omp parallel num_threads(nbr_omp_threads)\
+        // NOTE: Temperature is not allocated in GridCreator anymore. See algo_thermo.
+        /*#pragma omp parallel num_threads(nbr_omp_threads)\
             private(index)
         {
             #pragma omp for collapse(3)
@@ -925,7 +933,7 @@ void GridCreator_NEW::Assign_Init_Temperature_to_Temperature_nodes(void){
                             }
                         }
                     }
-        }
+        }*/
     }else if(this->input_parser.get_SimulationType() == "TEST_PARAVIEW"){
         /**
          * @brief In the case of "TEST_PARAVIEW", fill in with I.

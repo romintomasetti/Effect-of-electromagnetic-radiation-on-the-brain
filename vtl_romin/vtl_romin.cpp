@@ -309,11 +309,12 @@ size_t write_vectorXML_custom_GridCreatorNew(
             size_field = size[0]*size[1]*size[2];
             buffer.resize(size_field);
 
-            size_t index   = 0;
+            //size_t index   = 0;
 
-            size_t I,J,K;
+            //size_t I,J,K;
 
-            for(K = 0 ; K < size[2] ; K ++){
+            // Note: temperature is not used in GridCreator but in algo_thermo.cpp
+            /*for(K = 0 ; K < size[2] ; K ++){
                 for(J = 0 ; J < size[1] ; J ++){
                     for(I = 0 ; I < size[0] ; I ++){
 
@@ -325,7 +326,7 @@ size_t write_vectorXML_custom_GridCreatorNew(
                         
                     }
                 }
-            }
+            }*/
 
         }else{
             printf("vtl::write_vectorXML_custom::ERROR in scalar field name. Has %s\n",fieldName.c_str());
