@@ -158,8 +158,14 @@ int main(int argc, char *argv[]){
 
 	
 	if(input_parser.apply_electro_algo == true){
-		interfaceToWriteOutput.convertAndWriteData(0,"THERMAL");
-		interfaceToWriteOutput.convertAndWriteData(0,"ELECTRO");
+        algoElectroToVtlRomin tmpStruct;
+        tmpStruct.PML_sont_appliquees = false;
+		interfaceToWriteOutput.convertAndWriteData(
+            0,"THERMAL",
+            tmpStruct);
+		interfaceToWriteOutput.convertAndWriteData(
+            0,"ELECTRO",
+            tmpStruct);
 	}
     
     //MPI_Barrier(MPI_COMM_WORLD);
