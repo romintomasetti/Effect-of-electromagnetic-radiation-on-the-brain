@@ -2,9 +2,9 @@
     "file.info"           : "This file is the geometry input for the real brain scan of size 100 by 119 by 100",
     "geometriesAre"       : ["realBrain"],
     "realBrain.howMany"   : 1,
-    "realBrain.centers"   : [0.25,0.25,0.25],
+    "realBrain.centers"   : [0.35,0.35,0.35],
     "realBrain.binFile"   : ["../BrainScans/DATA/materials_100by119by100.bin"],
     "realBrain.deltas"    : [0.0018318496,0.0018318496,0.0018318496],
     "realBrain.N_cells"   : [100,119,100],
-    "realBrain.materials" : ["0=Air, 1=Cerebrospinal Fluid, 2=Gray Matter, 3=White Matter, 4=Fat, 5=Muscle, 6=Skin, 7=Skull Cortical, 8=Blood Vessel Wall, 9=fat, 10 =dura ,11=Bone Marrow"]
+    "realBrain.materials" : ["0=Air, 1=Cerebrospinal Fluid, 2=Gray Matter, 3=White Matter, 4=Fat, 5=Muscle, 6=Skin, 7=BoneCortical, 8=Blood Vessel Wall, 9=fat, 10 =dura ,11=Bone Marrow"]
 }
