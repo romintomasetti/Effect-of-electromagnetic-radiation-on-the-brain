@@ -283,7 +283,8 @@ size_t write_vectorXML_custom_GridCreatorNew(
     GridCreator_NEW &grid, 
     std::string fieldName, 
     char vecORsca, 
-    bool usez)
+    bool usez,
+    algoElectroToVtlRomin pmlVersSauvegarde)
 {
     check_omp_nested_enabled();
     // Size written in file:
@@ -351,17 +352,62 @@ size_t write_vectorXML_custom_GridCreatorNew(
             size_field = ( size[0] * size[1] * size[2] ) * 3;
             
             buffer.resize(size_field);
+            std::fill(buffer.begin(),buffer.end(),0);
 
             size_t index   = 0;
             size_t buff_index = 0;
 
             size_t I,J,K;
+            
+            ///////////// USING PML STRUCT ////////
+            /* The goal is to avoid writing pml in the file !.*/
+            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = 0;
+            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = 0;
+            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = 0;
+            size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = 0;
+            size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = 0;
+            size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = 0;
+            size_t rhoX0 = 0;
+            size_t rhoX1 = 0;
+            size_t rhoY0 = 0;
+            size_t rhoY1 = 0;
+            size_t rhoZ0 = 0;
+            size_t rhoZ1 = 0;
+            if(pmlVersSauvegarde.PML_sont_appliquees == true){
+                // Assign variables:
+                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX 
+                    = pmlVersSauvegarde.IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX;
+                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY 
+                    = pmlVersSauvegarde.IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+                IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ 
+                    = pmlVersSauvegarde.IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
+                IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX 
+                    = pmlVersSauvegarde.IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX;
+                IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY 
+                    = pmlVersSauvegarde.IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
+                IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ 
+                    = pmlVersSauvegarde.IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ;
+                rhoX0 = pmlVersSauvegarde.rhoX0;
+                rhoX1 = pmlVersSauvegarde.rhoX1;
+                rhoY0 = pmlVersSauvegarde.rhoY0;
+                rhoY1 = pmlVersSauvegarde.rhoY1;
+                rhoZ0 = pmlVersSauvegarde.rhoZ0;
+                rhoZ1 = pmlVersSauvegarde.rhoZ1;
+            }else{
+                // Do nothing.
+            }
 
 
             // EX field:
-            for(K = 1 ; K < grid.size_Ex[2]-1 ; K ++){
-                for(J = 1 ; J < grid.size_Ex[1]-1 ; J ++ ){
-                    for(I = 1 ; I < grid.size_Ex[0]-1 ; I ++){
+            for(K = 1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
+                K < grid.size_Ex[2]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
+                K ++){
+                for(J = 1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+                    J < grid.size_Ex[1]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY; 
+                    J ++ ){
+                    for(I = 1+rhoX0 ;
+                        I < grid.size_Ex[0]-1-rhoX1 ; 
+                        I ++){
 
                         
 
@@ -379,9 +425,15 @@ size_t write_vectorXML_custom_GridCreatorNew(
             }
 
             // EY field:
-            for(size_t K = 1 ; K < grid.size_Ey[2]-1 ; K ++){
-                for(size_t J = 1 ; J < grid.size_Ey[1]-1 ; J ++ ){
-                    for(size_t I = 1 ; I < grid.size_Ey[0]-1 ; I ++){
+            for(size_t K = 1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
+                K < grid.size_Ey[2]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ; 
+                K ++){
+                for(size_t J = 1+rhoY0 ; 
+                    J < grid.size_Ey[1]-1-rhoY1 ; 
+                    J ++ ){
+                    for(size_t I = 1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX;
+                        I < grid.size_Ey[0]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX; 
+                        I ++){
 
                         index = I + grid.size_Ey[0] * ( J + grid.size_Ey[1] * K );
                         ASSERT(index,<,grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]);
@@ -396,9 +448,15 @@ size_t write_vectorXML_custom_GridCreatorNew(
             }
 
             // EZ field:
-            for(size_t K = 1 ; K < grid.size_Ez[2]-1 ; K ++){
-                for(size_t J = 1 ; J < grid.size_Ez[1]-1 ; J ++ ){
-                    for(size_t I = 1 ; I < grid.size_Ez[0]-1 ; I ++){
+            for(size_t K = 1+rhoZ0;
+                K < grid.size_Ez[2]-1-rhoZ1;
+                K ++){
+                for(size_t J = 1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+                    J < grid.size_Ez[1]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY; 
+                    J ++ ){
+                    for(size_t I = 1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX;
+                        I < grid.size_Ez[0]-1-IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX;
+                        I ++){
 
                         index = I + grid.size_Ez[0] * ( J + grid.size_Ez[1] * K );
                         ASSERT(index,<,grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]);
@@ -433,6 +491,7 @@ size_t write_vectorXML_custom_GridCreatorNew(
                     (size[1])*(size[2])*3;
 
             buffer.resize(size_field);
+            std::fill(buffer.begin(),buffer.end(),0);
 
             size_t index   = 0;
             size_t buff_index = 0;
@@ -440,11 +499,36 @@ size_t write_vectorXML_custom_GridCreatorNew(
             size_t I,J,K;
 
             const size_t RM = 1;
+            ///////////// USING PML STRUCT ////////
+            /* The goal is to avoid writing pml in the file !.*/
+            size_t rhoX0 = 0;
+            size_t rhoX1 = 0;
+            size_t rhoY0 = 0;
+            size_t rhoY1 = 0;
+            size_t rhoZ0 = 0;
+            size_t rhoZ1 = 0;
+            if(pmlVersSauvegarde.PML_sont_appliquees == true){
+                // Assign variables:
+                rhoX0 = pmlVersSauvegarde.rhoX0;
+                rhoX1 = pmlVersSauvegarde.rhoX1;
+                rhoY0 = pmlVersSauvegarde.rhoY0;
+                rhoY1 = pmlVersSauvegarde.rhoY1;
+                rhoZ0 = pmlVersSauvegarde.rhoZ0;
+                rhoZ1 = pmlVersSauvegarde.rhoZ1;
+            }else{
+                // Do nothing.
+            }
 
             // HX field:
-            for(K = 1 ; K < grid.size_Hx[2]-DECALAGE_H ; K ++){
-                for(J = 1 ; J < grid.size_Hx[1]-DECALAGE_H ; J ++ ){
-                    for(I = 1 ; I < grid.size_Hx[0]-DECALAGE_H ; I ++){
+            for(K = 1+rhoZ0;
+                K < grid.size_Hx[2]-DECALAGE_H-rhoZ1;
+                K ++){
+                for(J = 1+rhoY0;
+                    J < grid.size_Hx[1]-DECALAGE_H-rhoY1;
+                    J ++ ){
+                    for(I = 1+rhoX0;
+                        I < grid.size_Hx[0]-DECALAGE_H-rhoX1;
+                        I ++){
 
                         index = I + grid.size_Hx[0] * ( J + grid.size_Hx[1] * K );
                         ASSERT(index,<,grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]);
@@ -462,9 +546,15 @@ size_t write_vectorXML_custom_GridCreatorNew(
             }
 
             // HY field:
-            for(K = 1 ; K < grid.size_Hy[2]-DECALAGE_H ; K ++){
-                for(J = 1 ; J < grid.size_Hy[1]-DECALAGE_H ; J ++ ){
-                    for(I = 1 ; I < grid.size_Hy[0]-DECALAGE_H ; I ++){
+            for(K = 1+rhoZ0;
+                K < grid.size_Hy[2]-DECALAGE_H-rhoZ1;
+                K ++){
+                for(J = 1+rhoY0;
+                    J < grid.size_Hy[1]-DECALAGE_H-rhoY1;
+                    J ++ ){
+                    for(I = 1+rhoX0;
+                        I < grid.size_Hy[0]-DECALAGE_H-rhoX1;
+                        I ++){
 
                         index = I + grid.size_Hy[0] * ( J + grid.size_Hy[1] * K );
                         ASSERT(index,<,grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]);
@@ -482,9 +572,15 @@ size_t write_vectorXML_custom_GridCreatorNew(
             }
 
             // HZ field:
-            for(size_t K = 1 ; K < grid.size_Hz[2]-DECALAGE_H ; K ++){
-                for(size_t J = 1 ; J < grid.size_Hz[1]-DECALAGE_H ; J ++ ){
-                    for(size_t I = 1 ; I < grid.size_Hz[0]-DECALAGE_H ; I ++){
+            for(size_t K = 1+rhoZ0;
+                K < grid.size_Hz[2]-DECALAGE_H-rhoZ1;
+                K ++){
+                for(size_t J = 1+rhoY0;
+                    J < grid.size_Hz[1]-DECALAGE_H-rhoY1;
+                    J ++ ){
+                    for(size_t I = 1+rhoX0;
+                        I < grid.size_Hz[0]-DECALAGE_H-rhoX1;
+                        I ++){
 
                         index = I + grid.size_Hz[0] * ( J + grid.size_Hz[1] * K );
                         ASSERT(index,<,grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]);
@@ -1098,7 +1194,8 @@ VTL_API_ROMIN void vtl_romin::export_spoints_XML_custom_GridCreator_NEW(
     vtl_romin::SPoints &grid,
     vtl_romin::SPoints &my_grid,
     GridCreator_NEW &grid_Creator_NEW,
-    Zip zip
+    Zip zip,
+    algoElectroToVtlRomin pmlVersSauvegarde
 ){
     if(strcmp(type.c_str(),"ELECTRO") == 0){
         /**
@@ -1111,7 +1208,8 @@ VTL_API_ROMIN void vtl_romin::export_spoints_XML_custom_GridCreator_NEW(
             grid, 
             my_grid,
             grid_Creator_NEW,
-            zip);
+            zip,
+            pmlVersSauvegarde);
     }else if(strcmp(type.c_str(),"THERMAL") == 0){
         /**
          * @brief The MPI process writes its thermal grid.
@@ -1123,7 +1221,8 @@ VTL_API_ROMIN void vtl_romin::export_spoints_XML_custom_GridCreator_NEW(
             grid, 
             my_grid,
             grid_Creator_NEW,
-            zip);
+            zip,
+            pmlVersSauvegarde);
     }else{
         fprintf(stderr,"File %s:%d\n",__FILE__,__LINE__);
         abort();
@@ -1136,7 +1235,8 @@ VTL_API_ROMIN void vtl_romin::export_spoints_XML_GridCreatorNew(
     SPoints const &grid, 
     SPoints const &mygrid,
     GridCreator_NEW &grid_creatorObj,
-    Zip zip)
+    Zip zip,
+    algoElectroToVtlRomin pmlVersSauvegarde)
 {
 #if !defined(USE_ZLIB)
     if (zip==ZIPPED)
@@ -1215,7 +1315,12 @@ VTL_API_ROMIN void vtl_romin::export_spoints_XML_GridCreatorNew(
             f << " RangeMax=\"1\" ";
             f << " offset=\"" << offset << "\" />\n";
             offset += write_vectorXML_custom_GridCreatorNew(
-                f2, grid_creatorObj, it->first ,'s', (zip==ZIPPED));
+                            f2, 
+                            grid_creatorObj, 
+                            it->first ,
+                            's', 
+                            (zip==ZIPPED),
+                            pmlVersSauvegarde);
         }
     }else if(filename.find("ELECTRO") != std::string::npos){
 
@@ -1233,7 +1338,8 @@ VTL_API_ROMIN void vtl_romin::export_spoints_XML_GridCreatorNew(
             offset += write_vectorXML_custom_GridCreatorNew(f2, 
                         grid_creatorObj, 
                         it->first, 'v', 
-                        (zip==ZIPPED));
+                        (zip==ZIPPED),
+                        pmlVersSauvegarde);
         }
     }else{
         fprintf(stderr,"Cannot find thermal or electro in the filename (has %s)\n",

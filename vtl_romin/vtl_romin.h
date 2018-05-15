@@ -102,7 +102,8 @@ VTL_API_ROMIN void export_spoints_XML_custom_GridCreator_NEW(
     vtl_romin::SPoints &grid,
     vtl_romin::SPoints &my_grid,
     GridCreator_NEW &grid_Creator_NEW,
-    Zip zip);
+    Zip zip,
+    algoElectroToVtlRomin pmlVersSauvegarde);
 
 VTL_API_ROMIN void export_spoints_XML_GridCreatorNew(
     std::string const &filename,
@@ -110,7 +111,8 @@ VTL_API_ROMIN void export_spoints_XML_GridCreatorNew(
     SPoints const &grid, 
     SPoints const &mygrid,
     GridCreator_NEW &grid_creatorObj,
-    Zip zip);
+    Zip zip,
+    algoElectroToVtlRomin pmlVersSauvegarde);
     
 
 /**
