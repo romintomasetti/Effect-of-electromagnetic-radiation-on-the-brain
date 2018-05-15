@@ -281,6 +281,7 @@ class InputParser{
 		size_t thickness_PML_in_number_of_nodes = std::numeric_limits<std::size_t>::max();
 		double PML_order                        = std::numeric_limits<double>::max();
 		double PML_sigma_M                      = std::numeric_limits<double>::max();
+		bool   PML_improved                     = false;
 
 		/////////////////////////////////////////////////
 		/// END OF PARAMETERS FOR THE PML BOUNDARY CONDITONS ///

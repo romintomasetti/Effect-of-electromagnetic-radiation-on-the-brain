@@ -1775,6 +1775,11 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 							);
 						}
 
+					}else if( boost::iequals(propName,"Improved_PML")){
+						if( boost::iequals(propGiven,"true")){
+							this->PML_improved = true;
+						}
+
 					}else if(propName == "APPLY_PML"){
 						if(boost::iequals(propGiven,"true")){
 							this->apply_PML_BCs = true;
