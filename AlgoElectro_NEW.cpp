@@ -523,7 +523,7 @@ void AlgoElectro_NEW::update(
     double order_PML  = grid.input_parser.PML_order;
     size_t rho_PML    = grid.input_parser.thickness_PML_in_number_of_nodes;
     double sigmaM_PML = grid.input_parser.PML_sigma_M;
-    bool Improved_PML = false;
+    bool Improved_PML = grid.input_parser.PML_improved;
 
     // Thickness of the PML:
     unsigned int rhoX0 = 0;
@@ -2635,7 +2635,9 @@ void AlgoElectro_NEW::update(
                 if( grid.input_parser.check_steady_state == true){
                     // Total size without neighboors:
                     size_t tmp = (grid.size_Ez[0]-4) * (grid.size_Ez[1]-2) * (grid.size_Ez[2]-2);
-                    printf("\t>>> Number of Ez nodes that are in the steady state is %zu over %zu.\n",
+                    printf("\t>>> [MPI %d - %.3f %%] - Number of Ez nodes that are in the steady state is %zu over %zu.\n",
+                                grid.MPI_communicator.getRank(),
+                                (double)number_of_points_EZ_at_speady_state/(double)tmp*100.0,
                                 number_of_points_EZ_at_speady_state,
                                 tmp);
                     if(     number_of_points_EZ_at_speady_state >= std::floor(0.99 * tmp)-1
@@ -6150,777 +6152,6 @@ bool AlgoElectro_NEW::SteadyStateAnalyser(
 }
 
 
-
-
-
-double AlgoElectro_NEW::interpolationX(size_t x1, size_t x2, size_t x3,
-                                      size_t x4, size_t x5, size_t x6,
-                                      size_t x7, size_t x8,  GridCreator_NEW &grid)
-{
-    
-    double valueInterpolationX = 0.0;
-
-    size_t max_size_Ex = grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2];
-
-    if(x1 >= max_size_Ex){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ex avec x1."
-        );
-    }
-    if(x2 >= max_size_Ex){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ex avec x2."
-        );
-    }
-    if(x3 >= max_size_Ex){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ex avec x3."
-        );
-    }
-    if(x4 >= max_size_Ex){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ex avec x4."
-        );
-    }
-    if(x5 >= max_size_Ex){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ex avec x5."
-        );
-    }
-    if(x6 >= max_size_Ex){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ex avec x6."
-        );
-    }
-    if(x7 >= max_size_Ex){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ex avec x7."
-        );
-    }
-    if(x8 >= max_size_Ex){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ex avec x8."
-        );
-    }
-
-    double c_000_Ex = grid.E_x[x1];
-    double c_001_Ex = grid.E_x[x2];
-    double c_010_Ex = grid.E_x[x3];
-    double c_011_Ex = grid.E_x[x4];
-    double c_100_Ex = grid.E_x[x5];
-    double c_101_Ex = grid.E_x[x6];
-    double c_110_Ex = grid.E_x[x7];
-    double c_111_Ex = grid.E_x[x8];
-
-    double Mean15_x = (c_000_Ex + c_100_Ex) / 2;
-    double Mean26_x = (c_001_Ex + c_101_Ex) / 2;
-    double Mean37_x = (c_010_Ex + c_110_Ex) / 2;
-    double Mean48_x = (c_011_Ex + c_111_Ex) / 2;
-
-    double Mean1537_x = (Mean15_x + Mean37_x) / 2;
-    double Mean2648_x = (Mean26_x + Mean48_x) / 2;
-
-    valueInterpolationX = (Mean1537_x + Mean2648_x) / 2;
-
-    return valueInterpolationX;
-}
-
-
-double AlgoElectro_NEW::interpolationY(size_t y1, size_t y2, size_t y3,
-                                      size_t y4, size_t y5, size_t y6,
-                                      size_t y7, size_t y8,  GridCreator_NEW &grid)
-{
-    
-    double valueInterpolationY = 0.0;
-    
-    size_t max_size_Ey = grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2];
-
-    if(y1 >= max_size_Ey){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ey avec y1."
-        );
-    }
-    if(y2 >= max_size_Ey){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ey avec y2."
-        );
-    }
-    if(y3 >= max_size_Ey){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ey avec y3."
-        );
-    }
-    if(y4 >= max_size_Ey){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ey avec y4."
-        );
-    }
-    if(y5 >= max_size_Ey){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ey avec y5."
-        );
-    }
-    if(y6 >= max_size_Ey){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ey avec y6."
-        );
-    }
-    if(y7 >= max_size_Ey){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ey avec y7."
-        );
-    }
-    if(y8 >= max_size_Ey){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ey avec y8."
-        );
-    }
-    
-    
-    // Will contain the value of Ex along the 3 direction of space that will be used to compute the modulus
-    // double *EyForModulus = (double *)calloc(3, sizeof(double));
-    
-    // if(EyForModulus == NULL)
-    // {
-    //     printf("The pointer EyForModulus could not be allocated.\n");
-    //     printf("This error comes from line %d from file %s\n", __LINE__, __FILE__);
-    //     printf("Aborting...");
-    //     exit(EXIT_FAILURE);
-    // }
-
-    double c_000_Ey = grid.E_y[y1];
-    double c_001_Ey = grid.E_y[y2];
-    double c_010_Ey = grid.E_y[y3];
-    double c_011_Ey = grid.E_y[y4];
-    double c_100_Ey = grid.E_y[y5];
-    double c_101_Ey = grid.E_y[y6];
-    double c_110_Ey = grid.E_y[y7];
-    double c_111_Ey = grid.E_y[y8];
-
-    double Mean15_y = (c_000_Ey + c_100_Ey) / 2;
-    double Mean26_y = (c_001_Ey + c_101_Ey) / 2;
-    double Mean37_y = (c_010_Ey + c_110_Ey) / 2;
-    double Mean48_y = (c_011_Ey + c_111_Ey) / 2;
-
-    double Mean1537_y = (Mean15_y + Mean37_y) / 2;
-    double Mean2648_y = (Mean26_y + Mean48_y) / 2;
-
-    valueInterpolationY = (Mean1537_y + Mean2648_y) / 2;
-
-    return valueInterpolationY;
-}
-
-
-double AlgoElectro_NEW::interpolationZ(size_t z1, size_t z2, size_t z3,
-                                      size_t z4, size_t z5, size_t z6,
-                                      size_t z7, size_t z8,  GridCreator_NEW &grid)
-{
-    
-    double valueInterpolationZ = 0.0;
-
-    size_t max_size_Ez = grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2];
-
-    if(z1 >= max_size_Ez){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ez avec z1."
-        );
-    }
-    if(z2 >= max_size_Ez){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ez avec z2."
-        );
-    }
-    if(z3 >= max_size_Ez){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ez avec z3."
-        );
-    }
-    if(z4 >= max_size_Ez){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ez avec z4."
-        );
-    }
-    if(z5 >= max_size_Ez){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ez avec z5."
-        );
-    }
-    if(z6 >= max_size_Ez){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ez avec z6."
-        );
-    }
-    if(z7 >= max_size_Ez){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ez avec z7."
-        );
-    }
-    if(z8 >= max_size_Ez){
-        DISPLAY_ERROR_ABORT_CLASS(
-            "Dépassement de tabeau pour Ez avec z8."
-        );
-    }
-    
-    double c_000_Ez = grid.E_z[z1];
-    double c_001_Ez = grid.E_z[z2];
-    double c_010_Ez = grid.E_z[z3];
-    double c_011_Ez = grid.E_z[z4];
-    double c_100_Ez = grid.E_z[z5];
-    double c_101_Ez = grid.E_z[z6];
-    double c_110_Ez = grid.E_z[z7];
-    double c_111_Ez = grid.E_z[z8];
-
-    double Mean15_z = (c_000_Ez + c_100_Ez) / 2;
-    double Mean26_z = (c_001_Ez + c_101_Ez) / 2;
-    double Mean37_z = (c_010_Ez + c_110_Ez) / 2;
-    double Mean48_z = (c_011_Ez + c_111_Ez) / 2;
-
-    double Mean1537_z = (Mean15_z + Mean37_z) / 2;
-    double Mean2648_z = (Mean26_z + Mean48_z) / 2;
-
-    valueInterpolationZ = (Mean1537_z + Mean2648_z) / 2;
-
-    return valueInterpolationZ;
-}
-
-
-size_t AlgoElectro_NEW::findMinInVec(std::vector<size_t> vec)
-{
-    size_t minimum = INT_MAX;
-    size_t length = vec.size();
-    size_t i = 0;
-
-    for(i=0; i<length; i++)
-    {
-        if(vec[i] < minimum)
-            minimum = vec[i];
-    }
-
-    return minimum;
-}
-
-
-size_t AlgoElectro_NEW::findMin(size_t a, size_t b, size_t c)
-{
-    size_t minimum = std::min( std::min(a,b), c );
-
-    return minimum;
-}
-
-
-
-std::vector<double> AlgoElectro_NEW::ComputeNormE2square(GridCreator_NEW &grid)
-{
-    printf("Entering ComputeNormE2square\n");
-
-    // Those indices will serve to go through all the nodes of the domain
-    size_t i = 0;
-    size_t j = 0;
-    size_t k = 0;
-
-    // Those vectors will contain the number of centers along all the directions
-    std::vector<size_t> NbCentersX;
-    std::vector<size_t> NbCentersY;
-    std::vector<size_t> NbCentersZ;
-
-    // This vector will contain the norm of the electric field at each node
-    std::vector<double> ModulusE;
-
-    // Number of centers for Ex along the 3 directions of space
-    size_t NbCentersExx = grid.size_Ex[0] - 2;
-    NbCentersX.push_back(NbCentersExx);
-    size_t NbCentersExy = grid.size_Ex[1] - 2;
-    NbCentersX.push_back(NbCentersExy);
-    size_t NbCentersExz = grid.size_Ex[2] - 2;
-    NbCentersX.push_back(NbCentersExz);
-    printf("NbCentersX = [%zu, %zu,%zu]\n", NbCentersExx, NbCentersExy, NbCentersExz);
-
-    // Number of centers for Ey along the 3 directions of space
-    size_t NbCentersEyx = grid.size_Ey[0] - 2;
-    NbCentersY.push_back(NbCentersEyx);
-    size_t NbCentersEyy = grid.size_Ey[1] - 2;
-    NbCentersY.push_back(NbCentersEyy);
-    size_t NbCentersEyz = grid.size_Ey[2] - 2;
-    NbCentersY.push_back(NbCentersEyz);
-    printf("NbCentersY = [%zu, %zu,%zu]\n", NbCentersEyx, NbCentersEyy, NbCentersEyz);
-
-    // Number of centers for Ez along the 3 directions of space
-    size_t NbCentersEzx = grid.size_Ez[0] - 2;
-    NbCentersZ.push_back(NbCentersEzx);
-    size_t NbCentersEzy = grid.size_Ez[1] - 2;
-    NbCentersZ.push_back(NbCentersEzy);
-    size_t NbCentersEzz = grid.size_Ez[1] - 2;
-    NbCentersZ.push_back(NbCentersEzz);
-    printf("NbCentersZ = [%zu, %zu,%zu]\n", NbCentersEzx, NbCentersEzy, NbCentersEzz);
-    
-    
-    size_t x1 = 0; // Correspond to point (i+1, j-1, k-1)
-    size_t x2 = 0; // Correspond to point (i-1, j-1, k-1)
-    size_t x3 = 0; // Correspond to point (i+1, j-1, k+1)
-    size_t x4 = 0; // Correspond to point (i-1, j-1, k+1)
-    size_t x5 = 0; // Correspond to point (i+1, j+1, k-1)
-    size_t x6 = 0; // Correspond to point (i-1, j+1, k-1)
-    size_t x7 = 0; // Correspond to point (i+1, j+1, k-1)
-    size_t x8 = 0; // Correspond to point (i+1, j+1, k+1)
-
-    size_t y1 = 0; // Correspond to point (i+1, j-1, k-1)
-    size_t y2 = 0; // Correspond to point (i-1, j-1, k-1)
-    size_t y3 = 0; // Correspond to point (i+1, j-1, k+1)
-    size_t y4 = 0; // Correspond to point (i-1, j-1, k+1)
-    size_t y5 = 0; // Correspond to point (i+1, j+1, k-1)
-    size_t y6 = 0; // Correspond to point (i-1, j+1, k-1)
-    size_t y7 = 0; // Correspond to point (i+1, j+1, k-1)
-    size_t y8 = 0; // Correspond to point (i+1, j+1, k+1)
-
-    size_t z1 = 0; // Correspond to point (i+1, j-1, k-1)
-    size_t z2 = 0; // Correspond to point (i-1, j-1, k-1)
-    size_t z3 = 0; // Correspond to point (i+1, j-1, k+1)
-    size_t z4 = 0; // Correspond to point (i-1, j-1, k+1)
-    size_t z5 = 0; // Correspond to point (i+1, j+1, k-1)
-    size_t z6 = 0; // Correspond to point (i-1, j+1, k-1)
-    size_t z7 = 0; // Correspond to point (i+1, j+1, k-1)
-    size_t z8 = 0; // Correspond to point (i+1, j+1, k+1)
-
-    // Will contain the interpolation for a given cube
-    double interpolationEx = 0.0;
-    double interpolationEy = 0.0;
-    double interpolationEz = 0.0;
-
-    // Will contain the interpolation for each cube
-    std::vector<double> allInterpolationEx;
-    std::vector<double> allInterpolationEy;
-    std::vector<double> allInterpolationEz;
-
-    // Computations for Ex
-    for(i=0; i<NbCentersExx; i++)
-    {
-        for(j=0; j<NbCentersExy; j++)
-        {
-            for(k=0; k<NbCentersExz; k++)
-            {
-                x1 = 0;
-                x2 = 1;
-                x4 = 5;
-                x3 = 4;
-                x6 = 3;
-                x5 = 2;
-                x8 = 7;
-                x7 = 6;
-
-                interpolationEx = interpolationX2(x1, x2, x3, x4, x5, x6, x7, x8, grid.E_x);
-                allInterpolationEx.push_back(interpolationEx);
-            }
-        }
-    }
-
-    // Computations for Ey
-    for(i=0; i<NbCentersEyx; i++)
-    {
-        for(j=0; j<NbCentersEyy; j++)
-        {
-            for(k=0; k<NbCentersEyz; k++)
-            {
-                y1 = 1;
-                y2 = 0;
-                y3 = 5;
-                y4 = 4;
-                y5 = 3;
-                y6 = 2;
-                y7 = 7;
-                y8 = 6;
-
-                interpolationEy = interpolationY2(y1, y2, y3, y4, y5, y6, y7, y8, grid.E_y);
-                allInterpolationEy.push_back(interpolationEy);
-            }
-        }
-    }
-
-    // Computations for Ez
-    for(i=0; i<NbCentersEzx; i++)
-    {
-        for(j=0; j<NbCentersEzy; j++)
-        {
-            for(k=0; k<NbCentersEzz; k++)
-            {
-                z1 = 1;
-                z2 = 0;
-                z3 = 5;
-                z4 = 4;
-                z5 = 3;
-                z6 = 2;
-                z7 = 7;
-                z8 = 6;
-
-                interpolationEz = interpolationZ2(z1, z2, z3, z4, z5, z6, z7, z8, grid.E_z);
-                allInterpolationEz.push_back(interpolationEz);
-            }
-        }
-    }
-
-    printf("After the interpolation\n");
-    printf("Sizes allInterpolations = [%zu, %zu, %zu]\n", allInterpolationEx.size(),
-                                                        allInterpolationEy.size(),
-                                                        allInterpolationEz.size());
-
-    size_t minNbCentersX = findMin(NbCentersExx, NbCentersEyx, NbCentersEzx);
-    size_t minNbCentersY = findMin(NbCentersExy, NbCentersEyy, NbCentersEzy);
-    size_t minNbCentersZ = findMin(NbCentersExz, NbCentersEyz, NbCentersEzz);
-    printf("minNbCenters = [%zu, %zu, %zu]\n", minNbCentersX, minNbCentersY, minNbCentersZ);
-
-    // Will serve to go through the different centers
-    size_t lengthInterpX = 0;
-    size_t lengthInterpY = 0;
-    size_t lengthInterpZ = 0;
-    
-    for(lengthInterpZ=0; lengthInterpZ<minNbCentersZ; lengthInterpZ++)
-    {
-        for(lengthInterpY=0; lengthInterpY<minNbCentersY; lengthInterpY++)
-        {
-            for(lengthInterpX=0; lengthInterpX<minNbCentersX; lengthInterpX++)
-            {
-                ModulusE.push_back(allInterpolationEx[lengthInterpX]*allInterpolationEx[lengthInterpX]
-                                   + allInterpolationEy[lengthInterpY]*allInterpolationEy[lengthInterpY]
-                                   + allInterpolationEz[lengthInterpZ]*allInterpolationEz[lengthInterpZ]);
-            }
-        }
-    }
-
-    printf("Size ModulusE = %zu \n", ModulusE.size());
-    
-
-    size_t index = 0;
-    double eps_pp = 0.0;
-    double sigma = 0.0;
-    unsigned char mat;
-    std::vector<double> Power;
-    size_t omega = 2 * M_PI * grid.input_parser.source.frequency[0];
-
-    printf("Hello from line %d in file %s\n", __LINE__, __FILE__);
-
-    size_t I, J, K;
-
-    for(K=0; K<minNbCentersZ; K++)
-    {
-        for(J=0; J<minNbCentersY; J++)
-        {
-            for(I=0; I<minNbCentersX; I++)
-            {
-                index = I + grid.size_Ex[0] * (J + K*grid.size_Ex[1]);
-                mat = grid.E_x_material[index];
-                eps_pp = grid.materials.unified_material_list[mat].properties["RELATIVEPERMITTIVITY"];
-                sigma = grid.materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY"];
-                ModulusE[index] = ( ModulusE[index] * (omega*eps_pp + sigma) / 2 );
-            }
-        }
-    }
-
-    printf("Hello from line %d in file %s\n", __LINE__, __FILE__);
-    
-    return ModulusE;
-}
-
-
-double AlgoElectro_NEW::interpolationX2(size_t x1, size_t x2, size_t x3,
-                        size_t x4, size_t x5, size_t x6,
-                        size_t x7, size_t x8,  double* Ex)
-{
-    double valueInterpolationX = 0.0;
-
-    // printf("In interpolationX2 \n");
-    // printf("x1 = %zu\n", x1);
-    // printf("x2 = %zu\n", x2);
-    // printf("x3 = %zu\n", x3);
-    // printf("x4 = %zu\n", x4);
-    // printf("x5 = %zu\n", x5);
-    // printf("x6 = %zu\n", x6);
-    // printf("x7 = %zu\n", x7);
-    // printf("x8 = %zu\n", x8);
-
-    double c_000_Ex = Ex[x1];
-    double c_001_Ex = Ex[x2];
-    double c_010_Ex = Ex[x3];
-    double c_011_Ex = Ex[x4];
-    double c_100_Ex = Ex[x5];
-    double c_101_Ex = Ex[x6];
-    double c_110_Ex = Ex[x7];
-    double c_111_Ex = Ex[x8];
-    // printf("x1 = %lf\n", Ex[x1]);
-    // printf("x2 = %lf\n", Ex[x2]);
-    // printf("x3 = %lf\n", Ex[x3]);
-    // printf("x4 = %lf\n", Ex[x4]);
-    // printf("x5 = %lf\n", Ex[x5]);
-    // printf("x6 = %lf\n", Ex[x6]);
-    // printf("x7 = %lf\n", Ex[x7]);
-    // printf("x8 = %lf\n", Ex[x8]);
-
-    double Mean15_x = (c_000_Ex + c_100_Ex) / 2;
-    double Mean26_x = (c_001_Ex + c_101_Ex) / 2;
-    double Mean37_x = (c_010_Ex + c_110_Ex) / 2;
-    double Mean48_x = (c_011_Ex + c_111_Ex) / 2;
-
-    double Mean1537_x = (Mean15_x + Mean37_x) / 2;
-    double Mean2648_x = (Mean26_x + Mean48_x) / 2;
-
-    valueInterpolationX = (Mean1537_x + Mean2648_x) / 2;
-
-    // printf("Mean15x = %lf\n", Mean15_x);
-    // printf("Mean26x = %lf\n", Mean26_x);
-    // printf("Mean37x = %lf\n", Mean37_x);
-    // printf("Mean48x = %lf\n", Mean48_x);
-    // printf("Mean1537x = %lf\n", Mean1537_x);
-    // printf("Mean2648x = %lf\n", Mean2648_x);
-    // printf("valueInterpolationX = %lf\n", valueInterpolationX);
-    
-    return valueInterpolationX;
-}
-
-double AlgoElectro_NEW::interpolationY2(size_t y1, size_t y2, size_t y3,
-                        size_t y4, size_t y5, size_t y6,
-                        size_t y7, size_t y8,  double* Ey)
-{
-     double valueInterpolationY = 0.0;
-    
-    double c_000_Ey = Ey[y1];
-    double c_001_Ey = Ey[y2];
-    double c_010_Ey = Ey[y3];
-    double c_011_Ey = Ey[y4];
-    double c_100_Ey = Ey[y5];
-    double c_101_Ey = Ey[y6];
-    double c_110_Ey = Ey[y7];
-    double c_111_Ey = Ey[y8];
-
-    double Mean15_y = (c_000_Ey + c_100_Ey) / 2;
-    double Mean26_y = (c_001_Ey + c_101_Ey) / 2;
-    double Mean37_y = (c_010_Ey + c_110_Ey) / 2;
-    double Mean48_y = (c_011_Ey + c_111_Ey) / 2;
-
-    double Mean1537_y = (Mean15_y + Mean37_y) / 2;
-    double Mean2648_y = (Mean26_y + Mean48_y) / 2;
-
-    valueInterpolationY = (Mean1537_y + Mean2648_y) / 2;
-
-    // printf("Mean15y = %lf\n", Mean15_y);
-    // printf("Mean26y = %lf\n", Mean26_y);
-    // printf("Mean37y = %lf\n", Mean37_y);
-    // printf("Mean48y = %lf\n", Mean48_y);
-    // printf("Mean1537y = %lf\n", Mean1537_y);
-    // printf("Mean2648y = %lf\n", Mean2648_y);
-    // printf("valueInterpolationY = %lf\n", valueInterpolationY);
-
-    return valueInterpolationY;
-}
-
-double AlgoElectro_NEW::interpolationZ2(size_t z1, size_t z2, size_t z3,
-                        size_t z4, size_t z5, size_t z6,
-                        size_t z7, size_t z8,  double* Ez)
-{
-    double valueInterpolationZ = 0.0;
-    
-    double c_000_Ez = Ez[z1];
-    double c_001_Ez = Ez[z2];
-    double c_010_Ez = Ez[z3];
-    double c_011_Ez = Ez[z4];
-    double c_100_Ez = Ez[z5];
-    double c_101_Ez = Ez[z6];
-    double c_110_Ez = Ez[z7];
-    double c_111_Ez = Ez[z8];
-
-    double Mean15_z = (c_000_Ez + c_100_Ez) / 2;
-    double Mean26_z = (c_001_Ez + c_101_Ez) / 2;
-    double Mean37_z = (c_010_Ez + c_110_Ez) / 2;
-    double Mean48_z = (c_011_Ez + c_111_Ez) / 2;
-
-    double Mean1537_z = (Mean15_z + Mean37_z) / 2;
-    double Mean2648_z = (Mean26_z + Mean48_z) / 2;
-
-    valueInterpolationZ = (Mean1537_z + Mean2648_z) / 2;
-
-    // printf("Mean15z = %lf\n", Mean15_z);
-    // printf("Mean26z = %lf\n", Mean26_z);
-    // printf("Mean37z = %lf\n", Mean37_z);
-    // printf("Mean48z = %lf\n", Mean48_z);
-    // printf("Mean1537z = %lf\n", Mean1537_z);
-    // printf("Mean2648z = %lf\n", Mean2648_z);
-    // printf("valueInterpolationZ = %lf\n", valueInterpolationZ);
-
-    return valueInterpolationZ;
-}
-
-std::vector<double> AlgoElectro_NEW::ComputeNormEsquareBIS(GridCreator_NEW &grid)
-{
-    if(grid.MPI_communicator.getNumberOfMPIProcesses() != 1)
-    {
-        DISPLAY_ERROR_ABORT("More than one process is used. The functino is intended for only one");
-    }
-
-    size_t M = grid.sizes_EH[0];
-    size_t N = grid.sizes_EH[1];
-    size_t P = grid.sizes_EH[2];
-
-    printf("M = %zu, N = %zu, P = %zu\n", M, N, P);
-
-    // Will serve to go through the grid
-    size_t i,j,k;
-
-    // This vector will contain the norm of the electric field at each node
-    std::vector<double> SquareModulusE;
-
-    // Will contain the interpolation for a given cube
-    double interpolationEx = 0.0;
-    double interpolationEy = 0.0;
-    double interpolationEz = 0.0;
-
-    // Will contain the interpolation for each cube
-    std::vector<double> allInterpolationEx;
-    std::vector<double> allInterpolationEy;
-    std::vector<double> allInterpolationEz;
-
-    // Will serve to have the 8 corners of the cube
-    size_t x1 = 0;
-    size_t x2 = 0;
-    size_t x3 = 0;
-    size_t x4 = 0;
-    size_t x5 = 0;
-    size_t x6 = 0;
-    size_t x7 = 0;
-    size_t x8 = 0;
-
-    // Will serve to have the 8 corners of the cube
-    size_t y1 = 0;
-    size_t y2 = 0;
-    size_t y3 = 0;
-    size_t y4 = 0;
-    size_t y5 = 0;
-    size_t y6 = 0;
-    size_t y7 = 0;
-    size_t y8 = 0;
-
-    // Will serve to have the 8 corners of the cube
-    size_t z1 = 0;
-    size_t z2 = 0;
-    size_t z3 = 0;
-    size_t z4 = 0;
-    size_t z5 = 0;
-    size_t z6 = 0;
-    size_t z7 = 0;
-    size_t z8 = 0;
-
-    size_t count_ex = 0;
-    size_t count_ey = 0;
-    size_t count_ez = 0;
-
-    
-    // Computation for Ex
-    for(i=0; i<M-2; i++)
-    {
-        for(j=0; j<N-2; j++)
-        {
-            for(k=0; k<P-2; k++)
-            {
-                x1 = (i+1) + grid.size_Ex[0] * (j + k * grid.size_Ex[1]);           // Correspond to point (i+1, j, k)
-                x2 = i     + grid.size_Ex[0] * (j + k * grid.size_Ex[1]);           // Correspond to point (i, j, k)
-                x3 = (i+1) + grid.size_Ex[0] * (j + (k+1) * grid.size_Ex[1]);       // Correspond to point (i+1, j, k+1)
-                x4 = i     + grid.size_Ex[0] * ((j+1) + k * grid.size_Ex[1]);       // Correspond to point (i, j+1, k)
-                x5 = (i+1) + grid.size_Ex[0] * ((j+1) + k * grid.size_Ex[1]);       // Correspond to point (i+1, j+1, k)
-                x6 = i     + grid.size_Ex[0] * ((j+1) + k * grid.size_Ex[1]);           // Correspond to point (i, j+1, k)
-                x7 = (i+1) + grid.size_Ex[0] * ((j+1) + (k+1) * grid.size_Ex[1]);   // Correspond to point (i+1, j+1, k+1)
-                x8 = i     + grid.size_Ex[0] * ((j+1) + (k+1) * grid.size_Ex[1]);       // Correspond to point (i, j+1, k+1)
-
-                interpolationEx = interpolationX(x1, x2, x3, x4, x5, x6, x7, x8, grid);
-
-                allInterpolationEx.push_back(interpolationEx);
-                count_ex++;
-            }
-        }
-    }
-
-    // Computation for Ey
-    for(i=0; i<M-2; i++)
-    {
-        for(j=0; j<N-2; j++)
-        {
-            for(k=0; k<P-2; k++)
-            {
-                y1 = (i+1) + grid.size_Ey[0] * (j + k * grid.size_Ey[1]);           // Correspond to point (i+1, j, k)
-                y2 = i     + grid.size_Ey[0] * (j + k * grid.size_Ey[1]);               // Correspond to point (i, j, k)
-                y3 = (i+1) + grid.size_Ey[0] * (j + (k+1) * grid.size_Ey[1]);       // Correspond to point (i+1, j, k+1)
-                y4 = i     + grid.size_Ey[0] * ((j+1) + k * grid.size_Ey[1]);           // Correspond to point (i, j+1, k)
-                y5 = (i+1) + grid.size_Ey[0] * ((j+1) + k * grid.size_Ey[1]);       // Correspond to point (i+1, j+1, k)
-                y6 = i     + grid.size_Ey[0] * ((j+1) + k * grid.size_Ey[1]);           // Correspond to point (i, j+1, k)
-                y7 = (i+1) + grid.size_Ey[0] * ((j+1) + (k+1) * grid.size_Ey[1]);   // Correspond to point (i+1, j+1, k+1)
-                y8 = i     + grid.size_Ey[0] * ((j+1) + (k+1) * grid.size_Ey[1]);       // Correspond to point (i, j+1, k+1)
-
-                interpolationEy = interpolationY(y1, y2, y3, y4, y5, y6, y7, y8, grid);
-
-                allInterpolationEy.push_back(interpolationEy);
-                count_ey++;
-            }
-        }
-    }
-
-    // Computation for Ez
-    for(i=0; i<M-2; i++)
-    {
-        for(j=0; j<N-2; j++)
-        {
-            for(k=0; k<P-2; k++)
-            {
-                z1 = (i+1) + grid.size_Ez[0] * (j + k * grid.size_Ez[1]);           // Correspond to point (i+1, j, k)
-                z2 = i     + grid.size_Ez[0] * (j + k * grid.size_Ez[1]);               // Correspond to point (i, j, k)
-                z3 = (i+1) + grid.size_Ez[0] * (j + (k+1) * grid.size_Ez[1]);       // Correspond to point (i+1, j, k+1)
-                z4 = i     + grid.size_Ez[0] * ((j+1) + k * grid.size_Ez[1]);           // Correspond to point (i, j+1, k)
-                z5 = (i+1) + grid.size_Ez[0] * ((j+1) + k * grid.size_Ez[1]);       // Correspond to point (i+1, j+1, k)
-                z6 = i     + grid.size_Ez[0] * ((j+1) + k * grid.size_Ez[1]);           // Correspond to point (i, j+1, k)
-                z7 = (i+1) + grid.size_Ez[0] * ((j+1) + (k+1) * grid.size_Ez[1]);   // Correspond to point (i+1, j+1, k+1)
-                z8 = i     + grid.size_Ez[0] * ((j+1) + (k+1) * grid.size_Ez[1]);       // Correspond to point (i, j+1, k+1)
-
-                interpolationEz = interpolationZ(z1, z2, z3, z4, z5, z6, z7, z8, grid);
-
-                allInterpolationEz.push_back(interpolationEz);
-                count_ez++;
-            }
-        }
-    }
-
-    printf("There were %zu loop iterations for the Ex interpolations\n", count_ex);
-    printf("There were %zu loop iterations for the Ey interpolations\n", count_ey);
-    printf("There were %zu loop iterations for the Ez interpolations\n", count_ez);
-
-    size_t Centers = 0;
-
-    for(Centers = 0; Centers < (M-2)*(N-2)*(P-2); Centers++)
-    {
-        if(Centers >= allInterpolationEx.size()){
-            DISPLAY_ERROR_ABORT_CLASS(
-                "Dépassement de tableau sur allInterpolationEx."
-            );
-        }
-        if(Centers >= allInterpolationEy.size()){
-            DISPLAY_ERROR_ABORT_CLASS(
-                "Dépassement de tableau sur allInterpolationEy."
-            );
-        }
-        if(Centers >= allInterpolationEz.size()){
-            DISPLAY_ERROR_ABORT_CLASS(
-                "Dépassement de tableau sur allInterpolationEz."
-            );
-        }
-        SquareModulusE.push_back(allInterpolationEx[Centers]*allInterpolationEx[Centers]
-                                + allInterpolationEy[Centers]*allInterpolationEy[Centers]
-                                + allInterpolationEz[Centers]*allInterpolationEz[Centers]);
-    }
-
-    printf("Size of the vector with the Ex interpolations = %zu\n", allInterpolationEx.size());
-    printf("Size of the vector with the Ex interpolations = %zu\n", allInterpolationEy.size());
-    printf("Size of the vector with the Ex interpolations = %zu\n", allInterpolationEz.size());
-    printf("Size of the vector with all the moduli = %zu\n", SquareModulusE.size());
-    // abort();
-
-    
-    return SquareModulusE;
-}
-
-
 /**
  * @brief Apply 1D conditions to the magnetic field.
  */
@@ -8219,7 +7450,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     // "-1" because no communication case
 
                     
-
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
                         printf("Hello : ExX0 index_1Plus out of bounds !!!");
                         abort();
@@ -8240,6 +7471,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : ExX0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
 
                     // Exy:
@@ -8285,6 +7517,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = (I + rhoX1 * (J+ size_y*K)) *2; // VERIFIER !!!
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
                         printf("Hello : ExX1 index_1Plus out of bounds !!!");
                         abort();
@@ -8305,6 +7538,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : ExX1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ex_pml_x1[index_pml] = C_exe[index]*Ex_pml_x1[index_pml]
                         + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
@@ -8346,6 +7580,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY0*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
                         printf("Hello : ExY0 index_1Plus out of bounds !!!");
                         abort();
@@ -8367,6 +7602,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : ExY0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ex_pml_y0[index_pml] = C_exe[index]*Ex_pml_y0[index_pml]
                         + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
@@ -8414,6 +7650,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
                         printf("Hello : ExY1 index_1Plus out of bounds !!!");
                         abort();
@@ -8435,6 +7672,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : ExY1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ex_pml_y1[index_pml] = C_exe[index]*Ex_pml_y1[index_pml]
                         + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
@@ -8486,6 +7724,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)
                                 * (J+ (size_y-rhoY0-rhoY1)*K) ) *2;
                     
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
                         printf("Hello : ExZ0 index_1Plus out of bounds !!!");
                         abort();
@@ -8507,6 +7746,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : ExZ0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ex_pml_z0[index_pml] = C_exe[index]*Ex_pml_z0[index_pml]
                         + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
@@ -8548,6 +7788,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)
                                 * (J+ (size_y-rhoY0-rhoY1)*K) ) *2;
                     
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hz[0]*grid.size_Hz[1]*grid.size_Hz[2]){
                         printf("Hello : ExZ1 index_1Plus out of bounds !!!");
                         abort();
@@ -8569,6 +7810,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : ExZ1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ex_pml_z1[index_pml] = C_exe[index]*Ex_pml_z1[index_pml]
                         + C_exh_1[index] * (Hz[index_1Plus]-Hz[index_1Moins]);
@@ -8619,6 +7861,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
                         printf("Hello : EyX0 index_1Plus out of bounds !!!");
                         abort();
@@ -8639,6 +7882,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EyX0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     // Eyx:
                     Ey_pml_x0[index_pml] = C_eye2[index]*Ey_pml_x0[index_pml]
@@ -8681,6 +7925,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = (I + rhoX1 * (J+ size_y*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
                         printf("Hello : EyX1 index_1Plus out of bounds !!!");
                         abort();
@@ -8701,6 +7946,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EyX1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ey_pml_x1[index_pml] = C_eye2[index]*Ey_pml_x1[index_pml]
                         - C_eyh_2[index] * (Hz[index_2Plus]-Hz[index_2Moins]);
@@ -8745,6 +7991,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * ((J-1)+ rhoY0*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
                         printf("Hello : EyY0 index_1Plus out of bounds !!!");
                         abort();
@@ -8766,6 +8013,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EyY0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
 
                     Ey_pml_y0[index_pml] = C_eye2[index]*Ey_pml_y0[index_pml]
@@ -8808,6 +8056,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
                         printf("Hello : EyY1 index_1Plus out of bounds !!!");
                         abort();
@@ -8834,6 +8083,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EyY1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ey_pml_y1[index_pml] = C_eye2[index]*Ey_pml_y1[index_pml]
                         - C_eyh_2[index] * (Hz[index_2Plus]-Hz[index_2Moins]);
@@ -8883,6 +8133,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)
                                 * (J+ (size_y-rhoY0-rhoY1)*K) ) *2;
                     
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
                         printf("Hello : EyZ0 index_1Plus out of bounds !!!");
                         abort();
@@ -8904,6 +8155,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EyZ0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ey_pml_z0[index_pml] = C_eye2[index]*Ey_pml_z0[index_pml]
                         - C_eyh_2[index] * (Hz[index_2Plus]-Hz[index_2Moins]);
@@ -8945,6 +8197,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)
                                 * (J+ (size_y-rhoY0-rhoY1)*K) )*2;
                     
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hx[0]*grid.size_Hx[1]*grid.size_Hx[2]){
                         printf("Hello : EyZ1 index_1Plus out of bounds !!!");
                         abort();
@@ -8966,6 +8219,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EyZ1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ey_pml_z1[index_pml] = C_eye2[index]*Ey_pml_z1[index_pml]
                         - C_eyh_2[index] * (Hz[index_2Plus]-Hz[index_2Moins]);
@@ -9018,6 +8272,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
                         printf("Hello : EzX0 index_1Plus out of bounds !!!");
                         abort();
@@ -9038,6 +8293,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EzX0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     // Ezx:
                     Ez_pml_x0[index_pml] = C_eze[index]*Ez_pml_x0[index_pml]
@@ -9077,6 +8333,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = ((I-1) + rhoX1 * (J+ size_y*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
                         printf("Hello : EzX1 index_1Plus out of bounds !!!");
                         abort();
@@ -9098,6 +8355,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                             I,rhoX1,IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX);
                         abort();
                     }
+                    #endif
 
                     Ez_pml_x1[index_pml] = C_eze[index]*Ez_pml_x1[index_pml]
                         + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
@@ -9140,6 +8398,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY0*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
                         printf("Hello : EzY0 index_1Plus out of bounds !!!");
                         abort();
@@ -9161,6 +8420,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EzY0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ez_pml_y0[index_pml] = C_eze[index]*Ez_pml_y0[index_pml]
                         + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
@@ -9201,6 +8461,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
 
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
                         printf("Hello : EzY1 index_1Plus out of bounds !!!");
                         abort();
@@ -9222,6 +8483,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EzY1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ez_pml_y1[index_pml] = C_eze[index]*Ez_pml_y1[index_pml]
                         + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
@@ -9264,6 +8526,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)
                                 * (J+ (size_y-rhoY0-rhoY1)*(K-1)) )*2;
                     
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
                         printf("Hello : EzZ0 index_1Plus out of bounds !!!");
                         abort();
@@ -9285,6 +8548,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EzZ0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ez_pml_z0[index_pml] = C_eze[index]*Ez_pml_z0[index_pml]
                         + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
@@ -9329,6 +8593,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)
                                 * (J+ (size_y-rhoY0-rhoY1)*K) )*2;
                     
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Hy[0]*grid.size_Hy[1]*grid.size_Hy[2]){
                         printf("Hello : EzZ1 index_1Plus out of bounds !!!");
                         abort();
@@ -9350,6 +8615,7 @@ void AlgoElectro_NEW::pmlE( GridCreator_NEW &grid,
                         printf("Hello : EzZ1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Ez_pml_z1[index_pml] = C_eze[index]*Ez_pml_z1[index_pml]
                         + C_ezh_1[index] * (Hy[index_1Plus]-Hy[index_1Moins]);
@@ -9436,6 +8702,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2; 
                     // "-1" because no communication case 
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
                         printf("Hello : HxX0 index_1Plus out of bounds !!!");
                         abort();
@@ -9456,6 +8723,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HxX0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     // Hxy:
                     Hx_pml_x0[index_pml] = C_hxh2[index]*Hx_pml_x0[index_pml]
@@ -9499,6 +8767,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = (I + rhoX1 * (J+ size_y*K)) *2;
                     // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
                         printf("Hello : HxX1 index_1Plus out of bounds !!!");
                         abort();
@@ -9519,6 +8788,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HxX1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                 
                     Hx_pml_x1[index_pml] = C_hxh2[index]*Hx_pml_x1[index_pml]
@@ -9551,6 +8821,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * ((J-1)+ rhoY0*K)) *2;
                     // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
                         printf("Hello : HxY0 index_1Plus out of bounds (I,J,K)=(%zu,%zu,%zu)!!!",I,J,K);
                         abort();
@@ -9572,6 +8843,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HxY0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                 
                     Hx_pml_y0[index_pml] = C_hxh2[index]*Hx_pml_y0[index_pml]
@@ -9606,6 +8878,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
                     // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
                         printf("Hello : HxY1 index_1Plus out of bounds !!!");
                         abort();
@@ -9627,6 +8900,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HxY1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     
                     Hx_pml_y1[index_pml] = C_hxh2[index]*Hx_pml_y1[index_pml]
@@ -9660,6 +8934,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml = (I + (size_x-rhoX0-rhoX1)
                                 * (J+ (size_y-rhoY0-rhoY1)*(K-1))) *2;
                         
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
                         printf("Hello : HxZ0 index_1Plus out of bounds !!!");
                         abort();
@@ -9681,6 +8956,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HxY1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
                     
 
                     Hx_pml_z0[index_pml] = C_hxh2[index]*Hx_pml_z0[index_pml]
@@ -9714,6 +8990,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml = (I + (size_x-rhoX0-rhoX1)
                                 * (J+ (size_y-rhoY0-rhoY1)*K)) *2;
                     
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ey[0]*grid.size_Ey[1]*grid.size_Ey[2]){
                         printf("Hello : HxZ1 index_1Plus out of bounds !!!");
                         abort();
@@ -9735,6 +9012,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HxZ1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Hx_pml_z1[index_pml] = C_hxh2[index]*Hx_pml_z1[index_pml]
                         - C_hxe_2[index] * (Ez[index_2Plus]-Ez[index_2Moins]);
@@ -9775,6 +9053,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2;
                     // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
                         printf("Hello : HyX0 index_1Plus out of bounds !!!");
                         abort();
@@ -9795,6 +9074,8 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HyX0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
+
     ////            // Hyx:
                     Hy_pml_x0[index_pml] = C_hyh[index]*Hy_pml_x0[index_pml]
                         + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
@@ -9834,6 +9115,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = (I + rhoX1 * (J+ size_y*K)) *2;
                     // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
                         printf("Hello : HyX1 index_1Plus out of bounds !!!");
                         abort();
@@ -9854,6 +9136,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HyX1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Hy_pml_x1[index_pml] = C_hyh[index]*Hy_pml_x1[index_pml]
                         + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
@@ -9882,6 +9165,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * ((J-1)+ rhoY0*K)) *2;
                     // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
                         printf("Hello : HyY0 index_1Plus out of bounds !!!");
                         abort();
@@ -9903,6 +9187,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HyY0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Hy_pml_y0[index_pml] = C_hyh[index]*Hy_pml_y0[index_pml]
                         + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
@@ -9934,6 +9219,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
                     // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
                         printf("Hello : HyY1 index_1Plus out of bounds !!!");
                         abort();
@@ -9955,6 +9241,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HyY1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Hy_pml_y1[index_pml] = C_hyh[index]*Hy_pml_y1[index_pml]
                         + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
@@ -9998,6 +9285,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                                 * (J+ (size_y-rhoY0-rhoY1)*(K-1))) *2;
                                 // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
                         printf("Hello : HyZ0 index_1Plus out of bounds !!!");
                         abort();
@@ -10019,6 +9307,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HyZ0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Hy_pml_z0[index_pml] = C_hyh[index]*Hy_pml_z0[index_pml]
                         + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
@@ -10051,6 +9340,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                                 * (J+ (size_y-rhoY0-rhoY1)*K)) *2;
                                 // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ez[0]*grid.size_Ez[1]*grid.size_Ez[2]){
                         printf("Hello : HyZ1 index_1Plus out of bounds !!!");
                         abort();
@@ -10072,6 +9362,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HyZ1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Hy_pml_z1[index_pml] = C_hyh[index]*Hy_pml_z1[index_pml]
                         + C_hye_1[index] * (Ez[index_1Plus]-Ez[index_1Moins]);
@@ -10110,6 +9401,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = ((I-1) + rhoX0 * (J+ size_y*K)) *2;
                     // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
                         printf("Hello : HzX0 index_1Plus out of bounds !!!");
                         abort();
@@ -10130,6 +9422,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HzX0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     // Hzx:
                     Hz_pml_x0[index_pml] = C_hzh2[index]*Hz_pml_x0[index_pml]
@@ -10163,6 +9456,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = (I + rhoX1 * (J+ size_y*K)) *2;
                     // "-1" because no communication case
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
                         printf("Hello : HzX1 index_1Plus out of bounds !!!");
                         abort();
@@ -10183,6 +9477,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HzX1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Hz_pml_x1[index_pml] = C_hzh2[index]*Hz_pml_x1[index_pml]
                         - C_hze_2[index] * (Ey[index_2Plus]-Ey[index_2Moins]);
@@ -10199,7 +9494,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
     // face y0:
 
-    printf("\n \t Hello : rhoY0 PML %zu \n", rhoY0);
+    //printf("\n \t Hello : rhoY0 PML %zu \n", rhoY0);
     if(rhoY0>0){
         for(size_t K=1; K<size_z-1; K++){
             for(size_t J=1; J<1+rhoY0; J++){
@@ -10216,6 +9511,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * ((J-1)+ rhoY0*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
                         printf("Hello : HzY0 index_1Plus out of bounds !!!");
                         abort();
@@ -10237,6 +9533,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HzY0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
 
                     Hz_pml_y0[index_pml] = C_hzh2[index]*Hz_pml_y0[index_pml]
@@ -10247,10 +9544,10 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     Hz[index] = Hz_pml_y0[index_pml] + Hz_pml_y0[index_pml+1];
 
-                    if(K==1 && I==1){
-                        index = II + size_x * ( J+1 + size_y * K);
-                        printf("Hello: Hx pml -> J = %zu : ------ >  C_hzh = %lf, C_hzh2 = %lf \n ", J, C_hzh[index+1], C_hzh2[index+1]);
-                    }
+                    //if(K==1 && I==1){
+                    //    index = II + size_x * ( J+1 + size_y * K);
+                    //    printf("Hello: Hx pml -> J = %zu : ------ >  C_hzh = %lf, C_hzh2 = %lf \n ", J, C_hzh[index+1], C_hzh2[index+1]);
+                    //}
                 }
             }
         }
@@ -10276,6 +9573,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 
                     index_pml    = (I + (size_x-rhoX0-rhoX1)   * (J+ rhoY1*K)) *2;
 
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
                         printf("Hello : HzY1 index_1Plus out of bounds !!!");
                         abort();
@@ -10297,6 +9595,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HzY1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Hz_pml_y1[index_pml] = C_hzh2[index]*Hz_pml_y1[index_pml]
                         - C_hze_2[index] * (Ey[index_2Plus]-Ey[index_2Moins]);
@@ -10319,7 +9618,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
             }
         }
     }
-    printf("sizeX = %zu, sizeY = %zu, sizeZ = %zu \n",size_x, size_y, size_z);
+    //printf("sizeX = %zu, sizeY = %zu, sizeZ = %zu \n",size_x, size_y, size_z);
 
     // face z0: ATTENTION DIFFERENT
     if(rhoZ0>0){
@@ -10340,6 +9639,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)
                                 * (J+ (size_y-rhoY0-rhoY1)*(K-1))) *2;
                     
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
                         printf("Hello : HzZ0 index_1Plus out of bounds !!!");
                         abort();
@@ -10361,6 +9661,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HzZ0 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Hz_pml_z0[index_pml] = C_hzh2[index]*Hz_pml_z0[index_pml]
                         - C_hze_2[index] * (Ey[index_2Plus]-Ey[index_2Moins]);
@@ -10392,6 +9693,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                     index_pml    = (I + (size_x-rhoX0-rhoX1)
                                 * (J+ (size_y-rhoY0-rhoY1)*K)) *2;
                     
+                    #ifndef NDEBUG
                     if(index_1Plus >= grid.size_Ex[0]*grid.size_Ex[1]*grid.size_Ex[2]){
                         printf("Hello : HzZ1 index_1Plus out of bounds !!!");
                         abort();
@@ -10413,6 +9715,7 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
                         printf("Hello : HzZ1 index_pml out of bounds !!!");
                         abort();
                     }
+                    #endif
 
                     Hz_pml_z1[index_pml] = C_hzh2[index]*Hz_pml_z1[index_pml]
                         - C_hze_2[index] * (Ey[index_2Plus]-Ey[index_2Moins]);
@@ -10435,9 +9738,15 @@ void AlgoElectro_NEW::pmlH(  GridCreator_NEW &grid,
 void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
 {
     // Size of the domain for process MPI_my_rank
-    size_t M = grid.sizes_EH[0];
-    size_t N = grid.sizes_EH[1];
-    size_t P = grid.sizes_EH[2];
+    size_t M = std::min(grid.size_Ex[0],grid.size_Ey[0]);
+    M = std::min(M,grid.size_Ez[0]);
+    size_t N = std::min(grid.size_Ex[1],grid.size_Ey[1]);
+    N = std::min(N,grid.size_Ez[1]);
+    size_t P = std::min(grid.size_Ex[2],grid.size_Ey[2]);
+    P= std::min(P,grid.size_Ez[2]);
+
+    printf("M= %zu N = %zu p = %zu",M,N,P);
+    MPI_Barrier(MPI_COMM_WORLD);
 
     // Will serve to go through the grid of MPI_my_rank
     size_t i = 0;
@@ -10490,13 +9799,13 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    for(k=0; k<P; k++)
+    for(k=1; k<P-1; k++)
     {
-        for(j=0; j<N; j++)
+        for(j=1; j<N-1; j++)
         {
-            for(i=0; i<M; i++)
+            for(i=1; i<M-1; i++)
             {
-                index = i + M * (j + N*k);
+                index = i + grid.size_Ex[0] * (j + grid.size_Ex[1]*k);
                 
                 if(grid.E_x_material[index] != 0)
                 {
@@ -10506,13 +9815,16 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
             }
         }
     }
+
+    printf("counterInBrain = %zu",counterInBrain);
+    
     unsigned int *GlobalIndexVector = (unsigned int *) calloc(3*counterInBrain, sizeof(unsigned int));
 
     if(GlobalIndexVector == NULL)
     {
         printf("The pointer could not be allocated\n");
         printf("This message comes from line %d in file %s\n", __LINE__, __FILE__);
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE); 
     }
 
     unsigned int *LocalIndexVector = (unsigned int *) calloc(3*counterInBrain, sizeof(unsigned int));
@@ -10525,20 +9837,21 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
     }
 
     unsigned int newCounter = 0;
-
-    for(k=0; k<P; k++)
+    // pas besoin des voisins
+    for(k=1; k<P-1; k++)
     {
-        for(j=0; j<N; j++)
+        for(j=1; j<N-1; j++)
         {
-            for(i=0; i<M; i++)
+            for(i=1; i<M-1; i++)
             {
-                LocalIndex[0] = i;
-                LocalIndex[1] = j;
-                LocalIndex[2] = k;
+                // la fonction globale ne prend pas en compte les voisins
+                LocalIndex[0] = i-1;
+                LocalIndex[1] = j-1;
+                LocalIndex[2] = k-1;
 
                 grid.get_Global_from_Local_Electro(LocalIndex, GlobalIndex);
 
-                index = i + M * (j + N*k);
+                index = i + grid.size_Ex[0] * (j + grid.size_Ex[1]*k);
                 
                 // Store the local indices of the nodes that are not air
                 if(grid.E_x_material[index] != 0)
@@ -10556,6 +9869,11 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
             }
         }
     }
+
+    printf("MPI = %d counterINbrain = %zu   newcounter = %u",grid.MPI_communicator.getRank(), counterInBrain, newCounter);
+
+
+    
     double *PowerInBrain = (double *) calloc(counterInBrain, sizeof(double));
 
     if(PowerInBrain == NULL)
@@ -10566,6 +9884,10 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
     }
 
     ComputePowerInBrain(GlobalIndexVector, LocalIndexVector, counterInBrain, grid, PowerInBrain);
+
+    for(unsigned int i=0; i<counterInBrain; i++){
+        printf("i=%u j=%u k=%u power[%d] =%lf\n",LocalIndexVector[3*i+0],LocalIndexVector[3*i+1],LocalIndexVector[3*i+2],i,PowerInBrain[i]);
+    }
 
     unsigned int totNbProc = grid.MPI_communicator.getNumberOfMPIProcesses();
     unsigned int *tabNodesInBrain = (unsigned int *) calloc(totNbProc, sizeof(unsigned int));
@@ -10584,10 +9906,8 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
         }
 
         // printf("\n\n\tnbTotalNodesInBrain = %u\n", nbTotalNodesInBrain);
-        // abort();
     }
-
-
+    //Root  contient tous les indices globlaux :i,j,k...
     unsigned int *globalNodesInBrain = (unsigned int *) calloc(3*nbTotalNodesInBrain, sizeof(unsigned int));
 
     // MPI_Gather(GlobalIndexVector, 3*counterInBrain, MPI_UNSIGNED, globalNodesInBrain, 3*counterInBrain, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
@@ -10615,7 +9935,7 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
         
         unsigned int tmp=0;
 
-        for(unsigned int i=1; i<grid.MPI_communicator.getNumberOfMPIProcesses(); i++)
+        for(unsigned int i = 1 ; i < (unsigned int)grid.MPI_communicator.getNumberOfMPIProcesses(); i++)
         {
             tmp += (tabNodesInBrain[i-1]*3);
             // printf("\n\n\tmp = %u\n", tmp);
@@ -10624,388 +9944,182 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
     
         // printf("3*nbTotalNodesInBrain = %u\n\n", 3*nbTotalNodesInBrain);
         
-        for(unsigned int i=0; i<3*nbTotalNodesInBrain; i++)
+        /*for(unsigned int i=0; i<3*nbTotalNodesInBrain; i++)
         {
             printf("globalNodesInBrain[%u] = %u\n", i, globalNodesInBrain[i]);
+        }*/
+    }
+
+    printf("End receive from MPI%d\n", MPI_my_rank);
+    
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    //%%%%%%%%%% Exchange power %%%%%%%%
+
+    unsigned int *Power_general = (unsigned int *) calloc(nbTotalNodesInBrain, sizeof(unsigned int));
+
+    // MPI_Gather(GlobalIndexVector, 3*counterInBrain, MPI_UNSIGNED, globalNodesInBrain, 3*counterInBrain, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
+    
+    printf("Begin send from MPI%d\n", MPI_my_rank);
+    
+    if(MPI_my_rank != 0)
+    {
+        MPI_Send(PowerInBrain, counterInBrain, MPI_UNSIGNED, 0, 17, MPI_COMM_WORLD);
+    }
+
+    printf("End send from MPI%d\n", MPI_my_rank);
+    
+    printf("Begin receive from MPI%d\n", MPI_my_rank);
+
+    if(MPI_my_rank == 0)
+    {
+        MPI_Status status;
+        
+        for(unsigned int i=0; i<tabNodesInBrain[0]; i++)
+        {
+            Power_general[i] = PowerInBrain[i];
+            // printf("globalNodesInBrain[%u] = %u\n", i, globalNodesInBrain[i]);
         }
+        
+        unsigned int tmp=0;
+
+        for(unsigned int i = 1 ; i < (unsigned int)grid.MPI_communicator.getNumberOfMPIProcesses(); i++)
+        {
+            tmp += (tabNodesInBrain[i-1]);
+            // printf("\n\n\tmp = %u\n", tmp);
+            MPI_Recv(&(Power_general[tmp]), tabNodesInBrain[i], MPI_UNSIGNED, i, 17, MPI_COMM_WORLD, &status);
+        }
+    
+        // printf("3*nbTotalNodesInBrain = %u\n\n", 3*nbTotalNodesInBrain);
+        
+        /*for(unsigned int i=0; i<3*nbTotalNodesInBrain; i++)
+        {
+            printf("globalNodesInBrain[%u] = %u\n", i, globalNodesInBrain[i]);
+        }*/
     }
 
     printf("End receive from MPI%d\n", MPI_my_rank);
 
-    
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    if(MPI_my_rank == 0)
-    {
-        for(unsigned int i=0; i<3*nbTotalNodesInBrain; i++)
-            printf("globalNodesInBrain[%u] = %u\n", i, globalNodesInBrain[i]);
-    }
-    abort();
-
     // Every process closes its file containing the local indices
     fclose(fp);
 
-    MPI_Barrier(MPI_COMM_WORLD);
 
-    // Only the root process will write the power in the brain
-    if(MPI_my_rank == 0)
-    {
-        // Will contain the power at each node in the brain
-        FILE *POWER = fopen("PowerInBrain.txt", "w");
+    //%%%%%%% Domain of the Brain %%%%%%%%%%%%
+    if(MPI_my_rank==0){
+        unsigned int X_min_domain=0;
+        unsigned int X_max_domain=0;
+        unsigned int Y_min_domain=0;
+        unsigned int Y_max_domain=0;
+        unsigned int Z_min_domain=0;
+        unsigned int Z_max_domain=0;
+        for(unsigned int i=0;i<3*nbTotalNodesInBrain;i+=3){
+            if(i==0){
+                X_min_domain=globalNodesInBrain[i];
+                X_max_domain=globalNodesInBrain[i];
+                Y_min_domain=globalNodesInBrain[i+1];
+                Y_max_domain=globalNodesInBrain[i+1];
+                Z_min_domain=globalNodesInBrain[i+2];
+                Z_max_domain=globalNodesInBrain[i+2];
+            }else{
+                if(X_min_domain>globalNodesInBrain[i]){
+                    X_min_domain=globalNodesInBrain[i];
+                }
+                if(X_max_domain<globalNodesInBrain[i]){
+                    X_max_domain=globalNodesInBrain[i];
+                }
+                if(Y_min_domain>globalNodesInBrain[i+1]){
+                    Y_min_domain=globalNodesInBrain[i+1];
+                }
+                if(Y_max_domain<globalNodesInBrain[i+1]){
+                    Y_max_domain=globalNodesInBrain[i+1];
+                }
+                if(Z_min_domain>globalNodesInBrain[i+2]){
+                    Z_min_domain=globalNodesInBrain[i+2];
+                }
+                if(Y_max_domain<globalNodesInBrain[i+2]){
+                    Z_max_domain=globalNodesInBrain[i+2];
+                }
 
-        if(POWER == NULL)
+
+            }
+        }
+        printf("HELLO\n\n\n\n");
+        printf("X_min_domain =%u , X_max_domain=%u\n",X_min_domain,X_max_domain);
+        printf("Y_min_domain =%u , Y_max_domain=%u\n",Y_min_domain,Y_max_domain);
+        printf("Z_min_domain =%u , Z_max_domain=%u\n",Z_min_domain,Z_max_domain);
+    
+
+        unsigned int length_domain_brain_X  = X_max_domain-X_min_domain;
+        unsigned int length_domain_brain_Y  = Y_max_domain-Y_min_domain;
+        unsigned int length_domain_brain_Z  = Z_max_domain-Z_min_domain;
+        //Couche externe pour la thermo dans chaque direction (4 pour avoir 2 de chaque coté) chosi par défaut
+        unsigned int couche_thermo=4;
+
+        unsigned int size_domain_thermo=(length_domain_brain_X+1+couche_thermo)*(length_domain_brain_Y+1+couche_thermo)*(length_domain_brain_Z+1+couche_thermo);
+
+
+
+        double *power_for_thermo=(double *) calloc(size_domain_thermo, sizeof(double));
+
+        if(PowerInBrain == NULL)
         {
-            printf("The file could not be created\n");
+            printf("The pointer could not be allocated\n");
+            printf("This message comes from line %d in file %s\n", __LINE__, __FILE__);
+            exit(EXIT_FAILURE);
+        }
+
+        unsigned int parcours=0;
+        for(unsigned int k = Z_min_domain-(couche_thermo/2) ; k <= Z_max_domain+(couche_thermo/2) ; k++){
+            for(unsigned int j = Y_min_domain-(couche_thermo/2) ; j <= Y_max_domain+(couche_thermo/2) ; j++){
+                for(unsigned int i=X_min_domain-(couche_thermo/2); i <= X_max_domain+(couche_thermo/2) ; i++){
+                    for(unsigned int l=0; l<3*nbTotalNodesInBrain; l=l+3){
+                        if(globalNodesInBrain[l]==i && globalNodesInBrain[l+1]==j && globalNodesInBrain[l+2]==k){
+                            //%%%%%%%%%%%%%%% !!!!!!!!!!! hardcodé !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                            power_for_thermo[parcours]=Power_general[l/3]+5;
+                            break;
+                        }
+                    }
+                    parcours++;                
+                }
+            }        
+        }
+        //size_thermo
+        grid.nodes_of_the_real_brain[0]=(X_max_domain+(couche_thermo/2))-(X_min_domain-(couche_thermo/2))+1;
+        grid.nodes_of_the_real_brain[1]=(Y_max_domain+(couche_thermo/2))-(Y_min_domain-(couche_thermo/2))+1;
+        grid.nodes_of_the_real_brain[2]=(Z_max_domain+(couche_thermo/2))-(Z_min_domain-(couche_thermo/2))+1;
+        printf("parcours=%d  ,size_domain_thermo=%d",parcours,size_domain_thermo);
+        for(unsigned int i=0;i<size_domain_thermo;i++){
+            printf("power_for_thermo=%lf",power_for_thermo[i]);
+        }
+
+
+        FILE* fichier = NULL;
+        errno=0;
+        fichier = fopen("power.txt", "w+");
+        if (fichier != NULL)
+
+            {
+                for(unsigned int i=0;i<size_domain_thermo;i++){
+                    fprintf(fichier,"%lf\n",power_for_thermo[i]);
+                }
+                
+                fclose(fichier); 
+
+            }
+        else{
+            printf("nameFile could not be created\n");
             printf("This error comes from line %d in file %s\n", __LINE__, __FILE__);
             printf("Aborting...\n");
             exit(EXIT_FAILURE);
         }
-
-        printf("\n\n=================== Process %d begins to write the power in the brain... ===================\n\n\n", MPI_my_rank);
-
-
-        
-        fclose(POWER);
-
-        printf("\n\n=================== Process %d has finished to write the power in the brain ===================\n\n\n", MPI_my_rank);
-
-        abort();
-
     }
+
+
 
     MPI_Barrier(MPI_COMM_WORLD);
-}
-
-size_t AlgoElectro_NEW::findMaxVectorX(std::vector<size_t> GlobalIndexVECTOR)
-{
-    size_t maximum = INT_MIN;
-    size_t i = 0;
-    size_t counterMaxX = 0;
-
-    for(i=0; i<(GlobalIndexVECTOR.size())/3; i+=3)
-    {
-        if(maximum < GlobalIndexVECTOR[i])
-        {
-            maximum = GlobalIndexVECTOR[i];
-            printf("maximumIndexX = %zu (counterMaxX = %zu)\n", maximum, counterMaxX);
-            counterMaxX++;
-        }
-    }
-
-    return maximum;
-}
-
-size_t AlgoElectro_NEW::findMinVectorX(std::vector<size_t> GlobalIndexVECTOR)
-{
-    size_t minimum = INT_MAX;
-    size_t i = 0;
-    size_t counterMinX = 0;
-
-    for(i=0; i<(GlobalIndexVECTOR.size())/3; i+=3)
-    {
-        if(minimum > GlobalIndexVECTOR[i])
-        {
-            minimum = GlobalIndexVECTOR[i];
-            printf("minimumX = %zu (counterMinX = %zu)\n", minimum, counterMinX);
-            counterMinX++;
-        }
-    }
-
-    return minimum;
-}
-
-size_t AlgoElectro_NEW::findMaxVectorY(std::vector<size_t> GlobalIndexVECTOR)
-{
-    size_t maximum = INT_MIN;
-    size_t i = 0;
-    size_t counterMaxY = 0;
-
-    for(i=1; i<GlobalIndexVECTOR.size()/3; i+=3)
-    {
-        if(maximum < GlobalIndexVECTOR[i])
-        {
-            maximum = GlobalIndexVECTOR[i];
-            printf("maximumIndexY = %zu (counterMaxY = %zu)\n", maximum, counterMaxY);
-            counterMaxY++;
-        }
-    }
-
-    return maximum;
-}
-
-size_t AlgoElectro_NEW::findMinVectorY(std::vector<size_t> GlobalIndexVECTOR)
-{
-    size_t minimum = INT_MAX;
-    size_t i = 0;
-    size_t counterMinY = 0;
-
-    for(i=1; i<GlobalIndexVECTOR.size()/3; i+=3)
-    {
-        if(minimum > GlobalIndexVECTOR[i])
-        {
-            minimum = GlobalIndexVECTOR[i];
-            printf("minimumY = %zu (counterMinY = %zu)\n", minimum, counterMinY);
-            counterMinY++;
-        }
-    }
-
-    return minimum;
-}
-
-size_t AlgoElectro_NEW::findMaxVectorZ(std::vector<size_t> GlobalIndexVECTOR)
-{
-    size_t maximum = INT_MIN;
-    size_t i = 0;
-    size_t counterMaxZ = 0;
-
-    for(i=2; i<GlobalIndexVECTOR.size()/3; i+=3)
-    {
-        if(maximum < GlobalIndexVECTOR[i])
-        {
-            maximum = GlobalIndexVECTOR[i];
-            printf("maximumZ = %zu (counterMaxZ = %zu)\n", maximum, counterMaxZ);
-            counterMaxZ++;
-        }
-            maximum = GlobalIndexVECTOR[i];
-    }
-
-    return maximum;
-}
-
-size_t AlgoElectro_NEW::findMinVectorZ(std::vector<size_t> GlobalIndexVECTOR)
-{
-    size_t minimum = INT_MAX;
-    size_t i = 0;
-    size_t counterMinZ = 0;
-
-    for(i=2; i<GlobalIndexVECTOR.size()/3; i+=3)
-    {
-        if(minimum > GlobalIndexVECTOR[i])
-        {
-            minimum = GlobalIndexVECTOR[i];
-            printf("minimumZ = %zu (counterMinZ = %zu)\n", minimum, counterMinZ);
-            counterMinZ++;
-        }
-    }
-
-    return minimum;
-}
-
-// size_t AlgoElectro_NEW::ComputePowerEachMPI(int MPI_my_rank, std::vector<size_t> indicesInBrainMPI)
-// {
-//     std::vector<size_t> PowerInMPI;
+    abort();
     
-//     std::vector<size_t> PositionX;
-//     std::vector<size_t> PositionY;
-//     std::vector<size_t> PositionZ;
-
-//     size_t loopOverPoints = 0;
-
-//     for(loopOverPoints=0; loopOverPoints<indicesInBrainMPI.size(); loopOverPoints++)
-//     {
-//         PositionX.push_back( indicesInBrainMPI(loopOverPoints) );
-//         PositionY.push_back( indicesInBrainMPI(loopOverPoints) + 1 );
-//         PositionZ.push_back( indicesInBrainMPI(loopOverPoints) + 2 );
-//     }
-
-    
-//     size_t i = 0;
-//     size_t j = 0;
-//     size_t k = 0;
-
-
-//     return PowerInMPI;
-// }
-
-// std::vector<double> AlgoElectro_NEW::ComputePower(GridCreator_NEW &grid,
-//                                     size_t nbCentersX,
-//                                     size_t nbCentersY,
-//                                     size_t nbCentersZ,
-//                                     std::vector<size_t> allPointsInBrain)
-// {
-//     std::vector<double> power;
-
-//     // Will allow to go through all the centers contained in the brain
-//     size_t i = 0;
-//     size_t j = 0;
-//     size_t k = 0;
-
-//     // Will contain the number of centers along x, y, and z for Ex
-//     std::vector<size_t> nbCentersEx;
-//     nbCentersEx.push_back(nbCentersX);
-//     nbCentersEx.push_back(nbCentersY);
-//     nbCentersEx.push_back(nbCentersZ);
-    
-//     // Will contain the number of centers along x, y, and z for Ey
-//     std::vector<size_t> nbCentersEy;
-//     nbCentersEy.push_back(nbCentersX);
-//     nbCentersEy.push_back(nbCentersY);
-//     nbCentersEy.push_back(nbCentersZ);
-
-//     // Will contain the number of centers along x, y, and z for Ez
-//     std::vector<size_t> nbCentersEz;
-//     nbCentersEz.push_back(nbCentersX);
-//     nbCentersEz.push_back(nbCentersY);
-//     nbCentersEz.push_back(nbCentersZ);
-
-//     // Is the total number of points in the brain
-//     size_t nbPointsInBrain = allPointsInBrain.size()/3;
-
-//     // Will contain the fields Ex, Ey and Ez for the points in the grain
-//     std::vector<size_t> Ex;
-//     std::vector<size_t> Ey;
-//     std::vector<size_t> Ez;
-
-//     size_t x1 = 0; // Correspond to point (i+1, j-1, k-1)
-//     size_t x2 = 0; // Correspond to point (i-1, j-1, k-1)
-//     size_t x3 = 0; // Correspond to point (i+1, j-1, k+1)
-//     size_t x4 = 0; // Correspond to point (i-1, j-1, k+1)
-//     size_t x5 = 0; // Correspond to point (i+1, j+1, k-1)
-//     size_t x6 = 0; // Correspond to point (i-1, j+1, k-1)
-//     size_t x7 = 0; // Correspond to point (i+1, j+1, k+1)
-//     size_t x8 = 0; // Correspond to point (i1, j+1, k+1)
-
-//     size_t y1 = 0; // Correspond to point (i+1, j-1, k-1)
-//     size_t y2 = 0; // Correspond to point (i-1, j-1, k-1)
-//     size_t y3 = 0; // Correspond to point (i+1, j-1, k+1)
-//     size_t y4 = 0; // Correspond to point (i-1, j-1, k+1)
-//     size_t y5 = 0; // Correspond to point (i+1, j+1, k-1)
-//     size_t y6 = 0; // Correspond to point (i-1, j+1, k-1)
-//     size_t y7 = 0; // Correspond to point (i+1, j+1, k+1)
-//     size_t y8 = 0; // Correspond to point (i1, j+1, k+1)
-
-//     size_t z1 = 0; // Correspond to point (i+1, j-1, k-1)
-//     size_t z2 = 0; // Correspond to point (i-1, j-1, k-1)
-//     size_t z3 = 0; // Correspond to point (i+1, j-1, k+1)
-//     size_t z4 = 0; // Correspond to point (i-1, j-1, k+1)
-//     size_t z5 = 0; // Correspond to point (i+1, j+1, k-1)
-//     size_t z6 = 0; // Correspond to point (i-1, j+1, k-1)
-//     size_t z7 = 0; // Correspond to point (i+1, j+1, k+1)
-//     size_t z8 = 0; // Correspond to point (i1, j+1, k+1)
-
-//     std::vector<size_t> PositionsX;
-//     std::vector<size_t> PositionsY;
-//     std::vector<size_t> PositionsZ;
-
-//     size_t loopForPos = 0;
-
-//     for(loopForPos=0; loopForPos<allPointsInBrain.size()/3; loopForPos+=3)
-//     {
-//         PositionsX.push_back( allPointsInBrain(loopForPos) );
-//         PositionsY.push_back( allPointsInBrain(loopForPos + 1) );
-//         PositionsZ.push_back( allPointsInBrain(loopForPos + 2) );
-//     }
-
-//     // Will contain the values for the different interpolations
-//     std::vector<double> allInterpEx;
-//     std::vector<double> allInterpEy;
-//     std::vector<double> allInterpEz;
-
-//     // Computation for Ex
-//     for(k=0; k<nbCentersEx[2]; k++)
-//     {
-//         for(j=0; j<nbCentersEx[1]; j++)
-//         {
-//             for(i=0; i<nbCentersEx[0]; i++)
-//             {
-//                 x1 = allPointsInBrain( (i+1) + nbCentersEx[0] * ( j + nbCentersEx[1] * k ) );
-//                 x2 = allPointsInBrain( i + nbCentersEx[0] * ( j + nbCentersEx[1] * k ) );
-//                 x3 = allPointsInBrain( (i+1) + nbCentersEx[0] * ( j + nbCentersEx[1] * (k+1) ) );
-//                 x4 = allPointsInBrain( i + nbCentersEx[0] * ( j + nbCentersEx[1] * (k+1) ) );
-//                 x5 = allPointsInBrain( (i+1) + nbCentersEx[0] * ( (j+1) + nbCentersEx[1] * k ) );
-//                 x6 = allPointsInBrain( i + nbCentersEx[0] * ( (j+1) + nbCentersEx[1] * k ) );
-//                 x7 = allPointsInBrain( (i+1) + nbCentersEx[0] * ( (j+1) + nbCentersEx[1] * k ) );
-//                 x8 = allPointsInBrain( i + nbCentersEx[0] * ( (j+1) + nbCentersEx[1] * (k+1) ) );
-
-//                 allInterpEx.push_back( interpolationX(x1, x2, x3, x4, x5, x6, x7, x8, grid) );
-//             }
-//         }
-//     }
-
-//     // Computation for Ey
-//     for(k=0; k<nbCentersEy[2]; k++)
-//     {
-//         for(j=0; j<nbCentersEy[1]; j++)
-//         {
-//             for(i=0; i<nbCentersEy[0]; i++)
-//             {
-//                 y1 = allPointsInBrain( (i+1) + nbCentersEy[0] * ( j + nbCentersEy[1] * k ) );
-//                 y2 = allPointsInBrain( i + nbCentersEy[0] * ( j + nbCentersEy[1] * k ) );
-//                 y3 = allPointsInBrain( (i+1) + nbCentersEy[0] * ( j + nbCentersEy[1] * (k+1) ) );
-//                 y4 = allPointsInBrain( i + nbCentersEy[0] * ( j + nbCentersEy[1] * (k+1) ) );
-//                 y5 = allPointsInBrain( (i+1) + nbCentersEy[0] * ( (j+1) + nbCentersEy[1] * k ) );
-//                 y6 = allPointsInBrain( i + nbCentersEy[0] * ( (j+1) + nbCentersEy[1] * k ) );
-//                 y7 = allPointsInBrain( (i+1) + nbCentersEy[0] * ( (j+1) + nbCentersEy[1] * k ) );
-//                 y8 = allPointsInBrain( i + nbCentersEy[0] * ( (j+1) + nbCentersEy[1] * (k+1) ) );
-
-//                 allInterpEy.push_back( interpolationY(y1, y2, y3, y4, y5, y6, y7, y8, grid) );
-//             }
-//         }
-//     }
-
-//     // Computation for Ez
-//     for(k=0; k<nbCentersEz[2]; k++)
-//     {
-//         for(j=0; j<nbCentersEz[1]; j++)
-//         {
-//             for(i=0; i<nbCentersEz[0]; i++)
-//             {
-//                 z1 = allPointsInBrain( (i+1) + nbCentersEz[0] * ( j + nbCentersEz[1] * k ) );
-//                 z2 = allPointsInBrain( i + nbCentersEz[0] * ( j + nbCentersEz[1] * k ) );
-//                 z3 = allPointsInBrain( (i+1) + nbCentersEz[0] * ( j + nbCentersEz[1] * (k+1) ) );
-//                 z4 = allPointsInBrain( i + nbCentersEz[0] * ( j + nbCentersEz[1] * (k+1) ) );
-//                 z5 = allPointsInBrain( (i+1) + nbCentersEz[0] * ( (j+1) + nbCentersEz[1] * k ) );
-//                 z6 = allPointsInBrain( i + nbCentersEz[0] * ( (j+1) + nbCentersEz[1] * k ) );
-//                 z7 = allPointsInBrain( (i+1) + nbCentersEz[0] * ( (j+1) + nbCentersEz[1] * k ) );
-//                 z8 = allPointsInBrain( i + nbCentersEz[0] * ( (j+1) + nbCentersEz[1] * (k+1) ) );
-
-//                 allInterpEz.push_back( interpolationZ(z1, z2, z3, z4, z5, z6, z7, z8, grid) );
-//             }
-//         }
-//     }
-
-//     size_t minCenterX = findMin( nbCentersEx[0], nbCentersEy[0], nbCentersEz[0] );
-//     size_t minCenterY = findMin( nbCentersEx[1], nbCentersEy[1], nbCentersEz[1] );
-//     size_t minCenterZ = findMin( nbCentersEx[2], nbCentersEy[2], nbCentersEz[2] );
-
-//     size_t loopX = 0;
-//     size_t loopY = 0;
-//     size_t loopZ = 0;
-
-//     size_t index = 0;
-//     double eps_pp = 0.0;
-//     double sigma = 0.0;
-//     unsigned char mat;
-//     std::vector<double> Power;
-//     size_t omega = 2 * M_PI * grid.input_parser.source.frequency[0];
-
-//     std::vector<size_t> ModulusEsquare
-
-//     for(loopX=0; loopX<minCenterX; loopX++)
-//     {
-//         for(loopY=0; loopY<minCenterY; loopY++)
-//         {
-//             for(loopZ=0; loopZ<minCenterZ; loopZ++)
-//             {
-//                 ModulusEsquare.push_back( allInterpEx[loopX] * allInterpEx[loopX]
-//                                             +
-//                                         allInterpEy[loopY] * allInterpEy[loopY]
-//                                             +
-//                                         allInterpEz[loopZ] * allInterpEz[loopZ] );
-
-//                 index = loopX + grid.size_Ex[0] * (loopY + loopZ*grid.size_Ex[1]);
-//                 mat = grid.E_x_material[index];
-//                 eps_pp = grid.materials.unified_material_list[mat].properties["RELATIVEPERMITTIVITY"];
-//                 sigma = grid.materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY"];
-//                 power.push_back( ( ModulusEsquare[index] * (omega*eps_pp + sigma) / 2 ) );                
-//             }
-//         }
-//     }
-
-
-
-//     return power;
-// }
+}
 
 void AlgoElectro_NEW::ComputePowerInBrain(unsigned int *GlobalIndexVECTOR,
                                         unsigned int *LocalIndexVector, 
@@ -11015,18 +10129,31 @@ void AlgoElectro_NEW::ComputePowerInBrain(unsigned int *GlobalIndexVECTOR,
 {
     double eps_pp = 0.0;
     double sigma = 0.0;
-    unsigned char mat;
+    unsigned int  mat;
     size_t omega = 2 * M_PI * grid.input_parser.source.frequency[0];
 
     for(unsigned int i=0; i<counterInBrain; i++)
     {
-        mat = grid.E_x_material[i];
-        eps_pp = grid.materials.unified_material_list[mat].properties["RELATIVEPERMITTIVITY"];
-        sigma = grid.materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY"];
-
-        double prefactor = (sigma + omega*eps_pp)/2;
+        size_t index_E_X,index_E_Y,index_E_Z;
+        index_E_X=(LocalIndexVector[i*3+0]+1)
+                    +grid.size_Ex[0]*((LocalIndexVector[i*3+1]+1)+(LocalIndexVector[i*3+2]+1)*grid.size_Ex[1]);
+        index_E_Y=(LocalIndexVector[i*3+0]+1)
+                    +grid.size_Ey[0]*((LocalIndexVector[i*3+1]+1)+(LocalIndexVector[i*3+2]+1)*grid.size_Ey[1]);
+        index_E_Z=(LocalIndexVector[i*3+0]+1)
+                    +grid.size_Ez[0]*((LocalIndexVector[i*3+1]+1)+(LocalIndexVector[i*3+2]+1)*grid.size_Ez[1]);
         
-        PowerInBrain[i] = prefactor * (grid.E_x[i]*grid.E_x[i] + grid.E_y[i]*grid.E_y[i] + grid.E_z[i]*grid.E_z[i]);
+        mat = grid.E_x_material[index_E_X];
+        eps_pp = grid.materials.unified_material_list[mat].properties["DIELECTRICPERMITTIVITY"];
+        sigma = grid.materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY(S/M)"];
+
+        double prefactor = (sigma + omega*eps_pp*VACUUM_PERMITTIVITY)/2;
+        /*printf("prefactor %lf\n",prefactor);
+        printf("mat=%lf\n",mat);
+        printf("eps_pp=%lf\n",eps_pp);
+        printf("sigma=%lf\n",sigma);*/
+        grid.materials.unified_material_list[mat].printf_mat();
+        
+        PowerInBrain[i] = prefactor * (grid.E_x[index_E_X]*grid.E_x[index_E_X] + grid.E_y[index_E_Y]*grid.E_y[index_E_Y] + grid.E_z[index_E_Z]*grid.E_z[index_E_Z]);
 
     }
 

@@ -86,49 +86,6 @@ class AlgoElectro_NEW{
             double dt
         );
 
-        // std::vector<double> ComputeNormE2square(std::vector<double> Ex,
-        //                                   std::vector<double> Ey, std::vector<double> Ez, GridCreator_NEW &grid);
-        std::vector<double> ComputeNormE2square(GridCreator_NEW &grid);
-        
-
-        double interpolationX(size_t x1, size_t x2, size_t x3,
-                              size_t x4, size_t x5, size_t x6,
-                              size_t x7, size_t x8,  GridCreator_NEW &grid);
-
-        // double interpolationX2(size_t x1, size_t x2, size_t x3,
-        //                       size_t x4, size_t x5, size_t x6,
-        //                       size_t x7, size_t x8,  std::vector<double> Ex);
-        double interpolationX2(size_t x1, size_t x2, size_t x3,
-                              size_t x4, size_t x5, size_t x6,
-                              size_t x7, size_t x8,  double *Ex);
-
-        
-        double interpolationY(size_t y1, size_t y2, size_t y3,
-                              size_t y4, size_t y5, size_t y6,
-                              size_t y7, size_t y8,  GridCreator_NEW &grid);
-
-        // double interpolationY2(size_t y1, size_t y2, size_t y3,
-        //                       size_t y4, size_t y5, size_t y6,
-        //                       size_t y7, size_t y8,  std::vector<double> Ey);
-        double interpolationY2(size_t y1, size_t y2, size_t y3,
-                              size_t y4, size_t y5, size_t y6,
-                              size_t y7, size_t y8,  double* Ey);
-
-
-        double interpolationZ(size_t z1, size_t z2, size_t z3,
-                              size_t z4, size_t z5, size_t z6,
-                              size_t z7, size_t z8,  GridCreator_NEW &grid);
-
-        // double interpolationZ2(size_t z1, size_t z2, size_t z3,
-        //                       size_t z4, size_t z5, size_t z6,
-        //                       size_t z7, size_t z8,  std::vector<double> Ez);
-        double interpolationZ2(size_t z1, size_t z2, size_t z3,
-                              size_t z4, size_t z5, size_t z6,
-                              size_t z7, size_t z8,  double* Ez);
-
-
-        std::vector<double> ComputeNormEsquareBIS(GridCreator_NEW &grid);
-
         /**
          * @brief Apply 1D conditions on the magnetic field.
          */
@@ -222,26 +179,7 @@ class AlgoElectro_NEW{
             unsigned int rhoZ0, unsigned int rhoZ1
             );
 
-
-    size_t findMin(size_t a,
-                    size_t b,
-                    size_t c);
-
-    size_t findMinInVec(std::vector<size_t> vec);
-
     void WriteData(int MPI_my_rank, GridCreator_NEW &grid);
-
-    size_t findMaxVectorX(std::vector<size_t> GlobalIndexVECTOR);
-
-    size_t findMinVectorX(std::vector<size_t> GlobalIndexVECTOR);
-
-    size_t findMaxVectorY(std::vector<size_t> GlobalIndexVECTOR);
-
-    size_t findMinVectorY(std::vector<size_t> GlobalIndexVECTOR);
-
-    size_t findMaxVectorZ(std::vector<size_t> GlobalIndexVECTOR);
-
-    size_t findMinVectorZ(std::vector<size_t> GlobalIndexVECTOR);
 
     void ComputePowerInBrain(unsigned int *GlobalIndexVECTOR,
                             unsigned int *LocalIndexVector, 
