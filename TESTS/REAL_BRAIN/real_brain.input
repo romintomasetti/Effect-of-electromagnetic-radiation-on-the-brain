@@ -6,7 +6,7 @@
 $INFOS
 	$NAME
 		// Output file for fields:
-		output=RESULTS/OUTPUT_FILES
+		output=RESULTS_cerveau_steady/OUTPUT_FILES
 		// Error log file:
 		error=ERROR_LOG
 		// Profiling (cpu time, memory, etc):
@@ -33,19 +33,22 @@ $MESH
 
 	// Size of the elements of the mesh:
 	$DELTAS
-		deltaX_Electro=0.01
-		deltaY_Electro=0.01
-		deltaZ_Electro=0.01
-		delta_Thermal=0.01
+		//deltaX_Electro=0.0018318496
+		//deltaY_Electro=0.0018318496
+		//deltaZ_Electro=0.0018318496
+        deltaX_Electro=0.0018318496
+		deltaY_Electro=0.0018318496
+		deltaZ_Electro=0.0018318496
+		delta_Thermal=0.0018318496
 		ratio_EM_TH_delta=1
 	$DELTAS
 		
 	// Boundaries of the domain
 	$DOMAIN_SIZE
 		// Length of the domain in each direction
-		L_X_ELECTRO=1
-		L_Y_ELECTRO=1
-		L_Z_ELECTRO=1
+		L_X_ELECTRO=0.7
+		L_Y_ELECTRO=0.7
+		L_Z_ELECTRO=0.7
 		L_X_THERMAL=0.3
 		L_Y_THERMAL=0.3
 		L_Z_THERMAL=0.3
@@ -53,23 +56,23 @@ $MESH
 	
 	// Information on the source
 	$SOURCE
-		NBR_SOURCES=2
+		NBR_SOURCES=1
 		// Length of the source in each direction
-		L_X=0.1;0.1;
-		L_Y=0.1;0.1;
-		L_Z=0.1;0.1;
+		L_X=0.1;
+		L_Y=0.1;
+		L_Z=0.1;
 		// Center of the source, (0,0,0) is in the lower left corner in front:
-		C_X=0.3;0.7;
-		C_Y=0.5;0.5;
-		C_Z=0.5;0.5;
+		C_X=0.51;
+		C_Y=0.35;
+		C_Z=0.35;
 		// Frequency [Hz]
-		FRQCY=900E6;900E6;
+		FRQCY=900E6;
 		/// Either 'DIPOLE' or 'SIMPLE' (for simple antenna):
 		/// If set to dipole, length is proportional to lambda = 3E8/freq
 		///
-		IMPOSED=DIPOLE;DIPOLE;
+		IMPOSED=DIPOLE;
 		/// Information on the source "time" : GAUSSIAN(MEAN,STD) or SINE
-		SOURCE_TIME=SINE;SINE;
+		SOURCE_TIME=SINE;
 		// Default with Gaussian is (MEAN,STD)=(0*period,period/10) where period=c/frequency, c=3e8
 	$SOURCE
 	
@@ -113,7 +116,7 @@ $RUN_INFOS
 		// The simulation will stop after... (in sec)
 		stopTime=10
 		// The electromagnetic solver stops after this max number of steps parameter:
-		maxStepsForOneCycleOfElectro=100
+		maxStepsForOneCycleOfElectro=1000
 		// input_parser.maxStepsForOneCycleOfElectro
 		// The thermal solver stops after this max number of steps:
 		
@@ -128,51 +131,69 @@ $RUN_INFOS
 
 	// State all your boundary conditions inside this region:
 	$BOUNDARY_CONDITIONS_THERMO
+        //THERMAL_TYPE_SIMULATION=cerveau
+		THERMAL_TYPE_SIMULATION=analytic
 
-		THERMAL_TYPE_SIMULATION=cerveau
-		//THERMAL_TYPE_SIMULATION=analytic
+		//If analytic case of Wall (Remark: ONLY  DIRECTION Z)
+		WALL_THERMO=FALSE
+
+		//If analytic case, thermal distribution (sine) (Remark: ONLY DIRECTION X)
+		THERMAL_DISTRIBUTION=TRUE
+
+		// IF analytic case && thermal distribution 
+		AMPLITUDE_THERMAL_DISTRIBUTION=1.0
 
 		// Units of convection coef. are [W/(m²K)]
 		CONVECTION_COEFFICIENT=10
 
+		//Temperature convection (T_infiny)
+		TEMPERATURE_CONVECTION=298.15
+
+		// Sine heat source
+		HEAT_DISTRIBUTION=FALSE
+
+		// IF analytic case && sine heat source
+		AMPLITUDE_HEAT_DISTRIBUTION=0.0
+
 		// Thermal boundary condition of a parallelipipoid:
 		/*
 		  How to use these Boundary Conditions:
-			For Neumann:   {Neumann;value}
-			For Dirichlet: {Dirichlet;value} (value = temperature)
+			For Neumann:   {Neumann;value} (Temperature useless)
+			For Dirichlet: {Dirichlet;value} (Only for Dirichelet :value = temperature[K])
 			Used only for "analytical" verification cases.
 		*/
-		BC_FACE_0={Neumann;0}
-		BC_FACE_1={Neumann;0}
-		BC_FACE_2={Dirichlet;50}
-		BC_FACE_3={Dirichlet;0}
-		BC_FACE_4={Dirichlet;0}
-		BC_FACE_5={Dirichlet;0}
-
+		BC_FACE_0={Dirichlet;0}
+		BC_FACE_1={Dirichlet;0}
+		BC_FACE_2={Neumann;0}
+		BC_FACE_3={Neumann;0}
+		BC_FACE_4={Neumann;0}
+		BC_FACE_5={Neumann;0}
 	$BOUNDARY_CONDITIONS_THERMO
     
     $BOUNDARY_CONDITIONS_ELECTRO
 		// Apply ABC or not:
 		APPLY_ABC=true
 		// Apply PML or not:
-		APPLY_PML=false
+		APPLY_PML=true
 		// Thickness of the PML boundary condition
-		THICKNESS_PML_IN_NODES=5
+		THICKNESS_PML_IN_NODES=50
 		// Order of the PML boundary condition:
-		PML_ORDER=0
+		PML_ORDER=5
 		// Sigma_M
-		PML_SIGMA_M=1		
+		PML_SIGMA_M=20
+        // Improve the PML reflection:
+        Improved_PML=true		
 	$BOUNDARY_CONDITIONS_ELECTRO
 
 	$OUTPUT_SAVING
 		// Sampling frequency for the electromagnetic algorithm:
-		SAMPLING_FREQ_ELECTRO=100
+		SAMPLING_FREQ_ELECTRO=100000
 		// Sampling frequency for the thermal algorithm:
 		SAMPLING_FREQ_THERMAL=1
 	$OUTPUT_SAVING
 
 	$ELECTRO_STEADY_STATE
-        check_steady_state=false;
+        check_steady_state=true;
 	$ELECTRO_STEADY_STATE
 	
 $RUN_INFOS
