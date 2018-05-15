@@ -2068,6 +2068,27 @@ void AlgoElectro_NEW::update(
         }
 
 
+        algoElectroToVtlRomin pmlVersSauvegarde;
+        // Don't write fields inside the PML if asked !
+        if(grid.input_parser.apply_PML_BCs == true && grid.input_parser.save_fields_in_pml == false){
+            pmlVersSauvegarde.PML_sont_appliquees = true;
+            pmlVersSauvegarde.IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX = IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX;
+            pmlVersSauvegarde.IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY = IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+            pmlVersSauvegarde.IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ = IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ;
+            pmlVersSauvegarde.IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX = IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX;
+            pmlVersSauvegarde.IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY = IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY;
+            pmlVersSauvegarde.IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ = IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ;
+            pmlVersSauvegarde.rhoX0 = rhoX0;
+            pmlVersSauvegarde.rhoX1 = rhoX1;
+            pmlVersSauvegarde.rhoY0 = rhoY0;
+            pmlVersSauvegarde.rhoY1 = rhoY1;
+            pmlVersSauvegarde.rhoZ0 = rhoZ0;
+            pmlVersSauvegarde.rhoZ1 = rhoZ1;
+        }else{
+            pmlVersSauvegarde.PML_sont_appliquees = false;
+        }
+        
+
         bool has_neighboor = false;
         for(unsigned int ii =  0; ii < NBR_FACES_CUBE ; ii ++){
             if(grid.MPI_communicator.RankNeighbour[ii] != -1){
@@ -3158,7 +3179,8 @@ void AlgoElectro_NEW::update(
                     double timeWriting = omp_get_wtime();
                     interfaceParaview.convertAndWriteData(
                         currentStep,
-                        "ELECTRO"
+                        "ELECTRO",
+                        pmlVersSauvegarde
                     );
 
                     timeWriting = omp_get_wtime()-timeWriting;
