@@ -247,9 +247,9 @@ class ElectromagneticSource{
 				double freq   = this->frequency[ID_Source];
 				double lambda = speedOfLight / freq;
 
-				double length_X = lambda/4;
-				double length_Y = lambda/4;
-				double length_Z = 2 * lambda/4 + deltas_Electro[2];
+				double length_X = 4*deltas_Electro[0];//lambda/4;
+				double length_Y = 4*deltas_Electro[1];//lambda/4;
+				double length_Z = 2 * lambda/20 + deltas_Electro[2];
 
 				/// Compute the coordinates of the node w.r.t. the origin of the whole grid:
 				double X_coord = origin_whole_grid[0] + I_gl * deltas_Electro[0];
