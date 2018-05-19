@@ -193,7 +193,9 @@ int main(int argc, char *argv[]){
 		algoElectro_newTst.update(gridTest,interfaceToWriteOutput);
 		//printf("SUCCESS\n");
 		//printf("You successfully reach the point after the update and before the power computations\n");
-		//algoElectro_newTst.WriteData(MPI_communicator.getRank(), gridTest);
+        if(input_parser.apply_thermo_algo == true){
+            algoElectro_newTst.WriteData(MPI_communicator.getRank(), gridTest);
+        }
 		//printf("\n\tHello form process %u\n", MPI_communicator.getRank());
 		//printf("SUCCESS\n");
 		//printf("Prepare to abort...\n");
