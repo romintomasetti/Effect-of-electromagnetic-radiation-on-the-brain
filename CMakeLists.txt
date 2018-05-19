@@ -177,8 +177,11 @@ INCLUDE_DIRECTORIES(BrainScans)
 ADD_SUBDIRECTORY(CMake_tests)
 
 ##### VTL_BOMAN #################
+ADD_SUBDIRECTORY(vtl_boman_test)
+INCLUDE_DIRECTORIES(vtl_boman_test)
 ADD_SUBDIRECTORY(vtl_boman)
 INCLUDE_DIRECTORIES(vtl_boman)
+
 
 ##### CREATE_GEOMETRY ###########
 ADD_SUBDIRECTORY(CREATE_GEOMETRY)
