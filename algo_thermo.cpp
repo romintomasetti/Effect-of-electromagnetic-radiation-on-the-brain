@@ -1,6 +1,6 @@
 #include "algo_thermo.hpp"
 
-using namespace vtl;
+//using namespace vtl;
 
 
 #ifndef M_PI
@@ -24,6 +24,33 @@ void check_MUMPS(DMUMPS_STRUC_C &id)
         std::cout << "\tINFOG(1)=" << id.infog[0] << '\n';
         std::cout << "\tINFOG(2)=" << id.infog[1] << std::endl;
     }
+}
+
+void PutPowerInVTI(
+    std::vector<double> &powers, 
+    unsigned int N_x,
+    unsigned int N_y,
+    unsigned int N_z,
+    double Delta){
+    /**
+     * @brief Write power inside a grid to export to .vti files.
+     */
+    SPoints grid;
+    // Initialize global grid:
+    grid.o   = Vec3d(0.,0.,0.);
+    grid.np1 = Vec3i(0,0,0);
+    grid.np2 = Vec3i(
+        N_x,N_y,N_z
+    );
+    grid.dx = Vec3d(
+        Delta,Delta,Delta
+    );
+
+    grid.cscalars["powers"] = &powers;  
+
+    // Save material:
+    export_spoints_XML("powers_in_brain", 0, grid, grid, Zip::ZIPPED);
+    
 }
 
 
@@ -180,6 +207,11 @@ void convection_brain(double *A, MUMPS_INT *Indices_line_A, MUMPS_INT *Indices_r
         (*counter_nonvalue_A)++;
         convection_contribution[*position_equation]=h*T_infiny;
         (*position_equation)++;
+    }
+
+    if(std::isnan(convection_contribution[*position_equation-1]) == true){
+        printf("Convection : contribution is NaN at %u!\n",*position_equation-1);
+        abort();
     }
 }
 
@@ -710,61 +742,53 @@ void mkl_call(int Number_total,double *B, int *Indices_line_B, int *Colonn_line_
 
 
 //Function resolve
-void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, unsigned int *Stateofeachface, unsigned int N_x, unsigned int N_y, unsigned int N_z, double Delta, double dt,double theta,double h,double T_infiny, unsigned int type_simulation_value, double *temperature_initial,double t_final_thermal, double * temperature_initial_face, unsigned int rate_save_thermo,char *geometry_material, unsigned int wall_thermo, unsigned int thermal_distribution,double  amplitude_thermal_distribution,unsigned int heat_distribution, double amplitude_heat_distribution,GridCreator_NEW & gridElectro)
+void resolve(DMUMPS_STRUC_C &id, SPoints &grid,unsigned int Number_total, 
+        unsigned int *Stateofeachface, unsigned int N_x, unsigned int N_y, 
+        unsigned int N_z, double Delta, double dt,double theta,double h,double T_infiny, 
+        unsigned int type_simulation_value, double *temperature_initial,double t_final_thermal, 
+        double * temperature_initial_face, unsigned int rate_save_thermo,char *geometry_material, 
+        unsigned int wall_thermo, unsigned int thermal_distribution,double  amplitude_thermal_distribution,
+        unsigned int heat_distribution, double amplitude_heat_distribution,
+        GridCreator_NEW & gridElectro,
+        std::string outFileName)
 {
     // Read the file and put it inside a vector:
     unsigned int* material_at_nodes = NULL;
     //Brain
     if(type_simulation_value==1){
-        material_at_nodes = (unsigned int *) calloc(Number_total,sizeof(unsigned int));
+        if(get_my_rank() == 0){
+            material_at_nodes = (unsigned int *) calloc(Number_total,sizeof(unsigned int));
 
-        FILE* fichier = NULL;
-
-        fichier = fopen("thermo_geometry.txt", "r");
-        unsigned int i=0;
-        if (fichier != NULL)
-        {
-            while(!feof(fichier)){
-                fscanf(fichier, "%u",&material_at_nodes[i]);
-                i++;
+            FILE* fichier = NULL;
+            
+            fichier = fopen("thermo_geometry.txt", "r");
+            unsigned int i=0;
+            if (fichier != NULL)
+            {
+                while(!feof(fichier) && i < Number_total){
+                    fscanf(fichier, "%u",&material_at_nodes[i]);
+                    //printf("Material[%u sur %u] = %u\n",i,Number_total,material_at_nodes[i]);
+                    i++;
+                }
+                fclose(fichier);
             }
-            fclose(fichier);
-        }
-        else
-        {
-            // On affiche un message d'erreur si on veut
-            printf("Impossible d'ouvrir le fichier test.txt");
-        }
-
-
-
-
-        /*size_t size_mat = 0;
-        
-        if( NULL != (material_at_nodes = read_input_geometry_file(geometry_material,&size_mat))){
-            printf("%s\n",geometry_material);
-            if(size_mat != N_x * N_y * N_z){
-                printf("size_mat %zu\n",size_mat);
-                printf("Number total =%u\n",N_x*N_y*N_z);
-                printf("Size error!! %d",__LINE__);
-                abort();
+            else
+            {
+                // On affiche un message d'erreur si on veut
+                printf("Impossible d'ouvrir le fichier test.txt");
             }
-            printf("size_mat =%zu\n",size_mat);
-            printf("Number total =%u\n",N_x*N_y*N_z);
-        }else{        
-            printf("There is an abort() at line %d. Sorry for that.\n",__LINE__);
-            abort();
-        }*/
+        }
 
         // Case analytic
     }else{
-        material_at_nodes = (unsigned int *) calloc(Number_total,sizeof(unsigned int));
-        if(wall_thermo==1){
-            wall_geometry(material_at_nodes,N_x,N_y,N_z);
-        }else{            
-            remplissage_material_at_nodes(material_at_nodes,N_x,N_y,N_z);
+        if(get_my_rank() == 0){
+            material_at_nodes = (unsigned int *) calloc(Number_total,sizeof(unsigned int));
+            if(wall_thermo==1){
+                wall_geometry(material_at_nodes,N_x,N_y,N_z);
+            }else{            
+                remplissage_material_at_nodes(material_at_nodes,N_x,N_y,N_z);
+            }
         }
-
     }
 
     
@@ -785,152 +809,165 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
   	MKL_INT  numberofnon_nullvalue_A=0;
     MKL_INT  numberofnon_nullvalue_B=0;
     unsigned int nodes_surface=0;
-
+    unsigned int nodes_into_brain=0;
     printf("calcul du nombre de zero pour A et B \n");
 
-    if(type_simulation_value==0){
-        //%%%%%%%%%%%%%%%%%%%%%%%%%%%% Analytic case %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    Numberofnon_zero_function(&numberofnon_nullvalue_A,&numberofnon_nullvalue_B, Stateofeachface, N_x, N_y, N_z);
-    }else{
-        //%%%%%%%%%%%%%%%%%%%%%%%%%%%% Case of the brain %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        for (unsigned int parcours=0; parcours<Number_total; parcours++){
-            //variable to known the position
-            unsigned int tmp = floor(parcours/(N_x*N_y));
-            unsigned int value_testx = parcours-tmp*N_x*N_y;           
-            unsigned int b=0;  
-
-            // In the air
-            if(material_at_nodes[parcours]==0){
-                //Face i==0
-                if(count_y==0 && nodes_nearbrain_prim[parcours]==0){
+    if(get_my_rank() == 0){
+        if(type_simulation_value==0){
+            //%%%%%%%%%%%%%%%%%%%%%%%%%%%% Analytic case %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        Numberofnon_zero_function(&numberofnon_nullvalue_A,&numberofnon_nullvalue_B, Stateofeachface, N_x, N_y, N_z);
+        }else{
+            //%%%%%%%%%%%%%%%%%%%%%%%%%%%% Case of the brain %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            for (unsigned int parcours=0; parcours<Number_total; parcours++){
+                //variable to known the position
+                unsigned int tmp = floor(parcours/(N_x*N_y));
+                unsigned int value_testx = parcours-tmp*N_x*N_y;           
+                unsigned int b=0;  
+                if(material_at_nodes[parcours]!=0){
+                    nodes_into_brain++;
+                }
+                // In the air
+                if(material_at_nodes[parcours]==0){
+                    //Face i==0
+                    if(count_y==0 && nodes_nearbrain_prim[parcours]==0){
+                        nodes_nearbrain_prim[parcours]=0;
+                        b=1;
+                    }
+                    //Face i==N_x-1
+                    if(count_y==N_x-1 && nodes_nearbrain_prim[parcours]==0){
+                        nodes_nearbrain_prim[parcours]=0;
+                        b=1;
+                    }
+                    //Face j==0
+                    if(value_testx < N_x && nodes_nearbrain_prim[parcours]==0){
+                        nodes_nearbrain_prim[parcours]=0;
+                        b=1;
+                    }
+                    //Face j==N_y-1
+                    if(value_testx >= (N_x*N_y)-N_x && nodes_nearbrain_prim[parcours]==0){
+                        nodes_nearbrain_prim[parcours]=0;
+                        b=1;
+                    }
+                    //Face z==0
+                    if(parcours <= N_x*N_y && nodes_nearbrain_prim[parcours]==0){
+                        nodes_nearbrain_prim[parcours]=0;
+                        b=1;  
+                    }
+                    //Face z==N_z-1
+                    if(parcours >= Number_total -N_x*N_y && nodes_nearbrain_prim[parcours]==0){
                     nodes_nearbrain_prim[parcours]=0;
-                    b=1;
-                }
-                //Face i==N_x-1
-                if(count_y==N_x-1 && nodes_nearbrain_prim[parcours]==0){
-                    nodes_nearbrain_prim[parcours]=0;
-                    b=1;
-                }
-                //Face j==0
-                if(value_testx < N_x && nodes_nearbrain_prim[parcours]==0){
-                    nodes_nearbrain_prim[parcours]=0;
-                    b=1;
-                }
-                //Face j==N_y-1
-                if(value_testx >= (N_x*N_y)-N_x && nodes_nearbrain_prim[parcours]==0){
-                    nodes_nearbrain_prim[parcours]=0;
-                    b=1;
-                }
-                //Face z==0
-                if(parcours <= N_x*N_y && nodes_nearbrain_prim[parcours]==0){
-                    nodes_nearbrain_prim[parcours]=0;
-                    b=1;  
-                }
-                //Face z==N_z-1
-                if(parcours >= Number_total -N_x*N_y && nodes_nearbrain_prim[parcours]==0){
-                   nodes_nearbrain_prim[parcours]=0;
-                    b=1; 
-                }
-                if(b==0){
-                    // neighbour at x+1 if no air ? 
-                    if(material_at_nodes[parcours+1]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
-                        nodes_nearbrain_prim[parcours]=1;
-                        nodes_surface++;
+                        b=1; 
                     }
-                    // neighbour at x-1 if no air ? 
-                    
-                    if(material_at_nodes[parcours-1]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
-                        nodes_nearbrain_prim[parcours]=1;
-                        nodes_surface++;
-                    }
-                    // neighbour at y+1 if no air ? 
-                    if(material_at_nodes[parcours+N_x]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
-                        nodes_nearbrain_prim[parcours]=1;
-                        nodes_surface++;
-                    }
-                    // neighbour at y-1 if no air ? 
-                    if(material_at_nodes[parcours-N_x]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
-                        nodes_nearbrain_prim[parcours]=1;
-                        nodes_surface++;
-                    }
-                    // neighbour at z+1 if no air ? 
-                    if(material_at_nodes[parcours+N_x*N_y]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
-                        nodes_nearbrain_prim[parcours]=1;
-                        nodes_surface++;
-                    }
-                    // neighbour at z-1 if no air ? 
-                    if(material_at_nodes[parcours-N_x*N_y]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
-                        nodes_nearbrain_prim[parcours]=1;
-                        nodes_surface++;
-                    }
-                }
-            } 
-            // Position along the x-axis
-            count_y=count_y+1;
-            if(count_y==N_x){
-                    count_y = 0;
-            }
-        }
-        //Reset
-        nodes_surface=0;
-
-        printf("1er step for matrix A and B est fais\n");
-        //abort();
-
-        unsigned int tmp_numb=0;
-        unsigned int tmp_numb2=0;
-        unsigned int count=0;
-        // Determin the number of no-zero values for matrix A and B 
-        for(unsigned int parcours=0; parcours<Number_total; parcours++){
-            if(nodes_nearbrain_prim[parcours]==1){
-                tmp_numb2++;
-            }
-            count++;
-
-
-            if(nodes_nearbrain_prim[parcours]==1){
-                numberofnon_nullvalue_A++;
-                numberofnon_nullvalue_A++;
-                numberofnon_nullvalue_A++;
-                tmp_numb++;
-            }
-            if(nodes_nearbrain_prim[parcours]==0  && material_at_nodes[parcours]==0){
-                numberofnon_nullvalue_A++;
-                numberofnon_nullvalue_B++;
-                tmp_numb++;
-            }
-            if(material_at_nodes[parcours]!=0){
-                 //update
-                numberofnon_nullvalue_A++;
-                numberofnon_nullvalue_B++;
+                    if(b==0){
+                        // neighbour at x+1 if no air ? 
+                        if(material_at_nodes[parcours+1]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
+                            nodes_nearbrain_prim[parcours]=1;
+                            nodes_surface++;
+                        }
+                        // neighbour at x-1 if no air ? 
                         
-                //selon x
-
-                numberofnon_nullvalue_A++;
-                numberofnon_nullvalue_B++;
-                numberofnon_nullvalue_A++;
-                numberofnon_nullvalue_B++;
-
-                    //selony
-                numberofnon_nullvalue_A++;
-                numberofnon_nullvalue_B++;
-                numberofnon_nullvalue_A++;
-                numberofnon_nullvalue_B++;
-
-                //selonz
-                numberofnon_nullvalue_A++;
-                numberofnon_nullvalue_B++;
-                numberofnon_nullvalue_A++;
-                numberofnon_nullvalue_B++;
-                tmp_numb++;
+                        if(material_at_nodes[parcours-1]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
+                            nodes_nearbrain_prim[parcours]=1;
+                            nodes_surface++;
+                        }
+                        // neighbour at y+1 if no air ? 
+                        if(material_at_nodes[parcours+N_x]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
+                            nodes_nearbrain_prim[parcours]=1;
+                            nodes_surface++;
+                        }
+                        // neighbour at y-1 if no air ? 
+                        if(material_at_nodes[parcours-N_x]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
+                            nodes_nearbrain_prim[parcours]=1;
+                            nodes_surface++;
+                        }
+                        // neighbour at z+1 if no air ? 
+                        if(material_at_nodes[parcours+N_x*N_y]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
+                            nodes_nearbrain_prim[parcours]=1;
+                            nodes_surface++;
+                        }
+                        // neighbour at z-1 if no air ? 
+                        if(material_at_nodes[parcours-N_x*N_y]!=0 && nodes_nearbrain_prim[parcours]==0 && b==0){
+                            nodes_nearbrain_prim[parcours]=1;
+                            nodes_surface++;
+                        }
+                    }
+                } 
+                // Position along the x-axis
+                count_y=count_y+1;
+                if(count_y==N_x){
+                        count_y = 0;
+                }
             }
+            printf("N_X=%u N_Y=%u N_Z=%u",N_x,N_y,N_z);
+            printf("nodes_surface=%u",nodes_surface);
+            for(unsigned int i=0;i<Number_total;i++){
+                if(nodes_nearbrain_prim[i]==1)
+                printf("nodes_nearbrain_prim[%u]=%u",i,nodes_nearbrain_prim[i]);
+            }
+
+            printf("1er step for matrix A and B est fais\n");
+
+            unsigned int tmp_numb=0;
+            unsigned int tmp_numb2=0;
+            unsigned int count=0;
+            unsigned int nodes_cubes=0;
+            // Determin the number of no-zero values for matrix A and B 
+            for(unsigned int parcours=0; parcours<Number_total; parcours++){
+                if(nodes_nearbrain_prim[parcours]==1){
+                    tmp_numb2++;
+                }
+                count++;
+
+
+                if(nodes_nearbrain_prim[parcours]==1){
+                    numberofnon_nullvalue_A++;
+                    numberofnon_nullvalue_A++;
+                    numberofnon_nullvalue_A++;
+                    tmp_numb++;
+                }
+                if(nodes_nearbrain_prim[parcours]==0  && material_at_nodes[parcours]==0){
+                    numberofnon_nullvalue_A++;
+                    numberofnon_nullvalue_B++;
+                    tmp_numb++;
+                }
+                if(material_at_nodes[parcours]!=0){
+                    //update
+                    numberofnon_nullvalue_A++;
+                    numberofnon_nullvalue_B++;
+                            
+                    //selon x
+
+                    numberofnon_nullvalue_A++;
+                    numberofnon_nullvalue_B++;
+                    numberofnon_nullvalue_A++;
+                    numberofnon_nullvalue_B++;
+
+                        //selony
+                    numberofnon_nullvalue_A++;
+                    numberofnon_nullvalue_B++;
+                    numberofnon_nullvalue_A++;
+                    numberofnon_nullvalue_B++;
+
+                    //selonz
+                    numberofnon_nullvalue_A++;
+                    numberofnon_nullvalue_B++;
+                    numberofnon_nullvalue_A++;
+                    numberofnon_nullvalue_B++;
+                    tmp_numb++;
+                    nodes_cubes++;
+                }
+            }
+            
+        printf("tmp_numb=%u\n",tmp_numb);
+        printf("count=%u\n",count);
+        printf("tmp_numb2=%u\n",tmp_numb2);
+        printf("nodes_cubes=%u",nodes_cubes);
+        printf("numberofnon_nullvalue_A =%u",numberofnon_nullvalue_A);
+        printf("numberofnon_nullvalue_B =%u",numberofnon_nullvalue_B);
+
         }
-        
-    printf("tmp_numb=%u\n",tmp_numb);
-    printf("count=%u\n",count);
-    printf("nodes_surface:%u\n",nodes_surface);
-    printf("tmp_numb2=%u\n",tmp_numb2);
     }
+    
     printf("Fin du calcul du nombre de zero pour A et B \n");
 
     //%%%%%%%%%%%%%%%%%%%%%%%% For the 2 cases %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -964,29 +1001,12 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
 
 
     
-    // Vector of the heat source
+
     double *Q = (double *) calloc(Number_total,sizeof(double));
     if(Q == NULL){
         printf("The table is not calloc().This error comes from Line %d \n",__LINE__);
         abort();
     }
-
-    if(type_simulation_value==1){
-        //Lecture du fichier Power
-        FILE* fichier = NULL;
-
-        fichier = fopen("power.txt", "r");
-        unsigned int i=0;
-        if (fichier != NULL)
-        {
-            while(!feof(fichier)){
-                fscanf(fichier, "%lf",&Q[i]);
-                i++;
-            }
-            fclose(fichier);
-        }
-    }
-
 
     double Cst_A;
     double Cst_B;
@@ -1022,6 +1042,7 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
     {
         //%%%%%%%%%%%%%%%%%%%%  Nodes externes  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
         count_y=0;
+        unsigned int nombres_nodes_problem_convection = 0;
         for (unsigned int parcours=0; parcours<Number_total; parcours++){
             
             //Variables use for located
@@ -1237,6 +1258,7 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
             //%%%%%%%%%%%%%%%%%%%%%%%%% Case brain boundary of the brain %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             if(type_simulation_value==1){
                 unsigned int a=0;
+                unsigned int b = 0;
                 if(material_at_nodes[parcours]==0){
 
                     if(nodes_nearbrain_prim[parcours]==1){
@@ -1248,6 +1270,8 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                                 nodes_normal_2[parcours]=1;
                                 tmp_nodes_normales++;
                                 a=1;
+                            }else{
+                                b=1;
                             }
                         }
                         if(material_at_nodes[parcours-1]>0 && a==0){
@@ -1257,6 +1281,8 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                                 nodes_normal_1[parcours]=1;
                                 tmp_nodes_normales++;
                                 a=1;   
+                            }else{
+                                b = 1;
                             }
                         }
                         if(material_at_nodes[parcours+N_x]>0 && a==0){
@@ -1266,6 +1292,8 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                                 nodes_normal_4[parcours]=1;
                                 tmp_nodes_normales++; 
                                 a=1;
+                            }else{
+                                b = 1;
                             }
                         }
                         if(material_at_nodes[parcours-N_x]>0 && a==0){
@@ -1275,6 +1303,8 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                                 nodes_normal_3[parcours]=1;
                                 tmp_nodes_normales++;
                                 a=1;
+                            }else{
+                                b = 1;
                             }
                         }
                         if(material_at_nodes[parcours+N_x*N_y]>0 && a==0){
@@ -1284,6 +1314,8 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                                 nodes_normal_6[parcours]=1;
                                 tmp_nodes_normales++;
                                 a=1;
+                            }else{
+                                b = 1;
                             }
                         }
                         if(material_at_nodes[parcours-N_x*N_y]>0 && a==0){
@@ -1293,13 +1325,72 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                                 nodes_normal_5[parcours]=1;
                                 tmp_nodes_normales++;
                                 a=1;
+                            }else{
+                                b = 1;
                             }
                         }
-                        if(a==0){
+                        if(a==0 /*&& b == 0*/){
                             printf("Un noeud trouve pas pour faire la convection!!!!!\n");
                             printf("numero noeud %d\n",parcours);
+                            printf("Un noeud trouve pas pour faire la convection!!!!!\n");
+                            printf("numero noeud %d\n",parcours);
+                            nombres_nodes_problem_convection++;
+                            printf("nombres de noeuds erreur=%u\n",nombres_nodes_problem_convection);
+                            FILE* fichier = NULL;
+                            fichier = fopen("noeud_erreur.txt", "w");
+                            if( fichier != NULL){
+                            fprintf(fichier,"%u | tmp %u | count_y %u\n",parcours,tmp,count_y);
+                            }
+                            fclose(fichier);
                             abort();
                         }
+
+                        ////////////// TEST CERVAU COMPLET //////////
+                        if(a == 0 && b == 1){
+                            if(material_at_nodes[parcours+1]>0){
+                                tmp_nodes_normales_exter++;
+                                nodes_nearbrain[parcours]=1;
+                                nodes_normal_2[parcours]=1; 
+                                tmp_nodes_normales++;
+                                a = 1;
+                            }
+                            if(material_at_nodes[parcours-1]>0 && a==0){
+                                nodes_nearbrain[parcours]=1;
+                                tmp_nodes_normales_exter++;
+                                nodes_normal_1[parcours]=1;
+                                tmp_nodes_normales++;
+                                a=1;  
+                            }
+                            if(material_at_nodes[parcours+N_x]>0 && a==0){
+                                nodes_nearbrain[parcours]=1;
+                                tmp_nodes_normales_exter++;
+                                nodes_normal_4[parcours]=1;
+                                tmp_nodes_normales++; 
+                                a=1;
+                            }
+                            if(material_at_nodes[parcours-N_x]>0 && a==0){
+                                nodes_nearbrain[parcours]=1;
+                                tmp_nodes_normales_exter++;
+                                nodes_normal_3[parcours]=1;
+                                tmp_nodes_normales++;
+                                a=1;
+                            }
+                            if(material_at_nodes[parcours+N_x*N_y]>0 && a==0){
+                                nodes_nearbrain[parcours]=1;
+                                tmp_nodes_normales_exter++;
+                                nodes_normal_6[parcours]=1;
+                                tmp_nodes_normales++;
+                                a=1;
+                            }
+                            if(material_at_nodes[parcours-N_x*N_y]>0 && a==0){
+                                nodes_nearbrain[parcours]=1;
+                                tmp_nodes_normales_exter++;
+                                nodes_normal_5[parcours]=1;
+                                tmp_nodes_normales++;
+                                a=1;
+                            }
+                        }
+
                     }
 
                 }
@@ -1322,7 +1413,7 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
         printf("tmp_nodes_normales=%u\n",tmp_nodes_normales);
         printf("tmp_nodes_normales_exter=%u\n",tmp_nodes_normales_exter);
         printf("countxxx=%u",countxxx);        
-        //abort();
+        
 
         //%%%%%%%%%%%%%%%%%%%%  Nodes insides   %%%%%%%%%%%%%%%%%
         unsigned int c=0;
@@ -1352,7 +1443,23 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                             ,gridElectro.materials.unified_material_list[i].properties["HEATCAPACITY(J/KG/°C)"],
                             gridElectro.materials.unified_material_list[i].properties["THERMALCONDUCTIVITY(W/M/°C)"]);*/
                 }
-
+                unsigned int MaterialTestRomin = material_at_nodes[parcours];
+                if(std::isnan(k[MaterialTestRomin]) == true){
+                    printf("For material %s, k is nan !\n",
+                        gridElectro.materials.unified_material_list[MaterialTestRomin].name.c_str());
+                    abort();
+                }
+                if(std::isnan(c_p[MaterialTestRomin]) == true){
+                    printf("For material %s, c_p is nan !\n",
+                        gridElectro.materials.unified_material_list[MaterialTestRomin].name.c_str());
+                    abort();
+                }
+                if(std::isnan(rho[MaterialTestRomin]) == true){
+                    printf("For material %s, rho is nan !\n",
+                        gridElectro.materials.unified_material_list[MaterialTestRomin].name.c_str());
+                    abort();
+                }
+                //abort(); 
                 //neighbour air near the brain 
                 if(nodes_nearbrain_prim[parcours]==1){
                     //convection en avant 
@@ -1419,10 +1526,18 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                     //update
                     B[counter_nonvalue_B] = (rho[material_at_nodes[parcours]]*c_p[material_at_nodes[parcours]])-(theta*dt/(2*Delta*Delta))*(6*k[material_at_nodes[parcours]]+k[material_at_nodes[parcours-1]]
                                     +k[material_at_nodes[parcours+1]]+k[material_at_nodes[parcours+N_x]]+k[material_at_nodes[parcours-N_x]]+k[material_at_nodes[parcours+N_x*N_y]]+k[material_at_nodes[parcours-N_x*N_y]]);
+                    if(std::isnan(B[counter_nonvalue_B]) == true){
+                        printf("B[%u] is NaN !\n",counter_nonvalue_B);
+                        abort();
+                    }    
                     Indices_line_B[counter_nonvalue_B] = position_equation+1;
                     Indices_row_B[counter_nonvalue_B] = parcours+1;
                     A[counter_nonvalue_A]=(rho[material_at_nodes[parcours]]*c_p[material_at_nodes[parcours]])+((1-theta)*dt/(2*Delta*Delta))*(6*k[material_at_nodes[parcours]]+k[material_at_nodes[parcours-1]]
                                     +k[material_at_nodes[parcours+1]]+k[material_at_nodes[parcours+N_x]]+k[material_at_nodes[parcours-N_x]]+k[material_at_nodes[parcours+N_x*N_y]]+k[material_at_nodes[parcours-N_x*N_y]]);
+                    if(std::isnan(A[counter_nonvalue_A]) == true){
+                        printf("A[%u] is NaN !\n",counter_nonvalue_A);
+                        abort();
+                    }
                     Indices_line_A[counter_nonvalue_A]=position_equation+1;
                     Indices_row_A[counter_nonvalue_A]=parcours+1;
                     counter_nonvalue_A++;
@@ -1431,7 +1546,15 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                             
                     //selon x
                     Cst_A = -theta*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours+1]])*dt/(2*Delta*Delta);
+                    if(std::isnan(Cst_A) == true){
+                        printf("Cst_A is NaN for counter_non_value_A %u\n",counter_nonvalue_A);
+                        abort();
+                    }
                     Cst_B=(1-theta)*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours+1]])*dt/(2*Delta*Delta);
+                    if(std::isnan(Cst_B) == true){
+                        printf("Cst_B is NaN for counter_nonvalue_A %u\n",counter_nonvalue_A);
+                        abort();
+                    }
                     B[counter_nonvalue_B] = Cst_B;
                     Indices_line_B[counter_nonvalue_B] = position_equation+1;
                     Indices_row_B[counter_nonvalue_B] = parcours+2;
@@ -1443,6 +1566,10 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
 
                     Cst_A = -theta*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours-1]])*dt/(2*Delta*Delta);
                     Cst_B=(1-theta)*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours-1]])*dt/(2*Delta*Delta);
+                    if(std::isnan(Cst_A) == true || std::isnan(Cst_B) == true){
+                        printf("Cst_A ou Cst_B est NaN (line %d) pour countervalueA %u\n",__LINE__,counter_nonvalue_A);
+                        abort();
+                    }
                     B[counter_nonvalue_B] = Cst_B;
                     Indices_line_B[counter_nonvalue_B] = position_equation+1;
                     Indices_row_B[counter_nonvalue_B] = parcours;
@@ -1455,6 +1582,10 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                         //selony
                     Cst_A = -theta*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours+N_x]])*dt/(2*Delta*Delta);
                     Cst_B=(1-theta)*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours+N_x]])*dt/(2*Delta*Delta);
+                    if(std::isnan(Cst_A) == true || std::isnan(Cst_B) == true){
+                        printf("Cst_A ou B est NaN (line %d)\n",__LINE__);
+                        abort();
+                    }
                     B[counter_nonvalue_B]=Cst_B;
                     Indices_line_B[counter_nonvalue_B] = position_equation+1;
                     Indices_row_B[counter_nonvalue_B] = parcours+N_x+1;
@@ -1466,6 +1597,10 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
 
                     Cst_A = -theta*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours-N_x]])*dt/(2*Delta*Delta);
                     Cst_B=(1-theta)*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours-N_x]])*dt/(2*Delta*Delta);
+                    if(std::isnan(Cst_A) == true || std::isnan(Cst_B) == true){
+                        printf("Cst_A ou B est NaN (line %d)\n",__LINE__);
+                        abort();
+                    }
                     B[counter_nonvalue_B] = Cst_B;
                     Indices_line_B[counter_nonvalue_B] = position_equation+1;
                     Indices_row_B[counter_nonvalue_B] = parcours-N_x+1;
@@ -1478,6 +1613,10 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
                     //selonz
                     Cst_A = -theta*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours+N_x*N_y]])*dt/(2*Delta*Delta);
                     Cst_B=(1-theta)*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours+N_x*N_y]])*dt/(2*Delta*Delta);
+                    if(std::isnan(Cst_A) == true || std::isnan(Cst_B) == true){
+                        printf("Cst_A ou B est NaN (line %d)\n",__LINE__);
+                        abort();
+                    }
                     B[counter_nonvalue_B] = Cst_B;
                     Indices_line_B[counter_nonvalue_B] = position_equation+1;
                     Indices_row_B[counter_nonvalue_B] = parcours+N_x*N_y+1;
@@ -1489,6 +1628,10 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
 
                     Cst_A = -theta*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours-N_x*N_y]])*dt/(2*Delta*Delta);
                     Cst_B=(1-theta)*(k[material_at_nodes[parcours]]+k[material_at_nodes[parcours-N_x*N_y]])*dt/(2*Delta*Delta);
+                    if(std::isnan(Cst_A) == true || std::isnan(Cst_B) == true){
+                        printf("Cst_A ou B est NaN (line %d)\n",__LINE__);
+                        abort();
+                    }
                     B[counter_nonvalue_B] = Cst_B;
                     Indices_line_B[counter_nonvalue_B] =position_equation+1;
                     Indices_row_B[counter_nonvalue_B] = parcours-N_x*N_y+1;
@@ -1779,7 +1922,19 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
         //abort();  
         
         
-
+        // Check for NaN values in A and B
+        for(unsigned int I = 0 ; I < counter_nonvalue_A ; I ++){
+            if(std::isnan(A[I]) == true){
+                printf("Element[%u] of A is NaN !!!!!\n",I);
+                abort();
+            }
+        }
+        for(unsigned int I = 0 ; I < counter_nonvalue_B ; I ++){
+            if(std::isnan(B[I]) == true){
+                printf("Element[%u] of B is NaN !!!!!\n",I);
+                abort();
+            }
+        }
         
 
         //%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% End of the filling %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%ù
@@ -1792,6 +1947,69 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
         }
         InitializeTemperature(InitialTemperature,Number_total,N_x,N_y,N_z,T_infiny,Delta,temperature_initial,material_at_nodes,temperature_initial_face,Stateofeachface,type_simulation_value,thermal_distribution,amplitude_thermal_distribution);
         
+        FILE *f_TempInit = fopen("temp_init_vector.txt","w+");
+        for(unsigned int I = 0 ; I < Number_total ; I ++){
+            fprintf(f_TempInit,"%5lf\n",temperature_initial[I]);
+        }
+        fclose(f_TempInit);
+
+            // Vector of the heat source
+        
+        
+        if(type_simulation_value==1){
+            //Lecture du fichier Power
+            FILE* fichier = NULL;
+
+            fichier = fopen("power.txt", "r");
+            unsigned int i=0;
+            if (fichier != NULL)
+            {
+                std::vector<double> powers(Number_total,0);
+                while(!feof(fichier) && i < Number_total){
+                    double temp = 0.0;
+                    fscanf(fichier, "%lf",&temp);
+                    Q[i] = dt * temp;
+                    if(std::isnan(Q[i]) == true){
+                        printf("Q[%u] is NaN !\n",i);
+                        abort();
+                    }
+                    powers[i] = temp;
+                    i++;
+                }
+                fclose(fichier);
+                PutPowerInVTI(powers,N_x,N_y,N_z,Delta);
+            }
+            /*for(i=0;i<Number_total;i++){
+                Q[i]=Q[i] + 0.5*(double)nodes_surface / ((double)nodes_into_brain * Delta) * h * (InitialTemperature[i] - T_infiny);
+            }*/
+            /*for(i = 0 ; i < Number_total ; i ++){
+                if(material_at_nodes[i] != 0){
+                    bool imposePower = false;
+                    if(material_at_nodes[i+1] == 0){
+                        imposePower = true;
+                    }
+                    if(material_at_nodes[i-1] == 0){
+                        imposePower = true;
+                    }
+                    if(material_at_nodes[i+N_x] == 0){
+                        imposePower = true;
+                    }
+                    if(material_at_nodes[i-N_x] == 0){
+                        imposePower = true;
+                    }
+                    if(material_at_nodes[i-N_x*N_y] == 0){
+                        imposePower = true;
+                    }
+                    if(material_at_nodes[i+N_x*N_y] == 0){
+                        imposePower = true;
+                    }
+                    if(imposePower == true){
+                        Q[i] = Q[i] + 1.8 / Delta * h * ( InitialTemperature[i] - T_infiny);
+                    }
+                }
+            }*/
+        } 
+
 
         // Lecture of the file outside
         //ReadFile(Number_total,Q,dt); à remettre!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1805,6 +2023,21 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
             printf("Le vecteur TESTVECTOR n'est pas alloué. Aborting...");
             exit(EXIT_FAILURE);
         }
+        FILE *f_A = fopen("matrixA.txt","w+");
+        for(unsigned int I = 0; I < counter_nonvalue_A ; I ++){
+            fprintf(f_A,"%.5lf\n",A[I]);
+        }
+        fclose(f_A);
+        FILE *f_B = fopen("matrixB.txt","w+");
+        for(unsigned int I = 0 ; I < counter_nonvalue_B ; I ++){
+            fprintf(f_B,"%.5lf\n",B[I]);
+        }
+        fclose(f_B);
+        FILE *f_Conv = fopen("convectionMatrix.txt","w+");
+        for(unsigned int I = 0 ; I < Number_total ; I ++){
+            fprintf(f_Conv,"%.5lf\n",convection_contribution[I]);
+        }
+        fclose(f_Conv);
         // contribution de convection mettre dans Q
         daxpy_call(Number_total,convection_contribution,Q);
 
@@ -1822,16 +2055,30 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
         
 
         id.rhs=BY_results;
+
+        for(unsigned int I = 0 ; I < Number_total ; I ++){
+            if(std::isnan(BY_results[I]) == true){
+                printf("Element %u of BY_results is NaN.\n",I);
+                abort();
+            }
+        }
         
         id.n=Number_total;
 
-        id.nnz=numberofnon_nullvalue_A;
+        id.nnz=numberofnon_nullvalue_A; 
         
         id.irn=Indices_line_A;
             
         id.jcn=Indices_row_A;    
         
         id.a=A;
+
+        for(unsigned int I = 0 ; I < numberofnon_nullvalue_A ; I ++){
+            if(std::isnan(A[I]) == true){
+                printf("Element %u of A is NaN. (line %d)\n",I,__LINE__);
+                abort();
+            }
+        }
 
 
         
@@ -1844,8 +2091,8 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
             }*/
     
 
-        grid.scalars["Temp"] = &test;        
-        export_spoints_XML("cas3", step, grid, grid, vtl::Zip::ZIPPED);
+        grid.cscalars["Temp"] = &test;   
+        export_spoints_XML(outFileName, step, grid, grid, Zip::ZIPPED);
     }
     //%%%%%%%%%%%%%% end if get_my_rank() == 0 %%%%%%%%%%%%%%%%%%%%%
     MPI_Barrier(MPI_COMM_WORLD);   	
@@ -1874,7 +2121,19 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
             abort();
         }
 
-    InitializeTemperature(Temperature_verif,Number_total,N_x,N_y,N_z,T_infiny,Delta,temperature_initial,material_at_nodes,temperature_initial_face,Stateofeachface,type_simulation_value,thermal_distribution,amplitude_thermal_distribution);
+    if(get_my_rank() == 0){
+        InitializeTemperature(
+                Temperature_verif,
+                Number_total,
+                N_x,N_y,N_z,
+                T_infiny,
+                Delta,temperature_initial,
+                material_at_nodes,
+                temperature_initial_face,
+                Stateofeachface,type_simulation_value,
+                thermal_distribution,
+                amplitude_thermal_distribution);
+    }
         
 
     // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% LOOP %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1898,14 +2157,14 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
         
         //save here
         if(get_my_rank() ==0){
-            if(count==rate_save_thermo){
-                for(unsigned int i=0;i<Number_total;i++){
+            for(unsigned int i=0;i<Number_total;i++){
                         test[i]=id.rhs[i];
                 }
+            if(count==rate_save_thermo){
 
-                grid.scalars["Temp"] = &test;
+                grid.cscalars["Temp"] = &test;
                 
-                export_spoints_XML("cas3", step, grid, grid, vtl::Zip::ZIPPED);
+                export_spoints_XML(outFileName, step, grid, grid, Zip::ZIPPED);
             }            
 
 
@@ -1925,28 +2184,50 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
         // Verify  the material increases of 1 degree
         number_nodes_inside=0;
         number_increasesof1degree=0;
-        if(type_simulation_value==1){
-            if(count==rate_save_thermo){
-                    for(unsigned int parcours=0 ; parcours < Number_total ; parcours++){
-                        if(material_at_nodes[parcours]>0){
-                            number_nodes_inside++;
-                            // It heats
-                            if(test[parcours]>Temperature_verif[parcours]+4){
-                                number_increasesof1degree++;
-                            }
-                            //It cools
-                            if(test[parcours]<Temperature_verif[parcours]-4){
-                                number_increasesof1degree++;
+        double T_tot = 0.0;
+        double TEMP_INC = 4;
+        if(get_my_rank() == 0){
+            if(type_simulation_value==1){
+                if(true/*count==rate_save_thermo*/){
+                        for(unsigned int parcours=0 ; parcours < Number_total ; parcours++){
+                            if(material_at_nodes[parcours]>0){
+                                number_nodes_inside++;
+                                // It heats
+                                if(test[parcours]>Temperature_verif[parcours]+TEMP_INC){
+                                    number_increasesof1degree++;
+                                }
+                                //It cools
+                                if(test[parcours]<Temperature_verif[parcours]-TEMP_INC){
+                                    number_increasesof1degree++;
+                                }
+                                T_tot = T_tot + test[parcours];
+                                if(std::isnan(test[parcours]) == true){
+                                    printf("Temperature %u is NaN ! Aborting.\n",parcours);
+                                    abort();
+                                }
                             }
                         }
-                    }
-                    double verification_temp = (double) (number_increasesof1degree/number_nodes_inside);
-                    // Seuil à changer 
-                    if(verification_temp>0.95){
-                    break;
+                        double verification_temp = (double) (number_increasesof1degree/number_nodes_inside);
+                        // Seuil à changer 
+                        if(verification_temp>0.95){
+                            printf("\n============================================\n $$$ Brain is %lf hoter/colder.\n======================\n",
+                                TEMP_INC);
+                            grid.cscalars["Temp"] = &test;
+                            export_spoints_XML(outFileName, step, grid, grid, Zip::ZIPPED);
+                            end_MUMPS(id);
+                            break;
+                        }
                 }
+                std::string mean_tempFile = "mean_temp_";
+                mean_tempFile.append(outFileName);
+                FILE* f_T_tot = fopen(mean_tempFile.c_str(),"a");
+                fprintf(f_T_tot,"step %u : mean temp %.10lf, h %.5lf , t %.5g\n",
+                    (unsigned int)step,T_tot/(double)number_nodes_inside,h,t);
+                fclose(f_T_tot);
+                printf("===== STEP %u ==== Mean temp. of brain is %.25g ===\n",step,T_tot/(double)number_nodes_inside);
             }
         }
+        
         count++;
         if(count==rate_save_thermo+1){
             count=1;   
@@ -1958,27 +2239,14 @@ void resolve(DMUMPS_STRUC_C &id, vtl::SPoints &grid,unsigned int Number_total, u
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 int algo_thermo(int argc, char **argv, GridCreator_NEW & gridElectro)
 {
 
+    std::string outFileName = gridElectro.input_parser.outputNames["mean_temperature_thermo"];
+    std::string mean_tempFile = "mean_temp_";
+    mean_tempFile.append(outFileName);
+    FILE* f_T_tot = fopen(mean_tempFile.c_str(),"w+"); // Clean the file if it exists !
+    fclose(f_T_tot);
 
     //Size of the domain, in nodes
     unsigned int N_x=(gridElectro.input_parser.lengthX_WholeDomain_Thermal/gridElectro.input_parser.delta_Thermal)+1;
@@ -2085,6 +2353,11 @@ int algo_thermo(int argc, char **argv, GridCreator_NEW & gridElectro)
         N_y = gridElectro.nodes_of_the_real_brain[1];
 
         N_z = gridElectro.nodes_of_the_real_brain[2];
+
+        /*printf("[MPI %d] - Nx = %u | Ny = %u | Nz = %u\n",
+            get_my_rank(),N_x,N_y,N_z);
+        MPI_Barrier(MPI_COMM_WORLD);
+        abort();*/
 
         Number_total = N_x*N_y*N_z;
 
@@ -2222,8 +2495,10 @@ int algo_thermo(int argc, char **argv, GridCreator_NEW & gridElectro)
     // setup grid
     grid.o = Vec3d(0.0, 0.0, 0.0);     // origin    
     grid.np1 = Vec3i(0, 0, 0);    // first index
-    grid.np2 = Vec3i(N_x-1, N_y-1, N_z-1); // last index
+    grid.np2 = Vec3i(N_x, N_y, N_z); // last index
     grid.dx = Vec3d(Delta, Delta, Delta); // compute spacing
+    printf("Cells is %d\n",grid.nbc());
+
 
     //Sampling rate frequency
     unsigned int rate_save_thermo=gridElectro.input_parser.SAMPLING_FREQ_THERMAL;
@@ -2234,14 +2509,18 @@ int algo_thermo(int argc, char **argv, GridCreator_NEW & gridElectro)
 
 
     // Initialization of MUMPS
-    init_MUMPS(id);
+    init_MUMPS(id); 
 
     // Creation of the system and Resolution
 
     printf("\n===============================================\n==== CALL TO RESOLVE ====\n===============================================\n");
 
-    resolve(id,grid,Number_total,Stateofeachface, N_x, N_y, N_z, Delta ,dt,theta,h, T_infiny,type_simulation_value,temperature_initial,t_final_thermal,temperature_initial_face,rate_save_thermo,geometry_material,wall_thermo,thermal_distribution,amplitude_thermal_distribution,heat_distribution,amplitude_heat_distribution,
-                gridElectro);
+    resolve(id,grid,Number_total,Stateofeachface, N_x, N_y, N_z, Delta ,
+            dt,theta,h, T_infiny,type_simulation_value,temperature_initial,t_final_thermal,
+            temperature_initial_face,rate_save_thermo,geometry_material,wall_thermo,thermal_distribution,
+            amplitude_thermal_distribution,heat_distribution,amplitude_heat_distribution,
+            gridElectro,
+            outFileName);
 
 
     // Terminate the process

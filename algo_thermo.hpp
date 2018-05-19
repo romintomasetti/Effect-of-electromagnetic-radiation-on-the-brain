@@ -10,8 +10,10 @@
 #include <cmath>
 #include <mkl.h>
 #include <stdio.h>
+
 #include "vtl.h"
 #include "vtlSPoints.h"
+#include "vtl_spoints.h"
 
 #include "CREATE_GEOMETRY/readInputGeometryFile.h"
 #include <omp.h>
@@ -113,7 +115,7 @@ void mkl_call(
 
 void resolve(
 	DMUMPS_STRUC_C &id, 
-	vtl::SPoints &grid,
+	SPoints &grid,
 	unsigned int Number_total, 
 	unsigned int *Stateofeachface, 
 	unsigned int N_x, 
@@ -135,7 +137,8 @@ void resolve(
 	double  amplitude_thermal_distribution,
 	unsigned int heat_distribution,
 	double amplitude_heat_distribution,
-	GridCreator_NEW & gridElectro);
+	GridCreator_NEW & gridElectro,
+	std::string outFileName);
 
 int algo_thermo(
 	int argc,
