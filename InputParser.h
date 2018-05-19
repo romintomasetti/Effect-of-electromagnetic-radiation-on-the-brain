@@ -108,12 +108,13 @@ class InputParser{
 		SetOnceVariable_Template<string> simulationType;
 		
 
-		/* 
+
+	public:
+        /* 
 		 * All the properties read in the input file:
 		 */
 		// Contains error, output and profiling files:
 		map<std::string,std::string> outputNames;
-	public:
 		/// Directory containing all material data files:
 		boost::filesystem::path material_data_directory;
 		/// File containing geometry parameters:
@@ -295,6 +296,7 @@ class InputParser{
         ////// Don't write the fields inside the PML boundary conditions
         ////// because it is faster and requires less disk space.
         bool save_fields_in_pml = true;
+        
 };
 
 #endif

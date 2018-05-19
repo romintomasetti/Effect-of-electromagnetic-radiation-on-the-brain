@@ -456,7 +456,10 @@ void InputParser::readHeader_INFOS(ifstream &file){
 					std::string propName  = currentLine.substr(0,posEqual); 
 					std::string propGiven = currentLine.substr(posEqual+1,currentLine.length());
 					
-					if(propName != "output" && propName != "error" && propName != "profile"){
+					if(propName != "output" 
+                        && propName != "error" 
+                        && propName != "profile"
+                        && propName != "mean_temperature_thermo"){
 						printf("InputParser::readHeader_INFOS:: You didn't provide a ");
 						printf("good member for $INFOS$NAME.\nAborting.\n");
 						cout << propName << endl;
