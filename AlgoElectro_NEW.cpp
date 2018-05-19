@@ -1527,7 +1527,7 @@ void AlgoElectro_NEW::update(
 	if(this->VERBOSITY >= 1){
 		fflush_stdout();
 		MPI_Barrier(MPI_COMM_WORLD);
-		printf("\t> [MPI %d] - Computing nodes inside sources...\n",
+		printf("\t> [MPI %d] - Computing nodes inside sourxces...\n",
 				grid.MPI_communicator.getRank());
 		fflush_stdout();
 	}
@@ -9839,17 +9839,18 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    for(k=1; k<P-1; k++)
+    for(k=1; k < P-1; k++)
     {
-        for(j=1; j<N-1; j++)
+        for(j=1; j < N-1 ; j++)
         {
-            for(i=1; i<M-1; i++)
+            for(i=1; i< M-1 ; i++)
             {
                 index = i + grid.size_Ex[0] * (j + grid.size_Ex[1]*k);
-                
-                if(grid.E_x_material[index] != 0)
+
+                if( grid.E_x_material[index] !=0)
                 {
                     counterInBrain++;
+                    //printf("(I,J,K) = (%zu,%zu,%zu) : %u\n",i,j,k,grid.E_x_material[index]);
                 }
             
             }
@@ -9876,7 +9877,17 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
         exit(EXIT_FAILURE);
     }
 
+    unsigned int *type_material_MPI = (unsigned int *) calloc(counterInBrain, sizeof(unsigned int));
+
+    if(type_material_MPI == NULL)
+    {
+        printf("The pointer could not be allocated\n");
+        printf("This message comes from line %d in file %s\n", __LINE__, __FILE__);
+        exit(EXIT_FAILURE);
+    }
+
     unsigned int newCounter = 0;
+    unsigned int new_Counter_material=0;
     // pas besoin des voisins
     for(k=1; k<P-1; k++)
     {
@@ -9903,7 +9914,9 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
                     LocalIndexVector[newCounter] = LocalIndex[0];
                     LocalIndexVector[newCounter+1] = LocalIndex[1];
                     LocalIndexVector[newCounter+2] = LocalIndex[2];
+                    type_material_MPI[new_Counter_material]=grid.E_x_material[index];
                     newCounter += 3;
+                    new_Counter_material++;
                 }
             
             }
@@ -9925,9 +9938,9 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
 
     ComputePowerInBrain(GlobalIndexVector, LocalIndexVector, counterInBrain, grid, PowerInBrain);
 
-    for(unsigned int i=0; i<counterInBrain; i++){
+    /*for(unsigned int i=0; i<counterInBrain; i++){
         printf("i=%u j=%u k=%u power[%d] =%lf\n",LocalIndexVector[3*i+0],LocalIndexVector[3*i+1],LocalIndexVector[3*i+2],i,PowerInBrain[i]);
-    }
+    }*/
 
     unsigned int totNbProc = grid.MPI_communicator.getNumberOfMPIProcesses();
     unsigned int *tabNodesInBrain = (unsigned int *) calloc(totNbProc, sizeof(unsigned int));
@@ -9941,11 +9954,11 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
         unsigned int totNbProc = grid.MPI_communicator.getNumberOfMPIProcesses();
         for(unsigned int i=0; i<totNbProc; i++)
         {
-            printf("\n\n\ttabNodesInBrain[%u] = %u\n", i, tabNodesInBrain[i]);
+            //printf("\n\n\ttabNodesInBrain[%u] = %u\n", i, tabNodesInBrain[i]);
             nbTotalNodesInBrain += tabNodesInBrain[i];
         }
 
-        // printf("\n\n\tnbTotalNodesInBrain = %u\n", nbTotalNodesInBrain);
+        printf("\n\n\tnbTotalNodesInBrain = %u\n", nbTotalNodesInBrain);
     }
     //Root  contient tous les indices globlaux :i,j,k...
     unsigned int *globalNodesInBrain = (unsigned int *) calloc(3*nbTotalNodesInBrain, sizeof(unsigned int));
@@ -9984,9 +9997,10 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
     
         // printf("3*nbTotalNodesInBrain = %u\n\n", 3*nbTotalNodesInBrain);
         
-        /*for(unsigned int i=0; i<3*nbTotalNodesInBrain; i++)
+        /*for(unsigned int i=0; i<3*nbTotalNodesInBrain; i+=3)
         {
-            printf("globalNodesInBrain[%u] = %u\n", i, globalNodesInBrain[i]);
+            printf("globalNodesInBrain[%u %u %u]\n", 
+                globalNodesInBrain[i+0],globalNodesInBrain[i+1],globalNodesInBrain[i+2]);
         }*/
     }
 
@@ -9994,9 +10008,54 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
     
     MPI_Barrier(MPI_COMM_WORLD);
 
-    //%%%%%%%%%% Exchange power %%%%%%%%
+    //%%%%%%%%%%%%%%%% Echange material %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    unsigned int *type_material_full = (unsigned int *) calloc(nbTotalNodesInBrain, sizeof(unsigned int));
 
-    unsigned int *Power_general = (unsigned int *) calloc(nbTotalNodesInBrain, sizeof(unsigned int));
+    printf("Begin send from MPI%d\n", MPI_my_rank);
+    
+    if(MPI_my_rank != 0)
+    {
+        MPI_Send(type_material_MPI, counterInBrain, MPI_UNSIGNED, 0, 17, MPI_COMM_WORLD);
+    }
+
+    printf("End send from MPI%d\n", MPI_my_rank);
+
+    printf("Begin receive from MPI%d\n", MPI_my_rank);
+
+    if(MPI_my_rank == 0)
+    {
+        MPI_Status status;
+        
+        for(unsigned int i=0; i<tabNodesInBrain[0]; i++)
+        {
+            type_material_full[i] = type_material_MPI[i];
+        }
+        
+        unsigned int tmp=0;
+
+        for(unsigned int i = 1 ; i < (unsigned int)grid.MPI_communicator.getNumberOfMPIProcesses(); i++)
+        {
+            tmp += (tabNodesInBrain[i-1]);
+            // printf("\n\n\tmp = %u\n", tmp);
+            MPI_Recv(&(type_material_full[tmp]), tabNodesInBrain[i], MPI_UNSIGNED, i, 17, MPI_COMM_WORLD, &status);
+        }
+        printf("totNbProc=%u",nbTotalNodesInBrain);
+        /*for(unsigned int i=0 ; i< nbTotalNodesInBrain;i++){
+            printf("type_material_full[%u]=%u",i,type_material_full[i]);
+        }*/
+    
+    }
+
+    printf("End receive from MPI%d\n", MPI_my_rank);
+    
+    MPI_Barrier(MPI_COMM_WORLD);
+
+
+
+
+    //%%%%%%%%%%%%%%%% Exchange power   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    double *Power_general = (double *) calloc(nbTotalNodesInBrain, sizeof(double));
 
     // MPI_Gather(GlobalIndexVector, 3*counterInBrain, MPI_UNSIGNED, globalNodesInBrain, 3*counterInBrain, MPI_UNSIGNED, 0, MPI_COMM_WORLD);
     
@@ -10004,7 +10063,7 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
     
     if(MPI_my_rank != 0)
     {
-        MPI_Send(PowerInBrain, counterInBrain, MPI_UNSIGNED, 0, 17, MPI_COMM_WORLD);
+        MPI_Send(PowerInBrain, counterInBrain, MPI_DOUBLE, 0, 17, MPI_COMM_WORLD);
     }
 
     printf("End send from MPI%d\n", MPI_my_rank);
@@ -10027,7 +10086,7 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
         {
             tmp += (tabNodesInBrain[i-1]);
             // printf("\n\n\tmp = %u\n", tmp);
-            MPI_Recv(&(Power_general[tmp]), tabNodesInBrain[i], MPI_UNSIGNED, i, 17, MPI_COMM_WORLD, &status);
+            MPI_Recv(&(Power_general[tmp]), tabNodesInBrain[i], MPI_DOUBLE, i, 17, MPI_COMM_WORLD, &status);
         }
     
         // printf("3*nbTotalNodesInBrain = %u\n\n", 3*nbTotalNodesInBrain);
@@ -10076,18 +10135,16 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
                 if(Z_min_domain>globalNodesInBrain[i+2]){
                     Z_min_domain=globalNodesInBrain[i+2];
                 }
-                if(Y_max_domain<globalNodesInBrain[i+2]){
+                if(Z_max_domain<globalNodesInBrain[i+2]){
                     Z_max_domain=globalNodesInBrain[i+2];
                 }
 
 
             }
         }
-        printf("HELLO\n\n\n\n");
         printf("X_min_domain =%u , X_max_domain=%u\n",X_min_domain,X_max_domain);
         printf("Y_min_domain =%u , Y_max_domain=%u\n",Y_min_domain,Y_max_domain);
         printf("Z_min_domain =%u , Z_max_domain=%u\n",Z_min_domain,Z_max_domain);
-    
 
         unsigned int length_domain_brain_X  = X_max_domain-X_min_domain;
         unsigned int length_domain_brain_Y  = Y_max_domain-Y_min_domain;
@@ -10098,8 +10155,11 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
         unsigned int size_domain_thermo=(length_domain_brain_X+1+couche_thermo)*(length_domain_brain_Y+1+couche_thermo)*(length_domain_brain_Z+1+couche_thermo);
 
 
-
+        //Power
         double *power_for_thermo=(double *) calloc(size_domain_thermo, sizeof(double));
+
+        // Thermo File
+        unsigned int *material_thermo_domain_final=(unsigned int  *) calloc(size_domain_thermo, sizeof(unsigned int));
 
         if(PowerInBrain == NULL)
         {
@@ -10109,32 +10169,66 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
         }
 
         unsigned int parcours=0;
-        for(unsigned int k = Z_min_domain-(couche_thermo/2) ; k <= Z_max_domain+(couche_thermo/2) ; k++){
-            for(unsigned int j = Y_min_domain-(couche_thermo/2) ; j <= Y_max_domain+(couche_thermo/2) ; j++){
-                for(unsigned int i=X_min_domain-(couche_thermo/2); i <= X_max_domain+(couche_thermo/2) ; i++){
-                    for(unsigned int l=0; l<3*nbTotalNodesInBrain; l=l+3){
-                        if(globalNodesInBrain[l]==i && globalNodesInBrain[l+1]==j && globalNodesInBrain[l+2]==k){
-                            //%%%%%%%%%%%%%%% !!!!!!!!!!! hardcodé !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            power_for_thermo[parcours]=Power_general[l/3]+5;
-                            break;
-                        }
-                    }
-                    parcours++;                
-                }
-            }        
-        }
+
         //size_thermo
         grid.nodes_of_the_real_brain[0]=(X_max_domain+(couche_thermo/2))-(X_min_domain-(couche_thermo/2))+1;
         grid.nodes_of_the_real_brain[1]=(Y_max_domain+(couche_thermo/2))-(Y_min_domain-(couche_thermo/2))+1;
         grid.nodes_of_the_real_brain[2]=(Z_max_domain+(couche_thermo/2))-(Z_min_domain-(couche_thermo/2))+1;
-        printf("parcours=%d  ,size_domain_thermo=%d",parcours,size_domain_thermo);
-        for(unsigned int i=0;i<size_domain_thermo;i++){
-            printf("power_for_thermo=%lf",power_for_thermo[i]);
+
+        size_t size_thermo_X = grid.nodes_of_the_real_brain[0];
+        size_t size_thermo_Y = grid.nodes_of_the_real_brain[1];
+        
+
+        #pragma omp parallel default(none)\
+            firstprivate(X_min_domain,X_max_domain)\
+            firstprivate(Y_min_domain,Y_max_domain)\
+            firstprivate(Z_min_domain,Z_max_domain)\
+            firstprivate(couche_thermo)\
+            firstprivate(power_for_thermo,Power_general,type_material_full,material_thermo_domain_final)\
+            firstprivate(size_thermo_X,size_thermo_Y)\
+            firstprivate(globalNodesInBrain)\
+            firstprivate(nbTotalNodesInBrain)\
+            firstprivate(size_domain_thermo)
+        {
+            #pragma omp for
+            for(unsigned int k = Z_min_domain-(couche_thermo/2) ; k <= Z_max_domain+(couche_thermo/2) ; k++){
+                for(unsigned int j = Y_min_domain-(couche_thermo/2) ; j <= Y_max_domain+(couche_thermo/2) ; j++){
+                    printf(">>> [OMP %d] Remplissage powers : J = %u , K = %u\n",omp_get_thread_num(),j,k);
+                    for(unsigned int i=X_min_domain-(couche_thermo/2); i <= X_max_domain+(couche_thermo/2) ; i++){
+                        for(unsigned int l=0; l<3*nbTotalNodesInBrain; l=l+3){
+                            if(globalNodesInBrain[l]==i && globalNodesInBrain[l+1]==j && globalNodesInBrain[l+2]==k){    
+
+                                size_t I_thermo = i - (X_min_domain-(couche_thermo/2));
+                                size_t J_thermo = j - (Y_min_domain-(couche_thermo/2));
+                                size_t K_thermo = k - (Z_min_domain-(couche_thermo/2));
+
+                                size_t parcours_ = I_thermo + size_thermo_X * (J_thermo + K_thermo * size_thermo_Y);                        
+
+                                if(parcours_ >= size_domain_thermo){
+                                    printf("DEPASSEMENT de power thermo : index %zu (%zu,%zu,%zu) max is %u\n",
+                                        parcours_,I_thermo,J_thermo,K_thermo,size_domain_thermo);
+                                    abort();
+                                }
+
+                                power_for_thermo[parcours_]=Power_general[l/3];
+                                material_thermo_domain_final[parcours_]=type_material_full[l/3];
+                                break;
+                            }
+                        }
+                        //parcours++;                
+                    }
+                }        
+            }
         }
+        
+        printf("parcours=%d  ,size_domain_thermo=%d",parcours,size_domain_thermo);
+        
+        /*for(unsigned int i=0;i<size_domain_thermo;i++){
+            printf("power_for_thermo=%lf",power_for_thermo[i]);
+        }*/
 
 
         FILE* fichier = NULL;
-        errno=0;
         fichier = fopen("power.txt", "w+");
         if (fichier != NULL)
 
@@ -10152,13 +10246,64 @@ void AlgoElectro_NEW::WriteData(int MPI_my_rank, GridCreator_NEW &grid)
             printf("Aborting...\n");
             exit(EXIT_FAILURE);
         }
+        
+        // %%%%%%%%%%%%%%%%%%%%%%      Create File Geometry THERMO  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        FILE* power_thermo_send = NULL;
+        power_thermo_send = fopen("thermo_geometry.txt", "w+");
+        if (power_thermo_send != NULL)
+
+            {
+                for(unsigned int i=0;i<size_domain_thermo;i++){
+                    fprintf(power_thermo_send,"%u\n",material_thermo_domain_final[i]);
+                }
+                
+                fclose(power_thermo_send); 
+
+            }
+        else{
+            printf("nameFile could not be created\n");
+            printf("This error comes from line %d in file %s\n", __LINE__, __FILE__);
+            printf("Aborting...\n");
+            exit(EXIT_FAILURE);
+        }
+
+
+
+
     }
 
-
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    abort();
+    if(grid.MPI_communicator.getRank() == 0){
+        for(unsigned int i = 1 ; i < grid.MPI_communicator.getNumberOfMPIProcesses() ; i ++){
+            for(unsigned int j = 0 ; j < 3 ; j ++){
+                MPI_Send(
+                    &grid.nodes_of_the_real_brain[j],
+                    1,
+                    MPI_UNSIGNED,
+                    i,
+                    15,
+                    MPI_COMM_WORLD
+                );
+            }
+        }
+    }else{
+        for(unsigned int j = 0 ; j < 3 ; j ++){
+            MPI_Recv(
+                &grid.nodes_of_the_real_brain[j],
+                1,
+                MPI_UNSIGNED,
+                0,
+                15,
+                MPI_COMM_WORLD,
+                MPI_STATUS_IGNORE
+            );
+            printf("[MPI %d] - Real brain [%u] = %zu\n",
+                grid.MPI_communicator.getRank(),
+                j,
+                grid.nodes_of_the_real_brain[j]);
+        }
+    }
     
+    MPI_Barrier(MPI_COMM_WORLD);
 }
 
 void AlgoElectro_NEW::ComputePowerInBrain(unsigned int *GlobalIndexVECTOR,
@@ -10170,7 +10315,7 @@ void AlgoElectro_NEW::ComputePowerInBrain(unsigned int *GlobalIndexVECTOR,
     double eps_pp = 0.0;
     double sigma = 0.0;
     unsigned int  mat;
-    size_t omega = 2 * M_PI * grid.input_parser.source.frequency[0];
+    double omega = 2 * M_PI * grid.input_parser.source.frequency[0];
 
     for(unsigned int i=0; i<counterInBrain; i++)
     {
@@ -10186,15 +10331,25 @@ void AlgoElectro_NEW::ComputePowerInBrain(unsigned int *GlobalIndexVECTOR,
         eps_pp = grid.materials.unified_material_list[mat].properties["DIELECTRICPERMITTIVITY"];
         sigma = grid.materials.unified_material_list[mat].properties["ELECTRICALCONDUCTIVITY(S/M)"];
 
-        double prefactor = (sigma + omega*eps_pp*VACUUM_PERMITTIVITY)/2;
-        /*printf("prefactor %lf\n",prefactor);
-        printf("mat=%lf\n",mat);
-        printf("eps_pp=%lf\n",eps_pp);
-        printf("sigma=%lf\n",sigma);*/
-        grid.materials.unified_material_list[mat].printf_mat();
+        double prefactor = (sigma + omega*eps_pp)/2;
+        // printf("prefactor %lf\n",prefactor);
+        // printf("mat=%lf\n",mat);
+        // printf("eps_pp=%lf\n",eps_pp);
+        // printf("sigma=%lf\n",sigma);
+        //grid.materials.unified_material_list[mat].printf_mat();
         
-        PowerInBrain[i] = prefactor * (grid.E_x[index_E_X]*grid.E_x[index_E_X] + grid.E_y[index_E_Y]*grid.E_y[index_E_Y] + grid.E_z[index_E_Z]*grid.E_z[index_E_Z]);
-
+        PowerInBrain[i] = prefactor 
+            * (grid.E_x[index_E_X]*grid.E_x[index_E_X] 
+            +  grid.E_y[index_E_Y]*grid.E_y[index_E_Y] 
+            +  grid.E_z[index_E_Z]*grid.E_z[index_E_Z]);
+        if(PowerInBrain[i] > 10){
+            printf("PowerInBrain[%u] = %.5lf (prefactor %.5lf | eps_pp %.5lf | sigma %.5lf | omega %.5lf)\n",
+                i,PowerInBrain[i],prefactor,eps_pp,sigma,omega);
+            printf("Ex = %.5lf | Ey = %.5lf | Ez = %.5lf\n",
+                grid.E_x[index_E_X],
+                grid.E_y[index_E_Y],
+                grid.E_z[index_E_Z]);
+        }
     }
 
 }
