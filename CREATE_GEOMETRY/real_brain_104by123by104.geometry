@@ -1,0 +1,10 @@
+{
+    "file.info"           : "This file is the geometry input for the real brain scan of size 104 by 123 by 104, result of cleaning in Matlab",
+    "geometriesAre"       : ["realBrain"],
+    "realBrain.howMany"   : 1,
+    "realBrain.centers"   : [0.35,0.35,0.35],
+    "realBrain.binFile"   : ["../BrainScans/DATA/materials_104by123by104.bin"],
+    "realBrain.deltas"    : [0.0018318496,0.0018318496,0.0018318496],
+    "realBrain.N_cells"   : [104,123,104],
+    "realBrain.materials" : ["0=Air, 1=Cerebrospinal Fluid, 2=Gray Matter, 3=White Matter, 4=Fat, 5=Muscle, 6=Skin, 7=BoneCortical, 8=Blood Vessel Wall, 9=fat, 10 =dura ,11=Bone Marrow"]
+}
