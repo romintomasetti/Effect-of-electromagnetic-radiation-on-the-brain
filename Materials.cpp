@@ -79,6 +79,10 @@ inline void Materials::remove_duplicated_material_names(std::string &mat){
 	  || boost::iequals(mat,"BrainWhiteMatter")){
 		  mat = "BrainWhiteMatter";
 	  }
+    if(  boost::iequals(mat,"SkinDry")
+      || boost::iequals(mat,"Skin")){
+          mat = "Skin";
+      }
 }
 
 /**
