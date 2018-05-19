@@ -11,3 +11,6 @@
 
     4) save_VTI_to_bin.py
         Create a .bin file from a .vti file. Needs VTKpython installed.
+
+    5) correctionIn3Directions
+        Matlab code used to convert DATA/materials_100by119by100.bin to DATA/materials_104by123by104.bin.
