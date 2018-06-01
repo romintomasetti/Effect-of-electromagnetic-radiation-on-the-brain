@@ -1834,6 +1834,17 @@ void InputParser::readHeader_RUN_INFOS(ifstream &file){
 								propGiven.c_str()
 							);
 						}
+					}else if(propName == "PML_REFLECTION"){
+						if( isValid<double>(propGiven) ){
+							this->PML_Reflection = std::stod(propGiven);
+
+						}else{
+							DISPLAY_ERROR_ABORT_CLASS(
+								"The property 'PML_REFLECTION' must be a valid double."
+								" Has %s.",
+								propGiven.c_str()
+							);
+						}
 					}else{
 						DISPLAY_ERROR_ABORT_CLASS(
 							"In BOUNDARY_CONDITIONS_ELECTRO :: unknown parameter %s.",

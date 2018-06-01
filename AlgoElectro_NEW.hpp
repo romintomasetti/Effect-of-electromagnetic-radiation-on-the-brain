@@ -187,6 +187,28 @@ class AlgoElectro_NEW{
                             GridCreator_NEW &grid,
                             double *PowerInBrain);
 
+    void WritePowerInVacuum(double current_time,
+                            GridCreator_NEW &grid,
+                            size_t rhoX0, size_t rhoX1,
+                            size_t rhoY0, size_t rhoY1,
+                            size_t rhoZ0, size_t rhoZ1,
+                            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX,
+                            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY,
+                            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ,
+                            size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
+                            size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
+                            size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ);
+
+    double ComputePowerInVacuum( GridCreator_NEW &grid,
+                                size_t rhoX0, size_t rhoX1,
+                                size_t rhoY0, size_t rhoY1,
+                                size_t rhoZ0, size_t rhoZ1,
+                                size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX,
+                                size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY,
+                                size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ,
+                                size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
+                                size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
+                                size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ);
 };
 
 #endif

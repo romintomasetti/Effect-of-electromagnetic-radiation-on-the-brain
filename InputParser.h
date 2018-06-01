@@ -283,6 +283,7 @@ class InputParser{
 		double PML_order                        = std::numeric_limits<double>::max();
 		double PML_sigma_M                      = std::numeric_limits<double>::max();
 		bool   PML_improved                     = false;
+		double PML_Reflection					= -1.0;
 
 		/////////////////////////////////////////////////
 		/// END OF PARAMETERS FOR THE PML BOUNDARY CONDITONS ///

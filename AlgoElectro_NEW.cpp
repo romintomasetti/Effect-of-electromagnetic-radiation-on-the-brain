@@ -526,6 +526,19 @@ void AlgoElectro_NEW::update(
     size_t rho_PML    = grid.input_parser.thickness_PML_in_number_of_nodes;
     double sigmaM_PML = grid.input_parser.PML_sigma_M;
     bool Improved_PML = grid.input_parser.PML_improved;
+    double c = sqrt(1/(VACUUM_PERMEABILITY*VACUUM_PERMITTIVITY));
+
+    double Reflection_PML = grid.input_parser.PML_Reflection;
+
+    if(Reflection_PML > 0.0 && Reflection_PML <=1.0){
+        sigmaM_PML = -(order_PML+1)/(2*rho_PML*grid.delta_Electromagn[0])*VACUUM_PERMITTIVITY*c*log(Reflection_PML);
+        printf("The Sigma_M in the PML is computed with the reflection desired without taking into account the Sigma_M in the input file\n");
+    }
+    else{
+        printf("No reflection given! The Sigma_M written in the input file will be taken into account \n");
+    }
+    ////////////////////////////////////////////////
+
 
     // Thickness of the PML:
     unsigned int rhoX0 = 0;
@@ -1428,7 +1441,8 @@ void AlgoElectro_NEW::update(
                                             * pow((double)(I-(grid.size_Hz[0]-1-rhoX1))/(double)rhoX1,order_PML);
                                 }
                                 else{
-                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY*pow((double)(I+0.5-(grid.size_Hz[0]-1-rhoX1))/(double)rhoX1,order_PML);
+                                    sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY
+                                            *pow((double)(I+0.5-(grid.size_Hz[0]-1-rhoX1))/(double)rhoX1,order_PML);
                                 }
                                 
                                 // sigma[0] = sigmaM_PML * VACUUM_PERMEABILITY/VACUUM_PERMITTIVITY;
@@ -1523,7 +1537,7 @@ void AlgoElectro_NEW::update(
 	if(this->VERBOSITY >= 1){
 		fflush_stdout();
 		MPI_Barrier(MPI_COMM_WORLD);
-		printf("\t> [MPI %d] - Computing nodes inside sourxces...\n",
+		printf("\t> [MPI %d] - Computing nodes inside sources...\n",
 				grid.MPI_communicator.getRank());
 		fflush_stdout();
 	}
@@ -2322,6 +2336,7 @@ void AlgoElectro_NEW::update(
             }
 
 
+
             ///////////////////////////////////////
             // 1D CASE - ONLY WITH 1 MPI PROCESS //
             ///////////////////////////////////////
@@ -3100,7 +3115,20 @@ void AlgoElectro_NEW::update(
 
             currentStep ++;
 
-            
+
+            this->WritePowerInVacuum(current_time, grid,
+                                    rhoX0, rhoX1,
+                                    rhoY0, rhoY1,
+                                    rhoZ0, rhoZ1,
+                                    IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX,
+                                    IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY,
+                                    IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ,
+                                    IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
+                                    IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
+                                    IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ);
+
+
+
             #pragma omp barrier
             #pragma omp master
             {
@@ -10454,5 +10482,120 @@ void AlgoElectro_NEW::ComputePowerInBrain(unsigned int *GlobalIndexVECTOR,
                 grid.E_z[index_E_Z]);
         }
     }
+}
 
+void AlgoElectro_NEW::WritePowerInVacuum(double current_time,
+                                        GridCreator_NEW &grid,
+                                        size_t rhoX0, size_t rhoX1,
+                                        size_t rhoY0, size_t rhoY1,
+                                        size_t rhoZ0, size_t rhoZ1,
+                                        size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX,
+                                        size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY,
+                                        size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ,
+                                        size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
+                                        size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
+                                        size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ)
+{
+    FILE* fichier = NULL;
+    double power_mpi;
+    double power_tot = 0;
+    MPI_Status status;
+    int MPI_my_rank = grid.MPI_communicator.getRank();
+    power_mpi = ComputePowerInVacuum( grid,
+                                    rhoX0, rhoX1,
+                                    rhoY0, rhoY1,
+                                    rhoZ0, rhoZ1,
+                                    IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX,
+                                    IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY,
+                                    IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ,
+                                    IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
+                                    IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
+                                    IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ);
+    if(MPI_my_rank != 0){
+        MPI_Send( &power_mpi, 1, MPI_DOUBLE, 0, 17, MPI_COMM_WORLD);
+    }
+    else{
+        power_tot = power_mpi;
+        for(int mpiNb=1; mpiNb<grid.MPI_communicator.getNumberOfMPIProcesses(); mpiNb++){
+            MPI_Recv( &power_mpi, 1, MPI_DOUBLE, mpiNb, 17, MPI_COMM_WORLD, &status);
+        power_tot += power_mpi;
+        }
+    }
+    if(MPI_my_rank == 0){
+        if(current_time == 0.0){
+            fichier = fopen("Total_Power_vacuum.csv", "w");
+
+        }
+        else{
+            fichier = fopen("Total_Power_vacuum.csv", "a");
+        }
+
+        if (fichier != NULL){
+            fprintf(fichier, "%.20g,%.20g\n", current_time, power_tot);
+            fclose(fichier); 
+
+        }
+        else{
+                printf("Total_Power_vacuum.txt could not be created\n");
+                printf("This error comes from line %d in file %s\n", __LINE__, __FILE__);
+                printf("Aborting...\n");
+                exit(EXIT_FAILURE);
+        }
+    }
+
+}
+
+
+double AlgoElectro_NEW::ComputePowerInVacuum( GridCreator_NEW &grid,
+                                            size_t rhoX0, size_t rhoX1,
+                                            size_t rhoY0, size_t rhoY1,
+                                            size_t rhoZ0, size_t rhoZ1,
+                                            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX,
+                                            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY,
+                                            size_t IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ,
+                                            size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX,
+                                            size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY,
+                                            size_t IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ)
+{
+    size_t index_Ex, index_Ey, index_Ez;
+    double powerInVacuum = 0.0;
+    double omega = 2 * M_PI * grid.input_parser.source.frequency[0];
+    double prefactor = grid.delta_Electromagn[0]*grid.delta_Electromagn[1]*grid.delta_Electromagn[2]
+                    * omega*VACUUM_PERMITTIVITY/2;
+    // For the length we will take Ex as the maximum length for 
+    size_t size_x = grid.size_Ex[0]+1; // Because Ex along is shorter as the BC are not applied
+    size_t size_y = grid.size_Ex[1];
+    size_t size_z = grid.size_Ex[2];
+    size_t counter = 0;
+
+    // size_t counterInVacuumX, counterInVacuumY, counterInVacuumZ;
+
+    // counterInVacuumX = size_x/*-rhoX1*/-(IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX+1)
+    //                     -(IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX+1) /*+rhoX0*/;
+    // counterInVacuumY = size_y/*-rhoY1*/-(IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY+1)
+    //                     - (IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY +1) /*+rhoY0*/;
+    // counterInVacuumZ = size_z/*-rhoZ1*/-(IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ+1)
+    //                     - (IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ+ 1)/*rhoZ0*/;
+
+    // printf(" \t \t \t \t Counter total  = %zu \n \n \n ", counterInVacuumX*counterInVacuumY*counterInVacuumZ);
+
+    for(size_t K = 1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDZ; 
+        K < size_z - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDZ - 1; K++){
+        for(size_t J = 1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDY;
+            J < size_y - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDY -1; J++){
+            for(size_t I = 1+IS_THE_FIRST_MPI_FOR_ELECRIC_FIELDX; 
+                I < size_x - IS_THE_LAST_MPI_FOR_ELECTRIC_FIELDX -1 ; I++){
+                index_Ex = I   + (size_x-1) * ( J  + size_y   * K); // -1 as Ex along x is shorter
+                index_Ey = I   + size_x * ( J  + (size_y-1)   * K); // -1 as Ey along y is shorter 
+                index_Ez = I   + size_x * ( J  + size_y   * K);
+                powerInVacuum += prefactor 
+                                * (grid.E_x[index_Ex]*grid.E_x[index_Ex] 
+                                    + grid.E_y[index_Ey]*grid.E_y[index_Ey] 
+                                    + grid.E_z[index_Ez]*grid.E_z[index_Ez]);
+                counter++;
+            }
+        }
+    }
+    printf(" \t \t \t \t Counter total  = %zu \n \n \n ", counter);
+    return powerInVacuum;
 }
